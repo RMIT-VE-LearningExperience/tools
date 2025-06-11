@@ -1546,34 +1546,51 @@
                     alert('Please upload a .docx file');
                     return;
                 }
-                
+
+                // Validate actual MIME type for .docx
+                if (file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                    this.loader.style.display = 'none';
+                    alert('Please upload a valid .docx file');
+                    return;
+                }
+
                 this.loader.style.display = 'block';
                 this.updateStep(1, 'active');
-                
+
                 try {
                     const arrayBuffer = await file.arrayBuffer();
-                    
-                    // Extract raw text for main parsing
-                    const resultRaw = await mammoth.extractRawText({arrayBuffer});
-                    
-                    // Extract HTML to parse tables for equipment/resources
-                    const resultHtml = await mammoth.convertToHtml({arrayBuffer});
-                    
+
+                    let resultRaw, resultHtml;
+                    try {
+                        resultRaw = await mammoth.extractRawText({arrayBuffer});
+                        // Extract HTML to parse tables for equipment/resources
+                        resultHtml = await mammoth.convertToHtml({arrayBuffer});
+                    } catch (error) {
+                        console.error('Mammoth error:', error);
+                        this.loader.style.display = 'none';
+                        if (error.message && error.message.includes('end of central directory')) {
+                            alert('This .docx appears to be password-protected or encrypted. Please upload an unprotected Word document.');
+                        } else {
+                            alert('Error processing .docx file. Please ensure the file is a valid Word document.');
+                        }
+                        return;
+                    }
+
                     // Parse HTML to find tables
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(resultHtml.value, "text/html");
                     const tables = doc.querySelectorAll("table");
-                    
+
                     // Extract main content using existing extractor
                     this.extractor.setDebugMode(this.debugMode);
                     this.extractedData = this.extractor.extract(resultRaw.value);
-                    
+
                     // Extract Conditions for assessment from tables if present
                     if (tables.length > 0) {
                         // Look through all tables for conditions section
                         for (let tableIndex = 0; tableIndex < tables.length; tableIndex++) {
                             const table = tables[tableIndex];
-                            
+
                             // Check if this table contains conditions for assessment
                             let conditionsCell = null;
                             for (let row of table.rows) {
@@ -1582,7 +1599,7 @@
                                         // Found the header, now look for the content cell (usually next row or next cell)
                                         const rowIndex = Array.from(table.rows).indexOf(row);
                                         const cellIndex = Array.from(row.cells).indexOf(cell);
-                                        
+
                                         // Check same row, next cell
                                         if (cellIndex + 1 < row.cells.length) {
                                             conditionsCell = row.cells[cellIndex + 1];
@@ -1600,20 +1617,20 @@
                                 }
                                 if (conditionsCell) break;
                             }
-                            
+
                             if (conditionsCell) {
                                 // Extract conditions from the cell
                                 const cellHtml = conditionsCell.innerHTML;
                                 const tempDiv = document.createElement('div');
                                 tempDiv.innerHTML = cellHtml;
-                                
+
                                 // Extract list items
                                 const liElements = Array.from(tempDiv.querySelectorAll('li'))
                                     .map(li => li.textContent.trim())
                                     .filter(text => text);
-                                
+
                                 let conditionsText = "";
-                                
+
                                 if (liElements.length > 0) {
                                     // Filter out link-related items
                                     const excludePatterns = [
@@ -1623,21 +1640,21 @@
                                         /disability.*long-term\s+illness.*Equitable\s+Assessment/i,
                                         /https?:\/\//i
                                     ];
-                                    
+
                                     const filteredItems = liElements.filter(item => {
                                         for (const pattern of excludePatterns) {
                                             if (item.match(pattern)) return false;
                                         }
                                         return true;
                                     });
-                                    
+
                                     conditionsText = filteredItems.join('\n');
                                 } else {
                                     // Try paragraphs
                                     const paras = Array.from(tempDiv.querySelectorAll('p'))
                                         .map(p => p.textContent.trim())
                                         .filter(text => text);
-                                    
+
                                     if (paras.length) {
                                         conditionsText = paras.join('\n');
                                     } else {
@@ -1645,12 +1662,12 @@
                                         conditionsText = conditionsCell.textContent.trim();
                                     }
                                 }
-                                
+
                                 // If we found conditions in table, use them
                                 if (conditionsText && conditionsText.length > 20) {
                                     // Convert to bullet format if not already
                                     const lines = conditionsText.split('\n').filter(line => line.trim());
-                                    this.extractedData.conditions = lines.map(line => 
+                                    this.extractedData.conditions = lines.map(line =>
                                         line.startsWith('-') ? line : '- ' + line
                                     ).join('\n');
                                 }
@@ -1658,7 +1675,7 @@
                             }
                         }
                     }
-                    
+
                     // Extract Equipment/Resources Students Must Supply from table
                     let studentSuppliesText = "";
                     if (tables.length > 1) {
@@ -1668,12 +1685,12 @@
                             const cellHtml = table2.rows[8].cells[0].innerHTML;
                             const tempDiv = document.createElement('div');
                             tempDiv.innerHTML = cellHtml;
-                            
+
                             // 1) Detect any <li> items
                             const liElements = Array.from(tempDiv.querySelectorAll('li'))
                                 .map(li => li.textContent.trim())
                                 .filter(text => text);
-                            
+
                             if (liElements.length) {
                                 // Use all list items
                                 studentSuppliesText = liElements.join('\n');
@@ -1682,7 +1699,7 @@
                                 const paras = Array.from(tempDiv.querySelectorAll('p'))
                                     .map(p => p.textContent.trim())
                                     .filter(text => text);
-                                
+
                                 if (paras.length) {
                                     studentSuppliesText = paras.join('\n');
                                 } else {
@@ -1692,13 +1709,13 @@
                             }
                         }
                     }
-                    
+
                     // Convert each line into a bullet point if we found content
                     if (studentSuppliesText) {
                         const lines = studentSuppliesText.split('\n').map(line => line.trim()).filter(line => line);
                         this.extractedData.studentSupplies = lines.map(line => '- ' + line).join('\n');
                     }
-                    
+
                     // Extract RMIT Supplies from table
                     let rmitSuppliesText = "";
                     if (tables.length > 1) {
@@ -1708,12 +1725,12 @@
                             const cellHtml2 = table2.rows[8].cells[1].innerHTML;
                             const tempDiv2 = document.createElement('div');
                             tempDiv2.innerHTML = cellHtml2;
-                            
+
                             // Look for existing <li> tags
                             const liElements2 = Array.from(tempDiv2.querySelectorAll('li'))
                                 .map(li => li.textContent.trim())
                                 .filter(text => text);
-                            
+
                             if (liElements2.length > 1) {
                                 // Drop the first combined list item if it exists
                                 rmitSuppliesText = liElements2.slice(1).join('\n');
@@ -1724,7 +1741,7 @@
                                 const paras2 = Array.from(tempDiv2.querySelectorAll('p'))
                                     .map(p => p.textContent.trim())
                                     .filter(text => text);
-                                
+
                                 if (paras2.length) {
                                     // If multiple <p> tags, join them with "\n"
                                     rmitSuppliesText = paras2.join('\n');
@@ -1735,7 +1752,7 @@
                             }
                         }
                     }
-                    
+
                     // Prefix each line with "- " so populateForm() can build a <ul>
                     if (rmitSuppliesText) {
                         const rmitLines = rmitSuppliesText
@@ -1744,16 +1761,16 @@
                             .filter(line => line);
                         this.extractedData.rmitSupplies = rmitLines.map(line => '- ' + line).join('\n');
                     }
-                    
+
                     if (this.debugMode) {
                         this.debugContent.textContent = JSON.stringify(this.extractedData, null, 2);
                         this.debugSection.style.display = 'block';
                     }
-                    
+
                     this.displayExtractionStatus();
                     this.populateForm();
                     this.showEditForm();
-                    
+
                 } catch (error) {
                     console.error('Error:', error);
                     alert('Error processing document. Please try again.');
