@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tools for Education</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f2f2f2 0%, #e3e5e0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #000054 0%, #000000 100%);
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .filter-section {
+            padding: 20px 30px;
+            background: #ffffff;
+            border-bottom: 1px solid #e3e5e0;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e3e5e0;
+            border-radius: 20px;
+            background: #ffffff;
+            color: #000000;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: #000054;
+            color: #ffffff;
+            border-color: #000054;
+            transform: translateY(-2px);
+        }
+
+        .table-container {
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        .tools-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .tools-table th {
+            background: #000054;
+            color: #ffffff;
+            padding: 18px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.95em;
+            letter-spacing: 0.5px;
+        }
+
+        .tools-table td {
+            padding: 16px 15px;
+            border-bottom: 1px solid #e3e5e0;
+            vertical-align: top;
+            line-height: 1.5;
+        }
+
+        .tools-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .tools-table tr:hover {
+            background-color: #fac800;
+            transform: scale(1.01);
+            transition: all 0.3s ease;
+            color: #000000;
+        }
+
+        .tool-name {
+            font-weight: 700;
+            color: #000054;
+            font-size: 1.1em;
+        }
+
+        .tool-name a {
+            color: #000054;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tool-name a:hover {
+            color: #e61e2a;
+            border-bottom: 2px solid #e61e2a;
+            transform: translateY(-1px);
+        }
+
+        .best-for {
+            color: #000054;
+            font-weight: 600;
+        }
+
+        .key-features {
+            color: #000000;
+            font-size: 0.9em;
+            max-width: 300px;
+        }
+
+        .limitations {
+            color: #e61e2a;
+            font-size: 0.9em;
+            font-style: italic;
+            max-width: 200px;
+        }
+
+        .ideal-user {
+            color: #000000;
+            font-weight: 500;
+            max-width: 250px;
+        }
+
+        .access-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .access-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .sso {
+            background: #e3e5e0;
+            color: #000054;
+            border: 1px solid #000054;
+        }
+
+        .standard {
+            background: #f2f2f2;
+            color: #000000;
+            border: 1px solid #000000;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            background: #ffffff;
+            margin-top: 20px;
+            border-top: 1px solid #e3e5e0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: 700;
+            color: #000054;
+        }
+
+        .stat-label {
+            color: #000000;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .filter-buttons {
+                justify-content: flex-start;
+            }
+            
+            .tools-table {
+                font-size: 0.9em;
+            }
+            
+            .tools-table th,
+            .tools-table td {
+                padding: 12px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>RMIT CoVE AI Tools</h1>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="filterTools('all')">All Tools</button>
+                <button class="filter-btn" onclick="filterTools('primary')">Primary Tools</button>
+                <button class="filter-btn" onclick="filterTools('content')">Content Creation</button>
+                <button class="filter-btn" onclick="filterTools('visual')">Visual Tools</button>
+                <button class="filter-btn" onclick="filterTools('research')">Research</button>
+                <button class="filter-btn" onclick="filterTools('rmit')">RMIT Supported</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="tools-table" id="toolsTable">
+                <thead>
+                    <tr>
+                        <th>Tool Name</th>
+                        <th>Classification</th>
+                        <th>Key Features</th>
+                        <th>Use Case</th>
+                        <th>Access & Support</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Table content will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number" id="totalTools">8</div>
+                <div class="stat-label">Total Tools</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="freeTools">5</div>
+                <div class="stat-label">RMIT Supported</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="ssoTools">4</div>
+                <div class="stat-label">SSO Available</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const toolsData = [
+            {
+                name: "VAL (In-house AI)",
+                url: "https://val.rmit.edu.au/",
+                classification: "Primary Content Creator",
+                features: "IP-secure content generation, handles all text prompts, document processing",
+                useCase: "Main content creation: welcome scripts, module structure, introduction pages, PowerPoint analysis, student personas, accessibility content",
+                access: "Single Sign-on (RMIT Supported)",
+                category: ["content", "primary"]
+            },
+            {
+                name: "Quitch",
+                url: "https://rmiteduau.sharepoint.com/sites/HowtoQuitch",
+                classification: "Assessment Supplement",
+                features: "Quiz generation, gamified learning, engagement analytics",
+                useCase: "AFTER main content creation to add formative assessments, knowledge checks, interactive elements",
+                access: "Single Sign-on (RMIT Supported)",
+                category: ["quiz", "assessment"]
+            },
+            {
+                name: "Napkin (Free tier)",
+                url: "https://www.napkin.ai/",
+                classification: "Visual Enhancement",
+                features: "Text-to-visual conversion, diagrams, infographics, brand customisation",
+                useCase: "AFTER text creation to convert content into flowcharts, visual rubrics, process diagrams, course overviews",
+                access: "Standard login",
+                category: ["visual"]
+            },
+            {
+                name: "Adobe Express",
+                url: "https://new.express.adobe.com/",
+                classification: "Visual Polish & Presentations",
+                features: "Motion graphics, animations, branding, marketing materials, RMIT branded assets integration",
+                useCase: "Final enhancement of welcome videos, course marketing, brand consistency, professional graphics, or as strong alternative to PowerPoint using RMIT branded templates",
+                access: "Single Sign-on (RMIT Supported)",
+                category: ["visual", "content"]
+            },
+            {
+                name: "Clipchamp",
+                url: "https://m365.cloud.microsoft/launch/stream?auth=2",
+                classification: "Video Production",
+                features: "Text-to-speech, video creation, multi-language narration",
+                useCase: "Convert welcome scripts into videos, create module introductions, add narration and captions",
+                access: "Single Sign-on (RMIT Supported)",
+                category: ["content", "video"]
+            },
+            {
+                name: "Perplexity (Free tier)",
+                url: "https://www.perplexity.ai/",
+                classification: "Research & Verification",
+                features: "Real-time information search, current standards, fact-checking",
+                useCase: "BEFORE content creation to gather industry information, verify technical accuracy, find current examples",
+                access: "Standard login",
+                category: ["research"]
+            },
+            {
+                name: "ChatGPT (Free tier)",
+                url: "https://chatgpt.com/",
+                classification: "Primary Alternative",
+                features: "Creative content generation, Bloom's taxonomy expertise, conversational refinement",
+                useCase: "Creative enhancement of welcome videos, student personas, learning objectives development",
+                access: "Standard login",
+                category: ["content", "primary"]
+            },
+            {
+                name: "Claude (Free tier)",
+                url: "https://claude.ai/",
+                classification: "Complex Analysis Specialist",
+                features: "Superior document handling, detailed analysis, nuanced content creation",
+                useCase: "PowerPoint conversion, comprehensive student personas, detailed image descriptions, complex module structures",
+                access: "Standard login",
+                category: ["research", "content"]
+            }
+        ];
+
+        function getAccessClass(access) {
+            return access.toLowerCase().includes('single sign-on') ? 'sso' : 'standard';
+        }
+
+        function renderTable(tools = toolsData) {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            tools.forEach(tool => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="tool-name"><a href="${tool.url}" target="_blank">${tool.name}</a></td>
+                    <td class="classification">${tool.classification}</td>
+                    <td class="key-features">${tool.features}</td>
+                    <td class="use-case">${tool.useCase}</td>
+                    <td><a href="${tool.url}" target="_blank" class="access-badge ${getAccessClass(tool.access)}">${tool.access}</a></td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            updateStats(tools);
+        }
+
+        function filterTools(category) {
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            let filteredTools;
+            if (category === 'all') {
+                filteredTools = toolsData;
+            } else if (category === 'rmit') {
+                filteredTools = toolsData.filter(tool => 
+                    tool.access.toLowerCase().includes('rmit supported')
+                );
+            } else {
+                filteredTools = toolsData.filter(tool => tool.category.includes(category));
+            }
+
+            renderTable(filteredTools);
+        }
+
+        function updateStats(tools) {
+            const rmitTools = tools.filter(tool => 
+                tool.access.toLowerCase().includes('rmit supported')
+            ).length;
+            
+            const ssoTools = tools.filter(tool => 
+                tool.access.toLowerCase().includes('single sign-on')
+            ).length;
+
+            document.getElementById('totalTools').textContent = tools.length;
+            document.getElementById('freeTools').textContent = rmitTools;
+            document.getElementById('ssoTools').textContent = ssoTools;
+        }
+
+        // Initial render
+        renderTable();
+    </script>
+</body>
+</html>
