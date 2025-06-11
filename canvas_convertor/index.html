@@ -727,6 +727,53 @@
                                 </div>
                             </div>
                             
+                            <!-- Section 5: AI Acceptable Use -->
+                            <div class="form-section">
+                                <h3>🤖 AI Acceptable Use</h3>
+                                
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="includeAI" name="includeAI" onchange="toggleAIDropdown()">
+                                    <label for="includeAI">Add AI - Acceptable use for this assessment</label>
+                                </div>
+                                
+                                <div id="aiOptionsSection" style="display: none;">
+                                    <div style="background: #f8f9fa; padding: 20px; border-radius: 4px; margin: 20px 0;">
+                                        <p style="margin-bottom: 15px;"><strong>AI Acceptable Use Statement Options:</strong></p>
+                                        
+                                        <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px;">
+                                            <p><strong>Option 1: AI tools and their use are not restricted for this assessment task</strong></p>
+                                            <p style="margin-top: 5px;">In this assessment task, you can use AI tools to assist you. All use of AI tools and their outputs should be appropriately acknowledged and referenced.</p>
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px;">
+                                            <p><strong>Option 2: AI tools are restricted in certain ways for this assessment task</strong></p>
+                                            <p style="margin-top: 5px;">In this assessment task, you can use AI tools to support you in developing and completing your work by [insert ways students are permitted to use AI tools e.g., generating ideas/planning/drafting] only. Any use of such tools must be appropriately acknowledged and referenced.</p>
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px;">
+                                            <p><strong>Option 3: AI tools are restricted in the completion of this assessment task</strong></p>
+                                            <p style="margin-top: 5px;">In this assessment task, you can use the following AI tools only [insert name(s) of tools, or types of tools e.g. image generators/text generators/standard editing software]. Any use of these tools must be appropriately acknowledged and referenced.</p>
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px;">
+                                            <p><strong>Option 4: AI tools cannot be used in the completion of this assessment task</strong></p>
+                                            <p style="margin-top: 5px;">In this assessment task, you must not use any AI tools (excluding text editing software e.g., Grammarly) to generate any materials, content or ideas related to the task.</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>Select ONE (1) acceptable use statement only:</label>
+                                        <select id="aiUseStatement" name="aiUseStatement">
+                                            <option value="unrestricted">Option 1: AI tools not restricted</option>
+                                            <option value="restricted-ways">Option 2: AI tools restricted in certain ways</option>
+                                            <option value="restricted-tools">Option 3: AI tools restricted - specific tools only</option>
+                                            <option value="not-permitted">Option 4: AI tools cannot be used</option>
+                                        </select>
+                                        <p class="help-text">Choose the appropriate AI use policy for this assessment</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="button-group">
                                 <button type="button" class="btn btn-primary" onclick="generateHTML()">Generate Canvas HTML</button>
                                 <button type="button" class="btn btn-secondary" onclick="resetForm()">Start Over</button>
@@ -1901,6 +1948,13 @@
             document.execCommand(command, false, null);
         }
         
+        // Toggle AI dropdown visibility
+        function toggleAIDropdown() {
+            const checkbox = document.getElementById('includeAI');
+            const aiOptionsSection = document.getElementById('aiOptionsSection');
+            aiOptionsSection.style.display = checkbox.checked ? 'block' : 'none';
+        }
+        
         // Clean HTML function
         function cleanHTML(html) {
             const temp = document.createElement('div');
@@ -1932,6 +1986,8 @@
             
             data.includeTemplate = form.elements.includeTemplate.checked;
             data.assessmentType = form.elements.assessmentType.value;
+            data.includeAI = form.elements.includeAI.checked;
+            data.aiUseStatement = form.elements.aiUseStatement.value;
             
             let html = `<div id="emble-customise-6c7e686a" class="customise emble emble-cblock emble-width-control fullwidth-on emble-cblock-boxshadow white" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
 <div id="emble-customise-38d14b77" class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-context-menu="customise delete" data-customise="icon-shape icon icon-wrap icon-size icon-colour-options" data-emble-name="Icon" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-download">&nbsp;</i></div>
@@ -2016,7 +2072,33 @@ ${data.submissionInstructions ? `<p>${data.submissionInstructions}</p>` : '<p><s
 
             html += `
 <h3>RMIT Electronic Submission of Work For Assessment</h3>
-<p>I declare that in submitting all work for this assessment I have read, understood and agree to the content and expectations of the&nbsp;<a class="external" href="https://www.rmit.edu.au/students/student-essentials/assessment-and-exams/assessment/assessment-declaration" target="_blank" rel="noopener">Assessment declaration</a><span style="color: var(--ic-brand-font-color-dark); font-family: inherit; font-size: 1rem;">&nbsp;</span></p>
+<p>I declare that in submitting all work for this assessment I have read, understood and agree to the content and expectations of the&nbsp;<a class="external" href="https://www.rmit.edu.au/students/student-essentials/assessment-and-exams/assessment/assessment-declaration" target="_blank" rel="noopener">Assessment declaration</a><span style="color: var(--ic-brand-font-color-dark); font-family: inherit; font-size: 1rem;">&nbsp;</span></p>`;
+
+            // Add AI acceptable use statement if selected
+            if (data.includeAI) {
+                html += `<h3>AI - Acceptable use for this assessment</h3>`;
+                
+                switch(data.aiUseStatement) {
+                    case 'unrestricted':
+                        html += `<p><strong>AI tools and their use are not restricted for this assessment task</strong></p>
+<p>In this assessment task, you can use AI tools to assist you. All use of AI tools and their outputs should be appropriately acknowledged and referenced.</p>`;
+                        break;
+                    case 'restricted-ways':
+                        html += `<p><strong>AI tools are restricted in certain ways for this assessment task</strong></p>
+<p>In this assessment task, you can use AI tools to support you in developing and completing your work by <span style="background-color: #fac800;">[insert ways students are permitted to use AI tools e.g., generating ideas/planning/drafting]</span> only. Any use of such tools must be appropriately acknowledged and referenced.</p>`;
+                        break;
+                    case 'restricted-tools':
+                        html += `<p><strong>AI tools are restricted in the completion of this assessment task</strong></p>
+<p>In this assessment task, you can use the following AI tools only <span style="background-color: #fac800;">[insert name(s) of tools, or types of tools e.g. image generators/text generators/standard editing software]</span>. Any use of these tools must be appropriately acknowledged and referenced.</p>`;
+                        break;
+                    case 'not-permitted':
+                        html += `<p><strong>AI tools cannot be used in the completion of this assessment task</strong></p>
+<p>In this assessment task, you must not use any AI tools (excluding text editing software e.g., Grammarly) to generate any materials, content or ideas related to the task.</p>`;
+                        break;
+                }
+            }
+
+            html += `
 </div>
 <p class="narrow-p">&nbsp;</p>
 
