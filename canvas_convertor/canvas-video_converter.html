@@ -15,8 +15,15 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #e3e5e0;
             min-height: 100vh;
-            padding: 20px;
+            display: flex;
+            flex-direction: column;
             line-height: 1.6;
+        }
+        
+        .main-wrapper {
+            flex: 1;
+            padding: 20px;
+            padding-bottom: 0;
         }
         
         .container {
@@ -192,75 +199,89 @@
             font-size: 1.5rem;
             margin-right: 15px;
         }
+        
+        .footer {
+            background: #e3e5e0;
+            padding: 8px 20px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        #yt-player {
+            position: absolute;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+        }
     </style>
-    <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-1MDBG3TN2X');
-  </script>
 </head>
 <body>
-   
-    <div class="container">
-        <div class="header">
-            <h1>Canvas Video Embed Generator</h1>
-            <p>Generate Canvas-Ready HTML for YouTube Videos</p>
-        </div>
-        
-        <div class="main-content">
-            <div class="input-section">
-                <div class="form-group">
-                    <label for="youtube-url">Enter YouTube page URL:</label>
-                    <input type="text" id="youtube-url" placeholder="e.g., https://www.youtube.com/watch?v=xxxxxx">
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-top: 20px;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="video-duration">Video Duration:</label>
-                        <input type="text" id="video-duration" placeholder="e.g., 17:15 or 5">
+    <div class="main-wrapper">
+        <div class="container">
+            <div class="header">
+                <h1>CoVE Canvas Video Embed Generator</h1>
+                <p>Generate Canvas-Ready HTML for YouTube Videos</p>
+            </div>
+            
+            <div class="main-content">
+                <div class="input-section">
+                    <div class="form-group">
+                        <label for="youtube-url">Enter YouTube page URL:</label>
+                        <input type="text" id="youtube-url" placeholder="e.g., https://www.youtube.com/watch?v=xxxxxx">
                     </div>
                     
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="video-description">Video Topic/Description (approx 45 words):</label>
-                        <input type="text" id="video-description" placeholder="e.g., creating a 3-2-1 backup system for your files" maxlength="300">
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-top: 20px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="video-duration">Video Duration:</label>
+                            <input type="text" id="video-duration" placeholder="e.g., 17:15 or 5">
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="video-description">Watch this video to learn about... (approx 45 words):</label>
+                            <input type="text" id="video-description" placeholder="e.g., creating a 3-2-1 backup system for your files" maxlength="300">
+                        </div>
                     </div>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label for="start-time">Start Time (optional):</label>
-                    <input type="text" id="start-time" placeholder="e.g., 1:30 or 90">
-                    <p style="font-size:0.85rem; color:#666; margin-top:5px;">Format: MM:SS or seconds</p>
-                  </div>
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label for="end-time">End Time (optional):</label>
-                    <input type="text" id="end-time" placeholder="e.g., 5:45 or 345">
-                    <p style="font-size:0.85rem; color:#666; margin-top:5px;">Format: MM:SS or seconds</p>
-                  </div>
-                </div>
-
-                
-                <button id="generate-btn" class="btn btn-primary" onclick="generateCode()" style="margin-top: 20px;">Generate HTML Code</button>
-            </div>
-             <div id="yt-player" style="width: 100%; height: 360px; margin-bottom: 20px;"></div>
-            <div class="output-section" id="output-section">
-                <div class="output-container">
-                    <div class="output-header">
-                        <span>Canvas HTML Code</span>
-                        <button class="btn btn-primary copy-button" onclick="copyCode()">Copy HTML</button>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="start-time">Start Time (optional):</label>
+                        <input type="text" id="start-time" placeholder="e.g., 1:30 or 90">
+                        <p style="font-size:0.85rem; color:#666; margin-top:5px;">Format: MM:SS or seconds</p>
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="end-time">End Time (optional):</label>
+                        <input type="text" id="end-time" placeholder="e.g., 5:45 or 345">
+                        <p style="font-size:0.85rem; color:#666; margin-top:5px;">Format: MM:SS or seconds</p>
+                      </div>
                     </div>
-                    <div class="output-content" id="code-output"></div>
+                    
+                    <button id="generate-btn" class="btn btn-primary" onclick="generateCode()" style="margin-top: 20px;">Generate HTML Code</button>
                 </div>
                 
-                <div class="preview-section">
-                    <h3>Preview:</h3>
-                    <div class="preview-container" id="preview-container"></div>
+                <div id="yt-player"></div>
+                
+                <div class="output-section" id="output-section">
+                    <div class="output-container">
+                        <div class="output-header">
+                            <span>Canvas HTML Code</span>
+                            <button class="btn btn-primary copy-button" onclick="copyCode()">Copy HTML</button>
+                        </div>
+                        <div class="output-content" id="code-output"></div>
+                    </div>
+                    
+                    <div class="preview-section">
+                        <h3>Preview:</h3>
+                        <div class="preview-container" id="preview-container"></div>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
+    
+    <div class="footer">
+        Design: Learning & Teaching Innovation Team - RMIT College of Vocational Education
     </div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -278,26 +299,30 @@
         }
 
         function onYouTubeIframeAPIReady() {
+            // Check if YT is available
+            if (typeof YT === 'undefined') {
+                console.log('YouTube API not loaded yet');
+                return;
+            }
+            
             const url = document.getElementById('youtube-url').value.trim();
             const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w\-]{11})/);
             if (match && match[1]) {
-                ytPlayer = new YT.Player('yt-player', {
-                    videoId: match[1],
-                    events: {
-                        'onReady': event => {
-                            const duration = event.target.getDuration();
-                            setVideoDurationField(duration);
+                try {
+                    ytPlayer = new YT.Player('yt-player', {
+                        videoId: match[1],
+                        events: {
+                            'onReady': event => {
+                                const duration = event.target.getDuration();
+                                setVideoDurationField(duration);
+                            }
                         }
-                    }
-                });
+                    });
+                } catch (e) {
+                    console.log('Error creating YouTube player:', e);
+                }
             }
         }
-
-        // Format seconds as MM:SS
-        // (removed: formatSeconds)
-
-        // (removed: setStartTimeFromPlayer, setEndTimeFromPlayer)
-
 
         // Helper function to convert time to seconds
         function timeToSeconds(timeStr) {
@@ -334,6 +359,7 @@
                 ellipsisIndex = (ellipsisIndex + 1) % ellipsisArray.length;
                 generateBtn.textContent = baseText + ellipsisArray[ellipsisIndex];
             }, 500);
+            
             const originalUrl = document.getElementById('youtube-url').value.trim();
             let youtubeUrl = originalUrl;
             let videoDuration = document.getElementById('video-duration').value.trim();
@@ -348,17 +374,18 @@
             // Convert normal YouTube URL to embed URL if necessary
             const youtubeMatch = youtubeUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w\-]{11})/);
             if (youtubeMatch && youtubeMatch[1]) {
-                // Preserve any extra params for start/end
+                // Preserve any extra params
                 let extraParams = '';
                 const paramMatch = youtubeUrl.match(/\?(.*)/);
                 if (paramMatch && paramMatch[1]) {
                     extraParams = '?' + paramMatch[1];
                 }
                 youtubeUrl = `https://www.youtube-nocookie.com/embed/${youtubeMatch[1]}${extraParams}`;
-            }
-
-            if (!youtubeUrl) {
-                alert('Please enter a YouTube embed URL');
+            } else {
+                clearInterval(ellipsisInterval);
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate HTML Code';
+                alert('Please enter a valid YouTube URL');
                 return;
             }
 
@@ -380,11 +407,8 @@
 
             // Process video duration - add "mins" if not already present
             if (videoDuration) {
-                // Check if duration already contains time units
                 const hasTimeUnit = /\b(min|mins|minute|minutes|hour|hours|hr|hrs|sec|secs|second|seconds)\b/i.test(videoDuration);
-
                 if (!hasTimeUnit) {
-                    // If it's just numbers or numbers with colon (like "17:15" or "5"), add "mins"
                     videoDuration = videoDuration + ' mins';
                 }
             }
@@ -428,8 +452,6 @@
             // Show preview
             document.getElementById('preview-container').innerHTML = htmlCode;
 
-            // Transcript functionality removed
-
             // Scroll to output
             document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
             clearInterval(ellipsisInterval);
@@ -440,7 +462,6 @@
         function copyCode() {
             const content = document.getElementById('code-output').textContent;
             
-            // Create a temporary textarea for copying
             const textArea = document.createElement('textarea');
             textArea.value = content;
             textArea.style.position = 'fixed';
@@ -477,8 +498,14 @@
 
         // Recreate player and update full duration when URL changes
         document.getElementById('youtube-url').addEventListener('change', () => {
-            if (ytPlayer) ytPlayer.destroy();
-            onYouTubeIframeAPIReady();
+            if (typeof YT !== 'undefined' && ytPlayer) {
+                try {
+                    ytPlayer.destroy();
+                } catch (e) {
+                    console.log('Error destroying player:', e);
+                }
+                onYouTubeIframeAPIReady();
+            }
         });
 
         // Auto-update duration when start or end time changes
