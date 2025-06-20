@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoVE Associate Degree Canvas Assessment Generator - RMIT</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #e3e5e0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+        }
+        
+        .main-wrapper {
+            flex: 1;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #000054;
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: #e61e2a;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .workflow-steps {
+            display: flex;
+            justify-content: center;
+            padding: 30px;
+            background: #f2f2f2;
+            border-bottom: 3px solid #fac800;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 0 15px;
+            font-weight: 600;
+            color: #000054;
+        }
+        
+        .step-number {
+            width: 30px;
+            height: 30px;
+            background: #000054;
+            color: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .step.active .step-number {
+            background: #e61e2a;
+        }
+        
+        .step.completed .step-number {
+            background: #28a745;
+        }
+        
+        .content-area {
+            padding: 40px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .alert-info {
+            background: #e6f3ff;
+            border: 1px solid #0066cc;
+            color: #004085;
+        }
+        
+        .alert-icon {
+            font-size: 1.5rem;
+            margin-right: 15px;
+        }
+        
+        .form-section {
+            background: #ffffff;
+            border: 1px solid #e3e5e0;
+            border-radius: 6px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .form-section h3 {
+            color: #000054;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #fac800;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #000054;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .form-group input[type="text"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e3e5e0;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: border-color 0.3s;
+            background: #fafbfc;
+        }
+        
+        .form-group input[type="text"]:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #000054;
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .help-text {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        .rich-editor {
+            width: 100%;
+            min-height: 150px;
+            padding: 10px;
+            border: 2px solid #e3e5e0;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: border-color 0.3s;
+            background: #fff;
+            overflow-y: auto;
+            max-height: 400px;
+            position: relative;
+        }
+        
+        #assessmentCriteria {
+            min-height: 200px;
+        }
+        
+        .rich-editor:focus {
+            outline: none;
+            border-color: #000054;
+        }
+        
+        .rich-editor p {
+            margin-bottom: 0.5em;
+        }
+        
+        .rich-editor ul, .rich-editor ol {
+            margin-left: 20px;
+            margin-bottom: 0.5em;
+        }
+        
+        .rich-editor li {
+            margin-bottom: 0.3em;
+        }
+        
+        .editor-toolbar {
+            display: flex;
+            gap: 5px;
+            padding: 5px;
+            background: #f8f9fa;
+            border: 2px solid #e3e5e0;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .editor-btn {
+            padding: 5px 10px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .editor-btn:hover {
+            background: #e3e5e0;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f2f2f2;
+            border-radius: 4px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        
+        .checkbox-group label {
+            cursor: pointer;
+            font-weight: normal;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e3e5e0;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #e61e2a;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #c51923;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: #000054;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #000043;
+            transform: translateY(-1px);
+        }
+        
+        .output-section {
+            display: none;
+        }
+        
+        .output-container {
+            background: #ffffff;
+            border: 2px solid #e3e5e0;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .output-header {
+            background: #000054;
+            color: #ffffff;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .output-content {
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            background: #f8f9fa;
+        }
+        
+        .preview-container {
+            background: white;
+            border: 2px solid #e3e5e0;
+            border-radius: 6px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+        
+        .preview-container h3 {
+            color: #000054;
+            margin-bottom: 20px;
+        }
+        
+        .footer {
+            background: #000054;
+            color: #ffffff;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            font-size: 0.95rem;
+        }
+        
+        .footer a {
+            color: #fac800;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .edit-form {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .workflow-steps {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .step {
+                margin: 5px 0;
+            }
+        }
+    </style>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-1MDBG3TN2X');
+    </script>
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="container">
+            <div class="header">
+                <h1>CoVE Associate Degree Canvas Assessment Generator</h1>
+                <p>Create Canvas-Ready HTML for Associate Degree Courses</p>
+                <span class="badge">ASSOCIATE DEGREE</span>
+            </div>
+            
+            <div class="workflow-steps">
+                <div class="step active" id="step1">
+                    <div class="step-number">1</div>
+                    <span>Enter Information</span>
+                </div>
+                <div class="step" id="step2">
+                    <div class="step-number">2</div>
+                    <span>Generate HTML</span>
+                </div>
+            </div>
+            
+            <div class="content-area">
+                <div class="alert alert-info">
+                    <div class="alert-icon">ℹ️</div>
+                    <div>
+                        <strong>Associate Degree Template:</strong> Fill in all fields below to generate your Canvas assessment HTML. All fields are required.
+                    </div>
+                </div>
+                
+                <!-- Edit Form -->
+                <div class="edit-form" id="editForm">
+                    <form id="assessmentForm">
+                        <!-- Section 1: Task & Compliance Information -->
+                        <div class="form-section">
+                            <h3>📋 Task & Compliance Information</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Task Number</label>
+                                    <input type="text" id="taskNumber" name="taskNumber" placeholder="1" required>
+                                    <p class="help-text">Enter the task number (1, 2, 3)</p>
+                                </div>
+                                <div class="form-group">
+                                    <label>Task Name</label>
+                                    <input type="text" id="taskName" name="taskName" placeholder="Research Report" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>RMIT Program Code</label>
+                                    <input type="text" id="programCode" name="programCode" placeholder="AD006" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>RMIT Course Code</label>
+                                    <input type="text" id="courseCode" name="courseCode" placeholder="COMM2385" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Weighting</label>
+                                    <input type="text" id="weighting" name="weighting" placeholder="30%" required>
+                                    <p class="help-text">Enter percentage with % symbol</p>
+                                </div>
+                                <div class="form-group">
+                                    <label>Individual or Group</label>
+                                    <select id="individualGroup" name="individualGroup" required>
+                                        <option value="">Select...</option>
+                                        <option value="Individual">Individual</option>
+                                        <option value="Group">Group</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Duration</label>
+                                <input type="text" id="duration" name="duration" placeholder="10" required>
+                                <p class="help-text">Enter number of hours only (10)</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Section 2: Assessment Task -->
+                        <div class="form-section">
+                            <h3>📝 Assessment Task</h3>
+                            
+                            <div class="form-group">
+                                <label>Task Description</label>
+                                <div class="editor-toolbar">
+                                    <button type="button" class="editor-btn" onclick="formatText('bold', 'taskDescription')" title="Bold">B</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('italic', 'taskDescription')" title="Italic">I</button>
+                                </div>
+                                <div id="taskDescription" class="rich-editor" contenteditable="true" data-placeholder="Describe briefly what the student has to do and produce. No more than two or three lines, beginning with action verbs such as investigate, report, examine, evaluate etc."></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Section 3: What is being assessed -->
+                        <div class="form-section">
+                            <h3>🎯 What is being assessed</h3>
+                            
+                            <div class="form-group">
+                                <label>Course Learning Outcomes (CLOs)</label>
+                                <div class="editor-toolbar">
+                                    <button type="button" class="editor-btn" onclick="formatText('bold', 'courseOutcomes')" title="Bold">B</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('italic', 'courseOutcomes')" title="Italic">I</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList', 'courseOutcomes')" title="Bullet List">• List</button>
+                                </div>
+                                <div id="courseOutcomes" class="rich-editor" contenteditable="true" data-placeholder="Insert the course outcomes relevant to this assessment task"></div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Program Learning Outcomes (PLOs)</label>
+                                <div class="editor-toolbar">
+                                    <button type="button" class="editor-btn" onclick="formatText('bold', 'programOutcomes')" title="Bold">B</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('italic', 'programOutcomes')" title="Italic">I</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList', 'programOutcomes')" title="Bullet List">• List</button>
+                                </div>
+                                <div id="programOutcomes" class="rich-editor" contenteditable="true" data-placeholder="Insert the program outcomes relevant to this assessment task"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Section 4: Assessment Details -->
+                        <div class="form-section">
+                            <h3>📋 Assessment Details</h3>
+                            
+                            <div class="form-group">
+                                <label>Detailed Instructions</label>
+                                <div class="editor-toolbar">
+                                    <button type="button" class="editor-btn" onclick="formatText('bold', 'assessmentDetails')" title="Bold">B</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('italic', 'assessmentDetails')" title="Italic">I</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('insertOrderedList', 'assessmentDetails')" title="Numbered List">1. List</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList', 'assessmentDetails')" title="Bullet List">• List</button>
+                                </div>
+                                <div id="assessmentDetails" class="rich-editor" contenteditable="true" data-placeholder="Describe exactly what the student will need to do in order to complete the assessment. List these in sequential order as numbered bullet points. Include sufficient detail so that it is easily understood"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Section 5: Presentation Requirements -->
+                        <div class="form-section">
+                            <h3>🖼️ Presentation Requirements</h3>
+                            
+                            <div class="form-group">
+                                <label>Requirements</label>
+                                <div class="editor-toolbar">
+                                    <button type="button" class="editor-btn" onclick="formatText('bold', 'presentationReq')" title="Bold">B</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('italic', 'presentationReq')" title="Italic">I</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList', 'presentationReq')" title="Bullet List">• List</button>
+                                </div>
+                                <div id="presentationReq" class="rich-editor" contenteditable="true" data-placeholder="State what is required: number of words, formatting, citing and referencing style, presentation specifications, etc. Include an Academic Integrity and Plagiarism statement"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Section 6: Assessment Criteria -->
+                        <div class="form-section">
+                            <h3>✅ Assessment Criteria</h3>
+                            
+                            <div class="form-group">
+                                <label>Criteria</label>
+                                <div class="editor-toolbar">
+                                    <button type="button" class="editor-btn" onclick="formatText('bold', 'assessmentCriteria')" title="Bold">B</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('italic', 'assessmentCriteria')" title="Italic">I</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList', 'assessmentCriteria')" title="Bullet List">• List</button>
+                                </div>
+                                <div id="assessmentCriteria" class="rich-editor" contenteditable="true" data-placeholder="Insert criteria here. For example:
+• Quality of design
+• Product quality
+• Research and investigation
+• Application of theoretical knowledge
+• Analysis and evaluation"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Section 7: Submission Requirements -->
+                        <div class="form-section">
+                            <h3>📤 Submission Requirements</h3>
+                            
+                            <div class="form-group">
+                                <label>Specific Submission Instructions</label>
+                                <div class="editor-toolbar">
+                                    <button type="button" class="editor-btn" onclick="formatText('bold', 'specificSubmission')" title="Bold">B</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('italic', 'specificSubmission')" title="Italic">I</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList', 'specificSubmission')" title="Bullet List">• List</button>
+                                </div>
+                                <div id="specificSubmission" class="rich-editor" contenteditable="true" data-placeholder="Add specific requirements such as file type (PDF, DOCX), naming conventions (StudentID_TaskNumber), file size limits, etc."></div>
+                                <p class="help-text">Include file type requirements, naming protocols, and any other specific submission requirements</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Standard Submission Instructions</label>
+                                <div class="editor-toolbar">
+                                    <button type="button" class="editor-btn" onclick="formatText('bold', 'submissionReq')" title="Bold">B</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('italic', 'submissionReq')" title="Italic">I</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('insertOrderedList', 'submissionReq')" title="Numbered List">1. List</button>
+                                    <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList', 'submissionReq')" title="Bullet List">• List</button>
+                                </div>
+                                <div id="submissionReq" class="rich-editor" contenteditable="true"></div>
+                                <p class="help-text">Standard Canvas submission steps (prepopulated)</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Section 8: AI Acceptable Use -->
+                        <div class="form-section">
+                            <h3>🤖 AI Acceptable Use</h3>
+                            
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="includeAI" name="includeAI" onchange="toggleAIDropdown()">
+                                <label for="includeAI">Add AI - Acceptable use for this assessment</label>
+                            </div>
+                            
+                            <div id="aiOptionsSection" style="display: none;">
+                                <div style="background: #f8f9fa; padding: 20px; border-radius: 4px; margin: 20px 0;">
+                                    <p style="margin-bottom: 15px;"><strong>AI Acceptable Use Statement Options:</strong></p>
+                                    
+                                    <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px;">
+                                        <p><strong>Option 1: AI tools and their use are not restricted for this assessment task</strong></p>
+                                        <p style="margin-top: 5px;">In this assessment task, you can use AI tools to assist you. All use of AI tools and their outputs should be appropriately acknowledged and referenced.</p>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px;">
+                                        <p><strong>Option 2: AI tools are restricted in certain ways for this assessment task</strong></p>
+                                        <p style="margin-top: 5px;">In this assessment task, you can use AI tools to support you in developing and completing your work by [insert ways students are permitted to use AI tools e.g., generating ideas/planning/drafting] only. Any use of such tools must be appropriately acknowledged and referenced.</p>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px;">
+                                        <p><strong>Option 3: AI tools are restricted in the completion of this assessment task</strong></p>
+                                        <p style="margin-top: 5px;">In this assessment task, you can use the following AI tools only [insert name(s) of tools, or types of tools e.g. image generators/text generators/standard editing software]. Any use of these tools must be appropriately acknowledged and referenced.</p>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px;">
+                                        <p><strong>Option 4: AI tools cannot be used in the completion of this assessment task</strong></p>
+                                        <p style="margin-top: 5px;">In this assessment task, you must not use any AI tools (excluding text editing software e.g., Grammarly) to generate any materials, content or ideas related to the task.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Select ONE (1) acceptable use statement only:</label>
+                                    <select id="aiUseStatement" name="aiUseStatement">
+                                        <option value="unrestricted">Option 1: AI tools not restricted</option>
+                                        <option value="restricted-ways">Option 2: AI tools restricted in certain ways</option>
+                                        <option value="restricted-tools">Option 3: AI tools restricted - specific tools only</option>
+                                        <option value="not-permitted">Option 4: AI tools cannot be used</option>
+                                    </select>
+                                    <p class="help-text">Choose the appropriate AI use policy for this assessment</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="button" class="btn btn-primary" onclick="generateHTML()">Generate Canvas HTML</button>
+                            <button type="button" class="btn btn-secondary" onclick="resetForm()">Clear Form</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Output Section -->
+                <div class="output-section" id="outputSection">
+                    <h2 style="color: #000054; margin-bottom: 25px;">Generated Canvas HTML</h2>
+                    
+                    <div class="output-container">
+                        <div class="output-header">
+                            <span>Canvas HTML Code</span>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-primary" style="padding: 8px 20px; font-size: 0.9rem;" onclick="downloadPDF()">Download PDF</button>
+                                <button class="btn btn-primary" style="padding: 8px 20px; font-size: 0.9rem;" onclick="copyHTML()">Copy HTML</button>
+                            </div>
+                        </div>
+                        <div class="output-content" id="outputContent"></div>
+                    </div>
+                    
+                    <div class="preview-container">
+                        <h3>Preview</h3>
+                        <div id="previewContent"></div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="button" class="btn btn-secondary" onclick="backToEdit()">Back to Edit</button>
+                        <button type="button" class="btn btn-primary" onclick="resetForm()">New Assessment</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="footer">
+        <p>Design: Learning & Teaching Innovation Team - RMIT College of Vocational Education</p>
+    </footer>
+
+    <script>
+        // Rich editor paste handler
+        document.querySelectorAll('.rich-editor').forEach(editor => {
+            editor.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+                document.execCommand('insertText', false, text);
+            });
+            
+            editor.addEventListener('input', function() {
+                if (this.innerHTML === '<br>' || this.innerHTML === '') {
+                    this.innerHTML = '';
+                }
+            });
+        });
+        
+        // Format text function
+        function formatText(command, editorId) {
+            const editor = document.getElementById(editorId);
+            editor.focus();
+            document.execCommand(command, false, null);
+        }
+        
+        // Toggle AI dropdown
+        function toggleAIDropdown() {
+            const checkbox = document.getElementById('includeAI');
+            const aiOptionsSection = document.getElementById('aiOptionsSection');
+            aiOptionsSection.style.display = checkbox.checked ? 'block' : 'none';
+        }
+        
+        // Clean HTML function
+        function cleanHTML(html) {
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            
+            temp.querySelectorAll('*[style]').forEach(el => el.removeAttribute('style'));
+            temp.querySelectorAll('p').forEach(p => {
+                if (p.innerHTML.trim() === '' || p.innerHTML === '&nbsp;') {
+                    p.remove();
+                }
+            });
+            
+            return temp.innerHTML;
+        }
+        
+        // Validate form
+        function validateForm() {
+            const requiredFields = ['taskNumber', 'taskName', 'programCode', 'courseCode', 'weighting', 'individualGroup', 'duration'];
+            const requiredEditors = ['taskDescription', 'courseOutcomes', 'programOutcomes', 'assessmentDetails', 'presentationReq', 'assessmentCriteria', 'specificSubmission', 'submissionReq'];
+            
+            for (const field of requiredFields) {
+                const element = document.getElementById(field);
+                if (!element.value.trim()) {
+                    alert(`Please fill in the ${field.replace(/([A-Z])/g, ' $1').toLowerCase()} field.`);
+                    element.focus();
+                    return false;
+                }
+            }
+            
+            for (const editorId of requiredEditors) {
+                const editor = document.getElementById(editorId);
+                if (!editor.textContent.trim()) {
+                    alert(`Please fill in the ${editorId.replace(/([A-Z])/g, ' $1').toLowerCase()} section.`);
+                    editor.focus();
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+        
+        // Generate HTML
+        function generateHTML() {
+            if (!validateForm()) {
+                return;
+            }
+            
+            const form = document.getElementById('assessmentForm');
+            const data = {};
+            
+            // Get form fields
+            ['taskNumber', 'taskName', 'programCode', 'courseCode', 'weighting', 'individualGroup', 'duration'].forEach(field => {
+                data[field] = form.elements[field].value;
+            });
+            
+            // Get editor content
+            ['taskDescription', 'courseOutcomes', 'programOutcomes', 'assessmentDetails', 'presentationReq', 'assessmentCriteria', 'specificSubmission', 'submissionReq'].forEach(field => {
+                const editor = document.getElementById(field);
+                data[field] = cleanHTML(editor.innerHTML);
+            });
+            
+            // Get AI settings
+            data.includeAI = form.elements.includeAI.checked;
+            data.aiUseStatement = form.elements.aiUseStatement.value;
+            
+            // Build HTML
+            let html = `<div id="emble-customise-5bf0e20e" class="customise emble emble-cblock emble-width-control fullwidth-on emble-cblock-boxshadow white" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
+<div id="emble-customise-d6afb8af" class="emble-icon small wrap emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false square yellow" data-context-menu="customise delete" data-customise="icon-shape icon icon-wrap icon-size icon-colour-options" data-emble-name="Icon" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-assignment">&nbsp;</i></div>
+<h3 style="text-align: left;">Assessment Task</h3>
+<p>&nbsp;</p>
+${data.taskDescription}
+<p>&nbsp;</p>
+<p class="">&nbsp;</p>
+</div>
+<p class="narrow-p">&nbsp;</p>
+
+<div id="emble-customise-a30e39d6" class="customise emble emble-cblock emble-width-control fullwidth-on emble-cblock-boxshadow white" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
+<div id="emble-customise-752bbb55" class="emble-icon small wrap emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false square yellow" data-context-menu="customise delete" data-customise="icon-shape icon icon-wrap icon-size icon-colour-options" data-emble-name="Icon" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-question">&nbsp;</i></div>
+<h3 style="text-align: left;">What is being assessed</h3>
+<p>&nbsp;</p>
+<p><span data-contrast="none">In this assessment, the following </span><span data-contrast="none">course outcomes</span><span data-contrast="none"> are being assessed:&nbsp;</span><span data-ccp-props="{&quot;201341983&quot;:0,&quot;335559685&quot;:0,&quot;335559731&quot;:0,&quot;335559737&quot;:0,&quot;335559739&quot;:257,&quot;335559740&quot;:249,&quot;335559991&quot;:7}">&nbsp;</span></p>
+${data.courseOutcomes}
+<p><span data-ccp-props="{&quot;201341983&quot;:0,&quot;335559685&quot;:0,&quot;335559737&quot;:0,&quot;335559739&quot;:256,&quot;335559740&quot;:248,&quot;335559991&quot;:7}"><i></i></span></p>
+<p><span data-contrast="none">The following </span><span data-contrast="none">program outcomes</span><span data-contrast="none"> are incorporated into this assessment task:&nbsp;</span><span data-ccp-props="{&quot;201341983&quot;:0,&quot;335559685&quot;:0,&quot;335559731&quot;:0,&quot;335559737&quot;:0,&quot;335559739&quot;:257,&quot;335559740&quot;:249,&quot;335559991&quot;:7}">&nbsp;</span></p>
+${data.programOutcomes}
+</div>
+<p class="narrow-p">&nbsp;</p>
+
+<div id="emble-customise-3e249812" class="customise emble emble-cblock emble-width-control fullwidth-on emble-cblock-boxshadow white" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
+<div id="emble-customise-d6afb8af" class="emble-icon small wrap emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false square yellow" data-context-menu="customise delete" data-customise="icon-shape icon icon-wrap icon-size icon-colour-options" data-emble-name="Icon" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-assignment">&nbsp;</i></div>
+<h3 style="text-align: left;">Assessment Details</h3>
+<p>&nbsp;</p>
+${data.assessmentDetails}
+</div>
+<p class="narrow-p">&nbsp;</p>
+
+<div id="emble-customise-559a74e0" class="customise emble emble-cblock emble-width-control fullwidth-on emble-cblock-boxshadow white" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
+<div id="emble-customise-d5c72d80" class="emble-icon small wrap emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false square yellow" data-context-menu="customise delete" data-customise="icon-shape icon icon-wrap icon-size icon-colour-options" data-emble-name="Icon" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-image">&nbsp;</i></div>
+<h3 style="text-align: left;">Presentation Requirements</h3>
+<p>&nbsp;</p>
+${data.presentationReq}
+</div>
+<p class="narrow-p">&nbsp;</p>
+
+<div id="emble-customise-850652e8" class="customise emble emble-cblock emble-width-control fullwidth-on emble-cblock-boxshadow white" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
+<div id="emble-customise-4564f91f" class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-context-menu="customise delete" data-customise="icon-shape icon icon-wrap icon-size icon-colour-options" data-emble-name="Icon" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-target">&nbsp;</i></div>
+<h3>Assessment Criteria</h3>
+<p>You will be assessed on the following criteria:&nbsp;&nbsp;</p>
+<p>&nbsp;</p>
+${data.assessmentCriteria}
+</div>
+<p class="narrow-p">&nbsp;</p>
+
+<div id="emble-customise-33a165c6" class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
+<div id="emble-customise-e8c0b1a8" class="emble-icon small wrap emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false square yellow" data-context-menu="customise delete" data-customise="icon-shape icon icon-wrap icon-size icon-colour-options" data-emble-name="Icon" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-check">&nbsp;</i></div>
+<h3>Submission Requirements</h3>
+<p>&nbsp;</p>
+${data.specificSubmission}
+<p>&nbsp;</p>
+${data.submissionReq}
+<p>&nbsp;</p>
+<h3>RMIT electronic submission of work for assessment</h3>
+<p>I declare that in submitting all work for this assessment I have read, understood and agree to the content and expectations of the&nbsp;<a class="external" href="https://www.rmit.edu.au/students/student-essentials/assessment-and-exams/assessment/assessment-declaration" target="_blank" rel="noopener">Assessment declaration</a></p>`;
+
+            // Add AI section if selected
+            if (data.includeAI) {
+                html += `<h3>AI - Acceptable use for this assessment</h3>`;
+                
+                switch(data.aiUseStatement) {
+                    case 'unrestricted':
+                        html += `<p><strong>AI tools and their use are not restricted for this assessment task</strong></p>
+<p>In this assessment task, you can use AI tools to assist you. All use of AI tools and their outputs should be appropriately acknowledged and referenced.</p>`;
+                        break;
+                    case 'restricted-ways':
+                        html += `<p><strong>AI tools are restricted in certain ways for this assessment task</strong></p>
+<p>In this assessment task, you can use AI tools to support you in developing and completing your work by <span style="background-color: #fac800;">[insert ways students are permitted to use AI tools e.g., generating ideas/planning/drafting]</span> only. Any use of such tools must be appropriately acknowledged and referenced.</p>`;
+                        break;
+                    case 'restricted-tools':
+                        html += `<p><strong>AI tools are restricted in the completion of this assessment task</strong></p>
+<p>In this assessment task, you can use the following AI tools only <span style="background-color: #fac800;">[insert name(s) of tools, or types of tools e.g. image generators/text generators/standard editing software]</span>. Any use of these tools must be appropriately acknowledged and referenced.</p>`;
+                        break;
+                    case 'not-permitted':
+                        html += `<p><strong>AI tools cannot be used in the completion of this assessment task</strong></p>
+<p>In this assessment task, you must not use any AI tools (excluding text editing software e.g., Grammarly) to generate any materials, content or ideas related to the task.</p>`;
+                        break;
+                }
+            }
+
+            html += `
+</div>
+<p class="narrow-p">&nbsp;</p>
+
+<div id="emble-customise-046b3e90" class="customise emble-columns-container emble-columns-controller-2 emble-columns-stretch-child-height" data-context-menu="customise delete" data-customise="new-columns-arrangement new-columns-border new-columns-padding columns-stretch-children" data-emble-name="Columns" data-emble-version="2.0">
+<div class="emble-columns-child emble-prevent-delete">
+<div id="emble-customise-bd20a1f2" class="customise emble emble-cblock emble-width-control fullwidth-on emble-cblock-boxshadow white" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
+<div id="emble-customise-7be1f7a8" class="emble-icon small wrap emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false yellow square" data-context-menu="customise delete" data-customise="icon-shape icon icon-wrap icon-size icon-colour-options" data-emble-name="Icon" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-info">&nbsp;</i></div>
+<p><span style="font-size: 12pt;"><strong>Task number:</strong> ${data.taskNumber}</span></p>
+<p><span style="font-size: 12pt;"><strong>Task name:</strong> ${data.taskName}</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 12pt;"><strong>RMIT program code:</strong> ${data.programCode}</span></p>
+<p><span style="font-size: 12pt;"><strong>RMIT course code:</strong> ${data.courseCode}</span></p>
+<p><span style="font-size: 12pt;"><strong>Weighting:</strong> ${data.weighting}</span></p>
+<p><span style="font-size: 12pt;"><strong>Individual or Group:</strong> ${data.individualGroup}</span></p>
+</div>
+<p class="narrow-p">&nbsp;</p>
+</div>
+<div class="emble-columns-child emble-prevent-delete">
+<div id="emble-customise-0b65926f" class="customise emble emble-cblock emble-width-control fullwidth-on emble-cblock-boxshadow white" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
+<div id="emble-customise-4537e5a1" class="emble-icon small wrap emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false yellow square" data-context-menu="customise delete" data-customise="icon-shape icon icon-wrap icon-size icon-colour-options" data-emble-name="Icon" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-calendar-month">&nbsp;</i></div>
+<p><strong>Duration:</strong> This assessment task is expected to take you a minimum of <span style="font-size: 12pt;">${data.duration} hours to complete.</span></p>
+<p><span style="font-size: 12pt;"><strong>Feedback and Grades:</strong> Feedback on your assignment and your grade will be released via the Grades.</span></p>
+</div>
+<p class="">&nbsp;<span style="color: var(--ic-brand-font-color-dark); font-family: inherit; font-size: 1rem;">&nbsp;</span></p>
+</div>
+</div>
+<p class="narrow-p">&nbsp;</p>`;
+
+            // Display output
+            document.getElementById('outputContent').textContent = html;
+            document.getElementById('previewContent').innerHTML = html;
+            
+            // Update UI
+            updateStep(1, 'completed');
+            updateStep(2, 'active');
+            document.getElementById('editForm').style.display = 'none';
+            document.getElementById('outputSection').style.display = 'block';
+            
+            window.scrollTo(0, 0);
+        }
+        
+        // Download PDF function
+        function downloadPDF() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Generating PDF...';
+            btn.disabled = true;
+            
+            try {
+                // Initialize jsPDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Get form data
+                const taskName = document.getElementById('taskName').value;
+                const taskNumber = document.getElementById('taskNumber').value;
+                const programCode = document.getElementById('programCode').value;
+                const courseCode = document.getElementById('courseCode').value;
+                const weighting = document.getElementById('weighting').value;
+                const individualGroup = document.getElementById('individualGroup').value;
+                const duration = document.getElementById('duration').value;
+                
+                // Add title
+                doc.setFontSize(20);
+                doc.setTextColor(0, 0, 84); // RMIT blue
+                doc.text('Assessment Task', 20, 20);
+                
+                // Add metadata
+                doc.setFontSize(12);
+                doc.setTextColor(0, 0, 0);
+                let yPos = 35;
+                
+                doc.setFont(undefined, 'bold');
+                doc.text(`Task Name: `, 20, yPos);
+                doc.setFont(undefined, 'normal');
+                doc.text(taskName, 50, yPos);
+                
+                yPos += 8;
+                doc.setFont(undefined, 'bold');
+                doc.text(`Task Number: `, 20, yPos);
+                doc.setFont(undefined, 'normal');
+                doc.text(taskNumber, 55, yPos);
+                
+                yPos += 8;
+                doc.setFont(undefined, 'bold');
+                doc.text(`Program Code: `, 20, yPos);
+                doc.setFont(undefined, 'normal');
+                doc.text(programCode, 58, yPos);
+                
+                yPos += 8;
+                doc.setFont(undefined, 'bold');
+                doc.text(`Course Code: `, 20, yPos);
+                doc.setFont(undefined, 'normal');
+                doc.text(courseCode, 53, yPos);
+                
+                yPos += 8;
+                doc.setFont(undefined, 'bold');
+                doc.text(`Weighting: `, 20, yPos);
+                doc.setFont(undefined, 'normal');
+                doc.text(weighting, 48, yPos);
+                
+                yPos += 8;
+                doc.setFont(undefined, 'bold');
+                doc.text(`Type: `, 20, yPos);
+                doc.setFont(undefined, 'normal');
+                doc.text(individualGroup, 35, yPos);
+                
+                yPos += 8;
+                doc.setFont(undefined, 'bold');
+                doc.text(`Duration: `, 20, yPos);
+                doc.setFont(undefined, 'normal');
+                doc.text(duration + ' hours', 45, yPos);
+                
+                // Add a separator line
+                yPos += 10;
+                doc.setDrawColor(230, 184, 0); // RMIT yellow
+                doc.setLineWidth(0.5);
+                doc.line(20, yPos, 190, yPos);
+                yPos += 15;
+                
+                // Helper function to add text with word wrap
+                const addSection = (title, content) => {
+                    // Check if we need a new page
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    // Add section title
+                    doc.setFontSize(14);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(title, 20, yPos);
+                    yPos += 10;
+                    
+                    // Add content
+                    doc.setFontSize(11);
+                    doc.setFont(undefined, 'normal');
+                    
+                    // Clean content and split into lines
+                    const div = document.createElement('div');
+                    div.innerHTML = content;
+                    const text = div.textContent || div.innerText || '';
+                    const lines = doc.splitTextToSize(text, 170);
+                    
+                    lines.forEach(line => {
+                        if (yPos > 270) {
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        doc.text(line, 20, yPos);
+                        yPos += 6;
+                    });
+                    
+                    yPos += 10;
+                };
+                
+                // Add all sections
+                const taskDescription = document.getElementById('taskDescription').innerHTML;
+                addSection('Task Description', taskDescription);
+                
+                const courseOutcomes = document.getElementById('courseOutcomes').innerHTML;
+                addSection('Course Learning Outcomes', courseOutcomes);
+                
+                const programOutcomes = document.getElementById('programOutcomes').innerHTML;
+                addSection('Program Learning Outcomes', programOutcomes);
+                
+                const assessmentDetails = document.getElementById('assessmentDetails').innerHTML;
+                addSection('Assessment Details', assessmentDetails);
+                
+                const presentationReq = document.getElementById('presentationReq').innerHTML;
+                addSection('Presentation Requirements', presentationReq);
+                
+                const assessmentCriteria = document.getElementById('assessmentCriteria').innerHTML;
+                addSection('Assessment Criteria', assessmentCriteria);
+                
+                const specificSubmission = document.getElementById('specificSubmission').innerHTML;
+                if (specificSubmission.trim()) {
+                    addSection('Specific Submission Requirements', specificSubmission);
+                }
+                
+                const submissionReq = document.getElementById('submissionReq').innerHTML;
+                addSection('Submission Instructions', submissionReq);
+                
+                // Check if AI is included
+                if (document.getElementById('includeAI').checked) {
+                    const aiStatement = document.getElementById('aiUseStatement').value;
+                    let aiContent = '';
+                    
+                    switch(aiStatement) {
+                        case 'unrestricted':
+                            aiContent = 'AI tools and their use are not restricted for this assessment task. In this assessment task, you can use AI tools to assist you. All use of AI tools and their outputs should be appropriately acknowledged and referenced.';
+                            break;
+                        case 'restricted-ways':
+                            aiContent = 'AI tools are restricted in certain ways for this assessment task. In this assessment task, you can use AI tools to support you in developing and completing your work by [insert ways students are permitted to use AI tools] only. Any use of such tools must be appropriately acknowledged and referenced.';
+                            break;
+                        case 'restricted-tools':
+                            aiContent = 'AI tools are restricted in the completion of this assessment task. In this assessment task, you can use the following AI tools only [insert name(s) of tools]. Any use of these tools must be appropriately acknowledged and referenced.';
+                            break;
+                        case 'not-permitted':
+                            aiContent = 'AI tools cannot be used in the completion of this assessment task. In this assessment task, you must not use any AI tools (excluding text editing software e.g., Grammarly) to generate any materials, content or ideas related to the task.';
+                            break;
+                    }
+                    
+                    addSection('AI - Acceptable Use', aiContent);
+                }
+                
+                // Save the PDF
+                const filename = `Assessment_Task_${taskNumber}_${courseCode}.pdf`;
+                doc.save(filename);
+                
+                // Update button
+                btn.textContent = 'Downloaded!';
+                btn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                    btn.disabled = false;
+                }, 2000);
+                
+            } catch (error) {
+                console.error('PDF generation error:', error);
+                alert('Unable to generate PDF. Please ensure all fields are filled and try again.');
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+        
+        // Copy HTML to clipboard
+        function copyHTML() {
+            const content = document.getElementById('outputContent').textContent;
+            
+            const textArea = document.createElement('textarea');
+            textArea.value = content;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            } catch (err) {
+                alert('Please select the text and copy manually (Ctrl+C or Cmd+C)');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        // Back to edit
+        function backToEdit() {
+            updateStep(2, '');
+            updateStep(1, 'active');
+            document.getElementById('editForm').style.display = 'block';
+            document.getElementById('outputSection').style.display = 'none';
+        }
+        
+        // Reset form
+        function resetForm() {
+            if (confirm('Clear all fields and start over?')) {
+                location.reload();
+            }
+        }
+        
+        // Update step
+        function updateStep(stepNum, status) {
+            const step = document.getElementById(`step${stepNum}`);
+            step.classList.remove('active', 'completed');
+            if (status) step.classList.add(status);
+        }
+        
+        // Add CSS for placeholder
+        const style = document.createElement('style');
+        style.textContent = `
+            .rich-editor[data-placeholder]:empty:before {
+                content: attr(data-placeholder);
+                color: #999;
+                position: absolute;
+                pointer-events: none;
+                white-space: pre-line;
+            }
+            
+            .rich-editor:focus[data-placeholder]:empty:before {
+                content: attr(data-placeholder);
+                color: #ccc;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Prepopulate submission requirements on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            const submissionReq = document.getElementById('submissionReq');
+            submissionReq.innerHTML = `<p><strong>Step-by-Step Submission Instructions:</strong></p>
+<ol>
+<li>Select Start assignment</li>
+<li>Select Choose File</li>
+<li>Locate and select your final completed assessment file (named as per the naming convention)</li>
+<li>Add any comments, if required</li>
+<li>Select Submit assignment</li>
+</ol>`;
+        });
+    </script>
+</body>
+</html>
