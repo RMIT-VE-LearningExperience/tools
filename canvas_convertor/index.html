@@ -914,21 +914,91 @@
             }
 
             extractUnitCode(content) {
-                const patterns = [
-                    /National\s*unit[/\s]*s?\s*code[:\s]*([A-Z0-9\s]+?)(?=National|RMIT|$)/i,
-                    /National\s*unit[/\s]*s?\s*code[^A-Z]*([A-Z]{2,}[0-9]{4,}(?:\s+[A-Z]{2,}[0-9]{4,})*)/i,
-                    /Unit\s*code[:\s]*([A-Z]{2,}[0-9]{4,})/i
-                ];
-
-                for (const pattern of patterns) {
-                    const match = content.match(pattern);
-                    if (match && match[1]) {
-                        const codes = match[1].trim().replace(/\s+/g, ' ');
-                        if (codes.match(/[A-Z]{2,}[0-9]{4,}/)) {
-                            return codes;
+                // Find where "National unit" or "unit code" appears
+                const unitCodeRegex = /National\s*unit[\/\s]*(?:code|s\s*code)/i;
+                const unitCodeMatch = content.match(unitCodeRegex);
+                
+                if (unitCodeMatch) {
+                    const startIndex = unitCodeMatch.index + unitCodeMatch[0].length;
+                    // Get the next 200 characters after "National unit code"
+                    const searchArea = content.substring(startIndex, startIndex + 200);
+                    
+                    // Look for any unit code pattern in this area
+                    // Match any sequence of 2+ letters followed by 3+ digits
+                    const codePatterns = [
+                        /^[:\s]*([A-Z]{2,}[0-9]{3,}[A-Z0-9]*)/i,  // At start with optional colon/space
+                        /([A-Z]{2,}[0-9]{3,}[A-Z0-9]*)/i,         // Anywhere in the text
+                    ];
+                    
+                    for (const pattern of codePatterns) {
+                        const match = searchArea.match(pattern);
+                        if (match && match[1]) {
+                            const code = match[1].toUpperCase().trim();
+                            
+                            // IMPORTANT: Check if this is actually a qualification code
+                            // Qualification codes typically have 5 digits after letters
+                            if (code.match(/^[A-Z]{2,}[0-9]{5}$/)) {
+                                // This is likely a qualification code, skip it
+                                continue;
+                            }
+                            
+                            // Check for multiple codes in the same area
+                            const allCodes = searchArea.match(/[A-Z]{2,}[0-9]{3,}[A-Z0-9]*/gi);
+                            if (allCodes && allCodes.length > 0) {
+                                // Filter out qualification codes (5 digits)
+                                const unitCodes = allCodes.filter(c => !c.match(/^[A-Z]{2,}[0-9]{5}$/));
+                                
+                                if (unitCodes.length > 1) {
+                                    return unitCodes.map(c => c.toUpperCase()).join(' ');
+                                } else if (unitCodes.length === 1) {
+                                    return unitCodes[0].toUpperCase();
+                                }
+                            }
+                            
+                            return code;
                         }
                     }
                 }
+                
+                // Alternative: Look for "Unit code" (without "National")
+                const simpleUnitCodeRegex = /Unit\s*code[:\s]*/i;
+                const simpleMatch = content.match(simpleUnitCodeRegex);
+                
+                if (simpleMatch) {
+                    const startIndex = simpleMatch.index + simpleMatch[0].length;
+                    const searchArea = content.substring(startIndex, startIndex + 100);
+                    
+                    const codeMatch = searchArea.match(/([A-Z]{2,}[0-9]{3,}[A-Z0-9]*)/i);
+                    if (codeMatch && codeMatch[1]) {
+                        const code = codeMatch[1].toUpperCase();
+                        // Skip if it's a qualification code
+                        if (!code.match(/^[A-Z]{2,}[0-9]{5}$/)) {
+                            return code;
+                        }
+                    }
+                }
+                
+                // Last resort: Find ANY valid unit code pattern in the entire document
+                // but only near keywords like "unit", "code", "national"
+                const lines = content.split('\n');
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (line.match(/unit\s*code/i) || (line.match(/national\s*unit/i) && i + 1 < lines.length)) {
+                        // Check this line and the next few lines
+                        for (let j = 0; j < 3 && i + j < lines.length; j++) {
+                            const checkLine = lines[i + j];
+                            const codeMatch = checkLine.match(/[A-Z]{2,}[0-9]{3,}[A-Z0-9]*/gi);
+                            if (codeMatch && codeMatch.length > 0) {
+                                // Filter out qualification codes
+                                const unitCodes = codeMatch.filter(c => !c.match(/^[A-Z]{2,}[0-9]{5}$/));
+                                if (unitCodes.length > 0) {
+                                    return unitCodes.map(c => c.toUpperCase()).join(' ');
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 return '';
             }
 
@@ -1024,7 +1094,7 @@
 
             extractTaskInstructions(content) {
                 // Look for Summary and Purpose section first
-                const summaryMatch = content.match(/Summary\s*and\s*Purpose\s*of\s*Assessment[:\s]*([^]+?)(?=\*\*Assessment\s*Instructions\*\*|\*\*What\*\*|Assessment\s*Instructions|Conditions\s*for|Equipment|Where|How|$)/i);
+                const summaryMatch = content.match(/Summary\s*and\s*Purpose\s*of\s*Assessment[:\s]*([^]+?)(?=\*\*What\*\*|What\s*\n|\nWhat\s|Upon\s*successful\s*completion|Conditions\s*for|Equipment|Where\s*\n|How\s*\n|Type\s*of\s*Product|$)/i);
                 
                 if (summaryMatch && summaryMatch[1]) {
                     let instructions = summaryMatch[1].trim();
@@ -1033,18 +1103,43 @@
                     instructions = instructions
                         .replace(/\*\*/g, '')
                         .replace(/Assessment\s*Instructions[:\s]*/i, '')
+                        .replace(/>\s*/g, '') // Remove angle brackets often used in formatting
                         .trim();
                     
+                    // If we have substantial content, return it
                     if (instructions.length > 50) {
+                        // Check if it seems cut off (ends with "to" or similar)
+                        if (instructions.match(/\b(to|is|the|will|and|or|for)\s*$/i)) {
+                            // Try to find the next sentence or paragraph
+                            const extendedMatch = content.match(/Summary\s*and\s*Purpose\s*of\s*Assessment[:\s]*([^]+?)(?=Upon\s*successful\s*completion|[-•]\s*|What\s*\n|\nWhat\s)/i);
+                            if (extendedMatch && extendedMatch[1]) {
+                                instructions = extendedMatch[1]
+                                    .replace(/\*\*/g, '')
+                                    .replace(/>\s*/g, '')
+                                    .trim();
+                            }
+                        }
                         return this.cleanText(instructions);
+                    }
+                }
+                
+                // Alternative: Look for a paragraph starting with "This assessment/task/project"
+                const thisAssessmentMatch = content.match(/This\s*(?:assessment|project|task|unit)[^.]+\.(?:[^.]+\.){0,10}/i);
+                if (thisAssessmentMatch) {
+                    let instructions = thisAssessmentMatch[0];
+                    // Make sure we get complete sentences, not cut off
+                    const sentences = instructions.split(/(?<=[.!?])\s+/);
+                    const completeSentences = sentences.filter(s => s.match(/[.!?]$/));
+                    if (completeSentences.length > 0) {
+                        return this.cleanText(completeSentences.join(' '));
                     }
                 }
                 
                 // Fallback patterns
                 const patterns = [
-                    /This\s*(?:assessment|project|task)\s*is[^.]+\.[^.]*(?:\.[^.]*)?/i,
-                    /Completing\s*this\s*(?:project|assessment|task)[^.]+(?:\.[^.]+){0,2}/i,
-                    /allows\s*you\s*to\s*demonstrate[^.]+(?:\.[^.]+){0,2}/i
+                    /This\s*(?:assessment|project|task)\s*(?:is|will|aims)[^]+?(?=Upon\s*successful|What\s|Where\s|How\s|$)/i,
+                    /The\s*(?:purpose|aim)\s*of\s*this\s*(?:assessment|task)[^]+?(?=Upon\s*successful|What\s|Where\s|How\s|$)/i,
+                    /You\s*(?:will|are\s*required\s*to)[^]+?(?=Upon\s*successful|What\s|Where\s|How\s|$)/i
                 ];
 
                 for (const pattern of patterns) {
