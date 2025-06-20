@@ -3,54 +3,95 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Canvas Tools Sitemap</title>
+  <title>Canvas Tools – CoVE</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 1rem;
-      line-height: 1.6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #e3e5e0;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
-    h1 {
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: #000054;
+      color: white;
       text-align: center;
+      padding: 40px 20px;
     }
-    ul {
-      list-style-type: none;
+
+    .header h1 {
+      font-size: 2.2rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+
+    .tools-list {
+      padding: 40px;
+    }
+
+    .tools-list ul {
+      list-style: none;
       padding: 0;
     }
-    li {
-      margin: 1rem 0;
+
+    .tools-list li {
+      margin-bottom: 30px;
     }
-    a {
-      color: #0366d6;
+
+    .tool-link {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #000054;
       text-decoration: none;
-      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
     }
-    a:hover {
-      text-decoration: underline;
+
+    .tool-link:hover {
+      color: #e61e2a;
     }
-    .description {
+
+    .tool-desc {
       font-size: 0.95rem;
       color: #555;
+      margin-left: 5px;
+    }
+
+    .footer {
+      background: #000054;
+      color: #ffffff;
+      text-align: center;
+      padding: 20px;
+      font-size: 0.95rem;
+      margin-top: auto;
+    }
+
+    .footer a {
+      color: #fac800;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
     }
   </style>
-</head>
-<body>
-
-  <h1>📘 Canvas Tools – CoVE</h1>
-  <p>Welcome! Below are the available tools for converting and generating Canvas assessment templates:</p>
-
-  <ul>
-    <li>
-      <a href="index.html">Canvas Assessment Template Converter</a>
-      <div class="description">Converts structured spreadsheets into Canvas-compatible assessment templates.</div>
-    </li>
-    <li>
-      <a href="associate-degree-converter.html">Associate Degree Canvas Assessment Generator</a>
-      <div class="description">Generates formatted Canvas assessments tailored for Associate Degree programs.</div>
-    </li>
-  </ul>
 
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
@@ -58,9 +99,32 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-
     gtag('config', 'G-1MDBG3TN2X');
   </script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Canvas Tools – CoVE</h1>
+      <p>Select a tool below to begin</p>
+    </div>
 
+    <div class="tools-list">
+      <ul>
+        <li>
+          <a class="tool-link" href="index.html">Canvas Assessment Template Converter</a>
+          <p class="tool-desc">Converts structured spreadsheets into Canvas-compatible assessment templates.</p>
+        </li>
+        <li>
+          <a class="tool-link" href="associate-degree-converter.html">Associate Degree Canvas Assessment Generator</a>
+          <p class="tool-desc">Generates formatted Canvas assessments tailored for Associate Degree programs.</p>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>Design: Learning & Teaching Innovation Team – RMIT College of Vocational Education</p>
+  </footer>
 </body>
 </html>
