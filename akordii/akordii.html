@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AKORDII HTML Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Lato', sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            background-color: #f9f9f9;
+            font-size: 14px; /* Default font size for the app */
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        textarea, input[type="text"] { /* input[type="text"] is only for the optional heading now */
+            width: 98%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+            display: block;
+            box-sizing: border-box;
+            font-family: 'Lato', sans-serif;
+        }
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        #outputHtml {
+            min-height: 200px;
+            background-color: #e9e9e9;
+            font-family: monospace;
+            font-size: 0.9em;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        .button-group {
+            margin-bottom: 20px; /* Space after the button group */
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-right: 10px;
+            margin-bottom: 10px; /* For wrapping on small screens */
+            transition: background-color 0.3s ease;
+            font-family: 'Lato', sans-serif;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:active {
+             background-color: #004085;
+        }
+        #copyBtn {
+            background-color: #28a745;
+        }
+        #copyBtn:hover {
+            background-color: #218838;
+        }
+         #copyBtn:active {
+             background-color: #1e7e34;
+         }
+        #toggleInstructionsBtn {
+            background-color: #6c757d;
+            margin-bottom: 15px;
+            display: block;
+        }
+        #toggleInstructionsBtn:hover {
+            background-color: #5a6268;
+        }
+        .instructions {
+            background-color: #eef7ff;
+            border-left: 4px solid #007bff;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+         .instructions code {
+            background-color: #dcecfc;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+         }
+         .instructions pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+         }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AKORDII HTML Generator</h1>
+
+        <button id="toggleInstructionsBtn">Show Instructions</button>
+
+        <div class="instructions" id="instructionsDiv" style="display: none;">
+            <p><strong>How to use:</strong></p>
+            <ol>
+                <li>(Optional) Enter an overall heading for the accordion section.</li>
+                <li>The font will be Lato, and the content text will be 14px (summary text slightly larger). Colors are predefined.</li>
+                <li>Paste your content into the 'Input Data' area. Format each item with the <strong>Title on the first line</strong>, and the <strong>Content on the following lines</strong>.</li>
+                <li><strong>Separate each item (title + content block) with a blank line.</strong></li>
+                <li>Click "Generate HTML".</li>
+                <li>Click "Copy to Clipboard" and paste the code into your HTML editor.</li>
+            </ol>
+             <p>Example Input Item:</p>
+             <pre><code>This is the Title for Item 1
+This is the content for item 1.
+It can have multiple lines.
+
+This is the Title for Item 2
+Just one line of content here.</code></pre>
+        </div>
+
+        <label for="headingInput">Optional Accordion Section Heading:</label>
+        <input type="text" id="headingInput" placeholder="e.g., Frequently Asked Questions">
+
+        <label for="inputData">Input Data (Title on first line, Content below, blank line between items):</label>
+        <textarea id="inputData" placeholder="Paste your accordion items here..."></textarea>
+
+        <div class="button-group">
+            <button id="generateBtn">Generate HTML</button>
+            <button id="copyBtn">Copy to Clipboard</button>
+        </div>
+
+        <label for="outputHtml">Generated HTML Code:</label>
+        <textarea id="outputHtml" readonly placeholder="Generated HTML will appear here..."></textarea>
+
+    </div>
+
+    <script>
+        const generateBtn = document.getElementById('generateBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const inputDataEl = document.getElementById('inputData');
+        const outputHtmlEl = document.getElementById('outputHtml');
+        const headingInputEl = document.getElementById('headingInput');
+        const toggleInstructionsBtn = document.getElementById('toggleInstructionsBtn');
+        const instructionsDiv = document.getElementById('instructionsDiv');
+
+        // --- Fixed Styles ---
+        const STYLES = {
+            headerFontColor: "#222160",
+            contentFontColor: "#333333",
+            headerBgColor: "#f5f5f5",
+            contentBgColor: "#FFFFFF",
+            sectionHeadingFontColor: "#000054" // For the optional H3
+        };
+
+        // --- Accordion HTML Templates ---
+        const accordionItemTemplate = (title, content) => `
+<details>
+  <summary style="cursor: pointer; font-size: 1.4rem; color: ${STYLES.headerFontColor}; font-family: Helvetica, sans-serif; background-color: ${STYLES.headerBgColor}; padding: 10px; margin-bottom: 5px;" aria-expanded="false" aria-label="Toggle details for ${title}">
+    ${title}
+  </summary>
+  <div style="font-size: 1em; color: ${STYLES.contentFontColor}; background-color: ${STYLES.contentBgColor}; padding: 10px; margin-bottom: 10px;">
+    ${content || ' '}
+  </div>
+</details>`;
+
+        const headingTemplate = (headingText) => `
+<h3 style="color: ${STYLES.sectionHeadingFontColor}; font-size: 1.5em; margin-bottom: 15px;">${headingText}</h3>
+`;
+
+        // --- Generate Function ---
+        function generateAccordion() {
+            const rawInput = inputDataEl.value.trim();
+            const headingText = headingInputEl.value.trim();
+            let generatedHtml = '';
+
+            if (headingText) {
+                generatedHtml += headingTemplate(headingText);
+            }
+
+            const itemBlocks = rawInput.split(/\n\s*\n/);
+
+            itemBlocks.forEach((block) => {
+                const lines = block.trim().split('\n');
+                if (lines.length > 0 && lines[0].trim() !== '') {
+                    const title = lines[0].trim();
+                    let content = '';
+                    if (lines.length > 1) {
+                        content = '    ' + lines.slice(1).join('\n').trim().replace(/\n/g, '<br>\n    ');
+                    } else {
+                        content = '     ';
+                    }
+                    generatedHtml += accordionItemTemplate(title, content.trim() === '' ? '     ' : content);
+                }
+            });
+
+            outputHtmlEl.value = generatedHtml.trim() ? generatedHtml.trim() : "<!-- No content generated. Please check input. -->";
+        }
+
+        // --- Copy Function ---
+        function copyToClipboard() {
+            if (!outputHtmlEl.value || outputHtmlEl.value.startsWith("<!--")) {
+                alert('Nothing to copy!');
+                return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(outputHtmlEl.value)
+                    .then(() => {
+                        const originalText = copyBtn.textContent;
+                        copyBtn.textContent = 'Copied!';
+                        setTimeout(() => { copyBtn.textContent = originalText; }, 1500);
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy text: ', err);
+                        fallbackCopy();
+                    });
+            } else {
+                fallbackCopy();
+            }
+        }
+
+        function fallbackCopy() {
+            try {
+                outputHtmlEl.select();
+                document.execCommand('copy');
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = 'Copied! (Fallback)';
+                setTimeout(() => { copyBtn.textContent = originalText; }, 1500);
+            } catch (fallbackErr) {
+                console.error('Fallback copy failed: ', fallbackErr);
+                alert('Copying failed. Please copy manually.');
+            }
+        }
+
+        // --- Toggle Instructions ---
+        function toggleInstructions() {
+            if (instructionsDiv.style.display === 'none') {
+                instructionsDiv.style.display = 'block';
+                toggleInstructionsBtn.textContent = 'Hide Instructions';
+            } else {
+                instructionsDiv.style.display = 'none';
+                toggleInstructionsBtn.textContent = 'Show Instructions';
+            }
+        }
+
+        // --- Event Listeners ---
+        generateBtn.addEventListener('click', generateAccordion);
+        copyBtn.addEventListener('click', copyToClipboard);
+        toggleInstructionsBtn.addEventListener('click', toggleInstructions);
+    </script>
+</body>
+</html>
