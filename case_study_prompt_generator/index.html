@@ -4,58 +4,225 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Case Study Prompt Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* --- General & Page Layout --- */
+        :root {
+            --primary-blue: #002366; /* Deep navy blue */
+            --accent-red: #d9534f;   /* Red for active step */
+            --accent-yellow: #f0ad4e; /* Yellow for underline */
+            --text-light: #ffffff;
+            --text-dark: #333333;
+            --bg-light: #f4f6f8;
+            --bg-white: #ffffff;
+            --border-color: #d1d5db;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
         }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        /* --- Header & Step Indicator --- */
+        .page-header {
+            background-color: var(--primary-blue);
+            color: var(--text-light);
+            padding: 2rem 2.5rem;
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: 2.25rem;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            margin: 0.25rem 0 0;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .steps-container {
+            background-color: var(--bg-white);
+            padding: 1.5rem 2.5rem;
+            border-bottom: 4px solid var(--accent-yellow);
+        }
+        
+        .steps-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary-blue);
+            opacity: 0.6;
+        }
+
+        .step.active {
+            opacity: 1;
+        }
+        
+        .step .step-number {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--primary-blue);
+            color: var(--text-light);
+            font-weight: 700;
+        }
+        
+        .step.active .step-number {
+            background-color: var(--accent-red);
+        }
+
+        /* --- Main Content & Forms --- */
+        .main-content {
+            background-color: var(--bg-white);
+            padding: 2.5rem;
+            border-radius: 0 0 0.5rem 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .form-section {
+            margin-bottom: 2.5rem;
+        }
+        
+        .form-section h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+        }
+
         .input-label {
+            display: block;
             font-weight: 500;
             color: #374151;
+            margin-bottom: 0.5rem;
         }
-        .input-field {
+
+        .input-field, textarea, select {
             width: 100%;
             padding: 0.75rem;
             border-radius: 0.5rem;
-            border: 1px solid #D1D5DB;
+            border: 1px solid var(--border-color);
             background-color: #F9FAFB;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .input-field:focus {
+
+        .input-field:focus, textarea:focus, select:focus {
             outline: none;
-            border-color: #3B82F6;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 2px rgba(0, 35, 102, 0.3);
         }
+
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+        .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+        /* Custom Radio Buttons */
+        .radio-card {
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+        .radio-card:hover {
+            border-color: var(--primary-blue);
+        }
+        .radio-card h3 { margin: 0; font-size: 1.1rem; }
+        .radio-card p { margin: 0.25rem 0 0; font-size: 0.9rem; color: #4B5563; }
+        .radio-card input[type="radio"] { display: none; }
+        .radio-card:has(:checked) {
+            background-color: #eef4ff;
+            border-color: var(--primary-blue);
+        }
+
+        /* --- Buttons & Output --- */
         .btn {
-            padding: 0.75rem 1.5rem;
+            padding: 0.8rem 1.75rem;
             border-radius: 0.5rem;
             font-weight: 600;
             cursor: pointer;
+            border: none;
+            font-size: 1.1rem;
             transition: background-color 0.2s, transform 0.1s;
         }
+        .btn:active { transform: scale(0.98); }
+
         .btn-primary {
-            background-color: #2563EB;
-            color: white;
+            background-color: var(--primary-blue);
+            color: var(--text-light);
         }
-        .btn-primary:hover {
-            background-color: #1D4ED8;
+        .btn-primary:hover { background-color: #001a4c; }
+        .btn-primary:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
         }
-        .btn:active {
-            transform: scale(0.98);
-        }
+
         .btn-secondary {
             background-color: #4B5563;
-            color: white;
+            color: var(--text-light);
         }
-        .btn-secondary:hover {
-            background-color: #374151;
-        }
+        .btn-secondary:hover { background-color: #374151; }
+        .btn-success { background-color: #16a34a; color: white; }
+
         #output-container {
             display: none;
+            margin-top: 2.5rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
         }
+        
+        #prompt-output {
+            width: 100%;
+            height: 400px;
+            background-color: var(--bg-white);
+            border: 1px solid var(--border-color);
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 768px) {
+            .grid-cols-3, .grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+            .page-header, .steps-container, .main-content {
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+            .steps-wrapper { flex-direction: column; gap: 1rem; align-items: flex-start; }
+        }
+
     </style>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
@@ -67,65 +234,84 @@
       gtag('config', 'G-1MDBG3TN2X');
     </script>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body>
 
-    <div class="container mx-auto p-4 md:p-8">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Case Study Prompt Generator</h1>
-            <p class="mt-2 text-md text-gray-600">For Tertiary Education</p>
+    <div class="container">
+        <header class="page-header">
+            <h1>Case Study Prompt Generator</h1>
+            <p>Define, Refine & Generate Case Study Prompts for Tertiary Education</p>
         </header>
 
-        <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
+        <div class="steps-container">
+            <div class="steps-wrapper">
+                <div id="step1-indicator" class="step active">
+                    <span class="step-number">1</span>
+                    <span class="step-text">Define Details</span>
+                </div>
+                <div id="step2-indicator" class="step">
+                    <span class="step-number">2</span>
+                    <span class="step-text">Generate Prompt</span>
+                </div>
+                <div id="step3-indicator" class="step">
+                    <span class="step-number">3</span>
+                    <span class="step-text">Copy to LLM</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
             
-            <!-- Step 1: Complexity -->
-            <div class="mb-8">
-                <h2 class="text-xl font-bold mb-4 text-gray-800">Step 1: Select Complexity Level</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <label class="p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500">
-                        <input type="radio" name="complexity" value="Simple" class="sr-only" checked>
-                        <h3 class="font-bold text-lg text-gray-900">Simple</h3>
-                        <p class="text-sm text-gray-600 mt-1">1-2 paragraphs, basic scenario, 2-3 key decision points.</p>
+            <div class="form-section">
+                <h2 class="form-section-title">Step 1: Core Details</h2>
+                <div class="grid grid-cols-3">
+                    <label class="radio-card">
+                        <input type="radio" name="complexity" value="Simple" checked>
+                        <h3>Simple</h3>
+                        <p>1-2 paragraphs, basic scenario, 2-3 key decision points.</p>
                     </label>
-                    <label class="p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500">
-                        <input type="radio" name="complexity" value="Moderate" class="sr-only">
-                        <h3 class="font-bold text-lg text-gray-900">Moderate</h3>
-                        <p class="text-sm text-gray-600 mt-1">3-5 paragraphs, multiple stakeholders, background context, 4-6 decision points.</p>
+                    <label class="radio-card">
+                        <input type="radio" name="complexity" value="Moderate">
+                        <h3>Moderate</h3>
+                        <p>3-5 paragraphs, multiple stakeholders, 4-6 decision points.</p>
                     </label>
-                    <label class="p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500">
-                        <input type="radio" name="complexity" value="Complex" class="sr-only">
-                        <h3 class="font-bold text-lg text-gray-900">Complex</h3>
-                        <p class="text-sm text-gray-600 mt-1">6+ paragraphs, detailed background, competing priorities, 6+ decision points.</p>
+                    <label class="radio-card">
+                        <input type="radio" name="complexity" value="Complex">
+                        <h3>Complex</h3>
+                        <p>6+ paragraphs, detailed background, 6+ decision points.</p>
                     </label>
+                </div>
+                 <div style="margin-top: 1.5rem;">
+                    <label for="core-topic" class="input-label">Primary Subject / Industry / Scenario</label>
+                    <input type="text" id="core-topic" class="input-field" placeholder="e.g., 'A non-profit managing a fundraising campaign', 'A tech startup facing a data breach'">
                 </div>
             </div>
 
-            <!-- Step 2: Learning Framework -->
-            <div class="mb-8">
-                <h2 class="text-xl font-bold mb-4 text-gray-800">Step 2: Define Learning Framework (Optional)</h2>
-                <p class="text-sm text-gray-600 mb-6">Provide as much detail as you can. You can leave any field blank.</p>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            <div class="form-section">
+                <h2 class="form-section-title">Step 2: Learning Framework (Optional)</h2>
+                <p style="margin-top: -0.5rem; margin-bottom: 1.5rem; color: #4B5563;">Provide as much detail as you can. You can leave any field blank.</p>
+                <div class="grid grid-cols-2">
                     <div>
-                        <label for="learning-objectives" class="block mb-2 input-label">1. Specific learning objectives this case study should address</label>
-                        <textarea id="learning-objectives" class="input-field" rows="3" placeholder="e.g., 'Analyze ethical dilemmas in project management.'"></textarea>
+                        <label for="learning-objectives" class="input-label">1. Specific learning objectives</label>
+                        <textarea id="learning-objectives" rows="3" class="input-field" placeholder="e.g., 'Analyze ethical dilemmas in project management.'"></textarea>
                     </div>
                     <div>
-                        <label for="performance-criteria" class="block mb-2 input-label">2. Performance criteria students should demonstrate</label>
-                        <textarea id="performance-criteria" class="input-field" rows="3" placeholder="e.g., 'Evaluate stakeholder needs and prioritize actions.'"></textarea>
+                        <label for="performance-criteria" class="input-label">2. Performance criteria to demonstrate</label>
+                        <textarea id="performance-criteria" rows="3" class="input-field" placeholder="e.g., 'Evaluate stakeholder needs and prioritize actions.'"></textarea>
                     </div>
                     <div>
-                        <label for="knowledge-evidence" class="block mb-2 input-label">3. Knowledge evidence to be reinforced or assessed</label>
-                        <textarea id="knowledge-evidence" class="input-field" rows="3" placeholder="e.g., 'Application of SWOT analysis.'"></textarea>
+                        <label for="knowledge-evidence" class="input-label">3. Knowledge evidence to be assessed</label>
+                        <textarea id="knowledge-evidence" rows="3" class="input-field" placeholder="e.g., 'Application of SWOT analysis.'"></textarea>
                     </div>
                     <div>
-                        <label for="performance-evidence" class="block mb-2 input-label">4. Performance evidence or practical skills to demonstrate</label>
-                        <textarea id="performance-evidence" class="input-field" rows="3" placeholder="e.g., 'Draft a professional email to a client.'"></textarea>
+                        <label for="performance-evidence" class="input-label">4. Practical skills to demonstrate</label>
+                        <textarea id="performance-evidence" rows="3" class="input-field" placeholder="e.g., 'Draft a professional email to a client.'"></textarea>
                     </div>
                     <div>
-                        <label for="subject-matter" class="block mb-2 input-label">5. Specific subject matter, unit content, or assessment requirements</label>
-                        <textarea id="subject-matter" class="input-field" rows="3" placeholder="e.g., 'Aligns with Unit BSBCRT511, Assessment Task 2.'"></textarea>
+                        <label for="subject-matter" class="input-label">5. Unit content or assessment context</label>
+                        <textarea id="subject-matter" rows="3" class="input-field" placeholder="e.g., 'Aligns with Unit BSBCRT511, Assessment Task 2.'"></textarea>
                     </div>
                     <div>
-                        <label for="tertiary-level" class="block mb-2 input-label">6. Tertiary education level</label>
+                        <label for="tertiary-level" class="input-label">6. Tertiary education level</label>
                         <select id="tertiary-level" class="input-field">
                             <option value="">Select a level (optional)</option>
                             <option value="Certificate III">Certificate III</option>
@@ -143,36 +329,44 @@
                 </div>
             </div>
 
-            <!-- Generate Button -->
-            <div class="text-center mt-8">
-                <button id="generate-btn" class="btn btn-primary text-lg" onclick="generatePrompt()">
+            <div style="text-align: center; margin-top: 2rem;">
+                <button id="generate-btn" class="btn btn-primary" onclick="generatePrompt()">
                     Generate Case Study Prompt
                 </button>
             </div>
 
-            <!-- Output Area -->
-            <div id="output-container" class="mt-10 pt-6 border-t border-gray-200">
-                <h2 class="text-xl font-bold mb-4 text-gray-800">Your Generated Prompt</h2>
-                <p class="text-sm text-gray-600 mb-4">Copy the prompt below and paste it into your preferred Large Language Model (LLM).</p>
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <textarea id="prompt-output" readonly class="w-full h-96 p-4 bg-white border border-gray-300 rounded-md font-mono text-sm"></textarea>
+            <div id="output-container">
+                <h2 class="form-section-title">Your Generated Prompt</h2>
+                <p style="margin-top: -0.5rem; margin-bottom: 1rem; color: #4B5563;">Copy the prompt below and paste it into your preferred Large Language Model (LLM).</p>
+                <div style="background-color: #f8f9fa; padding: 1rem; border-radius: 0.5rem;">
+                    <textarea id="prompt-output" readonly></textarea>
                 </div>
-                <div class="text-center mt-4">
+                <div style="text-align: center; margin-top: 1.5rem;">
                     <button id="copy-btn" class="btn btn-secondary" onclick="copyToClipboard()">
                         Copy to Clipboard
                     </button>
                 </div>
             </div>
-
         </div>
     </div>
 
     <script>
-        // --- SCRIPT FOR GENERATING AND COPYING THE PROMPT ---
+        function updateStepIndicator(activeStep) {
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+            if (activeStep <= 3) {
+                document.getElementById(`step${activeStep}-indicator`).classList.add('active');
+            }
+        }
 
         function generatePrompt() {
-            // Get all the values from the form fields
+            const generateBtn = document.getElementById('generate-btn');
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'Generating...';
+            
+            updateStepIndicator(2);
+
             const complexity = document.querySelector('input[name="complexity"]:checked').value;
+            const coreTopic = document.getElementById('core-topic').value.trim();
             const learningObjectives = document.getElementById('learning-objectives').value.trim();
             const performanceCriteria = document.getElementById('performance-criteria').value.trim();
             const knowledgeEvidence = document.getElementById('knowledge-evidence').value.trim();
@@ -180,12 +374,11 @@
             const subjectMatter = document.getElementById('subject-matter').value.trim();
             const tertiaryLevel = document.getElementById('tertiary-level').value;
 
-            // Start building the prompt string
             let prompt = `**Your Role**
-You are an expert educational case study developer specializing in creating realistic, engaging, and pedagogically sound case studies for tertiary education. Your mission is to create a case study that bridges theory and practice, helping students apply their learning in realistic professional scenarios.
+You are an expert curriculum designer and case study developer specializing in creating realistic, engaging, and pedagogically sound case studies for tertiary education. Your work is grounded in principles like authentic assessment, helping students bridge theory and practice.
 
 **Task**
-Generate a complete case study based on the following specifications.
+Generate a complete case study about **"${coreTopic || 'a relevant professional scenario'}"** based on the following specifications.
 
 ---
 
@@ -198,7 +391,6 @@ Generate a complete case study based on the following specifications.
 ${tertiaryLevel ? `* ${tertiaryLevel}` : '* Not specified'}
 `;
 
-            // Conditionally add framework details if they exist
             let frameworkDetails = '';
             if (learningObjectives) frameworkDetails += `\n**Learning Objectives:**\n- ${learningObjectives.replace(/\n/g, '\n- ')}\n`;
             if (performanceCriteria) frameworkDetails += `\n**Performance Criteria:**\n- ${performanceCriteria.replace(/\n/g, '\n- ')}\n`;
@@ -212,7 +404,6 @@ ${tertiaryLevel ? `* ${tertiaryLevel}` : '* Not specified'}
 ${frameworkDetails}`;
             }
 
-            // Add the structure and instructions
             prompt += `
 ---
 
@@ -226,17 +417,18 @@ Please create the case study with the following components:
 4.  **The Situation:** The current challenge or opportunity.
 5.  **Key Characters:** Relevant personas with motivations.
 6.  **Decision Points:** Clear questions requiring analysis and action.
-7.  **Additional Information (Optional):** Include any necessary data, documents, or resources.
+7.  **Additional Information (Optional):** Any necessary data, documents, or resources.
 
 ---
 
 ### 3. Quality and Content Guidelines
 
-* **Authenticity:** Base the scenario on realistic industry situations.
-* **Relevance:** Directly connect the case to the provided learning framework.
-* **Engaging Narrative:** Create a compelling story that motivates student analysis.
-* **Complexity:** Ensure the scenario matches the requested complexity level.
-* **Inclusivity:** Use diverse characters and contexts, avoiding stereotypes.
+*   **Authenticity:** Base the scenario on realistic industry situations.
+*   **Relevance:** Directly connect the case to the provided learning framework.
+*   **Engaging Narrative:** Create a compelling story that motivates student analysis.
+*   **Complexity:** Ensure the scenario matches the requested complexity level.
+*   **Inclusivity:** Use diverse characters and contexts, avoiding stereotypes.
+*   **IMPORTANT:** Do not resolve the case study's central conflict or provide a 'correct' answer. The narrative must end at the final decision point, leaving the resolution open for student analysis.
 
 ---
 
@@ -244,42 +436,46 @@ Please create the case study with the following components:
 
 After the case study, provide 3-6 critical thinking discussion questions that align with the learning objectives and encourage students to consider multiple perspectives and long-term implications.
 `;
-
-            // Display the output section and populate the textarea
-            const outputContainer = document.getElementById('output-container');
-            const promptOutput = document.getElementById('prompt-output');
             
-            promptOutput.value = prompt;
-            outputContainer.style.display = 'block';
+            setTimeout(() => { // Simulate generation time and allow UI to update
+                const outputContainer = document.getElementById('output-container');
+                const promptOutput = document.getElementById('prompt-output');
+                
+                promptOutput.value = prompt;
+                outputContainer.style.display = 'block';
 
-            // Scroll to the output
-            outputContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate Case Study Prompt';
+                
+                updateStepIndicator(3);
+
+                outputContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 500);
         }
 
-        function copyToClipboard() {
+        async function copyToClipboard() {
             const textarea = document.getElementById('prompt-output');
             const copyBtn = document.getElementById('copy-btn');
             
-            // For mobile compatibility
-            textarea.select();
-            textarea.setSelectionRange(0, 99999); // For mobile devices
+            if (!navigator.clipboard) {
+                copyBtn.textContent = 'Copy Not Supported';
+                return;
+            }
 
             try {
-                // Use the modern clipboard API if available, otherwise fall back
-                document.execCommand('copy');
+                await navigator.clipboard.writeText(textarea.value);
                 copyBtn.textContent = 'Copied!';
                 copyBtn.classList.remove('btn-secondary');
-                copyBtn.classList.add('bg-green-600', 'text-white');
+                copyBtn.classList.add('btn-success');
 
                 setTimeout(() => {
                     copyBtn.textContent = 'Copy to Clipboard';
-                    copyBtn.classList.remove('bg-green-600');
+                    copyBtn.classList.remove('btn-success');
                     copyBtn.classList.add('btn-secondary');
                 }, 2000);
-
             } catch (err) {
-                console.error('Fallback: Oops, unable to copy', err);
-                copyBtn.textContent = 'Error';
+                console.error('Failed to copy: ', err);
+                copyBtn.textContent = 'Copy Failed';
             }
         }
     </script>
