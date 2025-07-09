@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RMIT AI Tools Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f3f4f6;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            max-width: 1200px;
+            margin: 0 auto;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Header matching transcript generator */
+        .header {
+            background: #000054;
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        /* Table container - now with grey background */
+        .content-wrapper {
+            background: #f3f4f6;
+            padding: 40px;
+        }
+        
+        /* Section containers */
+        .section-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .section-container.free-tools {
+            background: #f9fafb;
+        }
+        
+        /* Section headers */
+        .section-header {
+            background: white;
+            color: #111827;
+            padding: 20px 30px;
+            font-weight: 700;
+            font-size: 1.2em;
+            border-bottom: 3px solid #fac800;
+        }
+        
+        .section-container.free-tools .section-header {
+            background: #f9fafb;
+        }
+        
+        /* Table styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #f9fafb;
+            color: #111827;
+            padding: 15px 20px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #e5e7eb;
+            font-size: 0.95em;
+        }
+        
+        .section-container.free-tools th {
+            background: #f3f4f6;
+        }
+        
+        td {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: top;
+            background: white;
+        }
+        
+        .section-container.free-tools td {
+            background: #f9fafb;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover td {
+            background-color: #f9fafb;
+        }
+        
+        .section-container.free-tools tr:hover td {
+            background-color: #f3f4f6;
+        }
+        
+        /* Tool name styling */
+        .tool-name {
+            font-weight: 700;
+            color: #000054;
+            font-size: 1.1em;
+        }
+        
+        /* Classification text - no badges, just RMIT colors */
+        .classification {
+            color: #000054;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+        
+        /* Features list */
+        .features-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            color: #4b5563;
+            line-height: 1.8;
+        }
+        
+        .features-list li {
+            padding: 3px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .features-list li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #9ca3af;
+        }
+        
+        /* Access buttons matching transcript generator */
+        .access-link {
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .access-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.8em;
+            font-weight: 600;
+            background-color: #e61e2a;
+            color: white;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-align: center;
+            line-height: 1.3;
+            white-space: nowrap;
+        }
+        
+        .access-badge:hover {
+            background-color: #c51921;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(230, 30, 42, 0.3);
+        }
+        
+        .access-badge:active {
+            transform: translateY(0);
+        }
+        
+        .access-badge.standard {
+            background-color: #4b5563;
+        }
+        
+        .access-badge.standard:hover {
+            background-color: #374151;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .content-wrapper {
+                padding: 20px;
+            }
+            
+            .section-header {
+                padding: 15px 20px;
+                font-size: 1.1em;
+            }
+            
+            /* Hide table headers on mobile */
+            thead {
+                display: none;
+            }
+            
+            /* Convert table rows to cards */
+            tr {
+                display: block;
+                margin-bottom: 20px;
+                background-color: white;
+                border-radius: 12px;
+                padding: 20px;
+                border: 1px solid #e5e7eb;
+            }
+            
+            .section-container.free-tools tr {
+                background-color: #f9fafb;
+            }
+            
+            td {
+                display: block;
+                padding: 10px 0;
+                border-bottom: none;
+                background: transparent !important;
+            }
+            
+            /* Add labels before content on mobile */
+            td:before {
+                content: attr(data-label);
+                font-weight: 600;
+                display: block;
+                margin-bottom: 5px;
+                color: #374151;
+                font-size: 0.9em;
+            }
+            
+            /* Special styling for tool name on mobile */
+            td:first-child {
+                border-bottom: 2px solid #e5e7eb;
+                margin-bottom: 15px;
+                padding-bottom: 15px;
+            }
+            
+            td:first-child:before {
+                display: none;
+            }
+            
+            .tool-name {
+                font-size: 1.3em;
+            }
+            
+            /* Stack access badges */
+            .access-badge {
+                display: inline-block;
+                width: auto;
+                white-space: normal;
+            }
+        }
+        
+        /* Credit footer */
+        .credit {
+            background: #000054;
+            color: white;
+            font-size: 0.85em;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>AI Tools for Content Creation</h1>
+            <p class="subtitle">CoVE Resource Guide</p>
+        </div>
+        
+        <!-- Content wrapper with grey background -->
+        <div class="content-wrapper">
+            <!-- RMIT Supported Tools Section -->
+            <div class="section-container">
+                <div class="section-header">RMIT supported tools to create your content</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tool Name</th>
+                            <th>Classification</th>
+                            <th>Key Features</th>
+                            <th>Use Case</th>
+                            <th>Access & Support</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td data-label="Tool Name">
+                                <span class="tool-name">Copilot (Enterprise Data Protection)</span>
+                            </td>
+                            <td data-label="Classification">
+                                <span class="classification">Primary Content Creator</span>
+                            </td>
+                            <td data-label="Key Features">
+                                <ul class="features-list">
+                                    <li>IP-secure content generation</li>
+                                    <li>Text prompts</li>
+                                    <li>Document processing</li>
+                                </ul>
+                            </td>
+                            <td data-label="Use Case">
+                                Use Copilot as your go-to assistant for streamlining and enhancing all aspects of main content creation in your course or project.
+                            </td>
+                            <td data-label="Access & Support">
+                                <a href="https://m365.cloud.microsoft/chat/?auth=2" target="_blank" class="access-link">
+                                    <span class="access-badge">Single Sign-on<br>RMIT Supported</span>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td data-label="Tool Name">
+                                <span class="tool-name">VAL (In-house AI)</span>
+                            </td>
+                            <td data-label="Classification">
+                                <span class="classification">Primary Content Creator</span>
+                            </td>
+                            <td data-label="Key Features">
+                                <ul class="features-list">
+                                    <li>IP-secure content generation</li>
+                                    <li>Text prompts</li>
+                                    <li>Document processing</li>
+                                </ul>
+                            </td>
+                            <td data-label="Use Case">
+                                Leverage VAL to gather insights, create and structure content in your course or project.
+                            </td>
+                            <td data-label="Access & Support">
+                                <a href="https://val.rmit.edu.au/?" target="_blank" class="access-link">
+                                    <span class="access-badge">Single Sign-on<br>RMIT Supported</span>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td data-label="Tool Name">
+                                <span class="tool-name">Adobe Express</span>
+                            </td>
+                            <td data-label="Classification">
+                                <span class="classification">Multimedia</span>
+                            </td>
+                            <td data-label="Key Features">
+                                <ul class="features-list">
+                                    <li>Safe & Responsible image generation</li>
+                                    <li>Animations</li>
+                                    <li>Branded presentations</li>
+                                </ul>
+                            </td>
+                            <td data-label="Use Case">
+                                Create welcome videos, generate and edit images, and build AI-enhanced RMIT-branded templates.
+                            </td>
+                            <td data-label="Access & Support">
+                                <a href="https://express.adobe.com" target="_blank" class="access-link">
+                                    <span class="access-badge">Single Sign-on<br>RMIT Supported</span>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td data-label="Tool Name">
+                                <span class="tool-name">Clipchamp</span>
+                            </td>
+                            <td data-label="Classification">
+                                <span class="classification">Video Production</span>
+                            </td>
+                            <td data-label="Key Features">
+                                <ul class="features-list">
+                                    <li>Text-to-speech</li>
+                                    <li>Video creation</li>
+                                    <li>Multi-language audio</li>
+                                </ul>
+                            </td>
+                            <td data-label="Use Case">
+                                Convert scripts into videos, create module introductions, add narration and captions.
+                            </td>
+                            <td data-label="Access & Support">
+                                <a href="https://m365.cloud.microsoft/launch/Clipchamp/?" target="_blank" class="access-link">
+                                    <span class="access-badge">Single Sign-on<br>RMIT Supported</span>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td data-label="Tool Name">
+                                <span class="tool-name">Quitch</span>
+                            </td>
+                            <td data-label="Classification">
+                                <span class="classification">Assessment Supplement</span>
+                            </td>
+                            <td data-label="Key Features">
+                                <ul class="features-list">
+                                    <li>Quiz generation</li>
+                                    <li>Gamified learning</li>
+                                    <li>Engagement analytics</li>
+                                </ul>
+                            </td>
+                            <td data-label="Use Case">
+                                AFTER main content creation to add formative assessments, knowledge checks, interactive elements.
+                            </td>
+                            <td data-label="Access & Support">
+                                <a href="https://rmiteduau.sharepoint.com/sites/HowtoQuitch" target="_blank" class="access-link">
+                                    <span class="access-badge">RMIT Supported</span>
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Free Tools Section -->
+            <div class="section-container free-tools">
+                <div class="section-header">Free tools to enhance your content</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tool Name</th>
+                            <th>Classification</th>
+                            <th>Key Features</th>
+                            <th>Use Case</th>
+                            <th>Access & Support</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td data-label="Tool Name">
+                                <span class="tool-name">Napkin (Free tier)</span>
+                            </td>
+                            <td data-label="Classification">
+                                <span class="classification">Visual Enhancement</span>
+                            </td>
+                            <td data-label="Key Features">
+                                <ul class="features-list">
+                                    <li>Text-to-visual (diagrams & infographics)</li>
+                                    <li>Brand customisation</li>
+                                </ul>
+                            </td>
+                            <td data-label="Use Case">
+                                AFTER text creation to convert content into flowcharts, visual rubrics, process diagrams, course overviews.
+                            </td>
+                            <td data-label="Access & Support">
+                                <a href="https://napkin.ai" target="_blank" class="access-link">
+                                    <span class="access-badge standard">Standard login</span>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td data-label="Tool Name">
+                                <span class="tool-name">Perplexity (Free tier)</span>
+                            </td>
+                            <td data-label="Classification">
+                                <span class="classification">Research & Verification</span>
+                            </td>
+                            <td data-label="Key Features">
+                                <ul class="features-list">
+                                    <li>Real-time information search (Google but better)</li>
+                                </ul>
+                            </td>
+                            <td data-label="Use Case">
+                                BEFORE content creation to gather industry information, verify technical accuracy, find current examples.
+                            </td>
+                            <td data-label="Access & Support">
+                                <a href="https://perplexity.ai" target="_blank" class="access-link">
+                                    <span class="access-badge standard">Standard login</span>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td data-label="Tool Name">
+                                <span class="tool-name">ChatGPT (Free tier)</span>
+                            </td>
+                            <td data-label="Classification">
+                                <span class="classification">Primary Alternative</span>
+                            </td>
+                            <td data-label="Key Features">
+                                <ul class="features-list">
+                                    <li>Creative brainstorming</li>
+                                </ul>
+                            </td>
+                            <td data-label="Use Case">
+                                Explore multiple creative approaches, generate story ideas, develop engaging scenarios.
+                            </td>
+                            <td data-label="Access & Support">
+                                <a href="https://chat.openai.com" target="_blank" class="access-link">
+                                    <span class="access-badge standard">Standard login</span>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td data-label="Tool Name">
+                                <span class="tool-name">Claude (Free tier)</span>
+                            </td>
+                            <td data-label="Classification">
+                                <span class="classification">Complex Analysis Specialist</span>
+                            </td>
+                            <td data-label="Key Features">
+                                <ul class="features-list">
+                                    <li>Superior document handling</li>
+                                    <li>Detailed analysis</li>
+                                </ul>
+                            </td>
+                            <td data-label="Use Case">
+                                Create nuanced content through balanced, thoughtful responses that consider multiple perspectives.
+                            </td>
+                            <td data-label="Access & Support">
+                                <a href="https://claude.ai" target="_blank" class="access-link">
+                                    <span class="access-badge standard">Standard login</span>
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Credit footer -->
+        <div class="credit">
+            Learning & Teaching Innovation Team - RMIT College of Vocational Education
+        </div>
+    </div>
+</body>
+</html>
