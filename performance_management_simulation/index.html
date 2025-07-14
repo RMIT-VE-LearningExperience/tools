@@ -1,0 +1,787 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Management Simulation</title>
+    <style>
+        /* General Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #fdecdc 0%, #f0d0b0 100%); /* Light, warm gradient */
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #b04a3f; /* Dark red */
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .company-logo {
+            width: 80px;
+            height: 80px;
+            background: #b04a3f; /* Dark red */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 24px;
+            margin: 0 auto 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        /* Scenario Box */
+        .scenario-box {
+            background: #fdf5ec; /* Lighter version of fdecdc */
+            border-left: 5px solid #b04a3f; /* Dark red */
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .scenario-box h3 {
+            color: #b04a3f; /* Dark red */
+            margin-bottom: 10px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            background: #fdf5ec; /* Lighter version of fdecdc */
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            color: #555;
+        }
+
+        .tab.active {
+            background: #b04a3f; /* Dark red */
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .tab:hover:not(.active), .tab:focus:not(.active) {
+            background: #fae0d0; /* Slightly darker light red */
+            transform: translateY(-1px);
+            outline: 2px solid #b04a3f; /* For keyboard navigation */
+            outline-offset: -2px;
+        }
+         
+        .tab.active:hover, .tab.active:focus {
+            background: #9d3f35; /* Darker red for active hover */
+            outline: 2px solid white; /* For keyboard navigation on active tab */
+            outline-offset: -2px;
+        }
+
+        .question-counter {
+            float: right;
+            background: #fdecdc; /* Light red */
+            color: #b04a3f; /* Dark red */
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .tab.active .question-counter {
+            background: #fdecdc;
+            color: #b04a3f;
+        }
+
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #b04a3f; /* Dark red */
+            box-shadow: 0 0 0 3px rgba(176, 74, 63, 0.2); /* Dark red with transparency */
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* SMART Goals Grid */
+        .smart-goals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Adjusted min-width for better fit */
+            gap: 20px;
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+
+        .smart-card {
+            background: linear-gradient(135deg, #fdf5ec, #fae0d0); /* Gradient with light red shades */
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #f0d0b0; /* Border with warm tone */
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .smart-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .smart-card h4 {
+            color: #b04a3f; /* Dark red */
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        /* Buttons */
+        .btn {
+            background: #b04a3f; /* Dark red */
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin-top: 10px; /* Space from form fields */
+        }
+
+        .btn:hover, .btn:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(0,0,0,0.3);
+            background: #9d3f35; /* Darker red on hover/focus */
+            outline: none; /* Remove default focus outline as we have box-shadow */
+        }
+
+        .btn-secondary {
+            background: #6c757d; /* Keep grey for secondary for contrast */
+            margin-right: 10px;
+        }
+
+        .btn-secondary:hover, .btn-secondary:focus {
+            background: #5a6268;
+            box-shadow: 0 7px 20px rgba(0,0,0,0.3);
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f0d0b0; /* Warm background for progress bar */
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #b04a3f; /* Dark red for fill */
+            transition: width 0.5s ease;
+        }
+
+        /* Summary Section */
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .summary-card h3 {
+            color: #b04a3f; /* Dark red */
+            margin-bottom: 15px;
+        }
+
+        .summary-card ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+
+        .summary-card li {
+            margin-bottom: 8px;
+        }
+
+        .highlight {
+            background: #fff8e1; /* Even lighter warm tone */
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #f7b32b; /* A complementary highlight color */
+            margin: 15px 0;
+        }
+
+        .success-message {
+            background: #e6ffed; /* Light green */
+            color: #1a6b32; /* Darker green */
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #28a745; /* Green */
+            margin: 15px 0;
+            font-weight: 500;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                padding: 15px;
+            }
+
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .smart-goals-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .btn {
+                width: 100%;
+                margin-top: 15px;
+            }
+
+            .btn-secondary {
+                margin-right: 0;
+                margin-bottom: 10px; /* Stack buttons on small screens */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header" role="banner">
+            <div class="company-logo">KBWC</div>
+            <h1>Performance Management Simulation</h1>
+            <p>Navigate through a complete performance management cycle as a new supervisor at Kangaroo Bottled Water Company</p>
+        </header>
+
+        <section class="scenario-box" aria-labelledby="scenarioHeading">
+            <h3 id="scenarioHeading">🎯 Your Role & Scenario</h3>
+            <p><strong>Congratulations!</strong> You've been promoted to supervisor of the new KBWC distribution centre on the Gold Coast. Your first task is to establish performance management processes for your team. Work through this simulation to develop essential skills in self-evaluation, performance standards, and goal setting.</p>
+        </section>
+
+        <div class="progress-bar" role="progressbar" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-fill" id="progressFill" style="width: 33%"></div>
+        </div>
+
+        <nav class="tabs" role="tablist" aria-label="Performance Management Steps">
+            <button class="tab active" role="tab" id="tab-0" aria-controls="tab0" aria-selected="true" onclick="showTab(0)" onkeydown="handleTabKeyDown(event, 0)">
+                Step 1: Self-Evaluation
+                <span class="question-counter">5 Questions</span>
+            </button>
+            <button class="tab" role="tab" id="tab-1" aria-controls="tab1" aria-selected="false" onclick="showTab(1)" onkeydown="handleTabKeyDown(event, 1)">
+                Step 2: Performance Standards
+                <span class="question-counter">5 Areas</span>
+            </button>
+            <button class="tab" role="tab" id="tab-2" aria-controls="tab2" aria-selected="false" onclick="showTab(2)" onkeydown="handleTabKeyDown(event, 2)">
+                Step 3: SMART Goals
+                <span class="question-counter">3 Goals</span>
+            </button>
+        </nav>
+
+        <section class="tab-content active" id="tab0" role="tabpanel" aria-labelledby="tab-0">
+            <h2>🪞 Self-Evaluation: Know Yourself First</h2>
+            <p>Before managing others, understand your own strengths and development areas. Complete this self-evaluation as if you're preparing for your new supervisory role.</p>
+            
+            <div class="form-group">
+                <label for="jobDescription">Do you have a job description or recruitment information for your new role? If so, describe the key responsibilities:</label>
+                <textarea id="jobDescription" placeholder="e.g., Supervise 15 staff members, oversee daily operations, ensure safety compliance, manage inventory levels..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="enjoyWork">What do you enjoy most about work/study? (Think about aspects that energize you)</label>
+                <textarea id="enjoyWork" placeholder="Consider: problem-solving, teamwork, leadership opportunities, learning new skills..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="challenges">What do you find most challenging about work/study? (Be honest - this helps identify development areas)</label>
+                <textarea id="challenges" placeholder="Consider: time management, difficult conversations, technical skills, public speaking..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="careerGoals">What are your career goals? (Where do you see yourself in 2-5 years?)</label>
+                <textarea id="careerGoals" placeholder="e.g., Regional manager, specialized expertise, own business, work-life balance..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="developmentNeeds">What do you need to do to work towards these goals? What support do you need?</label>
+                <textarea id="developmentNeeds" placeholder="e.g., Leadership training, mentoring, project management certification, public speaking practice..."></textarea>
+            </div>
+
+            <button type="button" class="btn" onclick="saveEvaluation()">Complete Self-Evaluation</button>
+        </section>
+
+        <section class="tab-content" id="tab1" role="tabpanel" aria-labelledby="tab-1" hidden>
+            <h2>📊 Performance Standards: Set Clear Expectations</h2>
+            <p>As a supervisor, you need to establish clear performance standards. Define what success looks like for your distribution centre team.</p>
+            
+            <div class="highlight">
+                <strong>Context:</strong> A distribution centre receives products from manufacturers, stores them, and ships them to retailers or customers. Key activities include receiving, warehousing, order picking, packing, and shipping.
+            </div>
+
+            <div class="form-group">
+                <label for="mainTasks">What needs to be done and achieved? (Main tasks, projects, or deliverables)</label>
+                <textarea id="mainTasks" placeholder="e.g., Process 500 orders daily, maintain 99.5% accuracy rate, ensure zero safety incidents, complete quarterly inventory audits..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="workBehaviour">How should work be done? (Expected behaviors and work methods)</label>
+                <textarea id="workBehaviour" placeholder="e.g., Collaborate effectively with team members, follow safety protocols, communicate proactively with customers, maintain organized work areas..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="supportRequired">What support is required? (Skills, training, resources needed)</label>
+                <textarea id="supportRequired" placeholder="e.g., Forklift certification, WHS training, customer service skills, inventory management systems training..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="goodPerformance">What does good performance look like? (Specific observable indicators)</label>
+                <textarea id="goodPerformance" placeholder="e.g., Orders processed within 2 hours, zero customer complaints about damaged goods, 100% attendance at safety meetings..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="reviewProcess">How and when will performance be reviewed? (Feedback and review schedule)</label>
+                <textarea id="reviewProcess" placeholder="e.g., Daily huddles for immediate feedback, monthly one-on-ones, quarterly formal reviews, annual performance planning..."></textarea>
+            </div>
+
+            <button type="button" class="btn" onclick="saveStandards()">Set Performance Standards</button>
+        </section>
+
+        <section class="tab-content" id="tab2" role="tabpanel" aria-labelledby="tab-2" hidden>
+            <h2>🎯 SMART Goals: Your Development Plan</h2>
+            <p>Create three SMART goals that will help you succeed in your new supervisory role. Consider your self-evaluation and the performance standards you've set.</p>
+            
+            <div class="smart-goals-grid">
+                <div class="smart-card">
+                    <h4>S - Specific</h4>
+                    <p>Clearly defined outcome</p>
+                </div>
+                <div class="smart-card">
+                    <h4>M - Measurable</h4>
+                    <p>Quantifiable success metrics</p>
+                </div>
+                <div class="smart-card">
+                    <h4>A - Achievable</h4>
+                    <p>Realistic and attainable</p>
+                </div>
+                <div class="smart-card">
+                    <h4>R - Relevant</h4>
+                    <p>Aligned with role and career goals</p>
+                </div>
+                <div class="smart-card">
+                    <h4>T - Time-bound</h4>
+                    <p>Clear deadline or timeframe</p>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="goal1">SMART Goal 1: Leadership Development</label>
+                <textarea id="goal1" placeholder="e.g., Complete a certified leadership program within 6 months, achieving 85% or higher, to improve team management skills and reduce staff turnover by 20%"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="goal2">SMART Goal 2: Operational Excellence</label>
+                <textarea id="goal2" placeholder="e.g., Implement a new inventory management system within 90 days, reducing stock errors by 50% and improving order processing speed by 25%"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="goal3">SMART Goal 3: Personal/Professional Development</label>
+                <textarea id="goal3" placeholder="e.g., Attend 2 industry conferences this year and network with 20 professionals to stay current with distribution trends and build career opportunities"></textarea>
+            </div>
+
+            <button type="button" class="btn" onclick="saveGoals()">Create SMART Goals</button>
+            <button type="button" class="btn btn-secondary" onclick="generateSummary()">Generate Action Plan</button>
+        </section>
+
+        <section id="summarySection" style="display: none;">
+            <div class="success-message" role="status" aria-live="polite">
+                <h3>🎉 Congratulations! You've completed the Performance Management Simulation</h3>
+                <p>You've successfully worked through the complete performance management cycle. Review your action plan below.</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>📋 Your Personal Action Plan</h3>
+                <div id="summaryContent"></div>
+            </div>
+
+            <div class="summary-card">
+                <h3>🎯 Next Steps</h3>
+                <ul>
+                    <li>Share your self-evaluation insights with your manager or mentor</li>
+                    <li>Implement the performance standards with your team</li>
+                    <li>Track progress on your SMART goals monthly</li>
+                    <li>Schedule regular check-ins to stay accountable</li>
+                    <li>Adjust goals as needed based on changing circumstances</li>
+                </ul>
+            </div>
+
+            <button type="button" class="btn" onclick="exportPlan()">Export Action Plan (Word)</button>
+            <button type="button" class="btn btn-secondary" onclick="resetSimulation()">Start Over</button>
+        </section>
+    </div>
+
+    <script>
+        let currentTab = 0;
+        let completedTabs = new Set(); // Use a Set to store unique completed tab indices
+
+        const tabs = document.querySelectorAll('.tab');
+        const contents = document.querySelectorAll('.tab-content');
+
+        function showTab(tabIndex) {
+            // Update aria-selected and hidden attributes
+            tabs.forEach((tab, index) => {
+                tab.classList.remove('active');
+                tab.setAttribute('aria-selected', 'false');
+                contents[index].classList.remove('active');
+                contents[index].setAttribute('hidden', 'true');
+            });
+            
+            tabs[tabIndex].classList.add('active');
+            tabs[tabIndex].setAttribute('aria-selected', 'true');
+            contents[tabIndex].classList.add('active');
+            contents[tabIndex].removeAttribute('hidden');
+            
+            currentTab = tabIndex;
+            updateProgress();
+
+            // Announce new tab content for screen readers
+            const tabTitle = tabs[tabIndex].textContent.split(' ')[0] + ' ' + tabs[tabIndex].textContent.split(' ')[1];
+            // You might need a live region for this or focus an element within the new tab.
+            // For now, focusing the first interactive element.
+            const firstInteractiveElement = contents[tabIndex].querySelector('textarea, input, button, select');
+            if (firstInteractiveElement) {
+                firstInteractiveElement.focus();
+            }
+        }
+
+        function handleTabKeyDown(event, tabIndex) {
+            const tabsArray = Array.from(tabs);
+            let newIndex = tabIndex;
+
+            switch (event.key) {
+                case 'ArrowLeft':
+                    newIndex = (tabIndex - 1 + tabsArray.length) % tabsArray.length;
+                    break;
+                case 'ArrowRight':
+                    newIndex = (tabIndex + 1) % tabsArray.length;
+                    break;
+                case 'Home':
+                    newIndex = 0;
+                    break;
+                case 'End':
+                    newIndex = tabsArray.length - 1;
+                    break;
+                default:
+                    return; // Do nothing for other keys
+            }
+
+            tabsArray[newIndex].focus(); // Move focus to the new tab
+            showTab(newIndex); // Activate the new tab
+            event.preventDefault(); // Prevent default browser behavior (e.g., scrolling)
+        }
+
+        function updateProgress() {
+            // Only count genuinely completed tabs towards progress
+            const progress = (completedTabs.size / 3) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressFill').parentElement.setAttribute('aria-valuenow', Math.round(progress));
+        }
+
+        function addSuccessMessage(targetElementId, message) {
+            const successMsg = document.createElement('div');
+            successMsg.className = 'success-message';
+            successMsg.setAttribute('role', 'status'); // For screen readers
+            successMsg.setAttribute('aria-live', 'polite'); // Announce changes
+            successMsg.innerHTML = message;
+            document.getElementById(targetElementId).insertBefore(successMsg, document.getElementById(targetElementId).firstChild);
+        }
+
+        function saveEvaluation() {
+            const jobDesc = document.getElementById('jobDescription').value.trim();
+            const enjoy = document.getElementById('enjoyWork').value.trim();
+            const challenges = document.getElementById('challenges').value.trim();
+            const goals = document.getElementById('careerGoals').value.trim();
+            const development = document.getElementById('developmentNeeds').value.trim();
+
+            if (!jobDesc || !enjoy || !challenges || !goals || !development) {
+                alert('Please complete all fields in Self-Evaluation before proceeding.');
+                return;
+            }
+
+            completedTabs.add(0);
+            updateProgress();
+            showTab(1);
+            addSuccessMessage('tab1', '<strong>Self-evaluation saved!</strong> Now let\'s set performance standards for your team.');
+        }
+
+        function saveStandards() {
+            const tasks = document.getElementById('mainTasks').value.trim();
+            const behaviour = document.getElementById('workBehaviour').value.trim();
+            const support = document.getElementById('supportRequired').value.trim();
+            const performance = document.getElementById('goodPerformance').value.trim();
+            const review = document.getElementById('reviewProcess').value.trim();
+
+            if (!tasks || !behaviour || !support || !performance || !review) {
+                alert('Please complete all fields in Performance Standards before proceeding.');
+                return;
+            }
+
+            completedTabs.add(1);
+            updateProgress();
+            showTab(2);
+            addSuccessMessage('tab2', '<strong>Performance standards set!</strong> Now create your personal SMART goals.');
+        }
+
+        function saveGoals() {
+            const goal1 = document.getElementById('goal1').value.trim();
+            const goal2 = document.getElementById('goal2').value.trim();
+            const goal3 = document.getElementById('goal3').value.trim();
+
+            if (!goal1 || !goal2 || !goal3) {
+                alert('Please complete all three SMART goals before proceeding.');
+                return;
+            }
+
+            completedTabs.add(2);
+            updateProgress();
+            
+            // Remove existing success messages before adding a new one
+            document.querySelectorAll('#tab2 .success-message').forEach(msg => msg.remove());
+            addSuccessMessage('tab2', '<strong>SMART goals created!</strong> Click "Generate Action Plan" to see your complete development plan.');
+        }
+
+        function generateSummary() {
+            if (completedTabs.size < 3) {
+                alert('Please complete all three steps (Self-Evaluation, Performance Standards, and SMART Goals) before generating your action plan.');
+                return;
+            }
+
+            const summaryContent = document.getElementById('summaryContent');
+            summaryContent.innerHTML = `
+                <h4>🪞 Self-Evaluation Highlights</h4>
+                <p><strong>Key Strengths:</strong> ${document.getElementById('enjoyWork').value.substring(0, 200)}...</p>
+                <p><strong>Development Areas:</strong> ${document.getElementById('challenges').value.substring(0, 200)}...</p>
+                <p><strong>Career Direction:</strong> ${document.getElementById('careerGoals').value.substring(0, 200)}...</p>
+                
+                <h4>📊 Performance Standards Framework</h4>
+                <p><strong>Key Deliverables:</strong> ${document.getElementById('mainTasks').value.substring(0, 200)}...</p>
+                <p><strong>Success Indicators:</strong> ${document.getElementById('goodPerformance').value.substring(0, 200)}...</p>
+                
+                <h4>🎯 Your SMART Goals</h4>
+                <p><strong>Goal 1:</strong> ${document.getElementById('goal1').value.substring(0, 200)}...</p>
+                <p><strong>Goal 2:</strong> ${document.getElementById('goal2').value.substring(0, 200)}...</p>
+                <p><strong>Goal 3:</strong> ${document.getElementById('goal3').value.substring(0, 200)}...</p>
+            `;
+
+            document.getElementById('summarySection').style.display = 'block';
+            document.getElementById('summarySection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function exportPlan() {
+            const jobDesc = document.getElementById('jobDescription').value;
+            const enjoy = document.getElementById('enjoyWork').value;
+            const challenges = document.getElementById('challenges').value;
+            const goals = document.getElementById('careerGoals').value;
+            const development = document.getElementById('developmentNeeds').value;
+
+            const tasks = document.getElementById('mainTasks').value;
+            const behaviour = document.getElementById('workBehaviour').value;
+            const support = document.getElementById('supportRequired').value;
+            const performance = document.getElementById('goodPerformance').value;
+            const review = document.getElementById('reviewProcess').value;
+
+            const goal1 = document.getElementById('goal1').value;
+            const goal2 = document.getElementById('goal2').value;
+            const goal3 = document.getElementById('goal3').value;
+
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Performance Management Action Plan</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; }
+                        h1, h2, h3, h4 { color: #b04a3f; margin-top: 20px; margin-bottom: 10px; }
+                        strong { font-weight: bold; }
+                        ul { list-style-type: disc; margin-left: 20px; margin-bottom: 10px; }
+                        p { margin-bottom: 10px; }
+                        .section { border-bottom: 1px solid #ddd; padding-bottom: 15px; margin-bottom: 20px; }
+                        .header-date { text-align: right; font-size: 0.9em; color: #555; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Performance Management Action Plan</h1>
+                    <p class="header-date">Generated: ${new Date().toLocaleDateString()}</p>
+
+                    <div class="section">
+                        <h2>1. Self-Evaluation</h2>
+                        <p><strong>Job Description / Key Responsibilities:</strong><br>${jobDesc.replace(/\n/g, '<br>')}</p>
+                        <p><strong>What I enjoy most about work/study:</strong><br>${enjoy.replace(/\n/g, '<br>')}</p>
+                        <p><strong>What I find most challenging about work/study:</strong><br>${challenges.replace(/\n/g, '<br>')}</p>
+                        <p><strong>My Career Goals:</strong><br>${goals.replace(/\n/g, '<br>')}</p>
+                        <p><strong>Development Needs & Support Required:</strong><br>${development.replace(/\n/g, '<br>')}</p>
+                    </div>
+
+                    <div class="section">
+                        <h2>2. Performance Standards</h2>
+                        <p><strong>Main Tasks, Projects, or Deliverables:</strong><br>${tasks.replace(/\n/g, '<br>')}</p>
+                        <p><strong>Expected Behaviors and Work Methods:</strong><br>${behaviour.replace(/\n/g, '<br>')}</p>
+                        <p><strong>Skills, Training, Resources Needed:</strong><br>${support.replace(/\n/g, '<br>')}</p>
+                        <p><strong>Specific Observable Indicators of Good Performance:</strong><br>${performance.replace(/\n/g, '<br>')}</p>
+                        <p><strong>Performance Review Process & Schedule:</strong><br>${review.replace(/\n/g, '<br>')}</p>
+                    </div>
+
+                    <div class="section">
+                        <h2>3. SMART Goals</h2>
+                        <p><strong>Goal 1 (Leadership Development):</strong><br>${goal1.replace(/\n/g, '<br>')}</p>
+                        <p><strong>Goal 2 (Operational Excellence):</strong><br>${goal2.replace(/\n/g, '<br>')}</p>
+                        <p><strong>Goal 3 (Personal/Professional Development):</strong><br>${goal3.replace(/\n/g, '<br>')}</p>
+                    </div>
+
+                    <div>
+                        <h2>Next Steps</h2>
+                        <ul>
+                            <li>Share your self-evaluation insights with your manager or mentor</li>
+                            <li>Implement the performance standards with your team</li>
+                            <li>Track progress on your SMART goals monthly</li>
+                            <li>Schedule regular check-ins to stay accountable</li>
+                            <li>Adjust goals as needed based on changing circumstances</li>
+                        </ul>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            // For .doc files, we create an HTML file with .doc extension.
+            // Browsers will typically open this in Word or a compatible program.
+            const blob = new Blob([htmlContent], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Performance_Management_Action_Plan.doc'; // Changed to .doc
+            document.body.appendChild(a); // Append to body to ensure it's in the DOM before click
+            a.click();
+            document.body.removeChild(a); // Clean up
+            URL.revokeObjectURL(url);
+        }
+
+        function resetSimulation() {
+            if (confirm('Are you sure you want to start over? All progress will be lost.')) {
+                // Clear all form fields
+                document.querySelectorAll('input, textarea').forEach(field => field.value = '');
+                
+                // Reset tabs and completed status
+                completedTabs.clear();
+                showTab(0);
+                
+                // Hide summary
+                document.getElementById('summarySection').style.display = 'none';
+                
+                // Remove success messages
+                document.querySelectorAll('.success-message').forEach(msg => msg.remove());
+            }
+        }
+
+        // Initialize progress bar and tab navigation
+        document.addEventListener('DOMContentLoaded', () => {
+            updateProgress();
+            showTab(0); // Ensure first tab is active on load
+        });
+    </script>
+</body>
+</html>
