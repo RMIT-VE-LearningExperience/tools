@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Australian HVAC Diagnostic Training</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="container">
+                <h1>Australian HVAC Diagnostic Training</h1>
+                <p class="subtitle">Interactive troubleshooting for Certificate III students</p>
+                <div class="location-info">
+                    <span class="location-badge">Brisbane, QLD - Climate Zone 2</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <div class="diagnostic-layout">
+                    <!-- Diagnostic Area -->
+                    <div class="diagnostic-area">
+                        <div class="step-card card">
+                            <div class="card__header">
+                                <h2 id="step-title">Air Conditioner Not Cooling</h2>
+                                <div class="step-indicator">
+                                    <span id="current-step">Step 1</span>
+                                </div>
+                            </div>
+                            <div class="card__body">
+                                <div class="scenario-description">
+                                    <div class="scenario-header">
+                                        <h3>Customer Complaint</h3>
+                                        <div class="system-info">
+                                            <span class="info-badge">5.2kW Split System</span>
+                                            <span class="info-badge">3 Years Old</span>
+                                        </div>
+                                    </div>
+                                    <p id="step-description">Air conditioner not cooling properly. Indoor temperature 28°C, thermostat set to 22°C. System has been running for 2 hours.</p>
+                                    <div class="environmental-info">
+                                        <div class="temp-reading">
+                                            <span class="temp-label">Outdoor Temp:</span>
+                                            <span class="temp-value">35°C</span>
+                                        </div>
+                                        <div class="temp-reading">
+                                            <span class="temp-label">Humidity:</span>
+                                            <span class="temp-value">65%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="options-section">
+                                    <h3>Choose your diagnostic step:</h3>
+                                    <div id="options-container" class="options-container">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+
+                                <div id="feedback-section" class="feedback-section hidden">
+                                    <div class="feedback-content">
+                                        <div class="feedback-header">
+                                            <span id="feedback-icon"></span>
+                                            <span id="feedback-title"></span>
+                                        </div>
+                                        <p id="feedback-explanation"></p>
+                                        <button id="continue-btn" class="btn btn--primary">Continue</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="sidebar">
+                        <!-- Progress Section -->
+                        <div class="progress-card card">
+                            <div class="card__header">
+                                <h3>Diagnostic Progress</h3>
+                            </div>
+                            <div class="card__body">
+                                <div class="progress-steps">
+                                    <div id="progress-list">
+                                        <!-- Progress steps will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                                <button id="restart-btn" class="btn btn--secondary btn--full-width mt-8">Start Over</button>
+                            </div>
+                        </div>
+
+                        <!-- Australian Safety Standards -->
+                        <div class="safety-card card">
+                            <div class="card__header">
+                                <h3>Australian Safety Standards</h3>
+                            </div>
+                            <div class="card__body">
+                                <ul class="safety-list">
+                                    <li>Test RCD/safety switch before electrical work</li>
+                                    <li>Follow AS/NZS 3000:2018 Wiring Rules</li>
+                                    <li>ARC license required for refrigerant work</li>
+                                    <li>Proper electrical isolation procedures</li>
+                                    <li>Use appropriate PPE for all work</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Climate Zone Information -->
+                        <div class="climate-card card">
+                            <div class="card__header">
+                                <h3>Climate Zone 2</h3>
+                            </div>
+                            <div class="card__body">
+                                <div class="climate-info">
+                                    <p class="climate-description">Warm humid summer, mild winter</p>
+                                    <div class="ideal-temps">
+                                        <div class="temp-range">
+                                            <span class="temp-label">Summer Cooling:</span>
+                                            <span class="temp-value">24-26°C</span>
+                                        </div>
+                                        <div class="temp-range">
+                                            <span class="temp-label">Winter Heating:</span>
+                                            <span class="temp-value">18-20°C</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Training Requirements -->
+                        <div class="training-card card">
+                            <div class="card__header">
+                                <h3>Training Requirements</h3>
+                            </div>
+                            <div class="card__body">
+                                <ul class="training-list">
+                                    <li>Certificate III in Air Conditioning & Refrigeration</li>
+                                    <li>ARC License for refrigerant handling</li>
+                                    <li>Electrical safety training</li>
+                                    <li>Regular filter maintenance (every 3 months)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
