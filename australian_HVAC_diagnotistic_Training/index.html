@@ -1,10 +1,30 @@
-<!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HVAC Diagnostic Training - Melbourne</title>
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+     
+      gtag('config', 'G-1MDBG3TN2X');
+    </script>
+    
     <link rel="stylesheet" href="style.css">
+    <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+ 
+  gtag('config', 'G-1MDBG3TN2X');
+</script><!DOCTYPE html>
 </head>
 <body>
     <div class="app-container">
@@ -29,36 +49,78 @@
         <!-- Main Content -->
         <main class="main-content">
             <div class="container">
-                <div class="diagnostic-layout">
+                <!-- Welcome Screen -->
+                <div id="welcome-screen" class="welcome-screen">
+                    <div class="welcome-card card">
+                        <div class="card__header">
+                            <h2>Welcome to HVAC Diagnostic Training</h2>
+                        </div>
+                        <div class="card__body">
+                            <div class="scenario-overview">
+                                <h3>Scenario Overview</h3>
+                                <p>You are called to diagnose an air conditioning system that is not cooling properly in a Melbourne office building. The customer reports that the system has been running for 2 hours but the temperature remains at 23°C despite being set to 20°C.</p>
+                                
+                                <div class="system-details">
+                                    <h4>System Information</h4>
+                                    <div class="system-specs">
+                                        <span class="spec-item">5.2kW Split System</span>
+                                        <span class="spec-item">3 Years Old</span>
+                                        <span class="spec-item">Office Building</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="environmental-conditions">
+                                    <h4>Current Conditions</h4>
+                                    <div class="conditions-grid">
+                                        <div class="condition-item">
+                                            <span class="condition-label">Outdoor Temperature:</span>
+                                            <span class="condition-value">28°C</span>
+                                        </div>
+                                        <div class="condition-item">
+                                            <span class="condition-label">Indoor Temperature:</span>
+                                            <span class="condition-value">23°C</span>
+                                        </div>
+                                        <div class="condition-item">
+                                            <span class="condition-label">Thermostat Setting:</span>
+                                            <span class="condition-value">20°C</span>
+                                        </div>
+                                        <div class="condition-item">
+                                            <span class="condition-label">Humidity:</span>
+                                            <span class="condition-value">55%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="instructions">
+                                <h3>Instructions</h3>
+                                <ul>
+                                    <li>Follow proper diagnostic procedures step by step</li>
+                                    <li>Consider Melbourne's climate conditions in your decisions</li>
+                                    <li>Safety must always be your first priority</li>
+                                    <li>Choose the most appropriate diagnostic step for each situation</li>
+                                </ul>
+                            </div>
+                            
+                            <button id="start-diagnosis-btn" class="btn btn--primary btn--lg">Start Diagnosis</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diagnostic Layout -->
+                <div id="diagnostic-layout" class="diagnostic-layout hidden">
                     <!-- Diagnostic Area -->
                     <div class="diagnostic-area">
                         <div class="step-card card">
                             <div class="card__header">
-                                <h2 id="step-title">Air Conditioner Not Cooling</h2>
+                                <h2 id="step-title">Safety First</h2>
                                 <div class="step-indicator">
                                     <span id="current-step">Step 1</span>
                                 </div>
                             </div>
                             <div class="card__body">
                                 <div class="scenario-description">
-                                    <div class="scenario-header">
-                                        <h3>Customer Complaint</h3>
-                                        <div class="system-info">
-                                            <span class="info-badge">5.2kW Split System</span>
-                                            <span class="info-badge">3 Years Old</span>
-                                        </div>
-                                    </div>
-                                    <p id="step-description">Air conditioner not cooling properly. Indoor temperature 23°C, thermostat set to 20°C. System has been running for 2 hours in Melbourne office building.</p>
-                                    <div class="environmental-info">
-                                        <div class="temp-reading">
-                                            <span class="temp-label">Outdoor Temp:</span>
-                                            <span class="temp-value">28°C</span>
-                                        </div>
-                                        <div class="temp-reading">
-                                            <span class="temp-label">Humidity:</span>
-                                            <span class="temp-value">55%</span>
-                                        </div>
-                                    </div>
+                                    <p id="step-description">Before beginning any diagnostic work, what should you do first?</p>
                                 </div>
                                 
                                 <div class="options-section">
@@ -96,6 +158,49 @@
                                     </div>
                                 </div>
                                 <button id="restart-btn" class="btn btn--secondary btn--full-width mt-8">Start Over</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Congratulations Screen -->
+                <div id="congratulations-screen" class="congratulations-screen hidden">
+                    <div class="congratulations-card card">
+                        <div class="card__header">
+                            <div class="success-header">
+                                <div class="success-icon">🎉</div>
+                                <h2>Congratulations! Diagnosis Complete</h2>
+                            </div>
+                        </div>
+                        <div class="card__body">
+                            <div class="completion-message">
+                                <p class="main-message">Excellent work! You've successfully completed the HVAC diagnostic process for Melbourne conditions.</p>
+                                <div class="problem-summary">
+                                    <h3>Problem Identified</h3>
+                                    <p>Failed capacitor preventing compressor operation - common in Melbourne's climate transitions</p>
+                                </div>
+                            </div>
+                            
+                            <div class="key-reminders">
+                                <h3>Key Learning Points & Reminders</h3>
+                                <ul class="reminders-list">
+                                    <li>Always prioritize safety by disconnecting power before beginning any diagnostic work</li>
+                                    <li>Follow a systematic approach: Safety → Thermostat → Electrical → Filter → Outdoor Unit → Components</li>
+                                    <li>Melbourne's mild temperate climate with four distinct seasons requires attention to seasonal transitions</li>
+                                    <li>Capacitors are common failure points, especially during Melbourne's temperature changes</li>
+                                    <li>Never replace components without proper diagnosis - this saves time and money</li>
+                                    <li>Air filters should be checked regularly due to Melbourne's variable climate conditions</li>
+                                    <li>Outdoor units need regular inspection for debris, especially during autumn leaf fall</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="next-steps">
+                                <h3>What's Next?</h3>
+                                <p>Continue practicing with different scenarios to master HVAC diagnostics in Melbourne's unique climate conditions.</p>
+                            </div>
+                            
+                            <div class="action-buttons">
+                                <button id="practice-again-btn" class="btn btn--primary btn--lg">Practice Another Scenario</button>
                             </div>
                         </div>
                     </div>
