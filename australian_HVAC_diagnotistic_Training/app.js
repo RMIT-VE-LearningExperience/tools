@@ -6,6 +6,7 @@ class MelbourneHVACDiagnosticApp {
         this.stepCount = 1;
         this.isAwaitingFeedback = false;
         this.selectedOption = null;
+        this.currentScreen = 'welcome'; // 'welcome', 'diagnostic', 'congratulations'
         
         // Melbourne diagnostic steps data
         this.diagnosticSteps = {
@@ -158,24 +159,11 @@ class MelbourneHVACDiagnosticApp {
                         "explanation": "Adding refrigerant without proper diagnosis can cause damage."
                     }
                 ]
-            },
-            "complete": {
-                "id": "complete",
-                "title": "Diagnosis Complete",
-                "description": "Problem identified: Failed capacitor preventing compressor operation. In Melbourne's mild temperate climate, this is a common issue during seasonal transitions.",
-                "options": [
-                    {
-                        "id": "safety",
-                        "text": "Practice Another Scenario",
-                        "correct": true,
-                        "explanation": "Excellent diagnosis! You correctly followed safety protocols and identified the failed capacitor. The systematic approach works well for Melbourne's climate conditions. Ready for more practice?"
-                    }
-                ]
             }
         };
 
         // Step order for progress tracking
-        this.stepOrder = ['safety', 'thermostat', 'electrical', 'filter', 'outdoor', 'capacitor', 'complete'];
+        this.stepOrder = ['safety', 'thermostat', 'electrical', 'filter', 'outdoor', 'capacitor'];
         
         this.stepTitles = {
             'safety': 'Safety First',
@@ -183,25 +171,54 @@ class MelbourneHVACDiagnosticApp {
             'electrical': 'Electrical Check',
             'filter': 'Air Filter Inspection',
             'outdoor': 'Outdoor Unit Check',
-            'capacitor': 'Component Testing',
-            'complete': 'Diagnosis Complete'
+            'capacitor': 'Component Testing'
         };
 
         this.init();
     }
 
     init() {
+        this.showWelcomeScreen();
         this.bindEventListeners();
-        this.renderCurrentStep();
-        this.updateProgress();
     }
 
     bindEventListeners() {
-        // Bind restart button
+        // Use a more robust approach to bind event listeners
+        this.bindStartButton();
+        this.bindRestartButton();
+        this.bindPracticeAgainButton();
+    }
+
+    bindStartButton() {
+        const startBtn = document.getElementById('start-diagnosis-btn');
+        if (startBtn) {
+            startBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Start diagnosis button clicked');
+                this.startDiagnosis();
+            });
+        } else {
+            console.error('Start diagnosis button not found');
+        }
+    }
+
+    bindRestartButton() {
         const restartBtn = document.getElementById('restart-btn');
         if (restartBtn) {
             restartBtn.addEventListener('click', (e) => {
                 e.preventDefault();
+                console.log('Restart button clicked');
+                this.restart();
+            });
+        }
+    }
+
+    bindPracticeAgainButton() {
+        const practiceAgainBtn = document.getElementById('practice-again-btn');
+        if (practiceAgainBtn) {
+            practiceAgainBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Practice again button clicked');
                 this.restart();
             });
         }
@@ -210,11 +227,87 @@ class MelbourneHVACDiagnosticApp {
     bindContinueButton() {
         const continueBtn = document.getElementById('continue-btn');
         if (continueBtn) {
-            continueBtn.onclick = (e) => {
+            continueBtn.addEventListener('click', (e) => {
                 e.preventDefault();
+                console.log('Continue button clicked');
                 this.continueToNextStep();
-            };
+            });
         }
+    }
+
+    showWelcomeScreen() {
+        console.log('Showing welcome screen');
+        this.currentScreen = 'welcome';
+        
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const diagnosticLayout = document.getElementById('diagnostic-layout');
+        const congratulationsScreen = document.getElementById('congratulations-screen');
+        
+        if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+        if (diagnosticLayout) diagnosticLayout.classList.add('hidden');
+        if (congratulationsScreen) congratulationsScreen.classList.add('hidden');
+    }
+
+    showDiagnosticScreen() {
+        console.log('Showing diagnostic screen');
+        this.currentScreen = 'diagnostic';
+        
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const diagnosticLayout = document.getElementById('diagnostic-layout');
+        const congratulationsScreen = document.getElementById('congratulations-screen');
+        
+        if (welcomeScreen) welcomeScreen.classList.add('hidden');
+        if (diagnosticLayout) diagnosticLayout.classList.remove('hidden');
+        if (congratulationsScreen) congratulationsScreen.classList.add('hidden');
+    }
+
+    showCongratulationsScreen() {
+        console.log('Showing congratulations screen');
+        this.currentScreen = 'congratulations';
+        
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const diagnosticLayout = document.getElementById('diagnostic-layout');
+        const congratulationsScreen = document.getElementById('congratulations-screen');
+        
+        if (welcomeScreen) welcomeScreen.classList.add('hidden');
+        if (diagnosticLayout) diagnosticLayout.classList.add('hidden');
+        if (congratulationsScreen) congratulationsScreen.classList.remove('hidden');
+        
+        // Re-bind the practice again button since it's now visible
+        this.bindPracticeAgainButton();
+        
+        // Track completion with Google Analytics
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'diagnostic_completed', {
+                event_category: 'training',
+                event_label: 'melbourne_hvac_diagnostic'
+            });
+        }
+    }
+
+    startDiagnosis() {
+        console.log('Starting diagnosis');
+        // Track diagnosis start with Google Analytics
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'diagnosis_started', {
+                event_category: 'training',
+                event_label: 'melbourne_hvac_diagnostic'
+            });
+        }
+        
+        this.showDiagnosticScreen();
+        this.renderCurrentStep();
+        this.updateProgress();
+    }
+
+    // Fisher-Yates shuffle algorithm for randomizing array order
+    shuffleArray(array) {
+        const shuffled = [...array]; // Create a copy to avoid modifying original
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
     }
 
     renderCurrentStep() {
@@ -225,34 +318,48 @@ class MelbourneHVACDiagnosticApp {
             return;
         }
         
+        console.log('Rendering step:', this.currentStep);
+        
         // Update step header
-        document.getElementById('step-title').textContent = step.title;
-        document.getElementById('current-step').textContent = `Step ${this.stepCount}`;
+        const stepTitle = document.getElementById('step-title');
+        const currentStepIndicator = document.getElementById('current-step');
+        
+        if (stepTitle) stepTitle.textContent = step.title;
+        if (currentStepIndicator) currentStepIndicator.textContent = `Step ${this.stepCount}`;
         
         // Update step description
-        document.getElementById('step-description').textContent = step.description;
+        const stepDescription = document.getElementById('step-description');
+        if (stepDescription) stepDescription.textContent = step.description;
 
-        // Clear and render options
+        // Clear and render options with randomized order
         const optionsContainer = document.getElementById('options-container');
-        optionsContainer.innerHTML = '';
+        if (optionsContainer) {
+            optionsContainer.innerHTML = '';
 
-        step.options.forEach((option, index) => {
-            const optionButton = document.createElement('button');
-            optionButton.className = 'option-button';
-            optionButton.textContent = option.text;
-            optionButton.setAttribute('data-option-id', option.id);
-            optionButton.setAttribute('data-correct', option.correct);
-            optionButton.onclick = (e) => {
-                e.preventDefault();
-                this.selectOption(option);
-            };
-            optionsContainer.appendChild(optionButton);
-        });
+            // Randomize the order of options
+            const shuffledOptions = this.shuffleArray(step.options);
+
+            shuffledOptions.forEach((option, index) => {
+                const optionButton = document.createElement('button');
+                optionButton.className = 'option-button';
+                optionButton.textContent = option.text;
+                optionButton.setAttribute('data-option-id', option.id);
+                optionButton.setAttribute('data-correct', option.correct);
+                optionButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.selectOption(option);
+                });
+                optionsContainer.appendChild(optionButton);
+            });
+        }
 
         // Hide feedback section and reset state
         const feedbackSection = document.getElementById('feedback-section');
-        feedbackSection.classList.add('hidden');
-        feedbackSection.classList.remove('success', 'error');
+        if (feedbackSection) {
+            feedbackSection.classList.add('hidden');
+            feedbackSection.classList.remove('success', 'error');
+        }
+        
         this.isAwaitingFeedback = false;
         this.selectedOption = null;
     }
@@ -260,14 +367,25 @@ class MelbourneHVACDiagnosticApp {
     selectOption(selectedOption) {
         if (this.isAwaitingFeedback) return;
 
+        console.log('Option selected:', selectedOption.text);
         this.isAwaitingFeedback = true;
         this.selectedOption = selectedOption;
+        
+        // Track option selection with Google Analytics
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'option_selected', {
+                event_category: 'training',
+                event_label: `${this.currentStep}_${selectedOption.correct ? 'correct' : 'incorrect'}`,
+                value: this.stepCount
+            });
+        }
         
         // Update option buttons to show selection
         const optionButtons = document.querySelectorAll('.option-button');
         optionButtons.forEach(button => {
             button.disabled = true;
-            const isSelected = button.getAttribute('data-option-id') === selectedOption.id;
+            const buttonText = button.textContent;
+            const isSelected = buttonText === selectedOption.text;
             if (isSelected) {
                 button.classList.add(selectedOption.correct ? 'correct' : 'incorrect');
             } else {
@@ -290,15 +408,17 @@ class MelbourneHVACDiagnosticApp {
         const feedbackTitle = document.getElementById('feedback-title');
         const feedbackExplanation = document.getElementById('feedback-explanation');
 
-        // Set feedback content
-        feedbackIcon.className = `feedback-icon ${option.correct ? 'success' : 'error'}`;
-        feedbackTitle.textContent = option.correct ? 'Correct!' : 'Not Quite Right';
-        feedbackExplanation.textContent = option.explanation;
+        if (feedbackSection && feedbackIcon && feedbackTitle && feedbackExplanation) {
+            // Set feedback content
+            feedbackIcon.className = `feedback-icon ${option.correct ? 'success' : 'error'}`;
+            feedbackTitle.textContent = option.correct ? 'Correct!' : 'Not Quite Right';
+            feedbackExplanation.textContent = option.explanation;
 
-        // Set feedback section style
-        feedbackSection.classList.remove('hidden');
-        feedbackSection.classList.add(option.correct ? 'success' : 'error');
-        feedbackSection.classList.remove(option.correct ? 'error' : 'success');
+            // Set feedback section style
+            feedbackSection.classList.remove('hidden');
+            feedbackSection.classList.add(option.correct ? 'success' : 'error');
+            feedbackSection.classList.remove(option.correct ? 'error' : 'success');
+        }
     }
 
     continueToNextStep() {
@@ -307,14 +427,17 @@ class MelbourneHVACDiagnosticApp {
             return;
         }
 
+        console.log('Continuing to next step from:', this.currentStep);
+
         // Mark current step as completed
         if (!this.completedSteps.includes(this.currentStep)) {
             this.completedSteps.push(this.currentStep);
         }
 
-        // Handle special case for completion - restart scenario
-        if (this.currentStep === 'complete' && this.selectedOption.id === 'safety') {
-            this.restart();
+        // Check if this is the last step
+        if (this.currentStep === 'capacitor') {
+            console.log('Last step completed, showing congratulations');
+            this.showCongratulationsScreen();
             return;
         }
 
@@ -329,6 +452,8 @@ class MelbourneHVACDiagnosticApp {
 
         this.currentStep = nextStepId;
         this.stepCount++;
+        
+        console.log('Moving to step:', this.currentStep, 'Step count:', this.stepCount);
         
         // Update display
         this.renderCurrentStep();
@@ -373,29 +498,76 @@ class MelbourneHVACDiagnosticApp {
     }
 
     restart() {
+        console.log('Restarting application');
+        // Track restart with Google Analytics
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'diagnosis_restarted', {
+                event_category: 'training',
+                event_label: 'melbourne_hvac_diagnostic'
+            });
+        }
+        
         // Reset all application state
         this.currentStep = 'safety';
         this.completedSteps = [];
         this.stepCount = 1;
         this.isAwaitingFeedback = false;
         this.selectedOption = null;
+        this.currentScreen = 'welcome';
         
         // Clear any existing feedback
         const feedbackSection = document.getElementById('feedback-section');
-        feedbackSection.classList.add('hidden');
-        feedbackSection.classList.remove('success', 'error');
+        if (feedbackSection) {
+            feedbackSection.classList.add('hidden');
+            feedbackSection.classList.remove('success', 'error');
+        }
         
-        // Re-render the application
-        this.renderCurrentStep();
-        this.updateProgress();
+        // Show welcome screen
+        this.showWelcomeScreen();
+        
+        // Re-bind event listeners to ensure they work
+        this.bindEventListeners();
+    }
+}
+
+// Utility function to track page views with Google Analytics
+function trackPageView() {
+    if (typeof gtag !== 'undefined') {
+        gtag('config', 'G-1MDBG3TN2X', {
+            page_title: 'Melbourne HVAC Diagnostic Training',
+            page_location: window.location.href
+        });
     }
 }
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing Melbourne HVAC app');
+    
+    // Track initial page view
+    trackPageView();
+    
+    // Initialize the app
     const app = new MelbourneHVACDiagnosticApp();
     
     // Store reference globally for debugging
     window.melbourneHvacApp = app;
+    
+    // Additional Google Analytics event tracking
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'app_initialized', {
+            event_category: 'training',
+            event_label: 'melbourne_hvac_diagnostic'
+        });
+    }
+});
+
+// Track when user leaves the page
+window.addEventListener('beforeunload', () => {
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'session_end', {
+            event_category: 'training',
+            event_label: 'melbourne_hvac_diagnostic'
+        });
+    }
 });
