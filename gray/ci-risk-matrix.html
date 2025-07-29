@@ -1,22 +1,11 @@
 <!DOCTYPE html>
-.priority-3 { background: #ffc107; color: black; }
-        .priority-4 { background: #28a745; color: white; }
-
-        .priority-label {
-            font-size: 1.2em;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-<!DOCTYPE html>
 <html lang="en">
- <head>
-  <meta charset="utf-8"/>
-  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>
-   Continuous Improvement Risk Assessment &amp; Prioritization Matrix
-  </title>
-  <style>
-   * {
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Continuous Improvement Risk Assessment & Prioritization Matrix</title>
+    <style>
+        * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -512,6 +501,15 @@
             background: #5a32a3;
         }
 
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
         .initiatives-list {
             margin-top: 30px;
         }
@@ -567,6 +565,98 @@
             font-weight: 600;
         }
 
+        /* New styles for scoring tables */
+        .scoring-section {
+            margin-bottom: 30px;
+        }
+
+        .scoring-tables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .scoring-table-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .scoring-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        .scoring-table th {
+            background: #6f42c1;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .scoring-table td {
+            background: white;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+        }
+
+        .rating-select {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+        }
+
+        .score-cell {
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .weight-input {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            text-align: center;
+        }
+
+        .total-score {
+            font-size: 1.2em;
+            font-weight: 700;
+            text-align: center;
+            color: #6f42c1;
+        }
+
+        .priority-result {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .result-display {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .result-scores {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .result-priority {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2em;
@@ -587,1906 +677,1023 @@
             .matrix-label {
                 font-size: 0.8em;
             }
+
+            .scoring-tables-grid {
+                grid-template-columns: 1fr;
+            }
         }
-  </style>
- </head>
- <body>
-  <div class="container">
-   <div class="header">
-    <h1>
-     Continuous Improvement Risk Assessment &amp; Prioritization Matrix
-    </h1>
-    <p>
-     Identifying, managing risks and prioritizing initiatives throughout the improvement lifecycle
-    </p>
-   </div>
-   <div class="navigation">
-    <button class="nav-tab active" onclick="showTab('risk-assessment')">
-     Risk Assessment
-    </button>
-    <button class="nav-tab" onclick="showTab('prioritization')">
-     Impact &amp; Capacity Prioritization
-    </button>
-    <button class="nav-tab" onclick="showTab('initiatives')">
-     Initiative Tracker
-    </button>
-   </div>
-   <div class="content">
-    <!-- Risk Assessment Tab -->
-    <div class="tab-content active" id="risk-assessment">
-     <div class="legend">
-      <div class="legend-item">
-       <div class="risk-level critical">
-       </div>
-       <span>
-        Critical Risk (4-5)
-       </span>
-      </div>
-      <div class="legend-item">
-       <div class="risk-level high">
-       </div>
-       <span>
-        High Risk (3-4)
-       </span>
-      </div>
-      <div class="legend-item">
-       <div class="risk-level medium">
-       </div>
-       <span>
-        Medium Risk (2-3)
-       </span>
-      </div>
-      <div class="legend-item">
-       <div class="risk-level low">
-       </div>
-       <span>
-        Low Risk (1-2)
-       </span>
-      </div>
-      <div class="legend-item">
-       <div class="risk-level very-low">
-       </div>
-       <span>
-        Very Low Risk (0-1)
-       </span>
-      </div>
-     </div>
-     <div class="matrix-container">
-      <table class="risk-matrix">
-       <thead>
-        <tr>
-         <th style="width: 15%;">
-          CI Stage
-         </th>
-         <th style="width: 30%;">
-          Risk Description
-         </th>
-         <th style="width: 10%;">
-          Probability
-         </th>
-         <th style="width: 10%;">
-          Impact
-         </th>
-         <th style="width: 10%;">
-          Risk Score
-         </th>
-         <th style="width: 25%;">
-          Mitigation Strategy
-         </th>
-        </tr>
-       </thead>
-       <tbody>
-        <!-- Stage 1: Identify Problem -->
-        <tr>
-         <td class="stage-header" rowspan="3">
-          1. Identify Problem
-         </td>
-         <td>
-          <div class="risk-description">
-           Incorrect Problem Definition
-          </div>
-          <div class="mitigation">
-           Solving symptoms rather than root causes
-          </div>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input probability-input" data-row="1" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input impact-input" data-row="1" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="risk-score-cell high" data-row="1">
-          3.5
-         </td>
-         <td>
-          Stakeholder consultation, data validation, problem statement review
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Stakeholder Misalignment
-          </div>
-          <div class="mitigation">
-           Different understanding of problem scope
-          </div>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input probability-input" data-row="2" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input impact-input" data-row="2" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="risk-score-cell medium" data-row="2">
-          3.0
-         </td>
-         <td>
-          Clear communication plan, regular check-ins, documented agreements
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Insufficient Resources
-          </div>
-          <div class="mitigation">
-           Lack of time/budget to properly investigate
-          </div>
-         </td>
-         <td class="editable-cell prob-low">
-          <input class="score-input probability-input" data-row="3" max="5" min="1" type="number" value="2"/>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input impact-input" data-row="3" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="risk-score-cell medium" data-row="3">
-          3.0
-         </td>
-         <td>
-          Resource planning, phased approach, executive sponsorship
-         </td>
-        </tr>
-        <!-- Stage 2: Analyse Current State -->
-        <tr>
-         <td class="stage-header" rowspan="3">
-          2. Analyse Current State
-         </td>
-         <td>
-          <div class="risk-description">
-           Data Quality Issues
-          </div>
-          <div class="mitigation">
-           Incomplete, inaccurate, or outdated data
-          </div>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input probability-input" data-row="4" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input impact-input" data-row="4" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="risk-score-cell critical" data-row="4">
-          4.0
-         </td>
-         <td>
-          Data validation protocols, multiple sources, quality checks
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Analysis Paralysis
-          </div>
-          <div class="mitigation">
-           Over-analyzing without progressing to solutions
-          </div>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input probability-input" data-row="5" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input impact-input" data-row="5" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="risk-score-cell medium" data-row="5">
-          3.0
-         </td>
-         <td>
-          Time-boxed analysis, clear milestones, decision frameworks
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Bias in Analysis
-          </div>
-          <div class="mitigation">
-           Confirmation bias affecting objectivity
-          </div>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input probability-input" data-row="6" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input impact-input" data-row="6" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="risk-score-cell medium" data-row="6">
-          3.0
-         </td>
-         <td>
-          Independent review, diverse team perspectives, structured methods
-         </td>
-        </tr>
-        <!-- Stage 3: Analyse the Problem -->
-        <tr>
-         <td class="stage-header" rowspan="3">
-          3. Analyse the Problem
-         </td>
-         <td>
-          <div class="risk-description">
-           Root Cause Misidentification
-          </div>
-          <div class="mitigation">
-           Focusing on superficial causes
-          </div>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input probability-input" data-row="7" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="editable-cell prob-very-high">
-          <input class="score-input impact-input" data-row="7" max="5" min="1" type="number" value="5"/>
-         </td>
-         <td class="risk-score-cell critical" data-row="7">
-          4.0
-         </td>
-         <td>
-          5-Why analysis, fishbone diagrams, expert consultation
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Complexity Underestimation
-          </div>
-          <div class="mitigation">
-           Missing interconnected factors
-          </div>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input probability-input" data-row="8" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input impact-input" data-row="8" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="risk-score-cell critical" data-row="8">
-          4.0
-         </td>
-         <td>
-          Systems thinking, process mapping, stakeholder input
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Limited Perspective
-          </div>
-          <div class="mitigation">
-           Single department/function view
-          </div>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input probability-input" data-row="9" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input impact-input" data-row="9" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="risk-score-cell medium" data-row="9">
-          3.0
-         </td>
-         <td>
-          Cross-functional teams, external perspectives, customer voice
-         </td>
-        </tr>
-        <!-- Stage 4: Develop Solution -->
-        <tr>
-         <td class="stage-header" rowspan="3">
-          4. Develop Solution
-         </td>
-         <td>
-          <div class="risk-description">
-           Solution Inadequacy
-          </div>
-          <div class="mitigation">
-           Solution doesn't address root causes
-          </div>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input probability-input" data-row="10" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="editable-cell prob-very-high">
-          <input class="score-input impact-input" data-row="10" max="5" min="1" type="number" value="5"/>
-         </td>
-         <td class="risk-score-cell critical" data-row="10">
-          4.0
-         </td>
-         <td>
-          Pilot testing, stakeholder validation, iterative development
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Resource Constraints
-          </div>
-          <div class="mitigation">
-           Insufficient budget/skills for implementation
-          </div>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input probability-input" data-row="11" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input impact-input" data-row="11" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="risk-score-cell critical" data-row="11">
-          4.0
-         </td>
-         <td>
-          Realistic scoping, resource assessment, phased implementation
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Technology Dependencies
-          </div>
-          <div class="mitigation">
-           Over-reliance on unproven technology
-          </div>
-         </td>
-         <td class="editable-cell prob-low">
-          <input class="score-input probability-input" data-row="12" max="5" min="1" type="number" value="2"/>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input impact-input" data-row="12" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="risk-score-cell medium" data-row="12">
-          3.0
-         </td>
-         <td>
-          Technology assessment, backup plans, expert consultation
-         </td>
-        </tr>
-        <!-- Stage 5: Implement and Test -->
-        <tr>
-         <td class="stage-header" rowspan="4">
-          5. Implement and Test
-         </td>
-         <td>
-          <div class="risk-description">
-           Implementation Resistance
-          </div>
-          <div class="mitigation">
-           Staff resistance to change
-          </div>
-         </td>
-         <td class="editable-cell prob-very-high">
-          <input class="score-input probability-input" data-row="13" max="5" min="1" type="number" value="5"/>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input impact-input" data-row="13" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="risk-score-cell critical" data-row="13">
-          4.5
-         </td>
-         <td>
-          Change management, training, communication, involvement
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Implementation Failure
-          </div>
-          <div class="mitigation">
-           Technical or process implementation issues
-          </div>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input probability-input" data-row="14" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="editable-cell prob-very-high">
-          <input class="score-input impact-input" data-row="14" max="5" min="1" type="number" value="5"/>
-         </td>
-         <td class="risk-score-cell critical" data-row="14">
-          4.0
-         </td>
-         <td>
-          Thorough testing, rollback plans, phased rollout
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Unintended Consequences
-          </div>
-          <div class="mitigation">
-           Negative impacts on other processes
-          </div>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input probability-input" data-row="15" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input impact-input" data-row="15" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="risk-score-cell high" data-row="15">
-          3.5
-         </td>
-         <td>
-          Impact assessment, monitoring systems, rapid response plans
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Timeline Overruns
-          </div>
-          <div class="mitigation">
-           Implementation takes longer than planned
-          </div>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input probability-input" data-row="16" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input impact-input" data-row="16" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="risk-score-cell high" data-row="16">
-          3.5
-         </td>
-         <td>
-          Realistic planning, buffer time, regular progress reviews
-         </td>
-        </tr>
-        <!-- Stage 6: Evaluate and Measure -->
-        <tr>
-         <td class="stage-header" rowspan="3">
-          6. Evaluate and Measure
-         </td>
-         <td>
-          <div class="risk-description">
-           Measurement Inadequacy
-          </div>
-          <div class="mitigation">
-           Wrong metrics or insufficient data
-          </div>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input probability-input" data-row="17" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input impact-input" data-row="17" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="risk-score-cell high" data-row="17">
-          3.5
-         </td>
-         <td>
-          Balanced scorecard approach, baseline establishment, regular review
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Short-term Focus
-          </div>
-          <div class="mitigation">
-           Missing long-term impact assessment
-          </div>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input probability-input" data-row="18" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input impact-input" data-row="18" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="risk-score-cell high" data-row="18">
-          3.5
-         </td>
-         <td>
-          Long-term monitoring plan, periodic reviews, trend analysis
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           False Positives
-          </div>
-          <div class="mitigation">
-           Apparent success masking underlying issues
-          </div>
-         </td>
-         <td class="editable-cell prob-low">
-          <input class="score-input probability-input" data-row="19" max="5" min="1" type="number" value="2"/>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input impact-input" data-row="19" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="risk-score-cell medium" data-row="19">
-          3.0
-         </td>
-         <td>
-          Multiple validation methods, stakeholder feedback, deep-dive analysis
-         </td>
-        </tr>
-        <!-- Stage 7: Standardise -->
-        <tr>
-         <td class="stage-header" rowspan="3">
-          7. Standardise
-         </td>
-         <td>
-          <div class="risk-description">
-           Standardisation Failure
-          </div>
-          <div class="mitigation">
-           Inability to replicate success
-          </div>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input probability-input" data-row="20" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input impact-input" data-row="20" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="risk-score-cell high" data-row="20">
-          3.5
-         </td>
-         <td>
-          Documentation, training programs, quality systems
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Knowledge Loss
-          </div>
-          <div class="mitigation">
-           Key personnel leaving before knowledge transfer
-          </div>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input probability-input" data-row="21" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input impact-input" data-row="21" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="risk-score-cell high" data-row="21">
-          3.5
-         </td>
-         <td>
-          Knowledge management systems, documentation, cross-training
-         </td>
-        </tr>
-        <tr>
-         <td>
-          <div class="risk-description">
-           Process Decay
-          </div>
-          <div class="mitigation">
-           Gradual return to old ways of working
-          </div>
-         </td>
-         <td class="editable-cell prob-high">
-          <input class="score-input probability-input" data-row="22" max="5" min="1" type="number" value="4"/>
-         </td>
-         <td class="editable-cell prob-medium">
-          <input class="score-input impact-input" data-row="22" max="5" min="1" type="number" value="3"/>
-         </td>
-         <td class="risk-score-cell high" data-row="22">
-          3.5
-         </td>
-         <td>
-          Regular audits, refresher training, performance monitoring
-         </td>
-        </tr>
-       </tbody>
-      </table>
-     </div>
-     <div class="probability-impact-grid">
-      <h3>
-       Risk Assessment Scale
-      </h3>
-      <table class="grid-table">
-       <thead>
-        <tr>
-         <th>
-          Scale
-         </th>
-         <th>
-          Probability
-         </th>
-         <th>
-          Impact
-         </th>
-         <th>
-          Description
-         </th>
-        </tr>
-       </thead>
-       <tbody>
-        <tr>
-         <td class="prob-very-high">
-          5
-         </td>
-         <td>
-          Very High (81-100%)
-         </td>
-         <td>
-          Catastrophic
-         </td>
-         <td>
-          Almost certain to occur / Complete project failure
-         </td>
-        </tr>
-        <tr>
-         <td class="prob-high">
-          4
-         </td>
-         <td>
-          High (61-80%)
-         </td>
-         <td>
-          Major
-         </td>
-         <td>
-          Likely to occur / Significant impact on objectives
-         </td>
-        </tr>
-        <tr>
-         <td class="prob-medium">
-          3
-         </td>
-         <td>
-          Medium (41-60%)
-         </td>
-         <td>
-          Moderate
-         </td>
-         <td>
-          Moderate chance / Some impact on objectives
-         </td>
-        </tr>
-        <tr>
-         <td class="prob-low">
-          2
-         </td>
-         <td>
-          Low (21-40%)
-         </td>
-         <td>
-          Minor
-         </td>
-         <td>
-          Unlikely to occur / Minimal impact
-         </td>
-        </tr>
-        <tr>
-         <td class="prob-very-low">
-          1
-         </td>
-         <td>
-          Very Low (0-20%)
-         </td>
-         <td>
-          Negligible
-         </td>
-         <td>
-          Rare occurrence / No significant impact
-         </td>
-        </tr>
-       </tbody>
-      </table>
-     </div>
-     <div class="risk-matrix-visualization">
-      <h3>
-       Risk Assessment Matrix
-      </h3>
-      <div class="risk-matrix-table">
-       <!-- Headers row -->
-       <div class="matrix-cell matrix-axis-label">
-       </div>
-       <div class="matrix-cell matrix-col-header">
-        1
-        <br/>
-        Negligible
-       </div>
-       <div class="matrix-cell matrix-col-header">
-        2
-        <br/>
-        Minor
-       </div>
-       <div class="matrix-cell matrix-col-header">
-        3
-        <br/>
-        Moderate
-       </div>
-       <div class="matrix-cell matrix-col-header">
-        4
-        <br/>
-        Major
-       </div>
-       <div class="matrix-cell matrix-col-header">
-        5
-        <br/>
-        Catastrophic
-       </div>
-       <!-- Row 5 - Very High -->
-       <div class="matrix-cell matrix-row-header">
-        5
-        <br/>
-        Very High
-        <br/>
-        (81-100%)
-       </div>
-       <div class="matrix-cell risk-level-medium" data-score="2.5">
-        2.5
-       </div>
-       <div class="matrix-cell risk-level-high" data-score="3.5">
-        3.5
-       </div>
-       <div class="matrix-cell risk-level-critical" data-score="4.0">
-        4.0
-       </div>
-       <div class="matrix-cell risk-level-critical" data-score="4.5">
-        4.5
-       </div>
-       <div class="matrix-cell risk-level-critical" data-score="5.0">
-        5.0
-       </div>
-       <!-- Row 4 - High -->
-       <div class="matrix-cell matrix-row-header">
-        4
-        <br/>
-        High
-        <br/>
-        (61-80%)
-       </div>
-       <div class="matrix-cell risk-level-low" data-score="2.0">
-        2.0
-       </div>
-       <div class="matrix-cell risk-level-medium" data-score="3.0">
-        3.0
-       </div>
-       <div class="matrix-cell risk-level-high" data-score="3.5">
-        3.5
-       </div>
-       <div class="matrix-cell risk-level-critical" data-score="4.0">
-        4.0
-       </div>
-       <div class="matrix-cell risk-level-critical" data-score="4.5">
-        4.5
-       </div>
-       <!-- Row 3 - Medium -->
-       <div class="matrix-cell matrix-row-header">
-        3
-        <br/>
-        Medium
-        <br/>
-        (41-60%)
-       </div>
-       <div class="matrix-cell risk-level-low" data-score="1.5">
-        1.5
-       </div>
-       <div class="matrix-cell risk-level-medium" data-score="2.5">
-        2.5
-       </div>
-       <div class="matrix-cell risk-level-medium" data-score="3.0">
-        3.0
-       </div>
-       <div class="matrix-cell risk-level-high" data-score="3.5">
-        3.5
-       </div>
-       <div class="matrix-cell risk-level-critical" data-score="4.0">
-        4.0
-       </div>
-       <!-- Row 2 - Low -->
-       <div class="matrix-cell matrix-row-header">
-        2
-        <br/>
-        Low
-        <br/>
-        (21-40%)
-       </div>
-       <div class="matrix-cell risk-level-very-low" data-score="1.0">
-        1.0
-       </div>
-       <div class="matrix-cell risk-level-low" data-score="2.0">
-        2.0
-       </div>
-       <div class="matrix-cell risk-level-medium" data-score="2.5">
-        2.5
-       </div>
-       <div class="matrix-cell risk-level-medium" data-score="3.0">
-        3.0
-       </div>
-       <div class="matrix-cell risk-level-high" data-score="3.5">
-        3.5
-       </div>
-       <!-- Row 1 - Very Low -->
-       <div class="matrix-cell matrix-row-header">
-        1
-        <br/>
-        Very Low
-        <br/>
-        (0-20%)
-       </div>
-       <div class="matrix-cell risk-level-very-low" data-score="0.5">
-        0.5
-       </div>
-       <div class="matrix-cell risk-level-very-low" data-score="1.0">
-        1.0
-       </div>
-       <div class="matrix-cell risk-level-low" data-score="1.5">
-        1.5
-       </div>
-       <div class="matrix-cell risk-level-low" data-score="2.0">
-        2.0
-       </div>
-       <div class="matrix-cell risk-level-medium" data-score="2.5">
-        2.5
-       </div>
-       <!-- Impact axis label -->
-       <div class="matrix-axis-footer">
-       </div>
-       <div class="matrix-axis-footer" style="grid-column: span 5; text-align: center; font-weight: 600;">
-        Impact →
-       </div>
-      </div>
-      <div class="matrix-legend">
-       <h4>
-        Risk Levels
-       </h4>
-       <div class="legend-items">
-        <div class="legend-item">
-         <div class="risk-level risk-level-very-low">
-         </div>
-         <span>
-          Very Low (0-1)
-         </span>
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Continuous Improvement Risk Assessment & Prioritization Matrix</h1>
+            <p>Identifying, managing risks and prioritizing initiatives throughout the improvement lifecycle</p>
         </div>
-        <div class="legend-item">
-         <div class="risk-level risk-level-low">
-         </div>
-         <span>
-          Low (1-2)
-         </span>
+        
+        <div class="navigation">
+            <button class="nav-tab active" onclick="showTab('risk-assessment')">Risk Assessment</button>
+            <button class="nav-tab" onclick="showTab('prioritization')">Impact & Capacity Prioritization</button>
+            <button class="nav-tab" onclick="showTab('initiatives')">Initiative Tracker</button>
         </div>
-        <div class="legend-item">
-         <div class="risk-level risk-level-medium">
-         </div>
-         <span>
-          Medium (2-3)
-         </span>
+
+        <div class="content">
+            <!-- Risk Assessment Tab -->
+            <div id="risk-assessment" class="tab-content active">
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="risk-level critical"></div>
+                        <span>Critical Risk (4-5)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="risk-level high"></div>
+                        <span>High Risk (3-4)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="risk-level medium"></div>
+                        <span>Medium Risk (2-3)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="risk-level low"></div>
+                        <span>Low Risk (1-2)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="risk-level very-low"></div>
+                        <span>Very Low Risk (0-1)</span>
+                    </div>
+                </div>
+
+                <div class="matrix-container">
+                    <table class="risk-matrix">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">CI Stage</th>
+                                <th style="width: 30%;">Risk Description</th>
+                                <th style="width: 10%;">Probability</th>
+                                <th style="width: 10%;">Impact</th>
+                                <th style="width: 10%;">Risk Score</th>
+                                <th style="width: 25%;">Mitigation Strategy</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Stage 1: Identify Problem -->
+                            <tr>
+                                <td rowspan="3" class="stage-header">1. Identify Problem</td>
+                                <td>
+                                    <div class="risk-description">Incorrect Problem Definition</div>
+                                    <div class="mitigation">Solving symptoms rather than root causes</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="1">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="1">
+                                </td>
+                                <td class="risk-score-cell high" data-row="1">3.5</td>
+                                <td>Stakeholder consultation, data validation, problem statement review</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Stakeholder Misalignment</div>
+                                    <div class="mitigation">Different understanding of problem scope</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="2">
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="3" data-row="2">
+                                </td>
+                                <td class="risk-score-cell medium" data-row="2">3.0</td>
+                                <td>Clear communication plan, regular check-ins, documented agreements</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Insufficient Resources</div>
+                                    <div class="mitigation">Lack of time/budget to properly investigate</div>
+                                </td>
+                                <td class="editable-cell prob-low">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="2" data-row="3">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="3">
+                                </td>
+                                <td class="risk-score-cell medium" data-row="3">3.0</td>
+                                <td>Resource planning, phased approach, executive sponsorship</td>
+                            </tr>
+
+                            <!-- Stage 2: Analyse Current State -->
+                            <tr>
+                                <td rowspan="3" class="stage-header">2. Analyse Current State</td>
+                                <td>
+                                    <div class="risk-description">Data Quality Issues</div>
+                                    <div class="mitigation">Incomplete, inaccurate, or outdated data</div>
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="4" data-row="4">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="4">
+                                </td>
+                                <td class="risk-score-cell critical" data-row="4">4.0</td>
+                                <td>Data validation protocols, multiple sources, quality checks</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Analysis Paralysis</div>
+                                    <div class="mitigation">Over-analyzing without progressing to solutions</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="5">
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="3" data-row="5">
+                                </td>
+                                <td class="risk-score-cell medium" data-row="5">3.0</td>
+                                <td>Time-boxed analysis, clear milestones, decision frameworks</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Bias in Analysis</div>
+                                    <div class="mitigation">Confirmation bias affecting objectivity</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="6">
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="3" data-row="6">
+                                </td>
+                                <td class="risk-score-cell medium" data-row="6">3.0</td>
+                                <td>Independent review, diverse team perspectives, structured methods</td>
+                            </tr>
+
+                            <!-- Stage 3: Analyse the Problem -->
+                            <tr>
+                                <td rowspan="3" class="stage-header">3. Analyse the Problem</td>
+                                <td>
+                                    <div class="risk-description">Root Cause Misidentification</div>
+                                    <div class="mitigation">Focusing on superficial causes</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="7">
+                                </td>
+                                <td class="editable-cell prob-very-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="5" data-row="7">
+                                </td>
+                                <td class="risk-score-cell critical" data-row="7">4.0</td>
+                                <td>5-Why analysis, fishbone diagrams, expert consultation</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Complexity Underestimation</div>
+                                    <div class="mitigation">Missing interconnected factors</div>
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="4" data-row="8">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="8">
+                                </td>
+                                <td class="risk-score-cell critical" data-row="8">4.0</td>
+                                <td>Systems thinking, process mapping, stakeholder input</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Limited Perspective</div>
+                                    <div class="mitigation">Single department/function view</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="9">
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="3" data-row="9">
+                                </td>
+                                <td class="risk-score-cell medium" data-row="9">3.0</td>
+                                <td>Cross-functional teams, external perspectives, customer voice</td>
+                            </tr>
+
+                            <!-- Stage 4: Develop Solution -->
+                            <tr>
+                                <td rowspan="3" class="stage-header">4. Develop Solution</td>
+                                <td>
+                                    <div class="risk-description">Solution Inadequacy</div>
+                                    <div class="mitigation">Solution doesn't address root causes</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="10">
+                                </td>
+                                <td class="editable-cell prob-very-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="5" data-row="10">
+                                </td>
+                                <td class="risk-score-cell critical" data-row="10">4.0</td>
+                                <td>Pilot testing, stakeholder validation, iterative development</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Resource Constraints</div>
+                                    <div class="mitigation">Insufficient budget/skills for implementation</div>
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="4" data-row="11">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="11">
+                                </td>
+                                <td class="risk-score-cell critical" data-row="11">4.0</td>
+                                <td>Realistic scoping, resource assessment, phased implementation</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Technology Dependencies</div>
+                                    <div class="mitigation">Over-reliance on unproven technology</div>
+                                </td>
+                                <td class="editable-cell prob-low">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="2" data-row="12">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="12">
+                                </td>
+                                <td class="risk-score-cell medium" data-row="12">3.0</td>
+                                <td>Technology assessment, backup plans, expert consultation</td>
+                            </tr>
+
+                            <!-- Stage 5: Implement and Test -->
+                            <tr>
+                                <td rowspan="4" class="stage-header">5. Implement and Test</td>
+                                <td>
+                                    <div class="risk-description">Implementation Resistance</div>
+                                    <div class="mitigation">Staff resistance to change</div>
+                                </td>
+                                <td class="editable-cell prob-very-high">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="5" data-row="13">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="13">
+                                </td>
+                                <td class="risk-score-cell critical" data-row="13">4.5</td>
+                                <td>Change management, training, communication, involvement</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Implementation Failure</div>
+                                    <div class="mitigation">Technical or process implementation issues</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="14">
+                                </td>
+                                <td class="editable-cell prob-very-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="5" data-row="14">
+                                </td>
+                                <td class="risk-score-cell critical" data-row="14">4.0</td>
+                                <td>Thorough testing, rollback plans, phased rollout</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Unintended Consequences</div>
+                                    <div class="mitigation">Negative impacts on other processes</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="15">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="15">
+                                </td>
+                                <td class="risk-score-cell high" data-row="15">3.5</td>
+                                <td>Impact assessment, monitoring systems, rapid response plans</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Timeline Overruns</div>
+                                    <div class="mitigation">Implementation takes longer than planned</div>
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="4" data-row="16">
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="3" data-row="16">
+                                </td>
+                                <td class="risk-score-cell high" data-row="16">3.5</td>
+                                <td>Realistic planning, buffer time, regular progress reviews</td>
+                            </tr>
+
+                            <!-- Stage 6: Evaluate and Measure -->
+                            <tr>
+                                <td rowspan="3" class="stage-header">6. Evaluate and Measure</td>
+                                <td>
+                                    <div class="risk-description">Measurement Inadequacy</div>
+                                    <div class="mitigation">Wrong metrics or insufficient data</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="17">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="17">
+                                </td>
+                                <td class="risk-score-cell high" data-row="17">3.5</td>
+                                <td>Balanced scorecard approach, baseline establishment, regular review</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Short-term Focus</div>
+                                    <div class="mitigation">Missing long-term impact assessment</div>
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="4" data-row="18">
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="3" data-row="18">
+                                </td>
+                                <td class="risk-score-cell high" data-row="18">3.5</td>
+                                <td>Long-term monitoring plan, periodic reviews, trend analysis</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">False Positives</div>
+                                    <div class="mitigation">Apparent success masking underlying issues</div>
+                                </td>
+                                <td class="editable-cell prob-low">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="2" data-row="19">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="19">
+                                </td>
+                                <td class="risk-score-cell medium" data-row="19">3.0</td>
+                                <td>Multiple validation methods, stakeholder feedback, deep-dive analysis</td>
+                            </tr>
+
+                            <!-- Stage 7: Standardise -->
+                            <tr>
+                                <td rowspan="3" class="stage-header">7. Standardise</td>
+                                <td>
+                                    <div class="risk-description">Standardisation Failure</div>
+                                    <div class="mitigation">Inability to replicate success</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="20">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="20">
+                                </td>
+                                <td class="risk-score-cell high" data-row="20">3.5</td>
+                                <td>Documentation, training programs, quality systems</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Knowledge Loss</div>
+                                    <div class="mitigation">Key personnel leaving before knowledge transfer</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="21">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="21">
+                                </td>
+                                <td class="risk-score-cell high" data-row="21">3.5</td>
+                                <td>Knowledge management systems, documentation, cross-training</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Process Decay</div>
+                                    <div class="mitigation">Gradual return to old ways of working</div>
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="4" data-row="22">
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="3" data-row="22">
+                                </td>
+                                <td class="risk-score-cell high" data-row="22">3.5</td>
+                                <td>Regular audits, refresher training, performance monitoring</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="probability-impact-grid">
+                    <h3>Risk Assessment Scale</h3>
+                    <table class="grid-table">
+                        <thead>
+                            <tr>
+                                <th>Scale</th>
+                                <th>Probability</th>
+                                <th>Impact</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="prob-very-high">5</td>
+                                <td>Very High (81-100%)</td>
+                                <td>Catastrophic</td>
+                                <td>Almost certain to occur / Complete project failure</td>
+                            </tr>
+                            <tr>
+                                <td class="prob-high">4</td>
+                                <td>High (61-80%)</td>
+                                <td>Major</td>
+                                <td>Likely to occur / Significant impact on objectives</td>
+                            </tr>
+                            <tr>
+                                <td class="prob-medium">3</td>
+                                <td>Medium (41-60%)</td>
+                                <td>Moderate</td>
+                                <td>Moderate chance / Some impact on objectives</td>
+                            </tr>
+                            <tr>
+                                <td class="prob-low">2</td>
+                                <td>Low (21-40%)</td>
+                                <td>Minor</td>
+                                <td>Unlikely to occur / Minimal impact</td>
+                            </tr>
+                            <tr>
+                                <td class="prob-very-low">1</td>
+                                <td>Very Low (0-20%)</td>
+                                <td>Negligible</td>
+                                <td>Rare occurrence / No significant impact</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="risk-matrix-visualization">
+                    <h3>Risk Assessment Matrix</h3>
+                    <div class="risk-matrix-table">
+                        <!-- Headers row -->
+                        <div class="matrix-cell matrix-axis-label"></div>
+                        <div class="matrix-cell matrix-col-header">1<br/>Negligible</div>
+                        <div class="matrix-cell matrix-col-header">2<br/>Minor</div>
+                        <div class="matrix-cell matrix-col-header">3<br/>Moderate</div>
+                        <div class="matrix-cell matrix-col-header">4<br/>Major</div>
+                        <div class="matrix-cell matrix-col-header">5<br/>Catastrophic</div>
+                        
+                        <!-- Row 5 - Very High -->
+                        <div class="matrix-cell matrix-row-header">5<br/>Very High<br/>(81-100%)</div>
+                        <div class="matrix-cell risk-level-medium" data-score="2.5">2.5</div>
+                        <div class="matrix-cell risk-level-high" data-score="3.5">3.5</div>
+                        <div class="matrix-cell risk-level-critical" data-score="4.0">4.0</div>
+                        <div class="matrix-cell risk-level-critical" data-score="4.5">4.5</div>
+                        <div class="matrix-cell risk-level-critical" data-score="5.0">5.0</div>
+                        
+                        <!-- Row 4 - High -->
+                        <div class="matrix-cell matrix-row-header">4<br/>High<br/>(61-80%)</div>
+                        <div class="matrix-cell risk-level-low" data-score="2.0">2.0</div>
+                        <div class="matrix-cell risk-level-medium" data-score="3.0">3.0</div>
+                        <div class="matrix-cell risk-level-high" data-score="3.5">3.5</div>
+                        <div class="matrix-cell risk-level-critical" data-score="4.0">4.0</div>
+                        <div class="matrix-cell risk-level-critical" data-score="4.5">4.5</div>
+                        
+                        <!-- Row 3 - Medium -->
+                        <div class="matrix-cell matrix-row-header">3<br/>Medium<br/>(41-60%)</div>
+                        <div class="matrix-cell risk-level-low" data-score="1.5">1.5</div>
+                        <div class="matrix-cell risk-level-medium" data-score="2.5">2.5</div>
+                        <div class="matrix-cell risk-level-medium" data-score="3.0">3.0</div>
+                        <div class="matrix-cell risk-level-high" data-score="3.5">3.5</div>
+                        <div class="matrix-cell risk-level-critical" data-score="4.0">4.0</div>
+                        
+                        <!-- Row 2 - Low -->
+                        <div class="matrix-cell matrix-row-header">2<br/>Low<br/>(21-40%)</div>
+                        <div class="matrix-cell risk-level-very-low" data-score="1.0">1.0</div>
+                        <div class="matrix-cell risk-level-low" data-score="2.0">2.0</div>
+                        <div class="matrix-cell risk-level-medium" data-score="2.5">2.5</div>
+                        <div class="matrix-cell risk-level-medium" data-score="3.0">3.0</div>
+                        <div class="matrix-cell risk-level-high" data-score="3.5">3.5</div>
+                        
+                        <!-- Row 1 - Very Low -->
+                        <div class="matrix-cell matrix-row-header">1<br/>Very Low<br/>(0-20%)</div>
+                        <div class="matrix-cell risk-level-very-low" data-score="0.5">0.5</div>
+                        <div class="matrix-cell risk-level-very-low" data-score="1.0">1.0</div>
+                        <div class="matrix-cell risk-level-low" data-score="1.5">1.5</div>
+                        <div class="matrix-cell risk-level-low" data-score="2.0">2.0</div>
+                        <div class="matrix-cell risk-level-medium" data-score="2.5">2.5</div>
+                        
+                        <!-- Impact axis label -->
+                        <div class="matrix-axis-footer"></div>
+                        <div class="matrix-axis-footer" style="grid-column: span 5; text-align: center; font-weight: 600;">
+                            Impact →
+                        </div>
+                    </div>
+                    
+                    <div class="matrix-legend">
+                        <h4>Risk Levels</h4>
+                        <div class="legend-items">
+                            <div class="legend-item">
+                                <div class="risk-level risk-level-very-low"></div>
+                                <span>Very Low (0-1)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="risk-level risk-level-low"></div>
+                                <span>Low (1-2)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="risk-level risk-level-medium"></div>
+                                <span>Medium (2-3)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="risk-level risk-level-high"></div>
+                                <span>High (3-4)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="risk-level risk-level-critical"></div>
+                                <span>Critical (4-5)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <h3>Risk Control Framework</h3>
+                    <div class="controls-grid">
+                        <div class="control-card">
+                            <h4>Preventive Controls</h4>
+                            <ul>
+                                <li>Stakeholder engagement plans</li>
+                                <li>Quality assurance processes</li>
+                                <li>Training and competency requirements</li>
+                                <li>Standard operating procedures</li>
+                                <li>Resource allocation protocols</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="control-card">
+                            <h4>Detective Controls</h4>
+                            <ul>
+                                <li>Regular progress reviews</li>
+                                <li>Performance monitoring systems</li>
+                                <li>Quality audits</li>
+                                <li>Stakeholder feedback mechanisms</li>
+                                <li>Risk indicator dashboards</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="control-card">
+                            <h4>Corrective Controls</h4>
+                            <ul>
+                                <li>Issue escalation procedures</li>
+                                <li>Rollback and recovery plans</li>
+                                <li>Alternative solution development</li>
+                                <li>Emergency response protocols</li>
+                                <li>Continuous improvement loops</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="control-card">
+                            <h4>Governance Controls</h4>
+                            <ul>
+                                <li>Project Control Group oversight</li>
+                                <li>Stage gate approvals</li>
+                                <li>Risk committee reviews</li>
+                                <li>Executive reporting</li>
+                                <li>Compliance monitoring</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Impact & Capacity Prioritization Tab -->
+            <div id="prioritization" class="tab-content">
+                <h2>Impact & Capacity Prioritization Matrix</h2>
+                <p style="margin-bottom: 20px;">Use this matrix to prioritize continuous improvement initiatives based on their potential impact and your organization's capacity to implement them.</p>
+                
+                <!-- Scoring Tables Section -->
+                <div class="scoring-section">
+                    <h3>Initiative Assessment</h3>
+                    <div class="scoring-tables-grid">
+                        <!-- Impact Scoring Table -->
+                        <div class="scoring-table-container">
+                            <h4>Impact Criteria</h4>
+                            <table class="scoring-table" id="impact-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40%">Impact Criteria</th>
+                                        <th style="width: 30%">Rating (Very High - Very Low)</th>
+                                        <th style="width: 20%">Score (1-5)</th>
+                                        <th style="width: 10%">Weight</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td contenteditable="true">Financial Impact</td>
+                                        <td>
+                                            <select class="rating-select impact-rating" data-criterion="financial">
+                                                <option value="1">Very Low</option>
+                                                <option value="2">Low</option>
+                                                <option value="3" selected>Medium</option>
+                                                <option value="4">High</option>
+                                                <option value="5">Very High</option>
+                                            </select>
+                                        </td>
+                                        <td class="score-cell">3</td>
+                                        <td><input type="number" class="weight-input" value="20" min="0" max="100">%</td>
+                                    </tr>
+                                    <tr>
+                                        <td contenteditable="true">Customer Impact</td>
+                                        <td>
+                                            <select class="rating-select impact-rating" data-criterion="customer">
+                                                <option value="1">Very Low</option>
+                                                <option value="2">Low</option>
+                                                <option value="3" selected>Medium</option>
+                                                <option value="4">High</option>
+                                                <option value="5">Very High</option>
+                                            </select>
+                                        </td>
+                                        <td class="score-cell">3</td>
+                                        <td><input type="number" class="weight-input" value="20" min="0" max="100">%</td>
+                                    </tr>
+                                    <tr>
+                                        <td contenteditable="true">Process Impact</td>
+                                        <td>
+                                            <select class="rating-select impact-rating" data-criterion="process">
+                                                <option value="1">Very Low</option>
+                                                <option value="2">Low</option>
+                                                <option value="3" selected>Medium</option>
+                                                <option value="4">High</option>
+                                                <option value="5">Very High</option>
+                                            </select>
+                                        </td>
+                                        <td class="score-cell">3</td>
+                                        <td><input type="number" class="weight-input" value="20" min="0" max="100">%</td>
+                                    </tr>
+                                    <tr>
+                                        <td contenteditable="true">Project Alignment</td>
+                                        <td>
+                                            <select class="rating-select impact-rating" data-criterion="project">
+                                                <option value="1">Very Low</option>
+                                                <option value="2">Low</option>
+                                                <option value="3" selected>Medium</option>
+                                                <option value="4">High</option>
+                                                <option value="5">Very High</option>
+                                            </select>
+                                        </td>
+                                        <td class="score-cell">3</td>
+                                        <td><input type="number" class="weight-input" value="10" min="0" max="100">%</td>
+                                    </tr>
+                                    <tr>
+                                        <td contenteditable="true">Strategic Alignment</td>
+                                        <td>
+                                            <select class="rating-select impact-rating" data-criterion="strategic">
+                                                <option value="1">Very Low</option>
+                                                <option value="2">Low</option>
+                                                <option value="3" selected>Medium</option>
+                                                <option value="4">High</option>
+                                                <option value="5">Very High</option>
+                                            </select>
+                                        </td>
+                                        <td class="score-cell">3</td>
+                                        <td><input type="number" class="weight-input" value="15" min="0" max="100">%</td>
+                                    </tr>
+                                    <tr>
+                                        <td contenteditable="true">Risk Mitigation</td>
+                                        <td>
+                                            <select class="rating-select impact-rating" data-criterion="risk">
+                                                <option value="1">Very Low</option>
+                                                <option value="2">Low</option>
+                                                <option value="3" selected>Medium</option>
+                                                <option value="4">High</option>
+                                                <option value="5">Very High</option>
+                                            </select>
+                                        </td>
+                                        <td class="score-cell">3</td>
+                                        <td><input type="number" class="weight-input" value="15" min="0" max="100">%</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="2"><strong>Impact Score</strong></td>
+                                        <td colspan="2" class="total-score" id="impact-total">3.0</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            <button class="btn btn-secondary" onclick="addCriterion('impact')">+ Add Criterion</button>
+                        </div>
+
+                        <!-- Capacity Scoring Table -->
+                        <div class="scoring-table-container">
+                            <h4>Capacity Criteria</h4>
+                            <table class="scoring-table" id="capacity-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40%">Capacity Criteria</th>
+                                        <th style="width: 30%">Rating (Very High - Very Low)</th>
+                                        <th style="width: 20%">Score (1-5)</th>
+                                        <th style="width: 10%">Weight</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td contenteditable="true">Resource Availability</td>
+                                        <td>
+                                            <select class="rating-select capacity-rating" data-criterion="resource">
+                                                <option value="1">Very Low</option>
+                                                <option value="2">Low</option>
+                                                <option value="3" selected>Medium</option>
+                                                <option value="4">High</option>
+                                                <option value="5">Very High</option>
+                                            </select>
+                                        </td>
+                                        <td class="score-cell">3</td>
+                                        <td><input type="number" class="weight-input" value="25" min="0" max="100">%</td>
+                                    </tr>
+                                    <tr>
+                                        <td contenteditable="true">Skills & Expertise</td>
+                                        <td>
+                                            <select class="rating-select capacity-rating" data-criterion="skills">
+                                                <option value="1">Very Low</option>
+                                                <option value="2">Low</option>
+                                                <option value="3" selected>Medium</option>
+                                                <option value="4">High</option>
+                                                <option value="5">Very High</option>
+                                            </select>
+                                        </td>
+                                        <td class="score-cell">3</td>
+                                        <td><input type="number" class="weight-input" value="25" min="0" max="100">%</td>
+                                    </tr>
+                                    <tr>
+                                        <td contenteditable="true">Technology Readiness</td>
+                                        <td>
+                                            <select class="rating-select capacity-rating" data-criterion="technology">
+                                                <option value="1">Very Low</option>
+                                                <option value="2">Low</option>
+                                                <option value="3" selected>Medium</option>
+                                                <option value="4">High</option>
+                                                <option value="5">Very High</option>
+                                            </select>
+                                        </td>
+                                        <td class="score-cell">3</td>
+                                        <td><input type="number" class="weight-input" value="20" min="0" max="100">%</td>
+                                    </tr>
+                                    <tr>
+                                        <td contenteditable="true">Change Readiness</td>
+                                        <td>
+                                            <select class="rating-select capacity-rating" data-criterion="change">
+                                                <option value="1">Very Low</option>
+                                                <option value="2">Low</option>
+                                                <option value="3" selected>Medium</option>
+                                                <option value="4">High</option>
+                                                <option value="5">Very High</option>
+                                            </select>
+                                        </td>
+                                        <td class="score-cell">3</td>
+                                        <td><input type="number" class="weight-input" value="15" min="0" max="100">%</td>
+                                    </tr>
+                                    <tr>
+                                        <td contenteditable="true">Leadership Support</td>
+                                        <td>
+                                            <select class="rating-select capacity-rating" data-criterion="leadership">
+                                                <option value="1">Very Low</option>
+                                                <option value="2">Low</option>
+                                                <option value="3" selected>Medium</option>
+                                                <option value="4">High</option>
+                                                <option value="5">Very High</option>
+                                            </select>
+                                        </td>
+                                        <td class="score-cell">3</td>
+                                        <td><input type="number" class="weight-input" value="15" min="0" max="100">%</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="2"><strong>Capacity Score</strong></td>
+                                        <td colspan="2" class="total-score" id="capacity-total">3.0</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            <button class="btn btn-secondary" onclick="addCriterion('capacity')">+ Add Criterion</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Priority Result -->
+                    <div class="priority-result">
+                        <h4>Priority Assessment Result</h4>
+                        <div class="result-display">
+                            <div class="result-scores">
+                                <span>Impact Score: <strong id="result-impact">3.0</strong></span>
+                                <span>Capacity Score: <strong id="result-capacity">3.0</strong></span>
+                            </div>
+                            <div class="result-priority priority-2">
+                                <div class="priority-label">Priority 2</div>
+                                <div class="priority-description">Plan & Resource</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simplified Priority Matrix -->
+                <div class="prioritization-matrix simplified">
+                    <!-- Headers -->
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell matrix-header">Very Low<br>Capacity<br>(1)</div>
+                    <div class="matrix-cell matrix-header">Low<br>Capacity<br>(2)</div>
+                    <div class="matrix-cell matrix-header">Medium<br>Capacity<br>(3)</div>
+                    <div class="matrix-cell matrix-header">High<br>Capacity<br>(4)</div>
+                    <div class="matrix-cell matrix-header">Very High<br>Capacity<br>(5)</div>
+                    
+                    <!-- Very High Impact Row -->
+                    <div class="matrix-cell matrix-label">Very High<br>Impact<br>(5)</div>
+                    <div class="matrix-cell priority-2">
+                        <div class="priority-label">Priority 2</div>
+                        <div class="priority-description">Plan & Resource</div>
+                    </div>
+                    <div class="matrix-cell priority-2">
+                        <div class="priority-label">Priority 2</div>
+                        <div class="priority-description">Plan & Resource</div>
+                    </div>
+                    <div class="matrix-cell priority-1">
+                        <div class="priority-label">Priority 1</div>
+                        <div class="priority-description">Quick Win</div>
+                    </div>
+                    <div class="matrix-cell priority-1">
+                        <div class="priority-label">Priority 1</div>
+                        <div class="priority-description">Quick Win</div>
+                    </div>
+                    <div class="matrix-cell priority-1">
+                        <div class="priority-label">Priority 1</div>
+                        <div class="priority-description">Quick Win</div>
+                    </div>
+                    
+                    <!-- High Impact Row -->
+                    <div class="matrix-cell matrix-label">High<br>Impact<br>(4)</div>
+                    <div class="matrix-cell priority-2">
+                        <div class="priority-label">Priority 2</div>
+                        <div class="priority-description">Plan & Resource</div>
+                    </div>
+                    <div class="matrix-cell priority-2">
+                        <div class="priority-label">Priority 2</div>
+                        <div class="priority-description">Plan & Resource</div>
+                    </div>
+                    <div class="matrix-cell priority-1">
+                        <div class="priority-label">Priority 1</div>
+                        <div class="priority-description">Quick Win</div>
+                    </div>
+                    <div class="matrix-cell priority-1">
+                        <div class="priority-label">Priority 1</div>
+                        <div class="priority-description">Quick Win</div>
+                    </div>
+                    <div class="matrix-cell priority-1">
+                        <div class="priority-label">Priority 1</div>
+                        <div class="priority-description">Quick Win</div>
+                    </div>
+                    
+                    <!-- Medium Impact Row -->
+                    <div class="matrix-cell matrix-label">Medium<br>Impact<br>(3)</div>
+                    <div class="matrix-cell priority-3">
+                        <div class="priority-label">Priority 3</div>
+                        <div class="priority-description">Defer/Reconsider</div>
+                    </div>
+                    <div class="matrix-cell priority-2">
+                        <div class="priority-label">Priority 2</div>
+                        <div class="priority-description">Plan & Resource</div>
+                    </div>
+                    <div class="matrix-cell priority-2">
+                        <div class="priority-label">Priority 2</div>
+                        <div class="priority-description">Plan & Resource</div>
+                    </div>
+                    <div class="matrix-cell priority-1">
+                        <div class="priority-label">Priority 1</div>
+                        <div class="priority-description">Quick Win</div>
+                    </div>
+                    <div class="matrix-cell priority-1">
+                        <div class="priority-label">Priority 1</div>
+                        <div class="priority-description">Quick Win</div>
+                    </div>
+                    
+                    <!-- Low Impact Row -->
+                    <div class="matrix-cell matrix-label">Low<br>Impact<br>(2)</div>
+                    <div class="matrix-cell priority-3">
+                        <div class="priority-label">Priority 3</div>
+                        <div class="priority-description">Defer/Reconsider</div>
+                    </div>
+                    <div class="matrix-cell priority-3">
+                        <div class="priority-label">Priority 3</div>
+                        <div class="priority-description">Defer/Reconsider</div>
+                    </div>
+                    <div class="matrix-cell priority-2">
+                        <div class="priority-label">Priority 2</div>
+                        <div class="priority-description">Plan & Resource</div>
+                    </div>
+                    <div class="matrix-cell priority-2">
+                        <div class="priority-label">Priority 2</div>
+                        <div class="priority-description">Plan & Resource</div>
+                    </div>
+                    <div class="matrix-cell priority-2">
+                        <div class="priority-label">Priority 2</div>
+                        <div class="priority-description">Plan & Resource</div>
+                    </div>
+                    
+                    <!-- Very Low Impact Row -->
+                    <div class="matrix-cell matrix-label">Very Low<br>Impact<br>(1)</div>
+                    <div class="matrix-cell priority-3">
+                        <div class="priority-label">Priority 3</div>
+                        <div class="priority-description">Defer/Reconsider</div>
+                    </div>
+                    <div class="matrix-cell priority-3">
+                        <div class="priority-label">Priority 3</div>
+                        <div class="priority-description">Defer/Reconsider</div>
+                    </div>
+                    <div class="matrix-cell priority-3">
+                        <div class="priority-label">Priority 3</div>
+                        <div class="priority-description">Defer/Reconsider</div>
+                    </div>
+                    <div class="matrix-cell priority-3">
+                        <div class="priority-label">Priority 3</div>
+                        <div class="priority-description">Defer/Reconsider</div>
+                    </div>
+                    <div class="matrix-cell priority-3">
+                        <div class="priority-label">Priority 3</div>
+                        <div class="priority-description">Defer/Reconsider</div>
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <h3>Priority Categories</h3>
+                    <div class="controls-grid">
+                        <div class="control-card">
+                            <h4>Priority 1: Quick Wins</h4>
+                            <ul>
+                                <li>High impact (4-5) with good capacity (3-5)</li>
+                                <li>Implement immediately</li>
+                                <li>Allocate resources now</li>
+                                <li>Track progress weekly</li>
+                                <li>Quick value realization</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="control-card">
+                            <h4>Priority 2: Plan & Resource</h4>
+                            <ul>
+                                <li>High impact but limited capacity OR medium impact with medium capacity</li>
+                                <li>Develop implementation plan</li>
+                                <li>Build required capacity</li>
+                                <li>Consider phased approach</li>
+                                <li>Secure necessary resources</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="control-card">
+                            <h4>Priority 3: Defer/Reconsider</h4>
+                            <ul>
+                                <li>Low impact (1-2) or very low capacity</li>
+                                <li>Document for future reference</li>
+                                <li>Revisit if conditions change</li>
+                                <li>Consider alternative approaches</li>
+                                <li>May not be worth pursuing</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Initiative Tracker Tab -->
+            <div id="initiatives" class="tab-content">
+                <h2>Continuous Improvement Initiative Tracker</h2>
+                
+                <div class="initiative-form">
+                    <h3>Add New Initiative</h3>
+                    <form id="initiative-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="initiative-name">Initiative Name</label>
+                                <input type="text" id="initiative-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="ci-stage">CI Stage</label>
+                                <select id="ci-stage" required>
+                                    <option value="">Select Stage</option>
+                                    <option value="1">1. Identify Problem</option>
+                                    <option value="2">2. Analyse Current State</option>
+                                    <option value="3">3. Analyse the Problem</option>
+                                    <option value="4">4. Develop Solution</option>
+                                    <option value="5">5. Implement and Test</option>
+                                    <option value="6">6. Evaluate and Measure</option>
+                                    <option value="7">7. Standardise</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="impact-score">Impact Score (1-5)</label>
+                                <input type="number" id="impact-score" min="1" max="5" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="capacity-score">Capacity Score (1-5)</label>
+                                <input type="number" id="capacity-score" min="1" max="5" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="initiative-description">Description</label>
+                            <textarea id="initiative-description" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Initiative</button>
+                    </form>
+                </div>
+
+                <div class="initiatives-list" id="initiatives-list">
+                    <h3>Current Initiatives</h3>
+                    <!-- Initiatives will be dynamically added here -->
+                </div>
+            </div>
         </div>
-        <div class="legend-item">
-         <div class="risk-level risk-level-high">
-         </div>
-         <span>
-          High (3-4)
-         </span>
-        </div>
-        <div class="legend-item">
-         <div class="risk-level risk-level-critical">
-         </div>
-         <span>
-          Critical (4-5)
-         </span>
-        </div>
-       </div>
-      </div>
-     </div>
-     <div class="controls-section">
-      <h3>
-       Risk Control Framework
-      </h3>
-      <div class="controls-grid">
-       <div class="control-card">
-        <h4>
-         Preventive Controls
-        </h4>
-        <ul>
-         <li>
-          Stakeholder engagement plans
-         </li>
-         <li>
-          Quality assurance processes
-         </li>
-         <li>
-          Training and competency requirements
-         </li>
-         <li>
-          Standard operating procedures
-         </li>
-         <li>
-          Resource allocation protocols
-         </li>
-        </ul>
-       </div>
-       <div class="control-card">
-        <h4>
-         Detective Controls
-        </h4>
-        <ul>
-         <li>
-          Regular progress reviews
-         </li>
-         <li>
-          Performance monitoring systems
-         </li>
-         <li>
-          Quality audits
-         </li>
-         <li>
-          Stakeholder feedback mechanisms
-         </li>
-         <li>
-          Risk indicator dashboards
-         </li>
-        </ul>
-       </div>
-       <div class="control-card">
-        <h4>
-         Corrective Controls
-        </h4>
-        <ul>
-         <li>
-          Issue escalation procedures
-         </li>
-         <li>
-          Rollback and recovery plans
-         </li>
-         <li>
-          Alternative solution development
-         </li>
-         <li>
-          Emergency response protocols
-         </li>
-         <li>
-          Continuous improvement loops
-         </li>
-        </ul>
-       </div>
-       <div class="control-card">
-        <h4>
-         Governance Controls
-        </h4>
-        <ul>
-         <li>
-          Project Control Group oversight
-         </li>
-         <li>
-          Stage gate approvals
-         </li>
-         <li>
-          Risk committee reviews
-         </li>
-         <li>
-          Executive reporting
-         </li>
-         <li>
-          Compliance monitoring
-         </li>
-        </ul>
-       </div>
-      </div>
-     </div>
     </div>
-    <!-- Impact & Capacity Prioritization Tab -->
-    <div class="tab-content" id="prioritization">
-     <h2>
-      Impact &amp; Capacity Prioritization Matrix
-     </h2>
-     <p style="margin-bottom: 20px;">
-      Use this matrix to prioritize continuous improvement initiatives based on their potential impact and your organization's capacity to implement them.
-     </p>
-     <!-- Scoring Tables Section -->
-     <div class="scoring-section">
-      <h3>
-       Initiative Assessment
-      </h3>
-      <div class="scoring-tables-grid">
-       <!-- Impact Scoring Table -->
-       <div class="scoring-table-container">
-        <h4>
-         Impact Criteria
-        </h4>
-        <table class="scoring-table" id="impact-table">
-         <thead>
-          <tr>
-           <th style="width: 40%">
-            Impact Criteria
-           </th>
-           <th style="width: 30%">
-            Rating (Very High - Very Low)
-           </th>
-           <th style="width: 20%">
-            Score (1-5)
-           </th>
-           <th style="width: 10%">
-            Weight
-           </th>
-          </tr>
-         </thead>
-         <tbody>
-          <tr>
-           <td contenteditable="true">
-            Financial Impact
-           </td>
-           <td>
-            <select class="rating-select impact-rating" data-criterion="financial">
-             <option value="1">
-              Very Low
-             </option>
-             <option value="2">
-              Low
-             </option>
-             <option selected="" value="3">
-              Medium
-             </option>
-             <option value="4">
-              High
-             </option>
-             <option value="5">
-              Very High
-             </option>
-            </select>
-           </td>
-           <td class="score-cell">
-            3
-           </td>
-           <td>
-            <input class="weight-input" max="100" min="0" type="number" value="20"/>
-            %
-           </td>
-          </tr>
-          <tr>
-           <td contenteditable="true">
-            Customer Impact
-           </td>
-           <td>
-            <select class="rating-select impact-rating" data-criterion="customer">
-             <option value="1">
-              Very Low
-             </option>
-             <option value="2">
-              Low
-             </option>
-             <option selected="" value="3">
-              Medium
-             </option>
-             <option value="4">
-              High
-             </option>
-             <option value="5">
-              Very High
-             </option>
-            </select>
-           </td>
-           <td class="score-cell">
-            3
-           </td>
-           <td>
-            <input class="weight-input" max="100" min="0" type="number" value="20"/>
-            %
-           </td>
-          </tr>
-          <tr>
-           <td contenteditable="true">
-            Process Impact
-           </td>
-           <td>
-            <select class="rating-select impact-rating" data-criterion="process">
-             <option value="1">
-              Very Low
-             </option>
-             <option value="2">
-              Low
-             </option>
-             <option selected="" value="3">
-              Medium
-             </option>
-             <option value="4">
-              High
-             </option>
-             <option value="5">
-              Very High
-             </option>
-            </select>
-           </td>
-           <td class="score-cell">
-            3
-           </td>
-           <td>
-            <input class="weight-input" max="100" min="0" type="number" value="20"/>
-            %
-           </td>
-          </tr>
-          <tr>
-           <td contenteditable="true">
-            Project Alignment
-           </td>
-           <td>
-            <select class="rating-select impact-rating" data-criterion="project">
-             <option value="1">
-              Very Low
-             </option>
-             <option value="2">
-              Low
-             </option>
-             <option selected="" value="3">
-              Medium
-             </option>
-             <option value="4">
-              High
-             </option>
-             <option value="5">
-              Very High
-             </option>
-            </select>
-           </td>
-           <td class="score-cell">
-            3
-           </td>
-           <td>
-            <input class="weight-input" max="100" min="0" type="number" value="10"/>
-            %
-           </td>
-          </tr>
-          <tr>
-           <td contenteditable="true">
-            Strategic Alignment
-           </td>
-           <td>
-            <select class="rating-select impact-rating" data-criterion="strategic">
-             <option value="1">
-              Very Low
-             </option>
-             <option value="2">
-              Low
-             </option>
-             <option selected="" value="3">
-              Medium
-             </option>
-             <option value="4">
-              High
-             </option>
-             <option value="5">
-              Very High
-             </option>
-            </select>
-           </td>
-           <td class="score-cell">
-            3
-           </td>
-           <td>
-            <input class="weight-input" max="100" min="0" type="number" value="15"/>
-            %
-           </td>
-          </tr>
-          <tr>
-           <td contenteditable="true">
-            Risk Mitigation
-           </td>
-           <td>
-            <select class="rating-select impact-rating" data-criterion="risk">
-             <option value="1">
-              Very Low
-             </option>
-             <option value="2">
-              Low
-             </option>
-             <option selected="" value="3">
-              Medium
-             </option>
-             <option value="4">
-              High
-             </option>
-             <option value="5">
-              Very High
-             </option>
-            </select>
-           </td>
-           <td class="score-cell">
-            3
-           </td>
-           <td>
-            <input class="weight-input" max="100" min="0" type="number" value="15"/>
-            %
-           </td>
-          </tr>
-         </tbody>
-         <tfoot>
-          <tr>
-           <td colspan="2">
-            <strong>
-             Impact Score
-            </strong>
-           </td>
-           <td class="total-score" colspan="2" id="impact-total">
-            3.0
-           </td>
-          </tr>
-         </tfoot>
-        </table>
-        <button class="btn btn-secondary" onclick="addCriterion('impact')">
-         + Add Criterion
-        </button>
-       </div>
-       <!-- Capacity Scoring Table -->
-       <div class="scoring-table-container">
-        <h4>
-         Capacity Criteria
-        </h4>
-        <table class="scoring-table" id="capacity-table">
-         <thead>
-          <tr>
-           <th style="width: 40%">
-            Capacity Criteria
-           </th>
-           <th style="width: 30%">
-            Rating (Very High - Very Low)
-           </th>
-           <th style="width: 20%">
-            Score (1-5)
-           </th>
-           <th style="width: 10%">
-            Weight
-           </th>
-          </tr>
-         </thead>
-         <tbody>
-          <tr>
-           <td contenteditable="true">
-            Resource Availability
-           </td>
-           <td>
-            <select class="rating-select capacity-rating" data-criterion="resource">
-             <option value="1">
-              Very Low
-             </option>
-             <option value="2">
-              Low
-             </option>
-             <option selected="" value="3">
-              Medium
-             </option>
-             <option value="4">
-              High
-             </option>
-             <option value="5">
-              Very High
-             </option>
-            </select>
-           </td>
-           <td class="score-cell">
-            3
-           </td>
-           <td>
-            <input class="weight-input" max="100" min="0" type="number" value="25"/>
-            %
-           </td>
-          </tr>
-          <tr>
-           <td contenteditable="true">
-            Skills &amp; Expertise
-           </td>
-           <td>
-            <select class="rating-select capacity-rating" data-criterion="skills">
-             <option value="1">
-              Very Low
-             </option>
-             <option value="2">
-              Low
-             </option>
-             <option selected="" value="3">
-              Medium
-             </option>
-             <option value="4">
-              High
-             </option>
-             <option value="5">
-              Very High
-             </option>
-            </select>
-           </td>
-           <td class="score-cell">
-            3
-           </td>
-           <td>
-            <input class="weight-input" max="100" min="0" type="number" value="25"/>
-            %
-           </td>
-          </tr>
-          <tr>
-           <td contenteditable="true">
-            Technology Readiness
-           </td>
-           <td>
-            <select class="rating-select capacity-rating" data-criterion="technology">
-             <option value="1">
-              Very Low
-             </option>
-             <option value="2">
-              Low
-             </option>
-             <option selected="" value="3">
-              Medium
-             </option>
-             <option value="4">
-              High
-             </option>
-             <option value="5">
-              Very High
-             </option>
-            </select>
-           </td>
-           <td class="score-cell">
-            3
-           </td>
-           <td>
-            <input class="weight-input" max="100" min="0" type="number" value="20"/>
-            %
-           </td>
-          </tr>
-          <tr>
-           <td contenteditable="true">
-            Change Readiness
-           </td>
-           <td>
-            <select class="rating-select capacity-rating" data-criterion="change">
-             <option value="1">
-              Very Low
-             </option>
-             <option value="2">
-              Low
-             </option>
-             <option selected="" value="3">
-              Medium
-             </option>
-             <option value="4">
-              High
-             </option>
-             <option value="5">
-              Very High
-             </option>
-            </select>
-           </td>
-           <td class="score-cell">
-            3
-           </td>
-           <td>
-            <input class="weight-input" max="100" min="0" type="number" value="15"/>
-            %
-           </td>
-          </tr>
-          <tr>
-           <td contenteditable="true">
-            Leadership Support
-           </td>
-           <td>
-            <select class="rating-select capacity-rating" data-criterion="leadership">
-             <option value="1">
-              Very Low
-             </option>
-             <option value="2">
-              Low
-             </option>
-             <option selected="" value="3">
-              Medium
-             </option>
-             <option value="4">
-              High
-             </option>
-             <option value="5">
-              Very High
-             </option>
-            </select>
-           </td>
-           <td class="score-cell">
-            3
-           </td>
-           <td>
-            <input class="weight-input" max="100" min="0" type="number" value="15"/>
-            %
-           </td>
-          </tr>
-         </tbody>
-         <tfoot>
-          <tr>
-           <td colspan="2">
-            <strong>
-             Capacity Score
-            </strong>
-           </td>
-           <td class="total-score" colspan="2" id="capacity-total">
-            3.0
-           </td>
-          </tr>
-         </tfoot>
-        </table>
-        <button class="btn btn-secondary" onclick="addCriterion('capacity')">
-         + Add Criterion
-        </button>
-       </div>
-      </div>
-      <!-- Priority Result -->
-      <div class="priority-result">
-       <h4>
-        Priority Assessment Result
-       </h4>
-       <div class="result-display">
-        <div class="result-scores">
-         <span>
-          Impact Score:
-          <strong id="result-impact">
-           3.0
-          </strong>
-         </span>
-         <span>
-          Capacity Score:
-          <strong id="result-capacity">
-           3.0
-          </strong>
-         </span>
-        </div>
-        <div class="result-priority priority-2">
-         <div class="priority-label">
-          Priority 2
-         </div>
-         <div class="priority-description">
-          Plan &amp; Resource
-         </div>
-        </div>
-       </div>
-      </div>
-     </div>
-     <!-- Simplified Priority Matrix -->
-     <div class="prioritization-matrix simplified">
-      <!-- Headers -->
-      <div class="matrix-cell">
-      </div>
-      <div class="matrix-cell matrix-header">
-       Very Low
-       <br/>
-       Capacity
-       <br/>
-       (1)
-      </div>
-      <div class="matrix-cell matrix-header">
-       Low
-       <br/>
-       Capacity
-       <br/>
-       (2)
-      </div>
-      <div class="matrix-cell matrix-header">
-       Medium
-       <br/>
-       Capacity
-       <br/>
-       (3)
-      </div>
-      <div class="matrix-cell matrix-header">
-       High
-       <br/>
-       Capacity
-       <br/>
-       (4)
-      </div>
-      <div class="matrix-cell matrix-header">
-       Very High
-       <br/>
-       Capacity
-       <br/>
-       (5)
-      </div>
-      <!-- Very High Impact Row -->
-      <div class="matrix-cell matrix-label">
-       Very High
-       <br/>
-       Impact
-       <br/>
-       (5)
-      </div>
-      <div class="matrix-cell priority-2">
-       <div class="priority-label">
-        Priority 2
-       </div>
-       <div class="priority-description">
-        Plan &amp; Resource
-       </div>
-      </div>
-      <div class="matrix-cell priority-2">
-       <div class="priority-label">
-        Priority 2
-       </div>
-       <div class="priority-description">
-        Plan &amp; Resource
-       </div>
-      </div>
-      <div class="matrix-cell priority-1">
-       <div class="priority-label">
-        Priority 1
-       </div>
-       <div class="priority-description">
-        Quick Win
-       </div>
-      </div>
-      <div class="matrix-cell priority-1">
-       <div class="priority-label">
-        Priority 1
-       </div>
-       <div class="priority-description">
-        Quick Win
-       </div>
-      </div>
-      <div class="matrix-cell priority-1">
-       <div class="priority-label">
-        Priority 1
-       </div>
-       <div class="priority-description">
-        Quick Win
-       </div>
-      </div>
-      <!-- High Impact Row -->
-      <div class="matrix-cell matrix-label">
-       High
-       <br/>
-       Impact
-       <br/>
-       (4)
-      </div>
-      <div class="matrix-cell priority-2">
-       <div class="priority-label">
-        Priority 2
-       </div>
-       <div class="priority-description">
-        Plan &amp; Resource
-       </div>
-      </div>
-      <div class="matrix-cell priority-2">
-       <div class="priority-label">
-        Priority 2
-       </div>
-       <div class="priority-description">
-        Plan &amp; Resource
-       </div>
-      </div>
-      <div class="matrix-cell priority-1">
-       <div class="priority-label">
-        Priority 1
-       </div>
-       <div class="priority-description">
-        Quick Win
-       </div>
-      </div>
-      <div class="matrix-cell priority-1">
-       <div class="priority-label">
-        Priority 1
-       </div>
-       <div class="priority-description">
-        Quick Win
-       </div>
-      </div>
-      <div class="matrix-cell priority-1">
-       <div class="priority-label">
-        Priority 1
-       </div>
-       <div class="priority-description">
-        Quick Win
-       </div>
-      </div>
-      <!-- Medium Impact Row -->
-      <div class="matrix-cell matrix-label">
-       Medium
-       <br/>
-       Impact
-       <br/>
-       (3)
-      </div>
-      <div class="matrix-cell priority-3">
-       <div class="priority-label">
-        Priority 3
-       </div>
-       <div class="priority-description">
-        Defer/Reconsider
-       </div>
-      </div>
-      <div class="matrix-cell priority-2">
-       <div class="priority-label">
-        Priority 2
-       </div>
-       <div class="priority-description">
-        Plan &amp; Resource
-       </div>
-      </div>
-      <div class="matrix-cell priority-2">
-       <div class="priority-label">
-        Priority 2
-       </div>
-       <div class="priority-description">
-        Plan &amp; Resource
-       </div>
-      </div>
-      <div class="matrix-cell priority-1">
-       <div class="priority-label">
-        Priority 1
-       </div>
-       <div class="priority-description">
-        Quick Win
-       </div>
-      </div>
-      <div class="matrix-cell priority-1">
-       <div class="priority-label">
-        Priority 1
-       </div>
-       <div class="priority-description">
-        Quick Win
-       </div>
-      </div>
-      <!-- Low Impact Row -->
-      <div class="matrix-cell matrix-label">
-       Low
-       <br/>
-       Impact
-       <br/>
-       (2)
-      </div>
-      <div class="matrix-cell priority-3">
-       <div class="priority-label">
-        Priority 3
-       </div>
-       <div class="priority-description">
-        Defer/Reconsider
-       </div>
-      </div>
-      <div class="matrix-cell priority-3">
-       <div class="priority-label">
-        Priority 3
-       </div>
-       <div class="priority-description">
-        Defer/Reconsider
-       </div>
-      </div>
-      <div class="matrix-cell priority-2">
-       <div class="priority-label">
-        Priority 2
-       </div>
-       <div class="priority-description">
-        Plan &amp; Resource
-       </div>
-      </div>
-      <div class="matrix-cell priority-2">
-       <div class="priority-label">
-        Priority 2
-       </div>
-       <div class="priority-description">
-        Plan &amp; Resource
-       </div>
-      </div>
-      <div class="matrix-cell priority-2">
-       <div class="priority-label">
-        Priority 2
-       </div>
-       <div class="priority-description">
-        Plan &amp; Resource
-       </div>
-      </div>
-      <!-- Very Low Impact Row -->
-      <div class="matrix-cell matrix-label">
-       Very Low
-       <br/>
-       Impact
-       <br/>
-       (1)
-      </div>
-      <div class="matrix-cell priority-3">
-       <div class="priority-label">
-        Priority 3
-       </div>
-       <div class="priority-description">
-        Defer/Reconsider
-       </div>
-      </div>
-      <div class="matrix-cell priority-3">
-       <div class="priority-label">
-        Priority 3
-       </div>
-       <div class="priority-description">
-        Defer/Reconsider
-       </div>
-      </div>
-      <div class="matrix-cell priority-3">
-       <div class="priority-label">
-        Priority 3
-       </div>
-       <div class="priority-description">
-        Defer/Reconsider
-       </div>
-      </div>
-      <div class="matrix-cell priority-3">
-       <div class="priority-label">
-        Priority 3
-       </div>
-       <div class="priority-description">
-        Defer/Reconsider
-       </div>
-      </div>
-      <div class="matrix-cell priority-3">
-       <div class="priority-label">
-        Priority 3
-       </div>
-       <div class="priority-description">
-        Defer/Reconsider
-       </div>
-      </div>
-     </div>
-     <div class="controls-section">
-      <h3>
-       Priority Categories
-      </h3>
-      <div class="controls-grid">
-       <div class="control-card">
-        <h4>
-         Priority 1: Quick Wins
-        </h4>
-        <ul>
-         <li>
-          High impact (4-5) with good capacity (3-5)
-         </li>
-         <li>
-          Implement immediately
-         </li>
-         <li>
-          Allocate resources now
-         </li>
-         <li>
-          Track progress weekly
-         </li>
-         <li>
-          Quick value realization
-         </li>
-        </ul>
-       </div>
-       <div class="control-card">
-        <h4>
-         Priority 2: Plan &amp; Resource
-        </h4>
-        <ul>
-         <li>
-          High impact but limited capacity OR medium impact with medium capacity
-         </li>
-         <li>
-          Develop implementation plan
-         </li>
-         <li>
-          Build required capacity
-         </li>
-         <li>
-          Consider phased approach
-         </li>
-         <li>
-          Secure necessary resources
-         </li>
-        </ul>
-       </div>
-       <div class="control-card">
-        <h4>
-         Priority 3: Defer/Reconsider
-        </h4>
-        <ul>
-         <li>
-          Low impact (1-2) or very low capacity
-         </li>
-         <li>
-          Document for future reference
-         </li>
-         <li>
-          Revisit if conditions change
-         </li>
-         <li>
-          Consider alternative approaches
-         </li>
-         <li>
-          May not be worth pursuing
-         </li>
-        </ul>
-       </div>
-      </div>
-     </div>
-    </div>
-    <!-- Initiative Tracker Tab -->
-    <div class="tab-content" id="initiatives">
-     <h2>
-      Continuous Improvement Initiative Tracker
-     </h2>
-     <div class="initiative-form">
-      <h3>
-       Add New Initiative
-      </h3>
-      <form id="initiative-form">
-       <div class="form-grid">
-        <div class="form-group">
-         <label for="initiative-name">
-          Initiative Name
-         </label>
-         <input id="initiative-name" required="" type="text"/>
-        </div>
-        <div class="form-group">
-         <label for="ci-stage">
-          CI Stage
-         </label>
-         <select id="ci-stage" required="">
-          <option value="">
-           Select Stage
-          </option>
-          <option value="1">
-           1. Identify Problem
-          </option>
-          <option value="2">
-           2. Analyse Current State
-          </option>
-          <option value="3">
-           3. Analyse the Problem
-          </option>
-          <option value="4">
-           4. Develop Solution
-          </option>
-          <option value="5">
-           5. Implement and Test
-          </option>
-          <option value="6">
-           6. Evaluate and Measure
-          </option>
-          <option value="7">
-           7. Standardise
-          </option>
-         </select>
-        </div>
-        <div class="form-group">
-         <label for="impact-score">
-          Impact Score (1-5)
-         </label>
-         <input id="impact-score" max="5" min="1" required="" type="number"/>
-        </div>
-        <div class="form-group">
-         <label for="capacity-score">
-          Capacity Score (1-5)
-         </label>
-         <input id="capacity-score" max="5" min="1" required="" type="number"/>
-        </div>
-       </div>
-       <div class="form-group">
-        <label for="initiative-description">
-         Description
-        </label>
-        <textarea id="initiative-description" required=""></textarea>
-       </div>
-       <button class="btn btn-primary" type="submit">
-        Add Initiative
-       </button>
-      </form>
-     </div>
-     <div class="initiatives-list" id="initiatives-list">
-      <h3>
-       Current Initiatives
-      </h3>
-      <!-- Initiatives will be dynamically added here -->
-     </div>
-    </div>
-   </div>
-  </div>
-  <script>
-   // Tab switching functionality
+
+    <script>
+        // Tab switching functionality
         function showTab(tabName) {
             // Hide all tabs
             const tabs = document.querySelectorAll('.tab-content');
@@ -2588,6 +1795,9 @@
                     this.dispatchEvent(new Event('input'));
                 });
             });
+
+            // Initialize scoring table functionality
+            initializeScoringTables();
         });
 
         // Initiative management
@@ -2595,9 +1805,9 @@
 
         function getPriorityFromScores(impact, capacity) {
             if (impact >= 4 && capacity >= 3) return { level: 1, label: 'Quick Win', class: 'priority-1' };
-            if (impact >= 4 && capacity < 3) return { level: 2, label: 'Strategic Initiative', class: 'priority-2' };
-            if (impact < 4 && capacity < 3) return { level: 3, label: 'Plan & Resource', class: 'priority-3' };
-            return { level: 4, label: 'Defer/Reconsider', class: 'priority-4' };
+            if (impact >= 4 && capacity < 3) return { level: 2, label: 'Plan & Resource', class: 'priority-2' };
+            if (impact < 4 && impact >= 3 && capacity >= 3) return { level: 2, label: 'Plan & Resource', class: 'priority-2' };
+            return { level: 3, label: 'Defer/Reconsider', class: 'priority-3' };
         }
 
         function renderInitiatives() {
@@ -2668,6 +1878,105 @@
             // Reset form
             this.reset();
         });
-  </script>
- </body>
+
+        // Scoring table functionality
+        function initializeScoringTables() {
+            // Update scores when ratings change
+            document.querySelectorAll('.rating-select').forEach(select => {
+                select.addEventListener('change', function() {
+                    const row = this.closest('tr');
+                    const scoreCell = row.querySelector('.score-cell');
+                    scoreCell.textContent = this.value;
+                    
+                    if (this.classList.contains('impact-rating')) {
+                        calculateWeightedScore('impact');
+                    } else {
+                        calculateWeightedScore('capacity');
+                    }
+                });
+            });
+
+            // Update scores when weights change
+            document.querySelectorAll('.weight-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    const tableId = this.closest('table').id;
+                    const type = tableId.includes('impact') ? 'impact' : 'capacity';
+                    calculateWeightedScore(type);
+                });
+            });
+        }
+
+        function calculateWeightedScore(type) {
+            const table = document.getElementById(`${type}-table`);
+            const rows = table.querySelectorAll('tbody tr');
+            let totalScore = 0;
+            let totalWeight = 0;
+
+            rows.forEach(row => {
+                const score = parseInt(row.querySelector('.score-cell').textContent) || 0;
+                const weight = parseInt(row.querySelector('.weight-input').value) || 0;
+                totalScore += score * weight;
+                totalWeight += weight;
+            });
+
+            const weightedScore = totalWeight > 0 ? (totalScore / totalWeight).toFixed(1) : 0;
+            document.getElementById(`${type}-total`).textContent = weightedScore;
+            
+            // Update result display
+            document.getElementById(`result-${type}`).textContent = weightedScore;
+            updatePriorityResult();
+        }
+
+        function updatePriorityResult() {
+            const impactScore = parseFloat(document.getElementById('result-impact').textContent);
+            const capacityScore = parseFloat(document.getElementById('result-capacity').textContent);
+            const priority = getPriorityFromScores(impactScore, capacityScore);
+            
+            const resultDiv = document.querySelector('.result-priority');
+            resultDiv.className = `result-priority ${priority.class}`;
+            resultDiv.querySelector('.priority-label').textContent = priority.label;
+            resultDiv.querySelector('.priority-description').textContent = 
+                priority.level === 1 ? 'Quick Win' :
+                priority.level === 2 ? 'Plan & Resource' :
+                'Defer/Reconsider';
+        }
+
+        function addCriterion(type) {
+            const table = document.getElementById(`${type}-table`);
+            const tbody = table.querySelector('tbody');
+            const newRow = tbody.insertRow();
+            
+            newRow.innerHTML = `
+                <td contenteditable="true">New Criterion</td>
+                <td>
+                    <select class="rating-select ${type}-rating">
+                        <option value="1">Very Low</option>
+                        <option value="2">Low</option>
+                        <option value="3" selected>Medium</option>
+                        <option value="4">High</option>
+                        <option value="5">Very High</option>
+                    </select>
+                </td>
+                <td class="score-cell">3</td>
+                <td><input type="number" class="weight-input" value="10" min="0" max="100">%</td>
+            `;
+            
+            // Add event listener to new select
+            const select = newRow.querySelector('.rating-select');
+            select.addEventListener('change', function() {
+                const scoreCell = newRow.querySelector('.score-cell');
+                scoreCell.textContent = this.value;
+                calculateWeightedScore(type);
+            });
+            
+            // Add event listener to new weight input
+            const weightInput = newRow.querySelector('.weight-input');
+            weightInput.addEventListener('input', function() {
+                calculateWeightedScore(type);
+            });
+            
+            calculateWeightedScore(type);
+        }
+    </script>
+</body>
 </html>
