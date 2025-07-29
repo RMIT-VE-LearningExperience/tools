@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Continuous Improvement Risk Assessment & Prioritization Matrix</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .navigation {
+            display: flex;
+            background: #495057;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 15px 30px;
+            color: white;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1em;
+            transition: background 0.3s;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .nav-tab.active {
+            background: #6f42c1;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        .risk-level {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+
+        .critical { background-color: #dc3545; }
+        .high { background-color: #fd7e14; }
+        .medium { background-color: #ffc107; }
+        .low { background-color: #28a745; }
+        .very-low { background-color: #17a2b8; }
+
+        .matrix-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+
+        .risk-matrix {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .risk-matrix th {
+            background: linear-gradient(135deg, #495057, #6c757d);
+            color: white;
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .risk-matrix td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: top;
+            font-size: 0.85em;
+            line-height: 1.4;
+        }
+
+        .stage-header {
+            background: linear-gradient(135deg, #6f42c1, #e83e8c);
+            color: white;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .risk-matrix tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .risk-matrix tr:hover {
+            background-color: #e9ecef;
+            transition: background-color 0.3s ease;
+        }
+
+        .risk-description {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .mitigation {
+            font-style: italic;
+            color: #6c757d;
+        }
+
+        .probability-impact-grid {
+            margin-top: 30px;
+        }
+
+        .grid-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .grid-table th, .grid-table td {
+            border: 2px solid #fff;
+            padding: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .grid-table th {
+            background: #495057;
+            color: white;
+        }
+
+        .prob-very-high { background: #dc3545; color: white; }
+        .prob-high { background: #fd7e14; color: white; }
+        .prob-medium { background: #ffc107; color: black; }
+        .prob-low { background: #28a745; color: white; }
+        .prob-very-low { background: #17a2b8; color: white; }
+
+        .editable-cell {
+            position: relative;
+        }
+
+        .score-input {
+            width: 50px;
+            border: none;
+            background: transparent;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9em;
+            color: inherit;
+            border-radius: 3px;
+            padding: 2px;
+        }
+
+        .score-input:focus {
+            outline: 2px solid #007bff;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+        }
+
+        .risk-score-cell {
+            font-weight: 700;
+            font-size: 1em;
+        }
+
+        .controls-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .control-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #6f42c1;
+        }
+
+        .control-card h4 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .control-card ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .control-card li {
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .control-card li:before {
+            content: "•";
+            color: #6f42c1;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        /* Risk Matrix Visualization Styles */
+        .risk-matrix-visualization {
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+
+        .risk-matrix-table {
+            display: grid;
+            grid-template-columns: 120px repeat(5, 1fr);
+            gap: 2px;
+            background: #dee2e6;
+            padding: 2px;
+            border-radius: 10px;
+            max-width: 800px;
+            margin: 20px auto;
+            position: relative;
+        }
+
+        .risk-matrix-table .matrix-cell {
+            background: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 60px;
+            font-size: 1.1em;
+        }
+
+        .matrix-axis-label {
+            background: transparent !important;
+            position: relative;
+        }
+
+        .matrix-axis-label::after {
+            content: "Probability ↑";
+            position: absolute;
+            left: -60px;
+            top: 50%;
+            transform: rotate(-90deg) translateY(-50%);
+            transform-origin: center;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .matrix-col-header {
+            background: #495057 !important;
+            color: white;
+            font-size: 0.9em;
+            padding: 10px !important;
+        }
+
+        .matrix-row-header {
+            background: #6c757d !important;
+            color: white;
+            font-size: 0.85em;
+            padding: 10px !important;
+            line-height: 1.2;
+        }
+
+        .matrix-axis-footer {
+            background: transparent !important;
+            padding: 10px !important;
+            font-size: 0.9em;
+        }
+
+        .risk-level-very-low {
+            background: #17a2b8 !important;
+            color: white;
+        }
+
+        .risk-level-low {
+            background: #28a745 !important;
+            color: white;
+        }
+
+        .risk-level-medium {
+            background: #ffc107 !important;
+            color: #212529;
+        }
+
+        .risk-level-high {
+            background: #fd7e14 !important;
+            color: white;
+        }
+
+        .risk-level-critical {
+            background: #dc3545 !important;
+            color: white;
+        }
+
+        .matrix-legend {
+            margin-top: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .matrix-legend h4 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .legend-items {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* New styles for prioritization matrix */
+        .prioritization-matrix {
+            display: grid;
+            grid-template-columns: 120px repeat(5, 1fr);
+            gap: 2px;
+            margin: 30px 0;
+            background: #dee2e6;
+            padding: 2px;
+            border-radius: 10px;
+        }
+
+        .matrix-cell {
+            background: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .matrix-header {
+            background: #495057;
+            color: white;
+            font-weight: 600;
+            padding: 10px;
+        }
+
+        .matrix-label {
+            background: #6c757d;
+            color: white;
+            font-weight: 600;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+
+        .priority-1 { background: #dc3545; color: white; }
+        .priority-2 { background: #fd7e14; color: white; }
+        .priority-3 { background: #ffc107; color: black; }
+        .priority-4 { background: #28a745; color: white; }
+
+        .priority-label {
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .priority-description {
+            font-size: 0.8em;
+        }
+
+        .initiative-form {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #495057;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-primary {
+            background: #6f42c1;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a32a3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .initiatives-list {
+            margin-top: 30px;
+        }
+
+        .initiative-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border-left: 5px solid #6f42c1;
+        }
+
+        .initiative-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .initiative-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .priority-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .initiative-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-bottom: 2px;
+        }
+
+        .detail-value {
+            font-weight: 600;
+        }
+
+        /* New styles for scoring tables */
+        .scoring-section {
+            margin-bottom: 30px;
+        }
+
+        .scoring-tables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .scoring-table-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .scoring-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .scoring-table th {
+            background: #495057;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .scoring-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .scoring-table tfoot td {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .rating-select {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+
+        .weight-input {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .score-cell {
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .total-score {
+            text-align: center;
+            font-size: 1.2em;
+            color: #6f42c1;
+        }
+
+        .priority-result {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .result-display {
+            margin-top: 15px;
+        }
+
+        .result-scores {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .result-priority {
+            display: inline-block;
+            padding: 20px 40px;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .legend {
+                grid-template-columns: 1fr;
+            }
+
+            .prioritization-matrix {
+                grid-template-columns: 80px repeat(5, 1fr);
+            }
+
+            .matrix-label {
+                font-size: 0.8em;
+            }
+
+            .scoring-tables-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Continuous Improvement Risk Assessment & Prioritization Matrix</h1>
+            <p>Identifying, managing risks and prioritizing initiatives throughout the improvement lifecycle</p>
+        </div>
+        
+        <div class="navigation">
+            <button class="nav-tab active" onclick="showTab('risk-assessment')">Risk Assessment</button>
+            <button class="nav-tab" onclick="showTab('prioritization')">Impact & Capacity Prioritization</button>
+            <button class="nav-tab" onclick="showTab('initiatives')">Initiative Tracker</button>
+        </div>
+
+        <div class="content">
+            <!-- Risk Assessment Tab -->
+            <div id="risk-assessment" class="tab-content active">
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="risk-level critical"></div>
+                        <span>Critical Risk (4-5)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="risk-level high"></div>
+                        <span>High Risk (3-4)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="risk-level medium"></div>
+                        <span>Medium Risk (2-3)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="risk-level low"></div>
+                        <span>Low Risk (1-2)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="risk-level very-low"></div>
+                        <span>Very Low Risk (0-1)</span>
+                    </div>
+                </div>
+
+                <div class="matrix-container">
+                    <table class="risk-matrix">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">CI Stage</th>
+                                <th style="width: 30%;">Risk Description</th>
+                                <th style="width: 10%;">Probability</th>
+                                <th style="width: 10%;">Impact</th>
+                                <th style="width: 10%;">Risk Score</th>
+                                <th style="width: 25%;">Mitigation Strategy</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Stage 1: Identify Problem -->
+                            <tr>
+                                <td rowspan="3" class="stage-header">1. Identify Problem</td>
+                                <td>
+                                    <div class="risk-description">Incorrect Problem Definition</div>
+                                    <div class="mitigation">Solving symptoms rather than root causes</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="1">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="1">
+                                </td>
+                                <td class="risk-score-cell high" data-row="1">3.5</td>
+                                <td>Stakeholder consultation, data validation, problem statement review</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Stakeholder Misalignment</div>
+                                    <div class="mitigation">Different understanding of problem scope</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="2">
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="3" data-row="2">
+                                </td>
+                                <td class="risk-score-cell medium" data-row="2">3.0</td>
+                                <td>Clear communication plan, regular check-ins, documented agreements</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Insufficient Resources</div>
+                                    <div class="mitigation">Lack of time/budget to properly investigate</div>
+                                </td>
+                                <td class="editable-cell prob-low">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="2" data-row="3">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="3">
+                                </td>
+                                <td class="risk-score-cell medium" data-row="3">3.0</td>
+                                <td>Resource planning, phased approach, executive sponsorship</td>
+                            </tr>
+
+                            <!-- Stage 2: Analyse Current State -->
+                            <tr>
+                                <td rowspan="3" class="stage-header">2. Analyse Current State</td>
+                                <td>
+                                    <div class="risk-description">Data Quality Issues</div>
+                                    <div class="mitigation">Incomplete, inaccurate, or outdated data</div>
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="4" data-row="4">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="4">
+                                </td>
+                                <td class="risk-score-cell critical" data-row="4">4.0</td>
+                                <td>Data validation protocols, multiple sources, quality checks</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Analysis Paralysis</div>
+                                    <div class="mitigation">Over-analyzing without progressing to solutions</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="5">
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="3" data-row="5">
+                                </td>
+                                <td class="risk-score-cell medium" data-row="5">3.0</td>
+                                <td>Time-boxed analysis, clear milestones, decision frameworks</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Bias in Analysis</div>
+                                    <div class="mitigation">Confirmation bias affecting objectivity</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="6">
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="3" data-row="6">
+                                </td>
+                                <td class="risk-score-cell medium" data-row="6">3.0</td>
+                                <td>Independent review, diverse team perspectives, structured methods</td>
+                            </tr>
+
+                            <!-- Stage 3: Analyse the Problem -->
+                            <tr>
+                                <td rowspan="3" class="stage-header">3. Analyse the Problem</td>
+                                <td>
+                                    <div class="risk-description">Root Cause Misidentification</div>
+                                    <div class="mitigation">Focusing on superficial causes</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="7">
+                                </td>
+                                <td class="editable-cell prob-very-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="5" data-row="7">
+                                </td>
+                                <td class="risk-score-cell critical" data-row="7">4.0</td>
+                                <td>5-Why analysis, fishbone diagrams, expert consultation</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Complexity Underestimation</div>
+                                    <div class="mitigation">Missing interconnected factors</div>
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="4" data-row="8">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="8">
+                                </td>
+                                <td class="risk-score-cell critical" data-row="8">4.0</td>
+                                <td>Systems thinking, process mapping, stakeholder input</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Limited Perspective</div>
+                                    <div class="mitigation">Single department/function view</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="9">
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="3" data-row="9">
+                                </td>
+                                <td class="risk-score-cell medium" data-row="9">3.0</td>
+                                <td>Cross-functional teams, external perspectives, customer voice</td>
+                            </tr>
+
+                            <!-- Stage 4: Develop Solution -->
+                            <tr>
+                                <td rowspan="3" class="stage-header">4. Develop Solution</td>
+                                <td>
+                                    <div class="risk-description">Solution Inadequacy</div>
+                                    <div class="mitigation">Solution doesn't address root causes</div>
+                                </td>
+                                <td class="editable-cell prob-medium">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="3" data-row="10">
+                                </td>
+                                <td class="editable-cell prob-very-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="5" data-row="10">
+                                </td>
+                                <td class="risk-score-cell critical" data-row="10">4.0</td>
+                                <td>Pilot testing, stakeholder validation, iterative development</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="risk-description">Resource Constraints</div>
+                                    <div class="mitigation">Insufficient budget/skills for implementation</div>
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input probability-input" min="1" max="5" value="4" data-row="11">
+                                </td>
+                                <td class="editable-cell prob-high">
+                                    <input type="number" class="score-input impact-input" min="1" max="5" value="4" data-row="11">
+                                </td>
+                                
