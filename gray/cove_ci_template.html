@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<!-- Effort vs Value Chart Tool -->
+<div class="tool-content" id="effortValue-tool" style="display: none;">
+ <div class="content-section">
+  <div class="section-header">
+   1. What is an Effort vs Value Chart?
+  </div>
+  <div class="section-content">
+   <p>
+    <strong>
+     Definition:
+    </strong>
+    An effort vs value chart (also called an impact vs effort matrix) is a prioritisation tool that helps teams evaluate potential solutions or actions based on two key criteria: the effort required to implement them and the value or impact they will deliver.
+   </p>
+   <p>
+    <strong>
+     Why it's used in education:
+    </strong>
+    In vocational education settings, resources and time are often limited. This tool helps teams make informed decisions about which improvements to tackle first, ensuring that efforts are focused on changes that will deliver the greatest benefit for students and the organisation with the available resources.
+   </p>
+  </div>
+ </div>
+ <div class="content-section">
+  <div class="section-header">
+   2. When to Use in the CoVE Continuous Improvement Lifecycle
+  </div>
+  <div class="section-content">
+   <div class="ci-lifecycle">
+    <div class="stage">
+     1. Identify Problem
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     2. Analyse Current State
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     3. Analyse the Problem
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage active">
+     4. Develop Solution
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     5. Implement &amp; Test
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     6. Evaluate &amp; Measure
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     7. Standardise
+    </div>
+   </div>
+   <p>
+    <strong>
+     Primary Use:
+    </strong>
+    Stage 4 (Develop Solution)
+   </p>
+   <p>
+    Use this tool when you have multiple potential solutions and need to prioritise which ones to implement first based on available resources.
+   </p>
+  </div>
+ </div>
+ <div class="content-section">
+  <div class="section-header">
+   3. Benefits for Vocational Education
+  </div>
+  <div class="section-content">
+   <div class="benefits-grid">
+    <div class="benefit-item">
+     <strong>
+      Smart Resource Use:
+     </strong>
+     Ensures limited educational resources are invested in the most impactful improvements.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Quick Wins:
+     </strong>
+     Identifies "low hanging fruit" that can deliver immediate benefits to students and staff.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Strategic Planning:
+     </strong>
+     Helps plan a sequence of improvements from quick wins to longer-term strategic changes.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Team Alignment:
+     </strong>
+     Creates shared understanding of priorities across educational teams.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Evidence-Based Decisions:
+     </strong>
+     Provides a visual framework for justifying improvement priorities to leadership.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Avoids Pitfalls:
+     </strong>
+     Helps identify and avoid "dead duck" projects that require high effort but deliver little value.
+    </div>
+   </div>
+  </div>
+ </div>
+ <div class="content-section">
+  <div class="section-header">
+   4. Effort vs Value Chart Workspace
+  </div>
+  <div class="section-content">
+   <p>
+    <strong>
+     Instructions:
+    </strong>
+    List your potential solutions, then plot them on the chart based on implementation effort (x-axis) and expected value/impact (y-axis). Focus on the green "Low Hanging Fruit" quadrant first.
+   </p>
+   <div class="tool-workspace">
+    <div style="background: white; padding: 1.5rem; border-radius: 8px;">
+     <h3 style="color: #2c3e50; margin-bottom: 1rem;">
+      Effort vs Value Analysis
+     </h3>
+     <div style="margin-bottom: 1.5rem;">
+      <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #2c3e50;">
+       List your potential solutions/improvements:
+      </label>
+      <textarea class="textarea-large" placeholder="1. 
+2. 
+3. 
+4. 
+5. " style="min-height: 120px;"></textarea>
+     </div>
+     <div class="effort-value-chart" onclick="addPoint(event)">
+      <div class="chart-quadrant quad-1">
+      </div>
+      <div class="chart-quadrant quad-2">
+      </div>
+      <div class="chart-quadrant quad-3">
+      </div>
+      <div class="chart-quadrant quad-4">
+      </div>
+      <div class="chart-label" style="top: 10px; left: 10px;">
+       Low Hanging Fruit
+      </div>
+      <div class="chart-label" style="top: 10px; right: 10px;">
+       Blood, Sweat &amp; Tears
+      </div>
+      <div class="chart-label" style="bottom: 10px; left: 10px;">
+       Delegate or Dump
+      </div>
+      <div class="chart-label" style="bottom: 10px; right: 10px;">
+       Dead Ducks
+      </div>
+      <div class="chart-axis horizontal">
+      </div>
+      <div class="chart-axis vertical">
+      </div>
+      <div style="position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); font-weight: bold; color: #2c3e50;">
+       Effort →
+      </div>
+      <div style="position: absolute; left: -30px; top: 50%; transform: translateY(-50%) rotate(-90deg); font-weight: bold; color: #2c3e50;">
+       ← Value
+      </div>
+     </div>
+     <div style="margin-top: 1rem;">
+      <p>
+       <strong>
+        Instructions:
+       </strong>
+       Click anywhere on the chart above to add your solutions. Each click will prompt you to name the solution.
+      </p>
+      <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-top: 1rem;">
+       <h4 style="color: #2c3e50; margin-bottom: 0.5rem;">
+        Chart Quadrants:
+       </h4>
+       <ul style="margin-left: 1.5rem;">
+        <li>
+         <strong style="color: #b8860b;">
+          Low Hanging Fruit (Top-Left):
+         </strong>
+         High value, low effort - implement these first!
+        </li>
+        <li>
+         <strong style="color: #3498db;">
+          Blood, Sweat &amp; Tears (Top-Right):
+         </strong>
+         High value, high effort - plan for these strategically
+        </li>
+        <li>
+         <strong style="color: #f39c12;">
+          Delegate or Dump (Bottom-Left):
+         </strong>
+         Low value, low effort - consider delegating
+        </li>
+        <li>
+         <strong style="color: #e74c3c;">
+          Dead Ducks (Bottom-Right):
+         </strong>
+         Low value, high effort - avoid these
+        </li>
+       </ul>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+<!-- Action Planning Tool -->
+<div class="tool-content" id="actionPlan-tool" style="display: none;">
+ <div class="content-section">
+  <div class="section-header">
+   1. What is Action Planning?
+  </div>
+  <div class="section-content">
+   <p>
+    <strong>
+     Definition:
+    </strong>
+    Action planning is a systematic approach to defining specific steps needed to implement solutions and achieve desired outcomes in educational settings.
+   </p>
+   <p>
+    <strong>
+     Why it's used in education:
+    </strong>
+    Action planning ensures that improvement initiatives move from analysis to implementation effectively. It helps educational teams translate insights into concrete actions with clear accountability, timelines, and success measures.
+   </p>
+  </div>
+ </div>
+ <div class="content-section">
+  <div class="section-header">
+   2. When to Use in the CoVE Continuous Improvement Lifecycle
+  </div>
+  <div class="section-content">
+   <div class="ci-lifecycle">
+    <div class="stage">
+     1. Identify Problem
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     2. Analyse Current State
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     3. Analyse the Problem
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage active">
+     4. Develop Solution
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage active">
+     5. Implement &amp; Test
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     6. Evaluate &amp; Measure
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     7. Standardise
+    </div>
+   </div>
+   <p>
+    <strong>
+     Primary Use:
+    </strong>
+    Stages 4-5 (Develop Solution &amp; Implement &amp; Test)
+   </p>
+   <p>
+    Use action planning after you've identified root causes and are ready to develop and implement solutions.
+   </p>
+  </div>
+ </div>
+ <div class="content-section">
+  <div class="section-header">
+   3. Benefits for Vocational Education
+  </div>
+  <div class="section-content">
+   <div class="benefits-grid">
+    <div class="benefit-item">
+     <strong>
+      Clear Accountability:
+     </strong>
+     Assigns specific responsibilities to team members, promoting ownership and follow-through.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Measurable Outcomes:
+     </strong>
+     Defines success criteria and metrics that align with educational objectives.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Resource Planning:
+     </strong>
+     Identifies required resources, helping with budget and capacity planning.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Risk Mitigation:
+     </strong>
+     Anticipates potential obstacles and develops contingency plans.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Progress Tracking:
+     </strong>
+     Provides a framework for monitoring implementation and adjusting as needed.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Professional Development:
+     </strong>
+     Teaches project management skills valuable in educational and industry contexts.
+    </div>
+   </div>
+  </div>
+ </div>
+ <div class="content-section">
+  <div class="section-header">
+   4. Action Planning Workspace
+  </div>
+  <div class="section-content">
+   <p>
+    <strong>
+     Instructions:
+    </strong>
+    Complete each section to create a comprehensive action plan for your improvement initiative.
+   </p>
+   <div class="tool-workspace">
+    <div style="background: white; padding: 1.5rem; border-radius: 8px;">
+     <h3 style="color: #2c3e50; margin-bottom: 1rem;">
+      Action Plan Template
+     </h3>
+     <div style="margin-bottom: 1.5rem;">
+      <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+       Problem Statement:
+      </label>
+      <textarea class="textarea-large" placeholder="Clearly describe the problem you're addressing..."></textarea>
+     </div>
+     <div style="margin-bottom: 1.5rem;">
+      <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+       Goal/Objective:
+      </label>
+      <textarea class="textarea-large" placeholder="What do you want to achieve?"></textarea>
+     </div>
+     <table class="five-whys-table">
+      <thead>
+       <tr>
+        <th>
+         Action Step
+        </th>
+        <th>
+         Responsible Person
+        </th>
+        <th>
+         Due Date
+        </th>
+        <th>
+         Resources Needed
+        </th>
+        <th>
+         Success Measure
+        </th>
+       </tr>
+      </thead>
+      <tbody>
+       <tr>
+        <td>
+         <textarea class="textarea-large" placeholder="What specific action will be taken?"></textarea>
+        </td>
+        <td>
+         <textarea class="textarea-large" placeholder="Who is accountable?"></textarea>
+        </td>
+        <td>
+         <textarea class="textarea-large" placeholder="When will this be completed?"></textarea>
+        </td>
+        <td>
+         <textarea class="textarea-large" placeholder="What resources are required?"></textarea>
+        </td>
+        <td>
+         <textarea class="textarea-large" placeholder="How will success be measured?"></textarea>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <textarea class="textarea-large" placeholder="What specific action will be taken?"></textarea>
+        </td>
+        <td>
+         <textarea class="textarea-large" placeholder="Who is accountable?"></textarea>
+        </td>
+        <td>
+         <textarea class="textarea-large" placeholder="When will this be completed?"></textarea>
+        </td>
+        <td>
+         <textarea class="textarea-large" placeholder="What resources are required?"></textarea>
+        </td>
+        <td>
+         <textarea class="textarea-large" placeholder="How will success be measured?"></textarea>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <textarea class="textarea-large" placeholder="What specific action will be taken?"></textarea>
+        </td>
+        <td>
+         <textarea class="textarea-large" placeholder="Who is accountable?"></textarea>
+        </td>
+        <td>
+         <textarea class="textarea-large" placeholder="When will this be completed?"></textarea>
+        </td>
+        <td>
+         <textarea class="textarea-large" placeholder="What resources are required?"></textarea>
+        </td>
+        <td>
+         <textarea class="textarea-large" placeholder="How will success be measured?"></textarea>
+        </td>
+       </tr>
+      </tbody>
+     </table>
+     <div style="margin-top: 1.5rem;">
+      <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+       Potential Risks/Barriers:
+      </label>
+      <textarea class="textarea-large" placeholder="What could prevent success? How will you address these challenges?"></textarea>
+     </div>
+     <div style="margin-top: 1.5rem;">
+      <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">
+       Review Date:
+      </label>
+      <textarea class="textarea-large" placeholder="When will you review progress and adjust the plan if needed?"></textarea>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+<!-- Customer Benefits Table Tool -->
+<div class="tool-content" id="customerBenefits-tool" style="display: none;">
+ <div class="content-section">
+  <div class="section-header">
+   1. What is a Customer Benefits Table?
+  </div>
+  <div class="section-content">
+   <p>
+    <strong>
+     Definition:
+    </strong>
+    A customer benefits table systematically identifies all stakeholders affected by an educational process or service and maps out the specific benefits they will receive from improvements.
+   </p>
+   <p>
+    <strong>
+     Why it's used in education:
+    </strong>
+    In vocational education, this tool ensures that improvement efforts consider all stakeholders - students, staff, employers, and the broader community. It helps teams understand different perspectives and motivations, leading to more comprehensive and sustainable solutions.
+   </p>
+  </div>
+ </div>
+ <div class="content-section">
+  <div class="section-header">
+   2. When to Use in the CoVE Continuous Improvement Lifecycle
+  </div>
+  <div class="section-content">
+   <div class="ci-lifecycle">
+    <div class="stage">
+     1. Identify Problem
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage active">
+     2. Analyse Current State
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     3. Analyse the Problem
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage active">
+     4. Develop Solution
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     5. Implement &amp; Test
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     6. Evaluate &amp; Measure
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     7. Standardise
+    </div>
+   </div>
+   <p>
+    <strong>
+     Primary Use:
+    </strong>
+    Stages 2 &amp; 4 (Analyse Current State &amp; Develop Solution)
+   </p>
+   <p>
+    Use this tool early to understand stakeholder needs and again when developing solutions to ensure all benefits are considered.
+   </p>
+  </div>
+ </div>
+ <div class="content-section">
+  <div class="section-header">
+   3. Benefits for Vocational Education
+  </div>
+  <div class="section-content">
+   <div class="benefits-grid">
+    <div class="benefit-item">
+     <strong>
+      Comprehensive View:
+     </strong>
+     Identifies all stakeholders who might be affected by changes to educational processes.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Student-Centered Design:
+     </strong>
+     Ensures improvements directly benefit student learning and career outcomes.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Change Management:
+     </strong>
+     Helps build support by showing how improvements benefit different groups.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Success Metrics:
+     </strong>
+     Identifies measurable outcomes that matter to each stakeholder group.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Industry Alignment:
+     </strong>
+     Ensures employer and industry needs are considered in educational improvements.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Resource Justification:
+     </strong>
+     Demonstrates value proposition to secure funding and support.
+    </div>
+   </div>
+  </div>
+ </div>
+ <div class="content-section">
+  <div class="section-header">
+   4. Customer Benefits Table Workspace
+  </div>
+  <div class="section-content">
+   <p>
+    <strong>
+     Instructions:
+    </strong>
+    Work from left to right. Start with your service, identify stakeholders, then map their benefits.
+   </p>
+   <div class="tool-workspace">
+    <table class="five-whys-table">
+     <thead>
+      <tr>
+       <th style="width: 120px;">
+        Stakeholder
+       </th>
+       <th>
+        Better (Quality)
+       </th>
+       <th>
+        Faster (Speed)
+       </th>
+       <th>
+        Cheaper (Cost)
+       </th>
+       <th>
+        Less Risky (Risk)
+       </th>
+      </tr>
+     </thead>
+     <tbody>
+      <tr>
+       <td style="background: #2c3e50; color: white; font-weight: bold;">
+        Students
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="How will quality improve for students?"></textarea>
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="How will processes be faster?"></textarea>
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="How will costs be reduced?"></textarea>
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="How will risks be minimised?"></textarea>
+       </td>
+      </tr>
+      <tr>
+       <td style="background: #2c3e50; color: white; font-weight: bold;">
+        Staff/Teachers
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="Quality improvements for staff?"></textarea>
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="Time savings for staff?"></textarea>
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="Cost benefits for staff?"></textarea>
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="Risk reduction for staff?"></textarea>
+       </td>
+      </tr>
+      <tr>
+       <td style="background: #2c3e50; color: white; font-weight: bold;">
+        Organisation
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="Organisational quality gains?"></textarea>
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="Efficiency improvements?"></textarea>
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="Financial benefits?"></textarea>
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="Compliance/risk improvements?"></textarea>
+       </td>
+      </tr>
+      <tr>
+       <td style="background: #2c3e50; color: white; font-weight: bold;">
+        Industry/Employers
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="Better prepared graduates?"></textarea>
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="Faster recruitment process?"></textarea>
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="Reduced training costs?"></textarea>
+       </td>
+       <td>
+        <textarea class="textarea-large" placeholder="Lower hiring risks?"></textarea>
+       </td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+  </div>
+ </div>
+</div>
+<!-- Service Families Tool -->
+<div class="tool-content" id="serviceFamilies-tool" style="display: none;">
+ <div class="content-section">
+  <div class="section-header">
+   1. What are Product and Service Families?
+  </div>
+  <div class="section-content">
+   <p>
+    <strong>
+     Definition:
+    </strong>
+    Product and service families are groups of educational offerings (courses, programs, services) that share similar characteristics or follow the same processing steps, even though they may have different specific requirements.
+   </p>
+   <p>
+    <strong>
+     Why it's used in education:
+    </strong>
+    In vocational education, this tool helps organise diverse offerings into manageable groups for analysis and improvement. Rather than trying to improve every individual course separately, you can focus on families that share common processes, making improvements more efficient and scalable.
+   </p>
+  </div>
+ </div>
+ <div class="content-section">
+  <div class="section-header">
+   2. When to Use in the CoVE Continuous Improvement Lifecycle
+  </div>
+  <div class="section-content">
+   <div class="ci-lifecycle">
+    <div class="stage">
+     1. Identify Problem
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage active">
+     2. Analyse Current State
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     3. Analyse the Problem
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     4. Develop Solution
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     5. Implement &amp; Test
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     6. Evaluate &amp; Measure
+    </div>
+    <div class="arrow">
+     →
+    </div>
+    <div class="stage">
+     7. Standardise
+    </div>
+   </div>
+   <p>
+    <strong>
+     Primary Use:
+    </strong>
+    Stage 2 (Analyse Current State)
+   </p>
+   <p>
+    Use this tool early in your analysis to understand how your educational offerings can be grouped for more effective improvement efforts.
+   </p>
+  </div>
+ </div>
+ <div class="content-section">
+  <div class="section-header">
+   3. Benefits for Vocational Education
+  </div>
+  <div class="section-content">
+   <div class="benefits-grid">
+    <div class="benefit-item">
+     <strong>
+      Efficient Analysis:
+     </strong>
+     Focus improvement efforts on groups rather than individual programs, saving time and resources.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Pattern Recognition:
+     </strong>
+     Identify common issues across similar educational offerings.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Resource Allocation:
+     </strong>
+     Prioritise where to focus improvement efforts based on volume and impact.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Standardisation Opportunities:
+     </strong>
+     Find opportunities to standardise processes across similar programs.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Strategic Planning:
+     </strong>
+     Better understand your portfolio of educational offerings and their relationships.
+    </div>
+    <div class="benefit-item">
+     <strong>
+      Value Stream Mapping:
+     </strong>
+     Sets the foundation for mapping end-to-end processes for each family.
+    </div>
+   </div>
+  </div>
+ </div>
+ <div class="content-section">
+  <div class="section-header">
+   4. Service Families Workspace
+  </div>
+  <div class="section-content">
+   <p>
+    <strong>
+     Instructions:
+    </strong>
+    Think about how your educational programs or services naturally break into families. Common groupings include: Simple vs Complex, Planned vs Unplanned, High Volume vs Low Volume, Fast vs Slow.
+   </p>
+   <div class="tool-workspace">
+    <div style="background: white; padding: 1.5rem; border-radius: 8px;">
+     <h3 style="color: #2c3e50; margin-bottom: 1rem;">
+      Define Your Service Families
+     </h3>
+     <div style="margin-bottom: 2rem;">
+      <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #2c3e50;">
+       What service/program area are you analysing?
+      </label>
+      <textarea class="textarea-large" placeholder="e.g., Student enrolment, Course delivery, Assessment processes, Student support services..."></textarea>
+     </div>
+     <div style="margin-bottom: 2rem;">
+      <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #2c3e50;">
+       How do these services naturally group? (Choose 1-2 dimensions)
+      </label>
+      <textarea class="textarea-large" placeholder="e.g., Simple vs Complex, Planned vs Unplanned, High Volume vs Low Volume, Fast vs Slow, New vs Returning students..."></textarea>
+     </div>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 2rem 0;">
+      <div style="text-align: center;">
+       <input placeholder="Dimension A (e.g., Simple)" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 3px; text-align: center; font-weight: bold;" type="text"/>
+      </div>
+      <div style="text-align: center;">
+       <input placeholder="Dimension B (e.g., Complex)" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 3px; text-align: center; font-weight: bold;" type="text"/>
+      </div>
+     </div>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+      <div style="background: #f8f9fa; padding: 1rem; border: 2px solid #2c3e50; border-radius: 5px; min-height: 150px;">
+       <textarea class="textarea-large" placeholder="Group 1: List services/programs that fit here and estimate volume %" style="border: none; background: transparent; height: 100%;"></textarea>
+      </div>
+      <div style="background: #f8f9fa; padding: 1rem; border: 2px solid #2c3e50; border-radius: 5px; min-height: 150px;">
+       <textarea class="textarea-large" placeholder="Group 2: List services/programs that fit here and estimate volume %" style="border: none; background: transparent; height: 100%;"></textarea>
+      </div>
+     </div>
+     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+      <div style="background: #f8f9fa; padding: 1rem; border: 2px solid #2c3e50; border-radius: 5px; min-height: 150px;">
+       <textarea class="textarea-large" placeholder="Group 3: List services/programs that fit here and estimate volume %" style="border: none; background: transparent; height: 100%;"></textarea>
+      </div>
+      <div style="background: #f8f9fa; padding: 1rem; border: 2px solid #2c3e50; border-radius: 5px; min-height: 150px;">
+       <textarea class="textarea-large" placeholder="Group 4: List services/programs that fit here and estimate volume %" style="border: none; background: transparent; height: 100%;"></textarea>
+      </div>
+     </div>
+     <div style="margin-top: 1rem; text-align: center;">
+      <input placeholder="Second Dimension (e.g., High Volume to Low Volume)" style="width: 60%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 3px; text-align: center; font-weight: bold;" type="text"/>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+<script>
+ function showTool(toolName) {
+            // Hide all tool content
+            const allTools = document.querySelectorAll('.tool-content');
+            allTools.forEach(tool => tool.style.display = 'none');
+            
+            // Show selected tool
+            document.getElementById(toolName + '-tool').style.display = 'block';
+            
+            // Update button states
+            const allButtons = document.querySelectorAll('.tool-btn');
+            allButtons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // Add click functionality to editable elements
+        document.addEventListener('DOMContentLoaded', function() {
+            const editableElements = document.querySelectorAll('.editable');
+            editableElements.forEach(element => {
+                element.addEventListener('click', function() {
+                    this.focus();
+                });
+                
+                element.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.blur();
+                    }
+                });
+            });
+        });
+
+        // Effort vs Value Chart functionality
+        function addPoint(event) {
+            const chart = event.currentTarget;
+            const rect = chart.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            const solutionName = prompt('Enter the name of this solution:');
+            if (solutionName) {
+                const point = document.createElement('div');
+                point.style.position = 'absolute';
+                point.style.left = x - 8 + 'px';
+                point.style.top = y - 8 + 'px';
+                point.style.width = '16px';
+                point.style.height = '16px';
+                point.style.background = '#e74545';
+                point.style.borderRadius = '50%';
+                point.style.border = '2px solid white';
+                point.style.cursor = 'pointer';
+                point.title = solutionName;
+                point.style.zIndex = '10';
+                
+                // Add label
+                const label = document.createElement('div');
+                label.textContent = solutionName;
+                label.style.position = 'absolute';
+                label.style.left = '20px';
+                label.style.top = '-8px';
+                label.style.background = 'white';
+                label.style.padding = '2px 6px';
+                label.style.borderRadius = '3px';
+                label.style.fontSize = '12px';
+                label.style.fontWeight = 'bold';
+                label.style.border = '1px solid #ddd';
+                label.style.whiteSpace = 'nowrap';
+                point.appendChild(label);
+                
+                // Allow point removal on double-click
+                point.addEventListener('dblclick', function() {
+                    if (confirm('Remove this point?')) {
+                        chart.removeChild(point);
+                    }
+                });
+                
+                chart.appendChild(point);
+            }
+        }
+
+        // Print functionality
+        function printTool() {
+            window.print();
+        }
+</script>
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   CoVE Continuous Improvement Tools Template
+  </title>
+  <style>
+   * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .tool-selector {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .tool-selector h2 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .tool-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .tool-btn {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        .tool-btn:hover {
+            background: #34495e;
+        }
+
+        .tool-btn.active {
+            background: #e74545;
+        }
+
+        .content-section {
+            background: white;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 1.5rem;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .section-content {
+            padding: 1.5rem;
+        }
+
+        .ci-lifecycle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .stage {
+            background: #2c3e50;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .stage.active {
+            background: #e74545;
+            transform: scale(1.1);
+        }
+
+        .arrow {
+            font-size: 1.5rem;
+            color: #7f8c8d;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .benefit-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            border-left: 4px solid #e74545;
+        }
+
+        .tool-workspace {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .fishbone-diagram {
+            background: white;
+            border: 2px solid #2c3e50;
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 1rem 0;
+            position: relative;
+            min-height: 500px;
+            overflow: visible;
+        }
+
+        .fishbone-spine {
+            position: absolute;
+            top: 50%;
+            left: 15%;
+            right: 20%;
+            height: 4px;
+            background: #e74545;
+            transform: translateY(-2px);
+        }
+
+        .effect-box {
+            position: absolute;
+            right: 5%;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #e74545;
+            color: white;
+            padding: 1rem;
+            border-radius: 5px;
+            min-width: 140px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .cause-branch {
+            position: absolute;
+            width: 220px;
+            z-index: 10;
+        }
+
+        .cause-branch.top-left { 
+            top: 10%; 
+            left: 5%; 
+        }
+        
+        .cause-branch.top-right { 
+            top: 10%; 
+            right: 30%; 
+        }
+        
+        .cause-branch.bottom-left { 
+            bottom: 10%; 
+            left: 5%; 
+        }
+        
+        .cause-branch.bottom-right { 
+            bottom: 10%; 
+            right: 30%; 
+        }
+
+        .cause-header {
+            background: #2c3e50;
+            color: white;
+            padding: 0.5rem;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .cause-item {
+            background: #f8f9fa;
+            padding: 0.4rem;
+            margin: 0.3rem 0;
+            border-radius: 3px;
+            font-size: 0.85rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .editable {
+            border: 1px dashed #bdc3c7;
+            min-height: 1.5rem;
+            padding: 0.2rem;
+            cursor: text;
+        }
+
+        .editable:focus {
+            outline: 2px solid #e74545;
+            background: white;
+        }
+
+        .five-whys-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .five-whys-table th,
+        .five-whys-table td {
+            border: 1px solid #bdc3c7;
+            padding: 1rem;
+            text-align: left;
+        }
+
+        .five-whys-table th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .five-whys-table .why-number {
+            background: #2c3e50;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            width: 100px;
+        }
+
+        .textarea-large {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.5rem;
+            border: 1px solid #bdc3c7;
+            border-radius: 3px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .textarea-large:focus {
+            outline: 2px solid #e74545;
+        }
+
+        .effort-value-chart {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background: white;
+            border: 2px solid #2c3e50;
+            border-radius: 8px;
+            margin: 1rem 0;
+            cursor: crosshair;
+        }
+
+        .chart-quadrant {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+        }
+
+        .quad-1 { top: 0; left: 0; background: rgba(255, 215, 0, 0.2); }
+        .quad-2 { top: 0; right: 0; background: rgba(52, 152, 219, 0.2); }
+        .quad-3 { bottom: 0; left: 0; background: rgba(243, 156, 18, 0.2); }
+        .quad-4 { bottom: 0; right: 0; background: rgba(231, 76, 60, 0.2); }
+
+        .chart-label {
+            position: absolute;
+            font-weight: bold;
+            color: #2c3e50;
+            padding: 5px;
+        }
+
+        .chart-axis {
+            position: absolute;
+            background: #2c3e50;
+        }
+
+        .chart-axis.horizontal {
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+        }
+
+        .chart-axis.vertical {
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .tool-buttons {
+                flex-direction: column;
+            }
+            
+            .ci-lifecycle {
+                flex-direction: column;
+            }
+            
+            .fishbone-diagram {
+                overflow-x: auto;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                font-size: 12pt;
+                color: black;
+                background: white;
+            }
+
+            .container {
+                max-width: none;
+                margin: 0;
+                padding: 0;
+            }
+
+            .tool-selector {
+                display: none;
+            }
+
+            .tool-content {
+                display: block !important;
+            }
+
+            .content-section {
+                box-shadow: none;
+                border: 1px solid black;
+                margin-bottom: 1rem;
+                page-break-inside: avoid;
+            }
+
+            .section-header {
+                background: black !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            body::before {
+                content: "RMIT University - College of Vocational Education - Continuous Improvement Tools";
+                display: block;
+                font-size: 14pt;
+                font-weight: bold;
+                margin-bottom: 1rem;
+                text-align: center;
+                border-bottom: 2px solid black;
+                padding-bottom: 0.5rem;
+            }
+        }
+  </style>
+ </head>
+ <body>
+  <div class="container">
+   <div class="tool-selector">
+    <h2>
+     Select a Continuous Improvement Tool
+    </h2>
+    <div class="tool-buttons">
+     <button class="tool-btn active" onclick="showTool('fishbone')">
+      Fishbone Diagram
+     </button>
+     <button class="tool-btn" onclick="showTool('fiveWhys')">
+      5 Whys Analysis
+     </button>
+     <button class="tool-btn" onclick="showTool('actionPlan')">
+      Action Planning
+     </button>
+     <button class="tool-btn" onclick="showTool('problemStatement')">
+      Problem Statement
+     </button>
+     <button class="tool-btn" onclick="showTool('customerBenefits')">
+      Customer Benefits Table
+     </button>
+     <button class="tool-btn" onclick="showTool('serviceFamilies')">
+      Service Families
+     </button>
+     <button class="tool-btn" onclick="showTool('effortValue')">
+      Effort vs Value Chart
+     </button>
+     <button class="tool-btn" onclick="window.print()" style="background: #27ae60;">
+      🖨️ Print
+     </button>
+    </div>
+   </div>
+   <!-- Fishbone Tool -->
+   <div class="tool-content" id="fishbone-tool">
+    <div class="content-section">
+     <div class="section-header">
+      1. What is a Fishbone Diagram?
+     </div>
+     <div class="section-content">
+      <p>
+       <strong>
+        Definition:
+       </strong>
+       A fishbone diagram (also known as an Ishikawa diagram or cause-and-effect diagram) is a visual tool used to systematically identify and explore the potential root causes of a problem in educational processes.
+      </p>
+      <p>
+       <strong>
+        Why it's used in education:
+       </strong>
+       In vocational education settings, this tool helps teaching teams, curriculum developers, and student support staff analyse complex issues such as low student engagement, poor learning outcomes, or operational inefficiencies. It promotes collaborative problem-solving and ensures all stakeholders can contribute their perspectives to identify underlying causes rather than just addressing symptoms.
+      </p>
+     </div>
+    </div>
+    <div class="content-section">
+     <div class="section-header">
+      2. When to Use in the CoVE Continuous Improvement Lifecycle
+     </div>
+     <div class="section-content">
+      <div class="ci-lifecycle">
+       <div class="stage">
+        1. Identify Problem
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage active">
+        2. Analyse Current State
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        3. Analyse the Problem
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        4. Develop Solution
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        5. Implement &amp; Test
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        6. Evaluate &amp; Measure
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        7. Standardise
+       </div>
+      </div>
+      <p>
+       <strong>
+        Primary Use:
+       </strong>
+       Stages 2-3 (Analyse Current State &amp; Analyse the Problem)
+      </p>
+      <p>
+       Use the fishbone diagram after you've clearly defined your problem statement but before developing solutions. This ensures you're addressing root causes rather than symptoms.
+      </p>
+     </div>
+    </div>
+    <div class="content-section">
+     <div class="section-header">
+      3. Benefits for Vocational Education
+     </div>
+     <div class="section-content">
+      <div class="benefits-grid">
+       <div class="benefit-item">
+        <strong>
+         Collaborative Learning:
+        </strong>
+        Encourages team-based problem solving, mirroring industry practices students will encounter in their careers.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Systematic Thinking:
+        </strong>
+        Develops critical analysis skills that can be applied to both educational challenges and workplace scenarios.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Visual Communication:
+        </strong>
+        Makes complex problems accessible to diverse stakeholders including students, teachers, and industry partners.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Prevents Bias:
+        </strong>
+        Reduces the tendency to jump to conclusions and ensures multiple perspectives are considered.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Industry Relevance:
+        </strong>
+        Teaches quality improvement methodologies used in manufacturing, healthcare, and service industries.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Documentation:
+        </strong>
+        Creates a visual record of the analysis process for future reference and continuous improvement.
+       </div>
+      </div>
+     </div>
+    </div>
+    <div class="content-section">
+     <div class="section-header">
+      4. Fishbone Diagram Workspace
+     </div>
+     <div class="section-content">
+      <p>
+       <strong>
+        Instructions:
+       </strong>
+       Click on any text area to edit. Start by defining your problem/effect, then brainstorm causes in each category.
+      </p>
+      <div class="tool-workspace">
+       <div class="fishbone-diagram">
+        <div class="fishbone-spine">
+        </div>
+        <div class="effect-box">
+         <div class="editable" contenteditable="true">
+          Problem/Effect
+         </div>
+        </div>
+        <div class="cause-branch top-left">
+         <div class="cause-header editable" contenteditable="true">
+          People/Staff
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          Training needs
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          Experience levels
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          Communication
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          + Add cause
+         </div>
+        </div>
+        <div class="cause-branch top-right">
+         <div class="cause-header editable" contenteditable="true">
+          Methods/Processes
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          Teaching methods
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          Assessment processes
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          Procedures
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          + Add cause
+         </div>
+        </div>
+        <div class="cause-branch bottom-left">
+         <div class="cause-header editable" contenteditable="true">
+          Environment
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          Physical space
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          Learning atmosphere
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          Resources available
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          + Add cause
+         </div>
+        </div>
+        <div class="cause-branch bottom-right">
+         <div class="cause-header editable" contenteditable="true">
+          Materials/Technology
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          Equipment quality
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          Learning materials
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          Technology access
+         </div>
+         <div class="cause-item editable" contenteditable="true">
+          + Add cause
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+   <!-- 5 Whys Tool -->
+   <div class="tool-content" id="fiveWhys-tool" style="display: none;">
+    <div class="content-section">
+     <div class="section-header">
+      1. What is 5 Whys Analysis?
+     </div>
+     <div class="section-content">
+      <p>
+       <strong>
+        Definition:
+       </strong>
+       The 5 Whys is a simple but powerful technique for drilling down to the root cause of a problem by repeatedly asking "Why?" typically five times, though it may take more or fewer iterations.
+      </p>
+      <p>
+       <strong>
+        Why it's used in education:
+       </strong>
+       This tool is particularly valuable in educational settings because it helps educators move beyond surface-level issues to understand the fundamental causes affecting student learning, engagement, or operational processes. It's an excellent tool for developing critical thinking skills in both staff and students.
+      </p>
+     </div>
+    </div>
+    <div class="content-section">
+     <div class="section-header">
+      2. When to Use in the CoVE Continuous Improvement Lifecycle
+     </div>
+     <div class="section-content">
+      <div class="ci-lifecycle">
+       <div class="stage">
+        1. Identify Problem
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        2. Analyse Current State
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage active">
+        3. Analyse the Problem
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        4. Develop Solution
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        5. Implement &amp; Test
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        6. Evaluate &amp; Measure
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        7. Standardise
+       </div>
+      </div>
+      <p>
+       <strong>
+        Primary Use:
+       </strong>
+       Stage 3 (Analyse the Problem)
+      </p>
+      <p>
+       Use 5 Whys when you have a specific problem and need to quickly identify the root cause. It works best for problems with clear cause-and-effect relationships.
+      </p>
+     </div>
+    </div>
+    <div class="content-section">
+     <div class="section-header">
+      3. Benefits for Vocational Education
+     </div>
+     <div class="section-content">
+      <div class="benefits-grid">
+       <div class="benefit-item">
+        <strong>
+         Simple &amp; Accessible:
+        </strong>
+        Easy to learn and apply, making it suitable for all staff levels and student groups.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Quick Results:
+        </strong>
+        Can be completed in a short session, making it practical for busy educational environments.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Develops Critical Thinking:
+        </strong>
+        Teaches students and staff to question assumptions and dig deeper into problems.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Prevents Quick Fixes:
+        </strong>
+        Discourages addressing symptoms rather than root causes.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Industry Application:
+        </strong>
+        Widely used in lean manufacturing and service industries, providing real-world relevance.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Team Building:
+        </strong>
+        Encourages collaborative investigation and shared understanding of issues.
+       </div>
+      </div>
+     </div>
+    </div>
+    <div class="content-section">
+     <div class="section-header">
+      4. 5 Whys Analysis Workspace
+     </div>
+     <div class="section-content">
+      <p>
+       <strong>
+        Instructions:
+       </strong>
+       Start with your problem statement, then ask "Why?" for each answer. Continue until you reach the root cause.
+      </p>
+      <div class="tool-workspace">
+       <table class="five-whys-table">
+        <thead>
+         <tr>
+          <th style="width: 100px;">
+           Step
+          </th>
+          <th>
+           Question/Answer
+          </th>
+         </tr>
+        </thead>
+        <tbody>
+         <tr>
+          <td class="why-number">
+           Problem
+          </td>
+          <td>
+           <textarea class="textarea-large" placeholder="Describe the problem you want to analyse..."></textarea>
+          </td>
+         </tr>
+         <tr>
+          <td class="why-number">
+           Why 1?
+          </td>
+          <td>
+           <textarea class="textarea-large" placeholder="Why does this problem occur?"></textarea>
+          </td>
+         </tr>
+         <tr>
+          <td class="why-number">
+           Why 2?
+          </td>
+          <td>
+           <textarea class="textarea-large" placeholder="Why does this cause occur?"></textarea>
+          </td>
+         </tr>
+         <tr>
+          <td class="why-number">
+           Why 3?
+          </td>
+          <td>
+           <textarea class="textarea-large" placeholder="Why does this deeper cause occur?"></textarea>
+          </td>
+         </tr>
+         <tr>
+          <td class="why-number">
+           Why 4?
+          </td>
+          <td>
+           <textarea class="textarea-large" placeholder="Why does this underlying cause occur?"></textarea>
+          </td>
+         </tr>
+         <tr>
+          <td class="why-number">
+           Why 5?
+          </td>
+          <td>
+           <textarea class="textarea-large" placeholder="Why does this fundamental cause occur?"></textarea>
+          </td>
+         </tr>
+         <tr>
+          <td class="why-number" style="background: #e74545;">
+           Root Cause
+          </td>
+          <td>
+           <textarea class="textarea-large" placeholder="What is the root cause that needs to be addressed?"></textarea>
+          </td>
+         </tr>
+        </tbody>
+       </table>
+      </div>
+     </div>
+    </div>
+   </div>
+   <!-- Problem Statement Tool -->
+   <div class="tool-content" id="problemStatement-tool" style="display: none;">
+    <div class="content-section">
+     <div class="section-header">
+      1. What is a Problem Statement?
+     </div>
+     <div class="section-content">
+      <p>
+       <strong>
+        Definition:
+       </strong>
+       A problem statement is a clear and concise description of an issue or challenge that needs to be addressed in educational processes or services. It serves as the foundation for all improvement efforts.
+      </p>
+      <p>
+       <strong>
+        Why it's used in education:
+       </strong>
+       In vocational education, a well-crafted problem statement helps teams focus their improvement efforts on the most critical issues affecting student outcomes, staff efficiency, or organisational performance. It ensures all stakeholders understand what needs to be solved and why it matters.
+      </p>
+     </div>
+    </div>
+    <div class="content-section">
+     <div class="section-header">
+      2. When to Use in the CoVE Continuous Improvement Lifecycle
+     </div>
+     <div class="section-content">
+      <div class="ci-lifecycle">
+       <div class="stage active">
+        1. Identify Problem
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        2. Analyse Current State
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        3. Analyse the Problem
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        4. Develop Solution
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        5. Implement &amp; Test
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        6. Evaluate &amp; Measure
+       </div>
+       <div class="arrow">
+        →
+       </div>
+       <div class="stage">
+        7. Standardise
+       </div>
+      </div>
+      <p>
+       <strong>
+        Primary Use:
+       </strong>
+       Stage 1 (Identify Problem)
+      </p>
+      <p>
+       Use the problem statement as the very first step in any improvement initiative to clearly define what you're trying to solve.
+      </p>
+     </div>
+    </div>
+    <div class="content-section">
+     <div class="section-header">
+      3. Benefits for Vocational Education
+     </div>
+     <div class="section-content">
+      <div class="benefits-grid">
+       <div class="benefit-item">
+        <strong>
+         Clear Focus:
+        </strong>
+        Prevents teams from working on symptoms rather than root causes of educational challenges.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Stakeholder Alignment:
+        </strong>
+        Ensures all team members understand exactly what issue is being addressed.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Resource Justification:
+        </strong>
+        Helps secure support and resources by clearly articulating the business case for change.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Success Measurement:
+        </strong>
+        Provides a baseline for measuring improvement outcomes.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Student Impact:
+        </strong>
+        Ensures improvement efforts are directly linked to better student experiences and outcomes.
+       </div>
+       <div class="benefit-item">
+        <strong>
+         Communication Tool:
+        </strong>
+        Creates a shared language for discussing the issue across different departments.
+       </div>
+      </div>
+      <div style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #e74545;">
+       <h4 style="color: #2c3e50; margin-bottom: 0.5rem;">
+        Example: Completed Problem Statement
+       </h4>
+       <p style="font-style: italic;">
+        "VET students in the automotive program are experiencing delays of 2-3 weeks in accessing practical workshop sessions due to equipment booking conflicts and unclear scheduling processes, resulting in 40% of students reporting feeling unprepared for industry placements and potentially affecting graduate employment rates."
+       </p>
+       <p style="margin-top: 0.5rem; font-size: 0.9rem;">
+        <strong>
+         Why this works:
+        </strong>
+        It clearly identifies who (VET automotive students), what (delayed workshop access), when (2-3 weeks), where (workshop sessions), and why it matters (employment preparation).
+       </p>
+      </div>
+     </div>
+    </div>
+    <div class="content-section">
+     <div class="section-header">
+      4. Problem Statement Workspace
+     </div>
+     <div class="section-content">
+      <p>
+       <strong>
+        Instructions:
+       </strong>
+       Answer the 4 W's first, then craft them into a clear, concise problem statement.
+      </p>
+      <div class="tool-workspace">
+       <div style="background: white; padding: 1.5rem; border-radius: 8px;">
+        <h3 style="color: #2c3e50; margin-bottom: 1rem;">
+         Build Your Problem Statement
+        </h3>
+        <div style="margin-bottom: 1.5rem;">
+         <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #2c3e50;">
+          Who has the problem?
+         </label>
+         <textarea class="textarea-large" placeholder="Which students, staff, or stakeholders are affected?"></textarea>
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+         <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #2c3e50;">
+          What is the problem? What does it impact?
+         </label>
+         <textarea class="textarea-large" placeholder="Describe the specific issue and its effects..."></textarea>
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+         <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #2c3e50;">
+          When does the problem occur?
+         </label>
+         <textarea class="textarea-large" placeholder="Is this ongoing, seasonal, or triggered by specific events?"></textarea>
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+         <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #2c3e50;">
+          Where does the problem happen?
+         </label>
+         <textarea class="textarea-large" placeholder="In which departments, processes, or locations?"></textarea>
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+         <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #2c3e50;">
+          So what? Why should we work on this?
+         </label>
+         <textarea class="textarea-large" placeholder="What are the consequences if this problem isn't solved?"></textarea>
+        </div>
+        <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 5px;">
+         <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #e74545;">
+          Final Problem Statement:
+         </label>
+         <textarea class="textarea-large" placeholder="Combine your answers above into one clear, concise statement..." style="min-height: 100px; border: 2px solid #e74545;"></textarea>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+   <!-- Effort vs Value Chart Tool -->
+   &lt;div id="
+  </div>
+ </body>
+</html>
