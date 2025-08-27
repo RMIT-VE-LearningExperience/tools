@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generalised Prioritisation Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Replaced html2pdf.js with jsPDF and html2canvas directly -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .item-row:hover, .sub-criterion-row:hover {
+            background-color: #f0f9ff;
+        }
+        .weight-slider::-webkit-slider-thumb, .score-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4f46e5;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .weight-slider::-moz-range-thumb, .score-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #4f46e5;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .weight-slider:disabled::-webkit-slider-thumb {
+            background: #9ca3af;
+        }
+        .lock-btn:hover, .add-sub-criterion-btn:hover {
+            transform: scale(1.1);
+        }
+        .view-toggle-btn.active {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .view-toggle-btn {
+             background-color: white;
+            color: #4b5563;
+        }
+         .view-toggle-btn:hover {
+            background-color: #f3f4f6;
+        }
+        .template-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .template-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .roadmap-quarter {
+            min-height: 200px;
+        }
+        .roadmap-item {
+            cursor: grab;
+        }
+        .roadmap-item:active {
+            cursor: grabbing;
+        }
+        .dragging {
+            opacity: 0.5;
+        }
+        .drag-over {
+            background-color: #e0e7ff;
+            border-color: #a5b4fc;
+        }
+        .tooltip-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        .tooltip-icon {
+            cursor: pointer;
+            margin-left: 4px;
+        }
+        .tooltip-text {
+            visibility: hidden;
+            width: 220px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -110px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-weight: normal;
+        }
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        .pdf-page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-10 relative">
+             <button id="back-to-templates-btn" class="hidden absolute top-0 left-0 flex items-center gap-2 text-sm text-indigo-600 font-semibold hover:text-indigo-800 transition-opacity duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Back to Templates
+            </button>
+            <h1 id="main-title" class="text-3xl sm:text-4xl font-bold text-gray-900">Prioritisation Tool</h1>
+            <p id="main-subtitle" class="mt-2 text-lg text-gray-600">A flexible tool for data-driven decision making.</p>
+        </header>
+
+        <main>
+            <!-- Template Selection -->
+            <section id="template-selection" class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                <h2 class="text-2xl font-semibold mb-4">Choose a Prioritisation Template</h2>
+                <div id="template-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Template cards will be generated by JS -->
+                </div>
+            </section>
+            
+            <!-- Main Tool Content -->
+            <div id="tool-content" class="hidden space-y-12">
+                 <section id="criteria" class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h2 class="text-2xl font-semibold">1. Define Criteria</h2>
+                            <p class="text-sm text-gray-500 mt-1">Current Template: <strong id="current-template-name"></strong></p>
+                        </div>
+                        <div id="criteria-toggles" class="flex items-center gap-4 flex-shrink-0">
+                            <label for="advanced-scoring-toggle" class="flex items-center cursor-pointer" title="Turn on to add weighted sub-criteria for more detailed scoring.">
+                                <span class="text-sm font-medium text-gray-700 mr-3">Advanced Scoring</span>
+                                <div class="relative">
+                                    <input type="checkbox" id="advanced-scoring-toggle" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                </div>
+                            </label>
+                             <label for="manual-weight-toggle" class="flex items-center cursor-pointer" title="Turn on to manually adjust the weight of each criterion. Otherwise, weights are distributed evenly.">
+                                <span class="text-sm font-medium text-gray-700 mr-3">Manual Weighting</span>
+                                <div class="relative">
+                                    <input type="checkbox" id="manual-weight-toggle" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="criteria-content">
+                        <div id="criteria-lock-message" class="hidden p-4 mb-4 text-sm text-blue-700 bg-blue-100 rounded-lg" role="alert">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                                <span class="font-medium">Criteria are now locked.</span>
+                            </div>
+                            <p class="mt-2 ml-8">To ensure a fair comparison, all items must be assessed against the same criteria and weights. To make changes, please reset all items.</p>
+                            <button id="reset-all-btn" class="mt-2 ml-8 text-sm font-semibold text-blue-800 hover:underline">Reset All & Unlock Criteria</button>
+                        </div>
+                        <p id="criteria-description" class="mb-4 text-gray-600">Select your criteria. With manual weighting off, weights are distributed evenly. Turn it on to adjust weights yourself.</p>
+                        <div class="overflow-visible">
+                            <table id="criteria-table" class="min-w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 rounded-l-lg">Criterion</th>
+                                        <th scope="col" class="px-6 py-3">Weight (%)</th>
+                                        <th scope="col" class="px-6 py-3">1 (Very Low)</th>
+                                        <th scope="col" class="px-6 py-3">3 (Medium)</th>
+                                        <th scope="col" class="px-6 py-3 rounded-r-lg">5 (Very High)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Rows will be generated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                         <div id="add-criterion-container" class="mt-4 hidden">
+                            <button id="add-criterion-btn" class="text-sm text-indigo-600 font-semibold hover:underline">+ Add New Criterion</button>
+                         </div>
+                         <div class="mt-4 flex justify-end items-center">
+                            <div id="manual-weight-controls" class="flex justify-end items-center gap-4 hidden">
+                                 <button id="auto-balance-btn" class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 rounded-md transition" title="Evenly distributes the remaining percentage among all unlocked criteria to reach 100%.">
+                                    Auto-balance Unlocked
+                                </button>
+                                <div id="total-weight-container" class="font-semibold">
+                                    Total Weight: <span id="total-weight-value">100</span>%
+                                    <span id="total-weight-warning" class="ml-2 text-red-600 hidden">(Total should be 100%)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800">2. Add & Score Items</h2>
+                    <div id="add-item-controls" class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start mb-8">
+                        <div>
+                            <h3 class="font-semibold text-lg mb-2">Add Manually</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                                <div class="space-y-1">
+                                    <label for="item-name" class="block text-sm font-medium text-gray-700" id="item-name-label">Item Name</label>
+                                    <input type="text" id="item-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="e.g., Client Onboarding">
+                                </div>
+                                <div class="space-y-1">
+                                    <label for="item-owner" class="block text-sm font-medium text-gray-700" id="item-owner-label">Owner</label>
+                                    <input type="text" id="item-owner" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="e.g., Jane Doe">
+                                </div>
+                                <button id="add-item-btn" class="sm:col-span-2 w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
+                                    Add <span class="item-type-label">Item</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="border-t md:border-t-0 md:border-l border-gray-200 pt-8 md:pt-0 md:pl-8">
+                             <h3 class="font-semibold text-lg mb-2">Upload from File</h3>
+                             <p class="text-sm text-gray-500 mb-3">Upload a CSV file with "<span id="csv-header-name"></span>" and "<span id="csv-header-owner"></span>" columns.</p>
+                             <div class="flex items-center gap-2">
+                                <input type="file" id="upload-csv" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"/>
+                                <button id="download-template-btn" class="text-indigo-600 hover:text-indigo-800 text-sm font-semibold whitespace-nowrap">Download Template</button>
+                             </div>
+                             <p id="upload-feedback" class="text-sm text-green-600 mt-2"></p>
+                        </div>
+                    </div>
+                    <div id="scoring-table-container" class="overflow-x-auto">
+                         <p id="no-items-message" class="text-gray-500">No items added yet. Use the form above to add one.</p>
+                    </div>
+                </section>
+                
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800">3. Final Priority List</h2>
+                    <div id="final-list-container" class="overflow-x-auto">
+                        <p id="no-items-final-message" class="text-gray-500">Your ranked list will appear here once items are scored.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-semibold">4. Visualisation & Planning</h2>
+                        <div class="flex items-center border border-gray-200 rounded-lg p-1">
+                            <button id="matrix-view-btn" class="view-toggle-btn px-3 py-1 text-sm font-medium rounded-md active">Matrix</button>
+                            <button id="chart-view-btn" class="view-toggle-btn px-3 py-1 text-sm font-medium rounded-md">Chart</button>
+                            <button id="dashboard-view-btn" class="view-toggle-btn px-3 py-1 text-sm font-medium rounded-md">Dashboard</button>
+                        </div>
+                    </div>
+                    <div id="matrix-view">
+                        <p class="mb-4 text-sm text-gray-600">This matrix categorises items based on their weighted Value vs. Cost scores, compared to the average.</p>
+                        <div id="priority-matrix-container" class="grid grid-cols-[auto_1fr_1fr] grid-rows-[auto_1fr_1fr] gap-2 items-stretch">
+                            <!-- Matrix structure -->
+                        </div>
+                    </div>
+                    <div id="chart-view" class="hidden">
+                        <p class="mb-4 text-sm text-gray-600">This chart plots each item as a bubble. <strong>Higher = more value</strong>, <strong>further left = lower cost</strong>. The <strong>bubble size</strong> represents its <strong>risk</strong> score (if applicable).</p>
+                        <div class="relative h-[500px]">
+                            <canvas id="bubble-chart-canvas"></canvas>
+                        </div>
+                    </div>
+                    <div id="dashboard-view" class="hidden">
+                        <!-- Executive Dashboard -->
+                        <div class="mb-12">
+                            <h3 class="text-xl font-semibold mb-2 text-gray-800">Executive Dashboard</h3>
+                            <p class="mb-4 text-sm text-gray-600">A high-level summary of where effort is being allocated based on the priority matrix categories.</p>
+                            <div class="max-w-md mx-auto">
+                                <canvas id="dashboard-pie-chart"></canvas>
+                            </div>
+                        </div>
+                        <!-- Strategic Roadmap -->
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2 text-gray-800">Strategic Roadmap</h3>
+                            <p class="mb-4 text-sm text-gray-600">A timeline plotting "Major Projects" and "Quick Wins". Drag and drop items to plan across upcoming quarters.</p>
+                            <div id="roadmap-container" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <!-- Roadmap will be generated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="interpretation-section" class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <div id="interpretation-header" class="flex justify-between items-center cursor-pointer group">
+                        <h2 class="text-2xl font-semibold text-gray-800 group-hover:text-indigo-600">5. Interpreting Your Results</h2>
+                        <svg id="interpretation-icon" class="w-6 h-6 transform transition-transform text-gray-400 group-hover:text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div id="interpretation-content" class="hidden mt-6 border-t pt-6 space-y-6 text-gray-600">
+                        <!-- Interpretation content will be dynamically generated -->
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800">6. Export Report</h2>
+                    <p class="mb-4 text-sm text-gray-600">Download a summary of your prioritisation results.</p>
+                    <div class="flex items-center gap-4">
+                        <button id="export-excel-btn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md transition">Export as Excel (CSV)</button>
+                        <button id="export-pdf-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition">Export as PDF</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="text-center mt-12 py-6 border-t border-gray-200">
+            <p class="text-sm text-gray-500">A flexible tool for data-driven decision making.</p>
+        </footer>
+    </div>
+    
+    <!-- Modals -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-40"></div>
+    
+    <div id="delete-modal" class="fixed inset-0 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+             <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <h3 id="modal-title" class="text-lg leading-6 font-medium text-gray-900"></h3>
+                <div class="mt-2 px-7 py-3">
+                    <p id="modal-content" class="text-sm text-gray-500"></p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="confirm-delete-btn" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-auto shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                        Confirm
+                    </button>
+                    <button id="cancel-delete-btn" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-auto shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-3">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="advanced-scoring-modal" class="fixed inset-0 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+             <div class="mt-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="advanced-modal-title" class="text-lg leading-6 font-medium text-gray-900">Advanced Scoring</h3>
+                    <button id="close-advanced-modal-btn" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                </div>
+                <div id="advanced-modal-content" class="mt-2 px-7 py-3">
+                    <!-- Sub-criteria will be rendered here -->
+                </div>
+                <div class="items-center px-4 py-3 text-right">
+                    <button id="save-advanced-btn" class="px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md w-auto shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- STATE MANAGEMENT ---
+            let items = [];
+            let nextId = 1;
+            let isManualWeighting = false;
+            let isAdvancedScoring = false;
+            let itemToDeleteId = null;
+            let isCriteriaLocked = false;
+            let activeAdvancedCriterion = null;
+            
+            let criteriaData = {};
+            let criteriaOrder = [];
+            let currentTemplateKey = null;
+
+            const templates = {
+                process: {
+                    name: 'Process Improvement',
+                    description: 'For evaluating and prioritising business or operational processes.',
+                    itemNameLabel: 'Process Name',
+                    itemOwnerLabel: 'Process Owner',
+                    criteria: {
+                        impact: { label: 'Impact', definition: 'The strategic benefit gained from improving the process.', guideScores: ['Minimal benefit', 'Some benefit', 'Major benefit'], weight: 20, type: 'value', active: true },
+                        effort: { label: 'Effort to Improve', definition: 'The resources needed to implement an improvement.', guideScores: ['Low effort', 'Medium effort', 'High effort'], weight: 20, type: 'cost', active: true },
+                        frequency: { label: 'Frequency', definition: 'How often the process is performed.', guideScores: ['Rarely used', 'Monthly', 'Daily'], weight: 20, type: 'value', active: true },
+                        risk: { label: 'Risk', definition: 'The potential negative consequences if the process fails.', guideScores: ['No big consequence', 'Medium consequence', 'Major compliance/revenue risk'], weight: 20, type: 'value', active: true },
+                        urgency: { label: 'Urgency', definition: 'The time-sensitivity of the process improvement.', guideScores: ['No deadline', 'Needs attention soon', 'Immediate action required'], weight: 20, type: 'value', active: true },
+                    }
+                },
+                project: {
+                    name: 'Project Prioritisation',
+                    description: 'For ranking potential projects based on strategic value and feasibility.',
+                    itemNameLabel: 'Project Title',
+                    itemOwnerLabel: 'Project Lead',
+                    criteria: {
+                        alignment: { label: 'Strategic Alignment', definition: 'How well the project aligns with key organisational goals.', guideScores: ['Low alignment', 'Moderate alignment', 'High alignment'], weight: 25, type: 'value', active: true },
+                        impact: { label: 'Student/Stakeholder Impact', definition: 'The expected positive impact on students or key stakeholders.', guideScores: ['Low impact', 'Some impact', 'Transformative impact'], weight: 25, type: 'value', active: true },
+                        budget: { label: 'Required Budget', definition: 'The estimated financial cost of the project.', guideScores: ['Low cost (< $5k)', 'Medium cost', 'High cost (> $50k)'], weight: 20, type: 'cost', active: true },
+                        collaboration: { label: 'Cross-Departmental Collaboration', definition: 'The level of collaboration required across different teams.', guideScores: ['Minimal coordination', 'Some coordination', 'High complexity'], weight: 15, type: 'cost', active: true },
+                        risk: { label: 'Implementation Risk', definition: 'The technical and organisational risks of the project.', guideScores: ['Low risk', 'Moderate risk', 'High risk'], weight: 15, type: 'cost', active: true },
+                    }
+                },
+                program: {
+                    name: 'New Program Idea',
+                    description: 'For assessing the viability of new educational programs or courses.',
+                    itemNameLabel: 'Program Idea',
+                    itemOwnerLabel: 'Sponsor',
+                    criteria: {
+                        demand: { label: 'Industry Demand', definition: 'The current and projected demand from employers for this skill set.', guideScores: ['Niche demand', 'Growing demand', 'High demand'], weight: 30, type: 'value', active: true },
+                        alignment: { label: 'Alignment with TAFE Sector', definition: 'How well the program fits within the strategic direction of the TAFE sector.', guideScores: ['Poor fit', 'Good fit', 'Excellent fit'], weight: 20, type: 'value', active: true },
+                        resources: { label: 'Resource Availability', definition: 'Availability of qualified staff, facilities, and equipment.', guideScores: ['Significant gaps', 'Some gaps', 'Resources available'], weight: 20, type: 'cost', active: true, invertScore: true },
+                        viability: { label: 'Commercial Viability', definition: 'The potential for the program to be profitable and sustainable.', guideScores: ['Low viability', 'Moderate viability', 'High viability'], weight: 20, type: 'value', active: true },
+                        time: { label: 'Time to Market', definition: 'The time required to develop and launch the program.', guideScores: ['Short (<6m)', 'Medium (6-12m)', 'Long (>12m)'], weight: 10, type: 'cost', active: true, invertScore: true },
+                    }
+                },
+                task: {
+                    name: 'Simple Task List',
+                    description: 'A basic framework for prioritising daily or weekly tasks.',
+                    itemNameLabel: 'Task Name',
+                    itemOwnerLabel: 'Assignee',
+                    criteria: {
+                        urgency: { label: 'Urgency', definition: 'How soon this task needs to be completed.', guideScores: ['Low urgency', 'Medium urgency', 'High urgency'], weight: 40, type: 'value', active: true },
+                        importance: { label: 'Importance', definition: 'How critical this task is to achieving your goals.', guideScores: ['Low importance', 'Medium importance', 'High importance'], weight: 40, type: 'value', active: true },
+                        effort: { label: 'Effort', definition: 'The amount of time and energy required to complete the task.', guideScores: ['Low effort', 'Medium effort', 'High effort'], weight: 20, type: 'cost', active: true },
+                    }
+                },
+                moscow: {
+                    name: 'MoSCoW Prioritisation',
+                    description: 'A dedicated template for the MoSCoW framework.',
+                    itemNameLabel: 'Task/Feature',
+                    itemOwnerLabel: 'Owner',
+                    criteria: {
+                        risk: { label: 'Risk/Compliance', definition: 'The risk or compliance impact of not doing this.', guideScores: ['Low', 'Medium', 'High'], weight: 25, type: 'value', active: true },
+                        impact: { label: 'Business Impact / Value', definition: 'The overall benefit to the business.', guideScores: ['Low', 'Medium', 'High'], weight: 25, type: 'value', active: true },
+                        urgency: { label: 'Urgency (Time Sensitivity)', definition: 'How time-critical is this task?', guideScores: ['Low', 'Medium', 'High'], weight: 25, type: 'value', active: true },
+                        feasibility: { label: 'Feasibility', definition: 'How technically and operationally feasible is this task?', guideScores: ['Low', 'Medium', 'High'], weight: 25, type: 'value', active: true },
+                        effort: { label: 'Effort / Resources Required', definition: 'How much work is required to complete this task?', guideScores: ['Low', 'Medium', 'High'], weight: 100, type: 'cost', active: true },
+                    }
+                },
+                blank: {
+                    name: 'Create Your Own',
+                    description: 'Build a custom framework from scratch.',
+                    itemNameLabel: 'Item Name',
+                    itemOwnerLabel: 'Owner',
+                    criteria: {}
+                }
+            };
+            
+            // --- DOM ELEMENTS ---
+            const mainTitle = document.getElementById('main-title');
+            const mainSubtitle = document.getElementById('main-subtitle');
+            const addItemBtn = document.getElementById('add-item-btn');
+            const itemNameInput = document.getElementById('item-name');
+            const itemOwnerInput = document.getElementById('item-owner');
+            const scoringTableContainer = document.getElementById('scoring-table-container');
+            const noItemsMessage = document.getElementById('no-items-message');
+            const noItemsFinalMessage = document.getElementById('no-items-final-message');
+            const finalLisContainer = document.getElementById('final-list-container');
+            const criteriaTableBody = document.querySelector('#criteria-table tbody');
+            const totalWeightValue = document.getElementById('total-weight-value');
+            const totalWeightWarning = document.getElementById('total-weight-warning');
+            const autoBalanceBtn = document.getElementById('auto-balance-btn');
+            const chartCanvas = document.getElementById('bubble-chart-canvas');
+            const exportExcelBtn = document.getElementById('export-excel-btn');
+            const exportPdfBtn = document.getElementById('export-pdf-btn');
+            const matrixViewBtn = document.getElementById('matrix-view-btn');
+            const chartViewBtn = document.getElementById('chart-view-btn');
+            const dashboardViewBtn = document.getElementById('dashboard-view-btn');
+            const matrixView = document.getElementById('matrix-view');
+            const priorityMatrixContainer = document.getElementById('priority-matrix-container');
+            const chartView = document.getElementById('chart-view');
+            const dashboardView = document.getElementById('dashboard-view');
+            const dashboardPieChartCanvas = document.getElementById('dashboard-pie-chart');
+            const roadmapContainer = document.getElementById('roadmap-container');
+            const manualWeightToggle = document.getElementById('manual-weight-toggle');
+            const advancedScoringToggle = document.getElementById('advanced-scoring-toggle');
+            const manualWeightControls = document.getElementById('manual-weight-controls');
+            const deleteModal = document.getElementById('delete-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContent = document.getElementById('modal-content');
+            const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+            const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+            const criteriaLockMessage = document.getElementById('criteria-lock-message');
+            const criteriaDescription = document.getElementById('criteria-description');
+            const resetAllBtn = document.getElementById('reset-all-btn');
+            const modalBackdrop = document.getElementById('modal-backdrop');
+            const interpretationHeader = document.getElementById('interpretation-header');
+            const interpretationContent = document.getElementById('interpretation-content');
+            const interpretationIcon = document.getElementById('interpretation-icon');
+            const backToTemplatesBtn = document.getElementById('back-to-templates-btn');
+            const toolContent = document.getElementById('tool-content');
+            const templateSelection = document.getElementById('template-selection');
+            const advancedScoringModal = document.getElementById('advanced-scoring-modal');
+            const closeAdvancedModalBtn = document.getElementById('close-advanced-modal-btn');
+            const saveAdvancedBtn = document.getElementById('save-advanced-btn');
+            const addCriterionContainer = document.getElementById('add-criterion-container');
+            const addCriterionBtn = document.getElementById('add-criterion-btn');
+            const criteriaToggles = document.getElementById('criteria-toggles');
+
+            let bubbleChart = null;
+            let dashboardPieChart = null;
+
+            // --- FUNCTIONS ---
+            
+            function initializeTemplates() {
+                const container = document.getElementById('template-cards-container');
+                container.innerHTML = '';
+                Object.keys(templates).forEach(key => {
+                    const template = templates[key];
+                    const card = document.createElement('div');
+                    card.className = 'template-card bg-white p-6 rounded-lg border border-gray-200 cursor-pointer';
+                    card.dataset.templateKey = key;
+                    card.innerHTML = `
+                        <h3 class="font-bold text-lg text-indigo-700">${template.name}</h3>
+                        <p class="text-sm text-gray-600 mt-2">${template.description}</p>
+                    `;
+                    container.appendChild(card);
+                });
+
+                container.addEventListener('click', (e) => {
+                    const card = e.target.closest('.template-card');
+                    if (card) {
+                        const templateKey = card.dataset.templateKey;
+                        loadTemplate(templateKey);
+                    }
+                });
+            }
+
+            function loadTemplate(templateKey) {
+                currentTemplateKey = templateKey;
+                const template = templates[templateKey];
+
+                criteriaData = JSON.parse(JSON.stringify(template.criteria));
+                criteriaOrder = Object.keys(criteriaData);
+                
+                criteriaOrder.forEach(key => {
+                    criteriaData[key].locked = false;
+                    criteriaData[key].subCriteria = [];
+                    criteriaData[key].isExpanded = false;
+                    if (!criteriaData[key].scores) {
+                        criteriaData[key].scores = { '1': 'Very Low', '2': 'Low', '3': 'Medium', '4': 'High', '5': 'Very High' };
+                    }
+                });
+
+                items = [];
+                isCriteriaLocked = false;
+                isManualWeighting = false;
+                isAdvancedScoring = false;
+                manualWeightToggle.checked = false;
+                advancedScoringToggle.checked = false;
+
+                document.getElementById('current-template-name').textContent = template.name;
+                document.querySelectorAll('.item-type-label').forEach(el => el.textContent = template.itemNameLabel.split(' ')[0]);
+                document.getElementById('item-name-label').textContent = template.itemNameLabel;
+                itemNameInput.placeholder = `e.g., ${template.itemNameLabel === 'Task Name' ? 'Finalise report' : 'New Initiative'}`;
+                document.getElementById('item-owner-label').textContent = template.itemOwnerLabel;
+                itemOwnerInput.placeholder = `e.g., ${template.itemOwnerLabel === 'Assignee' ? 'John Smith' : 'Marketing Dept.'}`;
+                document.getElementById('csv-header-name').textContent = template.itemNameLabel;
+                document.getElementById('csv-header-owner').textContent = template.itemOwnerLabel;
+                
+                mainTitle.textContent = template.name;
+                mainSubtitle.textContent = template.description;
+                window.scrollTo(0, 0);
+                
+                if (templateKey === 'moscow') {
+                    isCriteriaLocked = true;
+                    criteriaToggles.classList.add('hidden');
+                } else {
+                    criteriaToggles.classList.remove('hidden');
+                }
+                
+                calculateAutomaticWeights(); 
+
+                renderCriteriaTable();
+                render();
+                
+                templateSelection.classList.add('hidden');
+                toolContent.classList.remove('hidden');
+                backToTemplatesBtn.classList.remove('hidden');
+            }
+
+            function getActiveCriteria() {
+                return criteriaOrder.filter(key => criteriaData[key].active);
+            }
+            
+            function renderCriteriaTable() {
+                const theadRow = document.querySelector('#criteria-table thead tr');
+                let headers = `
+                    <th scope="col" class="px-6 py-3 rounded-l-lg">
+                        <div class="tooltip-container">
+                            <span>Criterion</span>
+                            <svg class="tooltip-icon w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path></svg>
+                            <span class="tooltip-text">The factors you will score each item against.</span>
+                        </div>
+                    </th>
+                    <th scope="col" class="px-6 py-3">
+                        <div class="tooltip-container">
+                            <span>Weight (%)</span>
+                            <svg class="tooltip-icon w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path></svg>
+                            <span class="tooltip-text">The importance of each criterion. All weights must add up to 100%.</span>
+                        </div>
+                    </th>
+                    ${isAdvancedScoring && currentTemplateKey !== 'moscow' ? '<th scope="col" class="px-6 py-3">Advanced</th>' : ''}
+                `;
+                if (currentTemplateKey === 'blank') {
+                    headers += `
+                        <th scope="col" class="px-6 py-3">
+                            <div class="tooltip-container">
+                                <span>Type</span>
+                                <svg class="tooltip-icon w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path></svg>
+                                <span class="tooltip-text">'Value' means a high score is good. 'Cost' means a high score is bad.</span>
+                            </div>
+                        </th>
+                        <th scope="col" class="px-6 py-3 rounded-r-lg">
+                             <div class="tooltip-container">
+                                <span>Scoring Guide</span>
+                                <svg class="tooltip-icon w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path></svg>
+                                <span class="tooltip-text">Define what scores of 1, 3, and 5 mean for this criterion.</span>
+                            </div>
+                        </th>
+                    `;
+                } else {
+                    headers += '<th scope="col" class="px-6 py-3">1 (Very Low)</th><th scope="col" class="px-6 py-3">3 (Medium)</th><th scope="col" class="px-6 py-3 rounded-r-lg">5 (Very High)</th>';
+                }
+                theadRow.innerHTML = headers;
+
+                criteriaTableBody.innerHTML = '';
+                criteriaOrder.forEach(key => {
+                    const criterion = criteriaData[key];
+                    const row = document.createElement('tr');
+                    row.className = `bg-white border-b ${criterion.active ? '' : 'opacity-50'}`;
+                    
+                    const lockedIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>`;
+                    const unlockedIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>`;
+                    
+                    const lockIcon = criterion.locked ? lockedIconSvg : unlockedIconSvg;
+
+                    let advancedCell = '';
+                    if (isAdvancedScoring && currentTemplateKey !== 'moscow') {
+                        advancedCell = `
+                            <td class="px-6 py-4">
+                                <button class="add-sub-criterion-btn bg-gray-200 hover:bg-gray-300 rounded-full p-1 transition" data-criterion="${key}" ${isCriteriaLocked ? 'disabled' : ''}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </td>
+                        `;
+                    }
+
+                    let criterionNameCell = `
+                        <div class="flex items-center">
+                            <input type="checkbox" data-criterion="${key}" class="criterion-toggle h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mr-3" ${criterion.active ? 'checked' : ''} ${isCriteriaLocked ? 'disabled' : ''}>
+                            <div>
+                                <div class="flex items-center">
+                                    <span>${criterion.label}</span>
+                                    ${criterion.subCriteria.length > 0 ? `<span class="ml-2 text-xs text-gray-400 font-normal">(sub-criteria)</span>` : ''}
+                                </div>
+                                <div class="text-xs font-normal text-gray-500 mt-1">${criterion.definition}</div>
+                            </div>
+                        </div>
+                    `;
+
+                    let scoringGuideCells = `
+                        <td class="px-6 py-4">${criterion.guideScores[0]}</td>
+                        <td class="px-6 py-4">${criterion.guideScores[1]}</td>
+                        <td class="px-6 py-4">${criterion.guideScores[2]}</td>
+                    `;
+
+                    if (currentTemplateKey === 'blank') {
+                        criterionNameCell = `
+                            <div class="flex items-center">
+                                <input type="text" value="${criterion.label}" data-key="${key}" class="criterion-name-input flex-grow mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Criterion Name">
+                                <button class="remove-criterion-btn text-red-500 hover:text-red-700 font-bold ml-2" data-key="${key}">&times;</button>
+                            </div>
+                        `;
+                        scoringGuideCells = `
+                            <td class="px-6 py-4">
+                                <select data-key="${key}" class="criterion-type-select mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                                    <option value="value" ${criterion.type === 'value' ? 'selected' : ''}>Value</option>
+                                    <option value="cost" ${criterion.type === 'cost' ? 'selected' : ''}>Cost</option>
+                                </select>
+                            </td>
+                            <td class="px-6 py-4" colspan="3">
+                                <div class="flex gap-2">
+                                    <input type="text" value="${criterion.guideScores[0]}" data-key="${key}" data-score="0" class="guide-score-input mt-1 block w-1/3 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Score 1">
+                                    <input type="text" value="${criterion.guideScores[1]}" data-key="${key}" data-score="1" class="guide-score-input mt-1 block w-1/3 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Score 3">
+                                    <input type="text" value="${criterion.guideScores[2]}" data-key="${key}" data-score="2" class="guide-score-input mt-1 block w-1/3 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Score 5">
+                                </div>
+                            </td>
+                        `;
+                    }
+
+                    row.innerHTML = `
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 align-top">
+                            ${criterionNameCell}
+                        </th>
+                        <td class="px-6 py-4">
+                            <div class="weight-display-auto font-semibold text-gray-700 w-full text-center ${isManualWeighting ? 'hidden' : ''}">${criterion.weight}%</div>
+                            <div class="weight-controls-manual flex items-center space-x-3 ${isManualWeighting ? '' : 'hidden'}">
+                                <button class="lock-btn transition-transform duration-150" data-criterion="${key}" ${isCriteriaLocked ? 'disabled' : ''}>${lockIcon}</button>
+                                <input type="range" min="0" max="100" step="5" value="${criterion.weight}" data-criterion="${key}" class="weight-slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" ${criterion.locked || !criterion.active || isCriteriaLocked ? 'disabled' : ''}>
+                                <span class="font-semibold text-indigo-600 w-12 text-right">${criterion.weight}%</span>
+                            </div>
+                        </td>
+                        ${advancedCell}
+                        ${scoringGuideCells}
+                    `;
+                    criteriaTableBody.appendChild(row);
+                });
+                manualWeightControls.classList.toggle('hidden', !isManualWeighting || isCriteriaLocked);
+                manualWeightToggle.disabled = isCriteriaLocked;
+                advancedScoringToggle.disabled = isCriteriaLocked;
+                criteriaLockMessage.classList.toggle('hidden', !isCriteriaLocked);
+                criteriaDescription.classList.toggle('hidden', isCriteriaLocked);
+                addCriterionContainer.classList.toggle('hidden', currentTemplateKey !== 'blank');
+                updateWeightUI();
+            }
+
+            function updateWeightUI() {
+                const activeCriteria = getActiveCriteria();
+                let totalWeight = 0;
+                activeCriteria.forEach(key => {
+                    totalWeight += criteriaData[key].weight;
+                });
+                
+                totalWeight = Math.round(totalWeight);
+                totalWeightValue.textContent = totalWeight;
+
+                if (totalWeight !== 100) {
+                    totalWeightValue.classList.add('text-red-600');
+                    totalWeightWarning.classList.remove('hidden');
+                } else {
+                    totalWeightValue.classList.remove('text-red-600');
+                    totalWeightWarning.classList.add('hidden');
+                }
+            }
+            
+            function render() {
+                const currentCategories = getCurrentCategories();
+                renderScoringTable();
+                renderPriorityMatrix(currentCategories);
+                renderBubbleChart();
+                renderFinalList(currentCategories);
+                renderDashboard(currentCategories);
+                renderInterpretation();
+            }
+
+            function renderScoringTable() {
+                if (items.length === 0) {
+                    noItemsMessage.style.display = 'block';
+                    scoringTableContainer.querySelector('table')?.remove();
+                    return;
+                }
+                noItemsMessage.style.display = 'none';
+                
+                scoringTableContainer.innerHTML = '';
+                const activeCriteria = getActiveCriteria();
+                const template = templates[currentTemplateKey];
+
+                const table = document.createElement('table');
+                table.className = 'min-w-full divide-y divide-gray-200';
+                const thead = document.createElement('thead');
+                thead.className = 'bg-gray-50';
+                thead.innerHTML = `
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">${template.itemNameLabel}</th>
+                        ${activeCriteria.map(key => `
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <div>${criteriaData[key].label}</div>
+                            </th>
+                        `).join('')}
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Score</th>
+                        <th class="px-3 py-3"></th>
+                    </tr>
+                `;
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+                tbody.className = 'bg-white divide-y divide-gray-200';
+                
+                items.forEach(item => {
+                    const itemRow = document.createElement('tr');
+                    itemRow.className = 'item-row';
+                    itemRow.dataset.itemId = item.id;
+
+                    let itemCells = `<td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${item.name}</div>
+                        <div class="text-sm text-gray-500">${item.owner}</div>
+                    </td>`;
+
+                    activeCriteria.forEach(key => {
+                        const criterion = criteriaData[key];
+                        const score = item.scores[key] || 3;
+                        const scoreDescription = criterion.scores[score] || `Score: ${score}`;
+                        itemCells += `
+                            <td class="px-3 py-4 whitespace-nowrap">
+                                <div>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="range" min="1" max="5" step="1" value="${score}" data-id="${item.id}" data-criterion="${key}" class="score-slider w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                        <span class="score-display font-semibold text-indigo-600 w-4 text-center">${score}</span>
+                                    </div>
+                                    <div class="score-description text-xs text-gray-500 mt-1 w-36 truncate" title="${scoreDescription}">${scoreDescription}</div>
+                                </div>
+                            </td>`;
+                    });
+
+                    itemCells += `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">${calculateTotalScore(item).toFixed(2)}</td>
+                        <td class="px-3 py-4 whitespace-nowrap">
+                            <button data-id="${item.id}" class="delete-btn text-red-500 hover:text-red-700 font-bold text-xl">&times;</button>
+                        </td>`;
+                    
+                    itemRow.innerHTML = itemCells;
+                    tbody.appendChild(itemRow);
+                });
+                table.appendChild(tbody);
+                scoringTableContainer.appendChild(table);
+            }
+
+            function calculateCriterionScore(item, criterionKey) {
+                const criterion = criteriaData[criterionKey];
+                if (!criterion.active) return 0;
+                if (isAdvancedScoring && criterion.subCriteria && criterion.subCriteria.length > 0) {
+                    const totalWeight = criterion.subCriteria.reduce((sum, sub) => sum + sub.weight, 0);
+                    if (totalWeight === 0) return 3; // Default score
+                    const weightedSum = criterion.subCriteria.reduce((sum, sub) => {
+                        const score = item.scores[`${criterionKey}-${sub.name}`] || 3;
+                        return sum + (score * sub.weight);
+                    }, 0);
+                    return weightedSum / totalWeight;
+                }
+                return item.scores[criterionKey] || 3;
+            }
+
+            function calculateTotalScore(item) {
+                return getActiveCriteria().reduce((sum, key) => {
+                    const weight = criteriaData[key].weight / 100;
+                    const score = calculateCriterionScore(item, key);
+                    return sum + (score * weight);
+                }, 0);
+            }
+
+            function calculateValueScore(item) {
+                const activeValueCriteria = getActiveCriteria().filter(key => criteriaData[key].type === 'value');
+                if (activeValueCriteria.length === 0) return 0;
+
+                const totalValueWeight = activeValueCriteria.reduce((sum, key) => sum + criteriaData[key].weight, 0);
+                if (totalValueWeight === 0) return 0;
+
+                const weightedSum = activeValueCriteria.reduce((sum, key) => {
+                    const score = calculateCriterionScore(item, key);
+                    return sum + (score * criteriaData[key].weight);
+                }, 0);
+                return (weightedSum / totalValueWeight);
+            }
+
+            function calculateCostScore(item) {
+                const activeCostCriteria = getActiveCriteria().filter(key => criteriaData[key].type === 'cost');
+                 if (activeCostCriteria.length === 0) return 0;
+
+                const totalCostWeight = activeCostCriteria.reduce((sum, key) => sum + criteriaData[key].weight, 0);
+                if (totalCostWeight === 0) return 0;
+
+                const weightedSum = activeCostCriteria.reduce((sum, key) => {
+                    let score = calculateCriterionScore(item, key);
+                    if (criteriaData[key].invertScore) {
+                        score = 6 - score;
+                    }
+                    return sum + (score * criteriaData[key].weight);
+                }, 0);
+                return (weightedSum / totalCostWeight);
+            }
+
+            function getAverageScores(itemList) {
+                if (itemList.length < 2) { 
+                    return { averageValue: 3, averageCost: 3 }; 
+                }
+                const valueScores = itemList.map(p => calculateValueScore(p));
+                const costScores = itemList.map(p => calculateCostScore(p));
+                const averageValue = valueScores.reduce((a, b) => a + b, 0) / itemList.length;
+                const averageCost = costScores.reduce((a, b) => a + b, 0) / itemList.length;
+                return { averageValue, averageCost };
+            }
+            
+            function getCurrentCategories() {
+                if (currentTemplateKey === 'moscow') {
+                    return getMoscowMatrixCategories(items);
+                }
+                return getMatrixCategories(items);
+            }
+
+            function getMatrixCategories(itemList) {
+                if (itemList.length === 0) return {};
+
+                const { averageValue, averageCost } = getAverageScores(itemList);
+
+                const categories = {
+                    quickWins: [],
+                    majorProjects: [],
+                    niceToHave: [],
+                    lowPriority: [],
+                };
+
+                itemList.forEach(item => {
+                    const valueScore = calculateValueScore(item);
+                    const costScore = calculateCostScore(item);
+                    if (valueScore >= averageValue && costScore < averageCost) categories.quickWins.push(item);
+                    else if (valueScore >= averageValue && costScore >= averageCost) categories.majorProjects.push(item);
+                    else if (valueScore < averageValue && costScore < averageCost) categories.niceToHave.push(item);
+                    else if (valueScore < averageValue && costScore >= averageCost) categories.lowPriority.push(item);
+                });
+                return categories;
+            }
+
+            function getMoscowMatrixCategories(itemList) {
+                if (itemList.length === 0) return {};
+
+                const categories = {
+                    mustHave: [],
+                    shouldHave: [],
+                    couldHave: [],
+                    wontHave: [],
+                };
+
+                itemList.forEach(item => {
+                    const riskScore = calculateCriterionScore(item, 'risk');
+                    const impactScore = calculateCriterionScore(item, 'impact');
+                    const urgencyScore = calculateCriterionScore(item, 'urgency');
+                    const feasibilityScore = calculateCriterionScore(item, 'feasibility');
+                    const effortScore = calculateCriterionScore(item, 'effort');
+
+                    if ((riskScore >= 4 || (impactScore >= 4 && urgencyScore >= 4)) && feasibilityScore >= 3 && effortScore <= 4) {
+                        categories.mustHave.push(item);
+                    } else if ((riskScore >= 3 || impactScore >= 3 || urgencyScore >= 3) && feasibilityScore >= 3 && effortScore >= 3) {
+                        categories.shouldHave.push(item);
+                    } else if (riskScore < 3 && impactScore <= 3 && urgencyScore < 3 && feasibilityScore >= 3 && effortScore <= 2) {
+                        categories.couldHave.push(item);
+                    } else {
+                        categories.wontHave.push(item);
+                    }
+                });
+                return categories;
+            }
+
+
+            function renderPriorityMatrix(categories) {
+                if (currentTemplateKey === 'moscow') {
+                    renderMoscowMatrix(categories);
+                    return;
+                }
+                const container = document.getElementById('priority-matrix-container');
+                container.className = 'grid grid-cols-[auto_1fr_1fr] grid-rows-[auto_1fr_1fr] gap-2 items-stretch';
+                container.innerHTML = `
+                    <div></div>
+                    <div class="text-center font-bold text-gray-700 py-2">Low Cost</div>
+                    <div class="text-center font-bold text-gray-700 py-2">High Cost</div>
+                    <div class="flex items-center justify-center p-2"><span class="font-bold text-gray-700 transform -rotate-90 whitespace-nowrap">High Value</span></div>
+                    <div id="matrix-quick-wins" class="bg-green-50 p-4 rounded-lg min-h-[150px] border-2 border-dashed border-green-200">
+                        <h3 class="font-bold text-green-800 text-lg">Quick Wins</h3>
+                        <p class="text-sm text-green-700 mb-2">(High Value, Low Cost)</p><ul class="space-y-1"></ul>
+                    </div>
+                    <div id="matrix-major-projects" class="bg-yellow-50 p-4 rounded-lg min-h-[150px] border-2 border-dashed border-yellow-200">
+                        <h3 class="font-bold text-yellow-800 text-lg">Major Projects</h3>
+                        <p class="text-sm text-yellow-700 mb-2">(High Value, High Cost)</p><ul class="space-y-1"></ul>
+                    </div>
+                    <div class="flex items-center justify-center p-2"><span class="font-bold text-gray-700 transform -rotate-90 whitespace-nowrap">Low Value</span></div>
+                    <div id="matrix-nice-to-have" class="bg-blue-50 p-4 rounded-lg min-h-[150px] border-2 border-dashed border-blue-200">
+                        <h3 class="font-bold text-lg text-blue-800">Nice-to-have</h3>
+                        <p class="text-sm text-blue-700 mb-2">(Low Value, Low Cost)</p><ul class="space-y-1"></ul>
+                    </div>
+                    <div id="matrix-low-priority" class="bg-red-50 p-4 rounded-lg min-h-[150px] border-2 border-dashed border-red-200">
+                        <h3 class="font-bold text-red-800 text-lg">Defer/Reconsider</h3>
+                        <p class="text-sm text-red-700 mb-2">(Low Value, High Cost)</p><ul class="space-y-1"></ul>
+                    </div>
+                `;
+
+                if (!categories.quickWins) return;
+
+                const lists = {
+                    quickWins: document.querySelector('#matrix-quick-wins ul'),
+                    majorProjects: document.querySelector('#matrix-major-projects ul'),
+                    niceToHave: document.querySelector('#matrix-nice-to-have ul'),
+                    lowPriority: document.querySelector('#matrix-low-priority ul'),
+                };
+
+                Object.keys(categories).forEach(key => {
+                    categories[key].forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'text-sm bg-white p-2 rounded shadow-sm border border-gray-200';
+                        li.textContent = item.name;
+                        lists[key].appendChild(li);
+                    });
+                });
+            }
+
+            function renderMoscowMatrix(categories) {
+                const container = document.getElementById('priority-matrix-container');
+                container.className = 'grid grid-cols-1 md:grid-cols-2 gap-4'; // Change layout for MoSCoW
+                container.innerHTML = `
+                    <div id="matrix-must-have" class="bg-green-50 p-4 rounded-lg min-h-[150px] border-2 border-dashed border-green-200">
+                        <h3 class="font-bold text-green-800 text-lg">Must Have</h3>
+                        <ul class="space-y-1 mt-2"></ul>
+                    </div>
+                    <div id="matrix-should-have" class="bg-blue-50 p-4 rounded-lg min-h-[150px] border-2 border-dashed border-blue-200">
+                        <h3 class="font-bold text-blue-800 text-lg">Should Have</h3>
+                        <ul class="space-y-1 mt-2"></ul>
+                    </div>
+                    <div id="matrix-could-have" class="bg-yellow-50 p-4 rounded-lg min-h-[150px] border-2 border-dashed border-yellow-200">
+                        <h3 class="font-bold text-yellow-800 text-lg">Could Have</h3>
+                        <ul class="space-y-1 mt-2"></ul>
+                    </div>
+                    <div id="matrix-wont-have" class="bg-red-50 p-4 rounded-lg min-h-[150px] border-2 border-dashed border-red-200">
+                        <h3 class="font-bold text-red-800 text-lg">Won't Have</h3>
+                        <ul class="space-y-1 mt-2"></ul>
+                    </div>
+                `;
+
+                if (!categories.mustHave) return;
+
+                const lists = {
+                    mustHave: document.querySelector('#matrix-must-have ul'),
+                    shouldHave: document.querySelector('#matrix-should-have ul'),
+                    couldHave: document.querySelector('#matrix-could-have ul'),
+                    wontHave: document.querySelector('#matrix-wont-have ul'),
+                };
+
+                Object.keys(categories).forEach(key => {
+                    categories[key].forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'text-sm bg-white p-2 rounded shadow-sm border border-gray-200';
+                        li.textContent = item.name;
+                        lists[key].appendChild(li);
+                    });
+                });
+            }
+
+            function renderBubbleChart() {
+                if (!chartCanvas) return;
+                
+                if (bubbleChart) {
+                    bubbleChart.destroy();
+                }
+
+                const riskCriterionKey = 'risk';
+                const hasRisk = criteriaData.hasOwnProperty(riskCriterionKey) && criteriaData[riskCriterionKey].active;
+
+                const chartData = items.map(p => ({
+                    x: calculateCostScore(p),
+                    y: calculateValueScore(p),
+                    r: hasRisk ? (calculateCriterionScore(p, riskCriterionKey) * 4 + 2) : 8,
+                    label: p.name,
+                    risk: hasRisk ? calculateCriterionScore(p, riskCriterionKey) : 'N/A',
+                }));
+                
+                bubbleChart = new Chart(chartCanvas, {
+                    type: 'bubble',
+                    data: { datasets: [{ label: 'Items', data: chartData, backgroundColor: 'rgba(79, 70, 229, 0.6)', borderColor: 'rgba(79, 70, 229, 1)', borderWidth: 2 }] },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const d = context.raw;
+                                        let tooltipText = `${d.label}: Value=${d.y.toFixed(2)}, Cost=${d.x.toFixed(2)}`;
+                                        if (d.risk !== 'N/A') tooltipText += `, Risk=${d.risk.toFixed(2)}`;
+                                        return tooltipText;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: { 
+                                min: 1, 
+                                max: 5,
+                                title: { display: true, text: 'Overall Value (Higher is better)', font: { size: 14 } } 
+                            },
+                            x: { 
+                                min: 1,
+                                max: 5,
+                                title: { display: true, text: 'Overall Cost (Higher is worse)', font: { size: 14 } } 
+                            }
+                        }
+                    }
+                });
+            }
+            
+            function renderFinalList(categories) {
+                if (items.length === 0) {
+                    noItemsFinalMessage.style.display = 'block';
+                    finalLisContainer.querySelector('table')?.remove();
+                    return;
+                }
+                noItemsFinalMessage.style.display = 'none';
+                finalLisContainer.innerHTML = '';
+
+                let itemCategoryMap = {};
+                if (currentTemplateKey === 'moscow') {
+                     const categoryInfo = {
+                        mustHave: { name: '✅ Must Have', className: 'bg-green-100 text-green-800' },
+                        shouldHave: { name: '📘 Should Have', className: 'bg-blue-100 text-blue-800' },
+                        couldHave: { name: '🟡 Could Have', className: 'bg-yellow-100 text-yellow-800' },
+                        wontHave: { name: '⏸️ Won\'t Have', className: 'bg-red-100 text-red-800' }
+                    };
+                    Object.keys(categories).forEach(key => {
+                        if(categories[key]) {
+                            categories[key].forEach(item => {
+                                itemCategoryMap[item.id] = categoryInfo[key];
+                            });
+                        }
+                    });
+                } else {
+                    const categoryInfo = {
+                        quickWins: { name: '✅ Quick Wins', className: 'bg-green-100 text-green-800' },
+                        majorProjects: { name: '⛰️ Major Projects', className: 'bg-yellow-100 text-yellow-800' },
+                        niceToHave: { name: '💡 Nice-to-have', className: 'bg-blue-100 text-blue-800' },
+                        lowPriority: { name: '🗑️ Defer/Reconsider', className: 'bg-red-100 text-red-800' }
+                    };
+                    Object.keys(categories).forEach(key => {
+                        if(categories[key]) {
+                            categories[key].forEach(item => {
+                                itemCategoryMap[item.id] = categoryInfo[key];
+                            });
+                        }
+                    });
+                }
+
+
+                const sortedItems = getSortedItems();
+                const template = templates[currentTemplateKey];
+                const table = document.createElement('table');
+                table.className = 'min-w-full divide-y divide-gray-200';
+                table.innerHTML = `
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${template.itemNameLabel}</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${template.itemOwnerLabel}</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority Group</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Score</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200"></tbody>
+                `;
+                const tbody = table.querySelector('tbody');
+                sortedItems.forEach((item, index) => {
+                    const category = itemCategoryMap[item.id] || { name: 'N/A', className: 'bg-gray-100 text-gray-800' };
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">${index + 1}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.owner}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${category.className}">
+                                ${category.name}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${calculateTotalScore(item).toFixed(2)}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                finalLisContainer.appendChild(table);
+            }
+
+            function renderDashboard(categories) {
+                if (items.length === 0) return; 
+                let pieData;
+                if (currentTemplateKey === 'moscow') {
+                    pieData = {
+                        labels: ['✅ Must Have', '📘 Should Have', '🟡 Could Have', '⏸️ Won\'t Have'],
+                        datasets: [{
+                            data: [
+                                categories.mustHave.length,
+                                categories.shouldHave.length,
+                                categories.couldHave.length,
+                                categories.wontHave.length
+                            ],
+                            backgroundColor: ['#dcfce7', '#dbeafe', '#fef9c3', '#fee2e2'],
+                            borderColor: ['#4ade80', '#60a5fa', '#facc15', '#f87171'],
+                            borderWidth: 1
+                        }]
+                    };
+                } else {
+                    if (!categories.quickWins) return;
+                    pieData = {
+                        labels: ['✅ Quick Wins', '⛰️ Major Projects', '💡 Nice-to-have', '🗑️ Defer/Reconsider'],
+                        datasets: [{
+                            data: [
+                                categories.quickWins.length,
+                                categories.majorProjects.length,
+                                categories.niceToHave.length,
+                                categories.lowPriority.length
+                            ],
+                            backgroundColor: ['#dcfce7', '#fef9c3', '#dbeafe', '#fee2e2'],
+                            borderColor: ['#4ade80', '#facc15', '#60a5fa', '#f87171'],
+                            borderWidth: 1
+                        }]
+                    };
+                }
+
+
+                if (dashboardPieChart) {
+                    dashboardPieChart.data = pieData;
+                    dashboardPieChart.update();
+                } else {
+                    dashboardPieChart = new Chart(dashboardPieChartCanvas, {
+                        type: 'pie',
+                        data: pieData,
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { position: 'top' },
+                                title: { display: true, text: 'Distribution of Initiatives' }
+                            }
+                        }
+                    });
+                }
+
+                // Roadmap
+                roadmapContainer.innerHTML = '';
+                const today = new Date();
+                const currentQuarter = Math.floor(today.getMonth() / 3) + 1;
+                const currentYear = today.getFullYear();
+
+                for (let i = 0; i < 4; i++) {
+                    const quarterNum = ((currentQuarter - 1 + i) % 4) + 1;
+                    const year = currentYear + Math.floor((currentQuarter - 1 + i) / 4);
+                    const quarterDiv = document.createElement('div');
+                    quarterDiv.className = 'roadmap-quarter bg-gray-100 p-4 rounded-lg border-2 border-dashed border-gray-200';
+                    quarterDiv.dataset.quarter = `Q${quarterNum} ${year}`;
+                    quarterDiv.innerHTML = `<h4 class="font-bold text-center text-gray-700 mb-4">Q${quarterNum} ${year}</h4>`;
+                    roadmapContainer.appendChild(quarterDiv);
+                }
+                
+                let highPriorityItems = [];
+                if (currentTemplateKey === 'moscow') {
+                    highPriorityItems = [...categories.mustHave, ...categories.shouldHave];
+                } else {
+                    highPriorityItems = [...categories.quickWins, ...categories.majorProjects];
+                }
+
+                highPriorityItems.forEach((item, index) => {
+                    const targetQuarterIndex = index % 4;
+                    const targetQuarter = roadmapContainer.children[targetQuarterIndex];
+                    const itemEl = document.createElement('div');
+                    
+                    let isHighPriority = false;
+                    if (currentTemplateKey === 'moscow') {
+                        isHighPriority = categories.mustHave.some(i => i.id === item.id);
+                    } else {
+                        isHighPriority = categories.quickWins.some(i => i.id === item.id);
+                    }
+
+                    itemEl.className = `roadmap-item p-2 rounded-md shadow-sm text-sm ${isHighPriority ? 'bg-green-200 text-green-900' : 'bg-blue-200 text-blue-900'}`;
+                    itemEl.textContent = item.name;
+                    itemEl.draggable = true;
+                    itemEl.dataset.itemId = item.id;
+                    targetQuarter.appendChild(itemEl);
+                });
+            }
+
+            function renderInterpretation() {
+                let content = '';
+                if (currentTemplateKey === 'moscow') {
+                    content = `
+                        <div class="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-4">
+                            <div class="text-2xl">✅</div>
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-900">Must Have</h3>
+                                <p class="mt-1 text-sm">High Risk/Compliance OR High Business Impact AND High Urgency, AND Feasible (Medium–High) AND Effort not prohibitive.</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-4">
+                            <div class="text-2xl">📘</div>
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-900">Should Have</h3>
+                                <p class="mt-1 text-sm">Medium Risk/Compliance OR Medium–High Impact or Urgency AND Feasibility Medium or High.</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-4">
+                            <div class="text-2xl">🟡</div>
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-900">Could Have</h3>
+                                <p class="mt-1 text-sm">Low Risk/Compliance AND Low–Medium Impact AND Low Urgency AND Feasible, and Effort is Low.</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-4">
+                            <div class="text-2xl">⏸️</div>
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-900">Won't Have</h3>
+                                <p class="mt-1 text-sm">Low Risk/Compliance AND Low Impact and Low Urgency AND (High Effort or Low Feasibility).</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    content = `
+                        <div class="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-4">
+                            <div class="text-2xl">✅</div>
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-900">Quick Wins (High Value, Low Cost)</h3>
+                                <p class="mt-1 text-sm">These are your most attractive projects—high-impact initiatives that are relatively easy to implement. They offer a great return on investment and are perfect for building momentum. <strong>Action: Prioritise and execute these as soon as possible.</strong></p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-4">
+                            <div class="text-2xl">⛰️</div>
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-900">Major Projects (High Value, High Cost)</h3>
+                                <p class="mt-1 text-sm">These initiatives offer significant value but require a substantial investment of time, resources, or budget. They are often strategic and transformative but need careful planning. <strong>Action: Plan these for the long term. Break them down into smaller, manageable phases.</strong></p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-4">
+                            <div class="text-2xl">💡</div>
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-900">Nice-to-have (Low Value, Low Cost)</h3>
+                                <p class="mt-1 text-sm">These are low-effort tasks that don't offer a major strategic benefit. They can be good filler tasks or can be completed if you have spare capacity, but they shouldn't take priority over more valuable work. <strong>Action: Delegate these or schedule them during downtime. Avoid letting them distract from key objectives.</strong></p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-4">
+                            <div class="text-2xl">🗑️</div>
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-900">Defer/Reconsider (Low Value, High Cost)</h3>
+                                <p class="mt-1 text-sm">These are time-consuming, expensive, and low-impact initiatives. They are often a poor use of resources and can drain energy from the team. <strong>Action: Actively deprioritise or eliminate these tasks. Re-evaluate if their strategic value changes in the future.</strong></p>
+                            </div>
+                        </div>
+                    `;
+                }
+                interpretationContent.innerHTML = content;
+            }
+
+
+            function getSortedItems() {
+                 return [...items].sort((a, b) => calculateTotalScore(b) - calculateTotalScore(a));
+            }
+
+            function addItem(name, owner) {
+                const newItemScores = {};
+                criteriaOrder.forEach(key => newItemScores[key] = 3);
+                const newItem = { id: nextId++, name, owner, scores: newItemScores };
+                items.push(newItem);
+                if (!isCriteriaLocked) {
+                    isCriteriaLocked = true;
+                    renderCriteriaTable();
+                }
+                render();
+            }
+
+            function updateScore(id, criterionKey, value) {
+                const item = items.find(p => p.id === id);
+                if (item) {
+                    item.scores[criterionKey] = value;
+                    render();
+                }
+            }
+            
+            function deleteItem(id) {
+                items = items.filter(p => p.id !== id);
+                if (items.length === 0) {
+                    isCriteriaLocked = false;
+                    renderCriteriaTable();
+                }
+                render();
+            }
+
+            function toggleLock(criterionKey) {
+                if (isCriteriaLocked) return;
+                criteriaData[criterionKey].locked = !criteriaData[criterionKey].locked;
+                renderCriteriaTable();
+            }
+
+            function toggleActive(criterionKey) {
+                if (isCriteriaLocked) return;
+                criteriaData[criterionKey].active = !criteriaData[criterionKey].active;
+                calculateAutomaticWeights();
+                renderCriteriaTable();
+                render();
+            }
+
+            function calculateAutomaticWeights() {
+                 const activeCriteria = getActiveCriteria();
+                 if (activeCriteria.length === 0) {
+                     criteriaOrder.forEach(key => criteriaData[key].weight = 0);
+                     return;
+                 }
+                 const weightPerCriterion = 100 / activeCriteria.length;
+                 criteriaOrder.forEach(key => {
+                     criteriaData[key].weight = criteriaData[key].active ? Math.round(weightPerCriterion) : 0;
+                 });
+                 let currentSum = activeCriteria.reduce((sum, key) => sum + criteriaData[key].weight, 0);
+                 if (currentSum !== 100 && activeCriteria.length > 0) {
+                     const diff = 100 - currentSum;
+                     criteriaData[activeCriteria[0]].weight += diff;
+                 }
+            }
+
+            function autoBalanceWeights() {
+                if (isCriteriaLocked) return;
+                const activeCriteria = getActiveCriteria();
+                const lockedCriteria = activeCriteria.filter(key => criteriaData[key].locked);
+                const unlockedCriteria = activeCriteria.filter(key => !criteriaData[key].locked);
+                if (unlockedCriteria.length === 0) {
+                    updateWeightUI();
+                    return;
+                };
+                const lockedWeightSum = lockedCriteria.reduce((sum, key) => sum + criteriaData[key].weight, 0);
+                const remainingWeight = 100 - lockedWeightSum;
+                if (remainingWeight < 0) return;
+                const weightPerUnlocked = remainingWeight / unlockedCriteria.length;
+                unlockedCriteria.forEach(key => {
+                    criteriaData[key].weight = Math.round(weightPerUnlocked);
+                });
+                let currentSum = activeCriteria.reduce((sum, key) => sum + criteriaData[key].weight, 0);
+                if (currentSum !== 100 && unlockedCriteria.length > 0) {
+                    const diff = 100 - currentSum;
+                    criteriaData[unlockedCriteria[0]].weight += diff;
+                }
+                renderCriteriaTable();
+                render();
+            }
+            
+            function exportToCSV() {
+                const sortedItems = getSortedItems();
+                
+                let itemCategoryMap = {};
+                if (currentTemplateKey === 'moscow') {
+                    const categories = getMoscowMatrixCategories(items);
+                     const categoryInfo = {
+                        mustHave: { name: 'Must Have' },
+                        shouldHave: { name: 'Should Have' },
+                        couldHave: { name: 'Could Have' },
+                        wontHave: { name: 'Won\'t Have' }
+                    };
+                    Object.keys(categories).forEach(key => {
+                        if(categories[key]) {
+                            categories[key].forEach(item => {
+                                itemCategoryMap[item.id] = categoryInfo[key];
+                            });
+                        }
+                    });
+                } else {
+                    const categories = getMatrixCategories(items);
+                    const categoryInfo = {
+                        quickWins: { name: 'Quick Wins' },
+                        majorProjects: { name: 'Major Projects' },
+                        niceToHave: { name: 'Nice-to-have' },
+                        lowPriority: { name: 'Defer/Reconsider' }
+                    };
+                    Object.keys(categories).forEach(key => {
+                        if(categories[key]) {
+                            categories[key].forEach(item => {
+                                itemCategoryMap[item.id] = categoryInfo[key];
+                            });
+                        }
+                    });
+                }
+
+
+                let csvContent = "data:text/csv;charset=utf-8,";
+                const template = templates[currentTemplateKey];
+                const headers = ["Rank", template.itemNameLabel, template.itemOwnerLabel, "Priority Group", "Total Score", ...getActiveCriteria().map(c => criteriaData[c].label)];
+                csvContent += headers.join(",") + "\r\n";
+                sortedItems.forEach((item, index) => {
+                    const category = itemCategoryMap[item.id] || { name: 'N/A' };
+                    const row = [
+                        index + 1,
+                        `"${item.name}"`,
+                        `"${item.owner}"`,
+                        `"${category.name}"`,
+                        calculateTotalScore(item).toFixed(2),
+                        ...getActiveCriteria().map(c => calculateCriterionScore(item, c).toFixed(2))
+                    ];
+                    csvContent += row.join(",") + "\r\n";
+                });
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "prioritisation_report.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            function showStep(stepNumber) {
+                if (stepNumber === 1) {
+                    templateSelection.classList.remove('hidden');
+                    toolContent.classList.add('hidden');
+                    backToTemplatesBtn.classList.add('hidden');
+                } else {
+                    templateSelection.classList.add('hidden');
+                    toolContent.classList.remove('hidden');
+                    backToTemplatesBtn.classList.remove('hidden');
+                }
+            }
+
+            function openAdvancedScoringModal(criterionKey) {
+                activeAdvancedCriterion = criterionKey;
+                renderAdvancedModalContent(criterionKey);
+                advancedScoringModal.classList.remove('hidden');
+                modalBackdrop.classList.remove('hidden');
+            }
+
+            function closeAdvancedScoringModal() {
+                advancedScoringModal.classList.add('hidden');
+                modalBackdrop.classList.add('hidden');
+                activeAdvancedCriterion = null;
+            }
+
+            function renderAdvancedModalContent(criterionKey) {
+                const criterion = criteriaData[criterionKey];
+                const advancedModalTitle = document.getElementById('advanced-modal-title');
+                const advancedModalContent = document.getElementById('advanced-modal-content');
+
+                advancedModalTitle.textContent = `Advanced Scoring for "${criterion.label}"`;
+                
+                let contentHTML = `
+                    <div id="sub-criteria-list" class="space-y-4">
+                        <!-- Sub-criteria rows will be added here -->
+                    </div>
+                    <button id="add-new-sub-criterion-btn" class="mt-4 text-sm text-indigo-600 font-semibold hover:underline">+ Add New Sub-criterion</button>
+                    <div class="mt-4 text-right font-semibold">Total Weight: <span id="sub-total-weight">0</span>%</div>
+                `;
+                advancedModalContent.innerHTML = contentHTML;
+                
+                criterion.subCriteria.forEach(sub => addSubCriterionRow(sub.name, sub.weight));
+                updateSubCriterionTotalWeight();
+
+                document.getElementById('add-new-sub-criterion-btn').addEventListener('click', () => {
+                    addSubCriterionRow('', 0);
+                    autoBalanceSubCriteriaWeights();
+                });
+            }
+
+            function addSubCriterionRow(name = '', weight = 0) {
+                const list = document.getElementById('sub-criteria-list');
+                const row = document.createElement('div');
+                row.className = 'sub-criterion-row flex items-center gap-4';
+                row.innerHTML = `
+                    <input type="text" value="${name}" class="sub-criterion-name flex-grow mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Sub-criterion Name">
+                    <input type="number" value="${weight}" min="0" max="100" class="sub-criterion-weight w-20 mt-1 block rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    <button class="remove-sub-criterion-btn text-red-500 hover:text-red-700 font-bold">&times;</button>
+                `;
+                list.appendChild(row);
+                row.querySelector('.remove-sub-criterion-btn').addEventListener('click', () => {
+                    row.remove();
+                    autoBalanceSubCriteriaWeights();
+                });
+                row.querySelector('.sub-criterion-weight').addEventListener('input', updateSubCriterionTotalWeight);
+            }
+
+            function autoBalanceSubCriteriaWeights() {
+                const weights = [...document.querySelectorAll('.sub-criterion-weight')];
+                const count = weights.length;
+                if (count === 0) return;
+
+                const weightPerSub = Math.floor(100 / count);
+                const remainder = 100 % count;
+
+                weights.forEach((input, index) => {
+                    input.value = weightPerSub + (index < remainder ? 1 : 0);
+                });
+                updateSubCriterionTotalWeight();
+            }
+
+            function updateSubCriterionTotalWeight() {
+                const weights = [...document.querySelectorAll('.sub-criterion-weight')].map(input => parseInt(input.value, 10) || 0);
+                const total = weights.reduce((sum, w) => sum + w, 0);
+                const totalEl = document.getElementById('sub-total-weight');
+                totalEl.textContent = total;
+                totalEl.classList.toggle('text-red-600', total !== 100);
+            }
+
+            // --- EVENT LISTENERS ---
+            addItemBtn.addEventListener('click', () => {
+                const name = itemNameInput.value.trim();
+                const owner = itemOwnerInput.value.trim();
+                if (name && owner) {
+                    addItem(name, owner);
+                    itemNameInput.value = '';
+                    itemOwnerInput.value = '';
+                    itemNameInput.focus();
+                }
+            });
+
+            scoringTableContainer.addEventListener('input', (e) => {
+                if (e.target.matches('input.score-slider')) {
+                    const id = parseInt(e.target.dataset.id, 10);
+                    const criterionKey = e.target.dataset.criterion;
+                    const value = parseInt(e.target.value, 10);
+                    e.target.nextElementSibling.textContent = value;
+                    
+                    const descriptionEl = e.target.closest('div').nextElementSibling;
+                    if(descriptionEl) {
+                        const scoreDescription = criteriaData[criterionKey].scores[value] || `Score: ${score}`;
+                        descriptionEl.textContent = scoreDescription;
+                        descriptionEl.title = scoreDescription;
+                    }
+
+                    updateScore(id, criterionKey, value);
+                }
+            });
+
+            scoringTableContainer.addEventListener('click', (e) => {
+                const deleteBtn = e.target.closest('.delete-btn');
+                if (deleteBtn) {
+                    itemToDeleteId = parseInt(deleteBtn.dataset.id, 10);
+                    modalTitle.textContent = 'Delete Item';
+                    modalContent.textContent = 'Are you sure you want to delete this item? This action cannot be undone.';
+                    confirmDeleteBtn.textContent = 'Delete';
+                    deleteModal.classList.remove('hidden');
+                    modalBackdrop.classList.remove('hidden');
+                }
+            });
+
+            confirmDeleteBtn.addEventListener('click', () => {
+                if (itemToDeleteId !== null) {
+                    deleteItem(itemToDeleteId);
+                    itemToDeleteId = null;
+                } else {
+                    items = [];
+                    isCriteriaLocked = false;
+                    renderCriteriaTable();
+                    render();
+                }
+                deleteModal.classList.add('hidden');
+                modalBackdrop.classList.add('hidden');
+            });
+
+            cancelDeleteBtn.addEventListener('click', () => {
+                itemToDeleteId = null;
+                deleteModal.classList.add('hidden');
+                modalBackdrop.classList.add('hidden');
+            });
+
+            criteriaTableBody.addEventListener('input', (e) => {
+                if (e.target.matches('input.weight-slider')) {
+                    const criterion = e.target.dataset.criterion;
+                    const weight = parseInt(e.target.value, 10);
+                    criteriaData[criterion].weight = weight;
+                    updateWeightUI();
+                    render();
+                    const span = e.target.closest('.weight-controls-manual').querySelector('span');
+                    if (span) span.textContent = `${weight}%`;
+                }
+            });
+
+            criteriaTableBody.addEventListener('click', (e) => {
+                if (e.target.closest('.lock-btn')) toggleLock(e.target.closest('.lock-btn').dataset.criterion);
+                if (e.target.closest('.add-sub-criterion-btn')) {
+                    activeAdvancedCriterion = e.target.closest('.add-sub-criterion-btn').dataset.criterion;
+                    openAdvancedScoringModal(activeAdvancedCriterion);
+                }
+            });
+
+            criteriaTableBody.addEventListener('change', (e) => {
+                if (e.target.matches('.criterion-toggle')) toggleActive(e.target.dataset.criterion);
+            });
+
+            manualWeightToggle.addEventListener('change', (e) => {
+                isManualWeighting = e.target.checked;
+                if (!isManualWeighting) calculateAutomaticWeights();
+                renderCriteriaTable();
+                render();
+            });
+
+            advancedScoringToggle.addEventListener('change', (e) => {
+                isAdvancedScoring = e.target.checked;
+                renderCriteriaTable();
+            });
+
+            autoBalanceBtn.addEventListener('click', autoBalanceWeights);
+            exportExcelBtn.addEventListener('click', exportToCSV);
+            
+            exportPdfBtn.addEventListener('click', async () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                const template = templates[currentTemplateKey];
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                let yPos = 15;
+
+                const addCanvasToPdf = (canvas, yPosition) => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgHeight = (canvas.height * (pdfWidth - 20)) / canvas.width;
+                    if (yPosition + imgHeight > 280) {
+                        doc.addPage();
+                        yPosition = 15;
+                    }
+                    doc.addImage(imgData, 'PNG', 10, yPosition, pdfWidth - 20, imgHeight);
+                    return yPosition + imgHeight + 10;
+                };
+
+                const addText = (text, size, weight, indent = 10) => {
+                    if (yPos > 270) { doc.addPage(); yPos = 15; }
+                    doc.setFontSize(size);
+                    doc.setFont('helvetica', weight);
+                    doc.text(text, indent, yPos);
+                    yPos += (size * 0.5);
+                };
+
+                addText(`Prioritisation Report: ${template.name}`, 18, 'bold');
+                addText(`Date: ${new Date().toLocaleDateString()}`, 10, 'normal');
+                yPos += 5;
+                addText('Final Priority List', 14, 'bold');
+
+                const finalListTable = finalLisContainer.querySelector('table');
+                if (finalListTable) {
+                    const canvas = await html2canvas(finalListTable);
+                    yPos = addCanvasToPdf(canvas, yPos);
+                } else {
+                    addText('No items have been scored yet.', 10, 'italic');
+                }
+
+                addText('Executive Summary', 14, 'bold');
+                if (dashboardPieChart && dashboardPieChart.canvas.height > 0) {
+                    const canvas = await html2canvas(dashboardPieChart.canvas);
+                    yPos = addCanvasToPdf(canvas, yPos);
+                }
+
+                doc.addPage();
+                yPos = 15;
+                addText('Detailed Scoring Breakdown', 14, 'bold');
+                const scoringTable = scoringTableContainer.querySelector('table');
+                if (scoringTable) {
+                    const clonedTable = scoringTable.cloneNode(true);
+                    clonedTable.style.width = '100%';
+                    document.body.appendChild(clonedTable);
+                    const canvas = await html2canvas(clonedTable);
+                    document.body.removeChild(clonedTable);
+                    yPos = addCanvasToPdf(canvas, yPos);
+                } else {
+                    addText('No items have been scored yet.', 10, 'italic');
+                }
+
+                doc.addPage();
+                yPos = 15;
+                addText('Visual Analysis', 16, 'bold');
+                yPos += 5;
+                addText('Priority Matrix', 14, 'bold');
+                
+                if (priorityMatrixContainer) {
+                    const canvas = await html2canvas(priorityMatrixContainer);
+                    yPos = addCanvasToPdf(canvas, yPos);
+                }
+                
+                addText('Value vs. Cost Analysis', 14, 'bold');
+                if (bubbleChart && bubbleChart.canvas.height > 0) {
+                    const canvas = await html2canvas(bubbleChart.canvas);
+                    yPos = addCanvasToPdf(canvas, yPos);
+                }
+
+                doc.save('prioritisation_report.pdf');
+            });
+            
+            const viewBtns = [matrixViewBtn, chartViewBtn, dashboardViewBtn];
+            const views = [matrixView, chartView, dashboardView];
+            viewBtns.forEach((btn, index) => {
+                btn.addEventListener('click', () => {
+                    viewBtns.forEach(b => b.classList.remove('active'));
+                    views.forEach(v => v.classList.add('hidden'));
+                    btn.classList.add('active');
+                    views[index].classList.remove('hidden');
+                });
+            });
+
+            resetAllBtn.addEventListener('click', () => {
+                modalTitle.textContent = 'Reset All';
+                modalContent.textContent = 'Are you sure you want to delete all items and unlock the criteria? This cannot be undone.';
+                confirmDeleteBtn.textContent = 'Reset';
+                deleteModal.classList.remove('hidden');
+                modalBackdrop.classList.remove('hidden');
+            });
+            
+            backToTemplatesBtn.addEventListener('click', () => {
+                showStep(1);
+                mainTitle.textContent = 'Prioritisation Tool';
+                mainSubtitle.textContent = 'A flexible tool for data-driven decision making.';
+            });
+
+
+            interpretationHeader.addEventListener('click', () => {
+                interpretationContent.classList.toggle('hidden');
+                interpretationIcon.classList.toggle('rotate-180');
+            });
+
+            // Drag and Drop for Roadmap
+            let draggedItem = null;
+            roadmapContainer.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('roadmap-item')) {
+                    draggedItem = e.target;
+                    setTimeout(() => e.target.classList.add('dragging'), 0);
+                }
+            });
+
+            roadmapContainer.addEventListener('dragend', (e) => {
+                if (draggedItem) {
+                    draggedItem.classList.remove('dragging');
+                    draggedItem = null;
+                }
+            });
+
+            roadmapContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const targetQuarter = e.target.closest('.roadmap-quarter');
+                if (targetQuarter) {
+                    targetQuarter.classList.add('drag-over');
+                }
+            });
+
+            roadmapContainer.addEventListener('dragleave', (e) => {
+                 const targetQuarter = e.target.closest('.roadmap-quarter');
+                if (targetQuarter) {
+                    targetQuarter.classList.remove('drag-over');
+                }
+            });
+            
+            roadmapContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const targetQuarter = e.target.closest('.roadmap-quarter');
+                if (targetQuarter && draggedItem) {
+                    targetQuarter.appendChild(draggedItem);
+                    targetQuarter.classList.remove('drag-over');
+                }
+            });
+            
+            closeAdvancedModalBtn.addEventListener('click', closeAdvancedScoringModal);
+            saveAdvancedBtn.addEventListener('click', () => {
+                const newSubCriteria = [];
+                let totalWeight = 0;
+                const rows = document.querySelectorAll('.sub-criterion-row');
+                rows.forEach(row => {
+                    const name = row.querySelector('.sub-criterion-name').value.trim();
+                    const weight = parseInt(row.querySelector('.sub-criterion-weight').value, 10) || 0;
+                    if (name && weight > 0) {
+                        newSubCriteria.push({ name, weight });
+                        totalWeight += weight;
+                    }
+                });
+
+                if (totalWeight !== 100 && newSubCriteria.length > 0) {
+                    alert('Sub-criteria weights must sum to 100%.');
+                    return;
+                }
+
+                criteriaData[activeAdvancedCriterion].subCriteria = newSubCriteria;
+                closeAdvancedScoringModal();
+                renderCriteriaTable();
+                render(); 
+            });
+
+            addCriterionBtn.addEventListener('click', () => {
+                const newKey = `custom_${Date.now()}`;
+                criteriaData[newKey] = {
+                    label: '',
+                    definition: 'Custom criterion',
+                    guideScores: ['', '', ''],
+                    weight: 0,
+                    type: 'value',
+                    active: true,
+                    subCriteria: []
+                };
+                criteriaOrder.push(newKey);
+                calculateAutomaticWeights();
+                renderCriteriaTable();
+            });
+
+            // --- INITIALISATION ---
+            initializeTemplates();
+            showStep(1);
+        });
+    </script>
+</body>
+</html>
