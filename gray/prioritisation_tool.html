@@ -6,9 +6,10 @@
     <title>Generalised Prioritisation Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Replaced html2pdf.js with jsPDF and html2canvas directly -->
+    <!-- Libraries for advanced PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -107,6 +108,15 @@
             page-break-before: always;
         }
     </style>
+     <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-1MDBG3TN2X');
+    </script>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
@@ -140,15 +150,23 @@
                             <p class="text-sm text-gray-500 mt-1">Current Template: <strong id="current-template-name"></strong></p>
                         </div>
                         <div id="criteria-toggles" class="flex items-center gap-4 flex-shrink-0">
-                            <label for="advanced-scoring-toggle" class="flex items-center cursor-pointer" title="Turn on to add weighted sub-criteria for more detailed scoring.">
-                                <span class="text-sm font-medium text-gray-700 mr-3">Advanced Scoring</span>
+                            <label for="advanced-scoring-toggle" class="flex items-center cursor-pointer">
+                                <span class="text-sm font-medium text-gray-700 mr-3 tooltip-container">
+                                    Advanced Scoring
+                                    <svg class="tooltip-icon w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path></svg>
+                                    <span class="tooltip-text">Turn on to add weighted sub-criteria for more detailed scoring.</span>
+                                </span>
                                 <div class="relative">
                                     <input type="checkbox" id="advanced-scoring-toggle" class="sr-only peer">
                                     <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                                 </div>
                             </label>
-                             <label for="manual-weight-toggle" class="flex items-center cursor-pointer" title="Turn on to manually adjust the weight of each criterion. Otherwise, weights are distributed evenly.">
-                                <span class="text-sm font-medium text-gray-700 mr-3">Manual Weighting</span>
+                             <label for="manual-weight-toggle" class="flex items-center cursor-pointer">
+                                <span class="text-sm font-medium text-gray-700 mr-3 tooltip-container">
+                                    Manual Weighting
+                                    <svg class="tooltip-icon w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path></svg>
+                                    <span class="tooltip-text">Turn on to manually adjust the weight of each criterion. Otherwise, weights are distributed evenly.</span>
+                                </span>
                                 <div class="relative">
                                     <input type="checkbox" id="manual-weight-toggle" class="sr-only peer">
                                     <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
@@ -225,7 +243,7 @@
                                 <input type="file" id="upload-csv" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"/>
                                 <button id="download-template-btn" class="text-indigo-600 hover:text-indigo-800 text-sm font-semibold whitespace-nowrap">Download Template</button>
                              </div>
-                             <p id="upload-feedback" class="text-sm text-green-600 mt-2"></p>
+                             <p id="upload-feedback" class="text-sm mt-2"></p>
                         </div>
                     </div>
                     <div id="scoring-table-container" class="overflow-x-auto">
@@ -491,6 +509,9 @@
             const addCriterionContainer = document.getElementById('add-criterion-container');
             const addCriterionBtn = document.getElementById('add-criterion-btn');
             const criteriaToggles = document.getElementById('criteria-toggles');
+            const downloadTemplateBtn = document.getElementById('download-template-btn');
+            const uploadCsvInput = document.getElementById('upload-csv');
+            const uploadFeedback = document.getElementById('upload-feedback');
 
             let bubbleChart = null;
             let dashboardPieChart = null;
@@ -956,7 +977,7 @@
                         <p class="text-sm text-green-700 mb-2">(High Value, Low Cost)</p><ul class="space-y-1"></ul>
                     </div>
                     <div id="matrix-major-projects" class="bg-yellow-50 p-4 rounded-lg min-h-[150px] border-2 border-dashed border-yellow-200">
-                        <h3 class="font-bold text-yellow-800 text-lg">Major Projects</h3>
+                        <h3 class="font-bold text-yellow-800 text-lg">Plan & Resource</h3>
                         <p class="text-sm text-yellow-700 mb-2">(High Value, High Cost)</p><ul class="space-y-1"></ul>
                     </div>
                     <div class="flex items-center justify-center p-2"><span class="font-bold text-gray-700 transform -rotate-90 whitespace-nowrap">Low Value</span></div>
@@ -1110,7 +1131,7 @@
                 } else {
                     const categoryInfo = {
                         quickWins: { name: '✅ Quick Wins', className: 'bg-green-100 text-green-800' },
-                        majorProjects: { name: '⛰️ Major Projects', className: 'bg-yellow-100 text-yellow-800' },
+                        majorProjects: { name: '⛰️ Plan & Resource', className: 'bg-yellow-100 text-yellow-800' },
                         niceToHave: { name: '💡 Nice-to-have', className: 'bg-blue-100 text-blue-800' },
                         lowPriority: { name: '🗑️ Defer/Reconsider', className: 'bg-red-100 text-red-800' }
                     };
@@ -1181,7 +1202,7 @@
                 } else {
                     if (!categories.quickWins) return;
                     pieData = {
-                        labels: ['✅ Quick Wins', '⛰️ Major Projects', '💡 Nice-to-have', '🗑️ Defer/Reconsider'],
+                        labels: ['✅ Quick Wins', '⛰️ Plan & Resource', '💡 Nice-to-have', '🗑️ Defer/Reconsider'],
                         datasets: [{
                             data: [
                                 categories.quickWins.length,
@@ -1302,7 +1323,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-4">
                             <div class="text-2xl">⛰️</div>
                             <div>
-                                <h3 class="font-semibold text-lg text-gray-900">Major Projects (High Value, High Cost)</h3>
+                                <h3 class="font-semibold text-lg text-gray-900">Plan & Resource (High Value, High Cost)</h3>
                                 <p class="mt-1 text-sm">These initiatives offer significant value but require a substantial investment of time, resources, or budget. They are often strategic and transformative but need careful planning. <strong>Action: Plan these for the long term. Break them down into smaller, manageable phases.</strong></p>
                             </div>
                         </div>
@@ -1438,7 +1459,7 @@
                     const categories = getMatrixCategories(items);
                     const categoryInfo = {
                         quickWins: { name: 'Quick Wins' },
-                        majorProjects: { name: 'Major Projects' },
+                        majorProjects: { name: 'Plan & Resource' },
                         niceToHave: { name: 'Nice-to-have' },
                         lowPriority: { name: 'Defer/Reconsider' }
                     };
@@ -1671,78 +1692,219 @@
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF('p', 'mm', 'a4');
                 const template = templates[currentTemplateKey];
-                const pdfWidth = doc.internal.pageSize.getWidth();
-                let yPos = 15;
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const margin = 15;
+                let finalY = 0;
 
-                const addCanvasToPdf = (canvas, yPosition) => {
-                    const imgData = canvas.toDataURL('image/png');
-                    const imgHeight = (canvas.height * (pdfWidth - 20)) / canvas.width;
-                    if (yPosition + imgHeight > 280) {
-                        doc.addPage();
-                        yPosition = 15;
+                // Helper to add header and footer
+                const addHeaderFooter = (pageNumber) => {
+                    doc.setFontSize(10);
+                    doc.setTextColor(100);
+                    doc.text(`Prioritisation Report: ${template.name}`, margin, 10);
+                    doc.text(`Page ${pageNumber}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+                };
+                
+                 // Function to safely get chart image
+                const getChartImgData = (chart) => {
+                    if (!chart || !chart.canvas || chart.canvas.height === 0) {
+                        return null;
                     }
-                    doc.addImage(imgData, 'PNG', 10, yPosition, pdfWidth - 20, imgHeight);
-                    return yPosition + imgHeight + 10;
-                };
+                    // This plugin draws a white background behind the chart.
+                    const whiteBgPlugin = {
+                        id: 'customCanvasBackgroundColor',
+                        beforeDraw: (chart, args, options) => {
+                            const {ctx} = chart;
+                            ctx.save();
+                            ctx.globalCompositeOperation = 'destination-over';
+                            ctx.fillStyle = options.color || '#ffffff';
+                            ctx.fillRect(0, 0, chart.width, chart.height);
+                            ctx.restore();
+                        }
+                    };
+                    // Temporarily register the plugin
+                    Chart.register(whiteBgPlugin);
+                    chart.options.plugins.customCanvasBackgroundColor = { color: 'white' };
+                    chart.options.animation = false;
+                    
+                    chart.update('none'); // Update without animation
+                    
+                    const imgData = chart.toBase64Image('image/png', 1.0);
+                    
+                    // Cleanup
+                    chart.options.animation = true; // or restore original setting
+                    delete chart.options.plugins.customCanvasBackgroundColor;
+                    Chart.unregister(whiteBgPlugin);
+                    chart.update('none');
 
-                const addText = (text, size, weight, indent = 10) => {
-                    if (yPos > 270) { doc.addPage(); yPos = 15; }
-                    doc.setFontSize(size);
-                    doc.setFont('helvetica', weight);
-                    doc.text(text, indent, yPos);
-                    yPos += (size * 0.5);
-                };
-
-                addText(`Prioritisation Report: ${template.name}`, 18, 'bold');
-                addText(`Date: ${new Date().toLocaleDateString()}`, 10, 'normal');
-                yPos += 5;
-                addText('Final Priority List', 14, 'bold');
-
-                const finalListTable = finalLisContainer.querySelector('table');
-                if (finalListTable) {
-                    const canvas = await html2canvas(finalListTable);
-                    yPos = addCanvasToPdf(canvas, yPos);
-                } else {
-                    addText('No items have been scored yet.', 10, 'italic');
+                    return imgData;
                 }
 
-                addText('Executive Summary', 14, 'bold');
-                if (dashboardPieChart && dashboardPieChart.canvas.height > 0) {
-                    const canvas = await html2canvas(dashboardPieChart.canvas);
-                    yPos = addCanvasToPdf(canvas, yPos);
-                }
 
+                // --- Cover Page ---
+                addHeaderFooter(1);
+                doc.setFontSize(26);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Prioritisation Report', pageWidth / 2, pageHeight / 2 - 20, { align: 'center' });
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Template: ${template.name}`, pageWidth / 2, pageHeight / 2, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, pageHeight / 2 + 10, { align: 'center' });
+
+                // --- Page 2: Executive Summary ---
                 doc.addPage();
-                yPos = 15;
-                addText('Detailed Scoring Breakdown', 14, 'bold');
-                const scoringTable = scoringTableContainer.querySelector('table');
-                if (scoringTable) {
-                    const clonedTable = scoringTable.cloneNode(true);
-                    clonedTable.style.width = '100%';
-                    document.body.appendChild(clonedTable);
-                    const canvas = await html2canvas(clonedTable);
-                    document.body.removeChild(clonedTable);
-                    yPos = addCanvasToPdf(canvas, yPos);
+                addHeaderFooter(2);
+                doc.setFontSize(18);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Executive Summary', margin, 25);
+
+                // Final Priority List Table
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Final Priority List', margin, 35);
+
+                if (items.length > 0) {
+                    const head = [['Rank', template.itemNameLabel, 'Priority Group', 'Total Score']];
+                    const body = getSortedItems().map((item, index) => {
+                         const categories = getCurrentCategories();
+                         let categoryName = 'N/A';
+                         for (const cat in categories) {
+                             if (categories[cat].some(i => i.id === item.id)) {
+                                 if (currentTemplateKey === 'moscow') {
+                                     categoryName = {mustHave: 'Must Have', shouldHave: 'Should Have', couldHave: 'Could Have', wontHave: 'Wont Have'}[cat];
+                                 } else {
+                                     categoryName = {quickWins: 'Quick Wins', majorProjects: 'Plan & Resource', niceToHave: 'Nice-to-have', lowPriority: 'Defer/Reconsider'}[cat];
+                                 }
+                                 break;
+                             }
+                         }
+                         return [index + 1, item.name, categoryName, calculateTotalScore(item).toFixed(2)];
+                    });
+
+                    doc.autoTable({
+                        head: head,
+                        body: body,
+                        startY: 40,
+                        theme: 'grid',
+                        headStyles: { fillColor: [79, 70, 229] },
+                        margin: { left: margin, right: margin }
+                    });
+                    finalY = doc.autoTable.previous.finalY;
                 } else {
-                    addText('No items have been scored yet.', 10, 'italic');
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'italic');
+                    doc.text('No items have been scored yet.', margin, 45);
+                    finalY = 45;
                 }
 
+                // Executive Summary Chart
+                const pieImgData = getChartImgData(dashboardPieChart);
+                 if (pieImgData) {
+                    const pieCanvas = dashboardPieChart.canvas;
+                    const pieImgHeight = (pieCanvas.height * 90) / pieCanvas.width;
+                    if (finalY + pieImgHeight + 20 > pageHeight) {
+                        doc.addPage();
+                        addHeaderFooter(doc.internal.getNumberOfPages());
+                        finalY = 25;
+                    }
+                    doc.setFontSize(14);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Initiative Distribution', margin, finalY + 15);
+                    doc.addImage(pieImgData, 'PNG', (pageWidth - 90) / 2, finalY + 20, 90, pieImgHeight);
+                    finalY += pieImgHeight + 20;
+                }
+                
+                // --- Page 3: Visual Analysis ---
                 doc.addPage();
-                yPos = 15;
-                addText('Visual Analysis', 16, 'bold');
-                yPos += 5;
-                addText('Priority Matrix', 14, 'bold');
+                addHeaderFooter(3);
+                doc.setFontSize(18);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Visual Analysis', margin, 25);
                 
-                if (priorityMatrixContainer) {
-                    const canvas = await html2canvas(priorityMatrixContainer);
-                    yPos = addCanvasToPdf(canvas, yPos);
+                finalY = 35;
+
+                if (priorityMatrixContainer && items.length > 0) {
+                    const matrixCanvas = await html2canvas(priorityMatrixContainer);
+                    const matrixImgData = matrixCanvas.toDataURL('image/png');
+                    const matrixImgHeight = (matrixCanvas.height * (pageWidth - margin * 2)) / matrixCanvas.width;
+                    
+                    doc.setFontSize(14);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Priority Matrix', margin, finalY);
+                    
+                    doc.addImage(matrixImgData, 'PNG', margin, finalY + 5, pageWidth - margin * 2, matrixImgHeight);
+                    finalY += matrixImgHeight + 15;
                 }
                 
-                addText('Value vs. Cost Analysis', 14, 'bold');
-                if (bubbleChart && bubbleChart.canvas.height > 0) {
-                    const canvas = await html2canvas(bubbleChart.canvas);
-                    yPos = addCanvasToPdf(canvas, yPos);
+                const bubbleImgData = getChartImgData(bubbleChart);
+                if (bubbleImgData) {
+                    const bubbleCanvas = bubbleChart.canvas;
+                    const bubbleImgHeight = (bubbleCanvas.height * (pageWidth - margin * 2)) / bubbleCanvas.width;
+                     if (finalY + bubbleImgHeight + 15 > pageHeight) {
+                        doc.addPage();
+                        addHeaderFooter(doc.internal.getNumberOfPages());
+                        finalY = 25;
+                    }
+                    doc.setFontSize(14);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Value vs. Cost Analysis', margin, finalY);
+                    doc.addImage(bubbleImgData, 'PNG', margin, finalY + 5, pageWidth - margin * 2, bubbleImgHeight);
                 }
+
+                // --- Page 4: Interpreting Your Results ---
+                if (interpretationContent.innerHTML.trim() !== '') {
+                    doc.addPage();
+                    addHeaderFooter(doc.internal.getNumberOfPages());
+                    doc.setFontSize(18);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Interpreting Your Results', margin, 25);
+
+                    const wasHidden = interpretationContent.classList.contains('hidden');
+                    if (wasHidden) {
+                        interpretationContent.classList.remove('hidden');
+                    }
+
+                    const interpretationCanvas = await html2canvas(interpretationContent);
+                    
+                    if (wasHidden) {
+                        interpretationContent.classList.add('hidden');
+                    }
+
+                    const interpretationImgData = interpretationCanvas.toDataURL('image/png');
+                    const interpretationImgHeight = (interpretationCanvas.height * (pageWidth - margin * 2)) / interpretationCanvas.width;
+                    
+                    doc.addImage(interpretationImgData, 'PNG', margin, 35, pageWidth - margin * 2, interpretationImgHeight);
+                }
+
+
+                // --- Appendix: Detailed Scoring ---
+                if (items.length > 0) {
+                    doc.addPage();
+                    addHeaderFooter(doc.internal.getNumberOfPages());
+                    doc.setFontSize(18);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Appendix: Detailed Scoring', margin, 25);
+                    
+                    const head = [template.itemNameLabel, ...getActiveCriteria().map(key => criteriaData[key].label)];
+                    const body = items.map(item => [
+                        item.name,
+                        ...getActiveCriteria().map(key => calculateCriterionScore(item, key).toFixed(2))
+                    ]);
+
+                     doc.autoTable({
+                        head: [head],
+                        body: body,
+                        startY: 35,
+                        theme: 'grid',
+                        headStyles: { fillColor: [79, 70, 229] },
+                        margin: { left: margin, right: margin },
+                        didDrawPage: (data) => {
+                            addHeaderFooter(data.pageNumber);
+                        }
+                    });
+                }
+
 
                 doc.save('prioritisation_report.pdf');
             });
@@ -1859,6 +2021,69 @@
                 renderCriteriaTable();
             });
 
+            downloadTemplateBtn.addEventListener('click', () => {
+                if (currentTemplateKey) {
+                    const template = templates[currentTemplateKey];
+                    const headers = [template.itemNameLabel, template.itemOwnerLabel];
+                    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\r\n";
+                    
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", `${currentTemplateKey}_template.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            });
+
+            uploadCsvInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const text = event.target.result;
+                    const template = templates[currentTemplateKey];
+                    const { itemNameLabel, itemOwnerLabel } = template;
+                    
+                    const rows = text.split('\n').filter(row => row.trim() !== '');
+                    const headerRow = rows.shift();
+                    if (!headerRow) {
+                        uploadFeedback.textContent = 'Error: CSV file is empty or has no header.';
+                        uploadFeedback.className = 'text-sm text-red-600 mt-2';
+                        return;
+                    }
+                    const header = headerRow.split(',').map(h => h.trim().replace(/"/g, ''));
+                    
+                    const nameIndex = header.indexOf(itemNameLabel);
+                    const ownerIndex = header.indexOf(itemOwnerLabel);
+
+                    if (nameIndex === -1 || ownerIndex === -1) {
+                        uploadFeedback.textContent = `Error: CSV must have "${itemNameLabel}" and "${itemOwnerLabel}" columns.`;
+                        uploadFeedback.className = 'text-sm text-red-600 mt-2';
+                        return;
+                    }
+                    
+                    let itemsAdded = 0;
+                    rows.forEach(row => {
+                        const columns = row.split(',');
+                        const name = columns[nameIndex]?.trim().replace(/"/g, '');
+                        const owner = columns[ownerIndex]?.trim().replace(/"/g, '');
+
+                        if (name && owner) {
+                            addItem(name, owner);
+                            itemsAdded++;
+                        }
+                    });
+                    
+                    uploadFeedback.textContent = `Successfully imported ${itemsAdded} items.`;
+                    uploadFeedback.className = 'text-sm text-green-600 mt-2';
+                    e.target.value = ''; // Reset file input
+                };
+                reader.readAsText(file);
+            });
+
             // --- INITIALISATION ---
             initializeTemplates();
             showStep(1);
@@ -1866,3 +2091,5 @@
     </script>
 </body>
 </html>
+
+
