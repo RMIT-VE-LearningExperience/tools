@@ -826,33 +826,53 @@
         class RMITDocumentExtractor {
             constructor() {
                 this.debugMode = false;
+                this.htmlDoc = null;
+                this.isTableBased = false;
+                this.assessmentType = null;
             }
 
-            extract(content) {
+            extract(content, htmlDoc = null) {
                 if (this.debugMode) {
                     console.log('=== RMIT Document Extraction Started ===');
                     console.log('Document length:', content.length);
                 }
 
+                this.htmlDoc = htmlDoc;
                 const normalizedContent = this.normalizeContent(content);
-                
-                const extractedData = {
-                    taskNumber: this.extractTaskNumber(normalizedContent),
-                    taskName: this.extractTaskName(normalizedContent),
-                    unitCode: this.extractUnitCode(normalizedContent),
-                    unitTitle: this.extractUnitTitle(normalizedContent),
-                    qualificationCode: this.extractQualificationCode(normalizedContent),
-                    qualificationTitle: this.extractQualificationTitle(normalizedContent),
-                    programCode: this.extractProgramCode(normalizedContent),
-                    courseCode: this.extractCourseCode(normalizedContent),
-                    taskInstructions: this.extractTaskInstructions(normalizedContent),
-                    assessmentType: this.detectAssessmentType(normalizedContent),
-                    includeTemplate: this.detectTemplate(normalizedContent),
-                    conditions: this.extractConditions(normalizedContent),
-                    studentSupplies: this.extractStudentSupplies(normalizedContent),
-                    rmitSupplies: this.extractRMITSupplies(normalizedContent),
-                    submissionInstructions: this.extractSubmissionInstructions(normalizedContent)
-                };
+
+                // Detect if this is the new table-based format
+                this.detectDocumentFormat(normalizedContent);
+
+                let extractedData;
+
+                if (this.isTableBased && this.htmlDoc) {
+                    if (this.debugMode) {
+                        console.log('=== Using TABLE-BASED extraction ===');
+                        console.log('Assessment Type:', this.assessmentType);
+                    }
+                    extractedData = this.extractFromTables();
+                } else {
+                    if (this.debugMode) {
+                        console.log('=== Using PROSE-BASED extraction (legacy) ===');
+                    }
+                    extractedData = {
+                        taskNumber: this.extractTaskNumber(normalizedContent),
+                        taskName: this.extractTaskName(normalizedContent),
+                        unitCode: this.extractUnitCode(normalizedContent),
+                        unitTitle: this.extractUnitTitle(normalizedContent),
+                        qualificationCode: this.extractQualificationCode(normalizedContent),
+                        qualificationTitle: this.extractQualificationTitle(normalizedContent),
+                        programCode: this.extractProgramCode(normalizedContent),
+                        courseCode: this.extractCourseCode(normalizedContent),
+                        taskInstructions: this.extractTaskInstructions(normalizedContent),
+                        assessmentType: this.detectAssessmentType(normalizedContent),
+                        includeTemplate: this.detectTemplate(normalizedContent),
+                        conditions: this.extractConditions(normalizedContent),
+                        studentSupplies: this.extractStudentSupplies(normalizedContent),
+                        rmitSupplies: this.extractRMITSupplies(normalizedContent),
+                        submissionInstructions: this.extractSubmissionInstructions(normalizedContent)
+                    };
+                }
 
                 if (this.debugMode) {
                     console.log('=== Extraction Complete ===');
@@ -860,6 +880,167 @@
                 }
 
                 return extractedData;
+            }
+
+            detectDocumentFormat(content) {
+                // Check for new table-based format indicators
+                const knowledgePattern = /STUDENT GUIDE\s*[-–]\s*KNOWLEDGE ASSESSMENT TASK/i;
+                const practicalPattern = /STUDENT GUIDE\s*[-–]\s*PRACTICAL ASSESSMENT TASK/i;
+                const productPattern = /STUDENT GUIDE\s*[-–]\s*PRODUCT ASSESSMENT TASK/i;
+
+                if (knowledgePattern.test(content)) {
+                    this.isTableBased = true;
+                    this.assessmentType = 'knowledge';
+                } else if (practicalPattern.test(content)) {
+                    this.isTableBased = true;
+                    this.assessmentType = 'practical';
+                } else if (productPattern.test(content)) {
+                    this.isTableBased = true;
+                    this.assessmentType = 'product';
+                }
+
+                if (this.debugMode) {
+                    console.log('Document format detection:', {
+                        isTableBased: this.isTableBased,
+                        assessmentType: this.assessmentType
+                    });
+                }
+            }
+
+            extractFromTables() {
+                if (!this.htmlDoc) {
+                    console.error('No HTML document available for table extraction');
+                    return {};
+                }
+
+                const tables = this.htmlDoc.querySelectorAll('table');
+
+                if (this.debugMode) {
+                    console.log(`Found ${tables.length} tables in document`);
+                }
+
+                const data = {
+                    assessmentType: 'document', // Default to document submission
+                    includeTemplate: false
+                };
+
+                // Table 0: Metadata (4 rows × 4 cols)
+                if (tables.length > 0) {
+                    const table0 = tables[0];
+                    if (this.debugMode) console.log('Extracting from Table 0 (Metadata)');
+
+                    try {
+                        // Row 0: "Task Number" | "of" | "Task Name" | [value]
+                        if (table0.rows.length > 0 && table0.rows[0].cells.length >= 4) {
+                            data.taskNumber = this.cleanCellText(table0.rows[0].cells[0]);
+                            data.taskName = this.cleanCellText(table0.rows[0].cells[3]);
+                        }
+
+                        // Row 1: "National unit/s code" | [value] | "National unit/s title" | [value]
+                        if (table0.rows.length > 1 && table0.rows[1].cells.length >= 4) {
+                            data.unitCode = this.cleanCellText(table0.rows[1].cells[1]);
+                            data.unitTitle = this.cleanCellText(table0.rows[1].cells[3]);
+                        }
+
+                        // Row 2: "National qualification code" | [value] | "National qualification title" | [value]
+                        if (table0.rows.length > 2 && table0.rows[2].cells.length >= 4) {
+                            data.qualificationCode = this.cleanCellText(table0.rows[2].cells[1]);
+                            data.qualificationTitle = this.cleanCellText(table0.rows[2].cells[3]);
+                        }
+
+                        // Row 3: "RMIT Program code" | [value] | "RMIT Course code" | [value]
+                        if (table0.rows.length > 3 && table0.rows[3].cells.length >= 4) {
+                            data.programCode = this.cleanCellText(table0.rows[3].cells[1]);
+                            data.courseCode = this.cleanCellText(table0.rows[3].cells[3]);
+                        }
+                    } catch (e) {
+                        if (this.debugMode) console.error('Error extracting Table 0:', e);
+                    }
+                }
+
+                // Table 1: Assessment Details (11 rows × 2-3 cols)
+                if (tables.length > 1) {
+                    const table1 = tables[1];
+                    if (this.debugMode) console.log('Extracting from Table 1 (Assessment Details)');
+
+                    try {
+                        // Row 0: "Duration and/or due date" | [value]
+                        if (table1.rows.length > 0 && table1.rows[0].cells.length >= 2) {
+                            data.dueDate = this.cleanCellText(table1.rows[0].cells[1]);
+                        }
+
+                        // Row 2: Task instructions content
+                        if (table1.rows.length > 2) {
+                            data.taskInstructions = this.extractCellHTML(table1.rows[2].cells[0]);
+                        }
+
+                        // Row 4: Conditions content
+                        if (table1.rows.length > 4) {
+                            data.conditions = this.extractCellHTML(table1.rows[4].cells[0]);
+                        }
+
+                        // Row 6: Useful links content
+                        if (table1.rows.length > 6) {
+                            data.usefulLinks = this.extractCellHTML(table1.rows[6].cells[0]);
+                        }
+
+                        // Row 8: Submission instructions content
+                        if (table1.rows.length > 8) {
+                            data.submissionInstructions = this.extractCellHTML(table1.rows[8].cells[0]);
+                        }
+
+                        // Row 10: Equipment details (2 columns)
+                        if (table1.rows.length > 10 && table1.rows[10].cells.length >= 2) {
+                            data.studentSupplies = this.extractCellHTML(table1.rows[10].cells[0]);
+                            data.rmitSupplies = this.extractCellHTML(table1.rows[10].cells[1]);
+                        }
+                    } catch (e) {
+                        if (this.debugMode) console.error('Error extracting Table 1:', e);
+                    }
+                }
+
+                return data;
+            }
+
+            cleanCellText(cell) {
+                if (!cell) return '';
+                const text = cell.textContent || cell.innerText || '';
+                return text.trim()
+                    .replace(/\s+/g, ' ')
+                    .replace(/[""]/g, '"')
+                    .replace(/['']/g, "'");
+            }
+
+            extractCellHTML(cell) {
+                if (!cell) return '';
+
+                // Get the innerHTML and clean it up
+                let html = cell.innerHTML || '';
+
+                // Convert to text if it's simple text content
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+
+                // Extract list items if present
+                const listItems = Array.from(tempDiv.querySelectorAll('li'))
+                    .map(li => li.textContent.trim())
+                    .filter(text => text);
+
+                if (listItems.length > 0) {
+                    return listItems.map(item => '- ' + item).join('\n');
+                }
+
+                // Extract paragraphs if present
+                const paragraphs = Array.from(tempDiv.querySelectorAll('p'))
+                    .map(p => p.textContent.trim())
+                    .filter(text => text);
+
+                if (paragraphs.length > 0) {
+                    return paragraphs.join('\n\n');
+                }
+
+                // Fallback to plain text
+                return tempDiv.textContent.trim();
             }
 
             normalizeContent(content) {
@@ -1687,10 +1868,11 @@
 
                     // Extract main content using existing extractor
                     this.extractor.setDebugMode(this.debugMode);
-                    this.extractedData = this.extractor.extract(resultRaw.value);
+                    // Pass both raw text and HTML document to the extractor
+                    this.extractedData = this.extractor.extract(resultRaw.value, doc);
 
-                    // Extract Conditions for assessment from tables if present
-                    if (tables.length > 0) {
+                    // Legacy table extraction for prose-based documents (only run if not table-based format)
+                    if (!this.extractor.isTableBased && tables.length > 0) {
                         // Look through all tables for conditions section
                         for (let tableIndex = 0; tableIndex < tables.length; tableIndex++) {
                             const table = tables[tableIndex];
