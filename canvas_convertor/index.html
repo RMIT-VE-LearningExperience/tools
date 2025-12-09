@@ -1028,7 +1028,30 @@
 
                         // Row 2: Task instructions content
                         if (table1.rows.length > 2) {
-                            data.taskInstructions = this.extractCellHTML(table1.rows[2].cells[0]);
+                            const taskCellNode = table1.rows[2].cells[0];
+                            if (taskCellNode) {
+                                // First, use the full text of the cell (including headings and paragraphs)
+                                let rawText = taskCellNode.textContent || taskCellNode.innerText || '';
+                                rawText = this.normalizeContent(rawText);
+                                
+                                // Try to extract only the "Summary and Purpose of Assessment" section
+                                const summaryOnly = this.extractTaskInstructions(rawText);
+                                
+                                if (summaryOnly && summaryOnly.length > 0) {
+                                    data.taskInstructions = summaryOnly;
+                                } else {
+                                    // Fallback: use the previous list/paragraph extraction logic
+                                    const taskCellText = this.extractCellHTML(taskCellNode);
+                                    if (taskCellText) {
+                                        let trimmedTaskText = taskCellText;
+                                        const bulletIndex = trimmedTaskText.search(/^\s*[-•]/m);
+                                        if (bulletIndex > 0) {
+                                            trimmedTaskText = trimmedTaskText.substring(0, bulletIndex).trim();
+                                        }
+                                        data.taskInstructions = this.cleanText(trimmedTaskText);
+                                    }
+                                }
+                            }
                         }
 
                         // Row 4: Conditions content
@@ -1123,7 +1146,30 @@
 
                         // Row 2: Type of Product + full instructions content (MERGED CELL)
                         if (table1.rows.length > 2) {
-                            data.taskInstructions = this.extractCellHTML(table1.rows[2].cells[0]);
+                            const taskCellNode = table1.rows[2].cells[0];
+                            if (taskCellNode) {
+                                // Use full cell text so headings/paragraphs are available to the regex
+                                let rawText = taskCellNode.textContent || taskCellNode.innerText || '';
+                                rawText = this.normalizeContent(rawText);
+                                
+                                // Try to extract a concise summary (e.g. Summary and Purpose of Assessment) if present
+                                const summaryOnly = this.extractTaskInstructions(rawText);
+                                
+                                if (summaryOnly && summaryOnly.length > 0) {
+                                    data.taskInstructions = summaryOnly;
+                                } else {
+                                    // Fallback: previous extraction behaviour
+                                    const taskCellText = this.extractCellHTML(taskCellNode);
+                                    if (taskCellText) {
+                                        let trimmedTaskText = taskCellText;
+                                        const bulletIndex = trimmedTaskText.search(/^\s*[-•]/m);
+                                        if (bulletIndex > 0) {
+                                            trimmedTaskText = trimmedTaskText.substring(0, bulletIndex).trim();
+                                        }
+                                        data.taskInstructions = this.cleanText(trimmedTaskText);
+                                    }
+                                }
+                            }
                         }
 
                         // Row 4: Conditions content
@@ -1154,28 +1200,7 @@
                     }
                 }
 
-                // Table 2: Task description (OLD FORMAT SPECIFIC)
-                if (tables.length > 2) {
-                    const table2 = tables[2];
-                    if (this.debugMode) console.log('Extracting from Table 2 (Task Description)');
-
-                    try {
-                        // Cell format: "TASK: Describe the product to be assessed" | description
-                        if (table2.rows.length > 0 && table2.rows[0].cells.length >= 2) {
-                            const taskDesc = this.extractCellHTML(table2.rows[0].cells[1]);
-                            if (taskDesc) {
-                                // Prepend or append task description to instructions
-                                if (data.taskInstructions) {
-                                    data.taskInstructions = data.taskInstructions + '\n\n' + taskDesc;
-                                } else {
-                                    data.taskInstructions = taskDesc;
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        if (this.debugMode) console.error('Error extracting Table 2:', e);
-                    }
-                }
+                // Removed Table 2: Task description (OLD FORMAT SPECIFIC)
 
                 return data;
             }
@@ -1481,16 +1506,34 @@
                         return this.cleanText(instructions);
                     }
                 }
-                
+
                 // Alternative: Look for a paragraph starting with "This assessment/task/project"
-                const thisAssessmentMatch = content.match(/This\s*(?:assessment|project|task|unit)[^.]+\.(?:[^.]+\.){0,10}/i);
+                let searchArea = content;
+                
+                // If there is an "Assessment Instructions" section, restrict to that block only
+                const assessInstrMatch = content.match(/Assessment\s*Instructions[:\s]*/i);
+                if (assessInstrMatch) {
+                    const startIndex = assessInstrMatch.index + assessInstrMatch[0].length;
+                    let endIndex = content.length;
+                    
+                    const tail = content.substring(startIndex);
+                    const endMatch = tail.match(/(Upon\s*successful\s*completion|Conditions\s*for\s*assessment|Equipment\/resources\s+students\s+must\s+supply|Where\s+|How\s+|Type\s*of\s*Product|Section\s+[BC]\s*:|Marking\s+Guide)/i);
+                    if (endMatch) {
+                        endIndex = startIndex + endMatch.index;
+                    }
+                    
+                    searchArea = content.substring(startIndex, endIndex);
+                }
+                
+                const thisAssessmentMatch = searchArea.match(/This\s*(?:assessment|project|task|unit)[^.]+\.(?:[^.]+\.){0,2}/i);
                 if (thisAssessmentMatch) {
                     let instructions = thisAssessmentMatch[0];
-                    // Make sure we get complete sentences, not cut off
+                    
+                    // Keep it concise: limit to the first three sentences
                     const sentences = instructions.split(/(?<=[.!?])\s+/);
-                    const completeSentences = sentences.filter(s => s.match(/[.!?]$/));
-                    if (completeSentences.length > 0) {
-                        return this.cleanText(completeSentences.join(' '));
+                    const limitedSentences = sentences.slice(0, 3);
+                    if (limitedSentences.length > 0) {
+                        return this.cleanText(limitedSentences.join(' '));
                     }
                 }
                 
