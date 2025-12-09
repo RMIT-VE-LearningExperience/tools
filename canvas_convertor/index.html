@@ -1453,7 +1453,7 @@
 
             extractTaskInstructions(content) {
                 // Look for Summary and Purpose section first
-                const summaryMatch = content.match(/Summary\s*and\s*Purpose\s*of\s*Assessment[:\s]*([^]+?)(?=\*\*What\*\*|What\s*\n|\nWhat\s|Upon\s*successful\s*completion|Conditions\s*for|Equipment|Where\s*\n|How\s*\n|Type\s*of\s*Product|$)/i);
+                const summaryMatch = content.match(/Summary\s*and\s*Purpose\s*of\s*Assessment[:\s]*([^]+?)(?=\*\*What\*\*|What\s*\n|\nWhat\s|Upon\s*successful\s*completion|Conditions\s*for|Equipment|Where\s*\n|How\s*\n|Type\s*of\s*Product|Assessment\s*Instructions|\*\*Assessment\s*Instructions\*\*|$)/i);
                 
                 if (summaryMatch && summaryMatch[1]) {
                     let instructions = summaryMatch[1].trim();
