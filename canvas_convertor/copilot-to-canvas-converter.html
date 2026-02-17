@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoVE Copilot → Canvas Content Page Converter - RMIT</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+        .main-wrapper{flex:1;padding:20px}
+        .container{max-width:1600px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+        .header{background:#000054;color:#fff;padding:30px;text-align:center}
+        .header h1{font-size:2.2rem;margin-bottom:10px;font-weight:700}
+        .header p{font-size:1.1rem;opacity:.9}
+        .workflow-steps{display:flex;justify-content:center;padding:20px 30px;background:#f2f2f2;border-bottom:3px solid #fac800;flex-wrap:wrap;gap:10px}
+        .step{display:flex;align-items:center;margin:0 15px;font-weight:600;color:#000054;font-size:.95rem}
+        .step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+        .step.active .step-number{background:#e61e2a}
+        .step.completed .step-number{background:#28a745}
+        .main-layout{display:grid;grid-template-columns:420px 1fr;min-height:70vh}
+        .sidebar{background:#f2f2f2;padding:30px;border-right:1px solid #e3e5e0;display:flex;flex-direction:column}
+        .content-area{padding:30px;overflow-y:auto}
+        .paste-area{border:3px dashed #000054;border-radius:8px;padding:20px;text-align:center;transition:all .3s;cursor:pointer;background:#fff;margin-bottom:20px}
+        .paste-area:hover{border-color:#e61e2a;background:#f8f9fa}
+        .paste-icon{font-size:2.5rem;color:#000054;margin-bottom:10px}
+        .paste-text{font-size:1.05rem;color:#000054;margin-bottom:8px;font-weight:600}
+        .paste-subtext{font-size:.85rem;color:#666}
+        textarea#copilotInput{width:100%;min-height:300px;padding:15px;border:2px solid #e3e5e0;border-radius:6px;font-size:.9rem;font-family:'Monaco','Menlo',monospace;resize:vertical;background:#fff;line-height:1.5;display:none}
+        textarea#copilotInput:focus{outline:none;border-color:#000054}
+        .extraction-status{display:none;background:#fff;border:2px solid #fac800;border-radius:6px;padding:20px;margin-top:15px}
+        .extraction-status h3{color:#000054;margin-bottom:12px;font-size:1.1rem}
+        .status-item{display:flex;align-items:center;margin-bottom:8px;font-size:.9rem}
+        .status-icon{width:20px;height:20px;border-radius:50%;margin-right:10px;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0}
+        .status-icon.found{background:#28a745}.status-icon.missing{background:#e61e2a}.status-icon.partial{background:#fac800;color:#000054}
+        .btn{padding:12px 28px;border:none;border-radius:4px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s}
+        .btn-primary{background:#e61e2a;color:#fff}.btn-primary:hover{background:#c51923;transform:translateY(-1px)}
+        .btn-secondary{background:#000054;color:#fff}.btn-secondary:hover{background:#000043;transform:translateY(-1px)}
+        .btn-outline{background:#fff;color:#000054;border:2px solid #000054}.btn-outline:hover{background:#f2f2f2}
+        .btn:disabled{background:#999;cursor:not-allowed;transform:none}
+        .button-group{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+        .edit-form{display:none}
+        .form-section{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:25px;margin-bottom:25px}
+        .form-section h3{color:#000054;margin-bottom:18px;font-size:1.2rem;border-bottom:2px solid #fac800;padding-bottom:10px}
+        .form-group{margin-bottom:18px}
+        .form-group label{display:block;font-weight:600;color:#000054;margin-bottom:6px;font-size:.9rem}
+        .form-group input[type="text"],.form-group textarea,.form-group select{width:100%;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit;transition:border-color .3s;background:#fafbfc}
+        .form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:#000054}
+        .form-group textarea{min-height:100px;resize:vertical}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+        .help-text{font-size:.8rem;color:#666;margin-top:4px}
+        .rich-editor{width:100%;min-height:120px;padding:12px;border:2px solid #e3e5e0;border-radius:0 0 4px 4px;font-size:.9rem;font-family:inherit;background:#fff;overflow-y:auto;max-height:350px}
+        .rich-editor:focus{outline:none;border-color:#000054}
+        .rich-editor p{margin-bottom:.4em}.rich-editor ul,.rich-editor ol{margin-left:20px;margin-bottom:.4em}.rich-editor li{margin-bottom:.2em}
+        .editor-toolbar{display:flex;gap:4px;padding:5px 8px;background:#f8f9fa;border:2px solid #e3e5e0;border-bottom:none;border-radius:4px 4px 0 0}
+        .editor-btn{padding:4px 10px;background:#fff;border:1px solid #ddd;border-radius:3px;cursor:pointer;font-size:13px;transition:all .2s}
+        .editor-btn:hover{background:#e3e5e0}
+        .insight-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px}
+        .insight-card{background:#f2f2f2;border-radius:6px;padding:15px}
+        .insight-card label{font-size:.85rem}
+        .insight-card input{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:8px;font-size:.9rem}
+        .insight-card textarea{width:100%;min-height:60px;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:.85rem;resize:vertical}
+        .quiz-question{background:#f8f9fa;border:1px solid #e3e5e0;border-radius:6px;padding:15px;margin-bottom:15px}
+        .quiz-question h4{color:#000054;margin-bottom:10px;font-size:.95rem}
+        .quiz-option{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+        .quiz-option input[type="text"]{flex:1;padding:6px 10px;font-size:.85rem}
+        .quiz-option input[type="radio"]{width:16px;height:16px}
+        .quiz-option .correct-label{font-size:.8rem;color:#28a745;font-weight:600}
+        .tools-entry{background:#f2f2f2;border-radius:6px;padding:15px;margin-bottom:12px}
+        .tools-entry label{font-size:.85rem;font-weight:600;color:#000054;display:block;margin-bottom:4px}
+        .tools-entry input,.tools-entry textarea{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:.85rem;margin-bottom:8px}
+        .tools-entry textarea{min-height:50px;resize:vertical}
+        .output-section{display:none}
+        .output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+        .output-header{background:#000054;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+        .output-content{padding:20px;font-family:'Monaco','Menlo',monospace;font-size:.8rem;line-height:1.5;max-height:500px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
+        .preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:30px;margin-top:20px}
+        .preview-container h3{color:#000054;margin-bottom:20px}
+        .alert{padding:15px;border-radius:4px;margin-bottom:20px;display:flex;align-items:flex-start}
+        .alert-info{background:#e6f3ff;border:1px solid #0066cc;color:#004085}
+        .alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
+        .alert-icon{font-size:1.4rem;margin-right:12px;flex-shrink:0}
+        .footer{background:#000054;color:#fff;text-align:center;padding:20px;font-size:.9rem}
+        .footer a{color:#fac800;text-decoration:none}.footer a:hover{text-decoration:underline}
+        .section-toggle{margin-bottom:10px}
+        .section-toggle label{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;color:#000054}
+        .section-toggle input[type="checkbox"]{width:18px;height:18px;cursor:pointer}
+        .add-remove-btns{display:flex;gap:8px;margin-top:8px}
+        .add-remove-btns button{padding:4px 12px;font-size:.8rem;border-radius:3px;border:1px solid #ddd;cursor:pointer;background:#fff}
+        .add-remove-btns button:hover{background:#f2f2f2}
+        .debug-panel{display:none;background:#1e1e2e;color:#cdd6f4;border:2px solid #fac800;border-radius:6px;padding:15px;margin-top:15px;font-family:'Monaco','Menlo',monospace;font-size:.7rem;max-height:300px;overflow-y:auto;white-space:pre-wrap}
+        .debug-toggle{font-size:.8rem;color:#666;cursor:pointer;margin-top:8px;text-decoration:underline}
+        .debug-toggle:hover{color:#000054}
+        @media(max-width:1200px){.main-layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid #e3e5e0}.insight-cards{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+<div class="main-wrapper">
+<div class="container">
+    <div class="header">
+        <h1>CoVE Copilot → Canvas Content Page Converter</h1>
+        <p>Paste Copilot Output → Review &amp; Edit → Generate Emble-Ready HTML</p>
+    </div>
+    <div class="workflow-steps">
+        <div class="step active" id="step1"><div class="step-number">1</div><span>Paste Copilot Output</span></div>
+        <div class="step" id="step2"><div class="step-number">2</div><span>Review &amp; Edit</span></div>
+        <div class="step" id="step3"><div class="step-number">3</div><span>Generate HTML</span></div>
+    </div>
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="paste-area" id="pasteArea" onclick="showTextarea()">
+                <div class="paste-icon">📋</div>
+                <div class="paste-text">Paste Copilot Output</div>
+                <div class="paste-subtext">Click here, then paste your Copilot-generated content</div>
+            </div>
+            <textarea id="copilotInput" placeholder="Paste your Copilot output here..."></textarea>
+            <div class="button-group">
+                <button class="btn btn-primary" id="parseBtn" onclick="parseCopilotOutput()" disabled>Parse Content</button>
+                <button class="btn btn-outline" onclick="loadSample()">Load Sample</button>
+            </div>
+            <div class="extraction-status" id="extractionStatus"><h3>📊 Parsed Sections</h3><div id="statusList"></div></div>
+            <div class="debug-toggle" onclick="toggleDebug()">Toggle debug info</div>
+            <div class="debug-panel" id="debugPanel"></div>
+        </div>
+        <div class="content-area">
+            <div id="initialInstructions">
+                <h2 style="color:#000054;margin-bottom:20px;">How to Use This Tool</h2>
+                <ol style="font-size:1.05rem;line-height:2;">
+                    <li><strong>Paste</strong> your Copilot-generated content into the sidebar</li>
+                    <li><strong>Review</strong> the automatically parsed sections</li>
+                    <li><strong>Edit</strong> any fields that need correction</li>
+                    <li><strong>Toggle</strong> sections on/off as needed</li>
+                    <li><strong>Generate</strong> your Canvas-ready Emble HTML</li>
+                </ol>
+                <div class="alert alert-warning" style="margin-top:25px;"><div class="alert-icon">💡</div><div><strong>Tip:</strong> The parser recognises both delimited (────) and label-based Copilot output formats. Use "Load Sample" to test with example content.</div></div>
+            </div>
+            <div class="edit-form" id="editForm">
+                <h2 style="color:#000054;margin-bottom:20px;">Review &amp; Edit Parsed Content</h2>
+                <div class="alert alert-info" style="margin-bottom:20px;"><div class="alert-icon">ℹ️</div><div><strong>Note:</strong> Content has been parsed from your Copilot output. Review all fields and toggle sections on/off before generating.</div></div>
+                <div class="form-section"><h3>📄 Page Header</h3>
+                    <div class="form-group"><label>Page Title</label><input type="text" id="fPageTitle" placeholder="e.g. Regulatory Foundations (Victoria)"></div>
+                    <div class="form-group"><label>Photographic Element Description</label><input type="text" id="fPhotoDesc" placeholder="Description for image alt text"><p class="help-text">Used as a placeholder prompt — you'll add the actual image in Canvas</p></div>
+                    <div class="form-group"><label>Opening Paragraph</label><div class="editor-toolbar"><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','bold')">B</button><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','italic')">I</button></div><div id="fOpeningPara" class="rich-editor" contenteditable="true"></div></div>
+                </div>
+                <div class="form-section"><h3>📝 Main Content</h3><p class="help-text" style="margin-bottom:15px;">Each content block becomes a heading + paragraph section.</p><div id="mainContentBlocks"></div><div class="add-remove-btns"><button onclick="addContentBlock()">+ Add Content Block</button></div></div>
+                <div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togVisual" checked> Include Visual Element / Diagram</label></div><div id="visualSection"><div class="form-group"><label>Visual Element Description</label><textarea id="fVisualDesc" placeholder="Description of the diagram or visual element"></textarea></div></div></div>
+                <div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togInsights" checked> Include Key Insights</label></div><div id="insightsSection"><div class="insight-cards" id="insightCards"></div><div class="add-remove-btns"><button onclick="addInsight()">+ Add Insight</button><button onclick="removeInsight()">− Remove Last</button></div></div></div>
+                <div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togTools" checked> Include Industry Tools &amp; Technology</label></div><div id="toolsSection"><div id="toolsEntries"></div><div class="add-remove-btns"><button onclick="addToolEntry()">+ Add Entry</button><button onclick="removeToolEntry()">− Remove Last</button></div></div></div>
+                <div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togVideo" checked> Include Video Section</label></div><div id="videoSection"><div class="form-group"><label>Video Description / Instructions</label><textarea id="fVideoDesc" placeholder="e.g. Watch this video to learn about..."></textarea></div><div class="form-group"><label>Video Search Suggestion</label><input type="text" id="fVideoSearch" placeholder="e.g. WorkSafe Victoria SWMS plumbing site"><p class="help-text">Helps teachers find the right video to embed</p></div></div></div>
+                <div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togQuiz" checked> Include Knowledge Check (H5P Quiz)</label></div><div id="quizSection"><p class="help-text" style="margin-bottom:12px;">These questions will be output as instructions for creating an H5P Quiz.</p><div id="quizQuestions"></div><div class="add-remove-btns"><button onclick="addQuizQuestion()">+ Add Question</button><button onclick="removeQuizQuestion()">− Remove Last</button></div></div></div>
+                <div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togReflection" checked> Include Reflection Questions</label></div><div id="reflectionSection"><div id="reflectionQuestions"></div><div class="add-remove-btns"><button onclick="addReflection()">+ Add Question</button><button onclick="removeReflection()">− Remove Last</button></div></div></div>
+                <div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togActivity" checked> Include Activity</label></div><div id="activitySection">
+                    <div class="form-group"><label>Activity Title</label><input type="text" id="fActTitle" placeholder="e.g. SWMS Spot Check"></div>
+                    <div class="form-row"><div class="form-group"><label>Duration</label><input type="text" id="fActDuration" placeholder="e.g. 15 mins"></div><div class="form-group"><label>Format</label><input type="text" id="fActFormat" placeholder="e.g. Pairs"></div></div>
+                    <div class="form-group"><label>Purpose</label><textarea id="fActPurpose" rows="2" placeholder="e.g. Reinforces understanding of SWMS content."></textarea></div>
+                    <div class="form-group"><label>Instructions</label><div class="editor-toolbar"><button type="button" class="editor-btn" onclick="fmtEd('fActInstructions','bold')">B</button><button type="button" class="editor-btn" onclick="fmtEd('fActInstructions','italic')">I</button><button type="button" class="editor-btn" onclick="fmtEd('fActInstructions','insertOrderedList')">1.</button><button type="button" class="editor-btn" onclick="fmtEd('fActInstructions','insertUnorderedList')">•</button></div><div id="fActInstructions" class="rich-editor" contenteditable="true"></div></div>
+                    <div class="form-group"><label>Resources Needed</label><input type="text" id="fActResources" placeholder="e.g. Sample SWMS template"></div>
+                </div></div>
+                <div class="button-group" style="padding-top:20px;border-top:2px solid #e3e5e0;"><button class="btn btn-primary" onclick="generateHTML()">Generate Canvas HTML</button><button class="btn btn-secondary" onclick="resetAll()">Start Over</button></div>
+            </div>
+            <div class="output-section" id="outputSection">
+                <h2 style="color:#000054;margin-bottom:20px;">Generated Canvas HTML</h2>
+                <div class="output-container"><div class="output-header"><span>Emble HTML Code</span><button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem;" onclick="copyHTML()">Copy HTML</button></div><div class="output-content" id="outputContent"></div></div>
+                <div class="preview-container"><h3>Preview</h3><div id="previewContent"></div></div>
+                <div class="button-group"><button class="btn btn-secondary" onclick="backToEdit()">Back to Edit</button><button class="btn btn-primary" onclick="resetAll()">New Content</button></div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team — RMIT College of Vocational Education</p></footer>
+<script>
+let parsedData={},contentBlockCount=0,insightCount=0,quizCount=0,reflectionCount=0,toolEntryCount=0,debugLog=[];
+function dbg(l,v){debugLog.push(`[${l}] ${typeof v==='string'?v:JSON.stringify(v,null,1)}`)}
+function toggleDebug(){const p=document.getElementById('debugPanel');p.style.display=p.style.display==='none'?'block':'none';p.textContent=debugLog.join('\n')}
+function showTextarea(){document.getElementById('copilotInput').style.display='block';document.getElementById('pasteArea').style.display='none';document.getElementById('copilotInput').focus();document.getElementById('parseBtn').disabled=false}
+function updateStep(n,s){const e=document.getElementById('step'+n);e.classList.remove('active','completed');if(s)e.classList.add(s)}
+function fmtEd(id,cmd){document.getElementById(id).focus();document.execCommand(cmd,false,null)}
+function genId(){return 'emble-customise-'+Math.random().toString(16).slice(2,10)}
+['togVisual','togInsights','togTools','togVideo','togQuiz','togReflection','togActivity'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('change',function(){
+        const m={togVisual:'visualSection',togInsights:'insightsSection',togTools:'toolsSection',togVideo:'videoSection',togQuiz:'quizSection',togReflection:'reflectionSection',togActivity:'activitySection'};
+        const target=document.getElementById(m[id]);
+        if(target) target.style.display=this.checked?'':'none';
+    });
+});
+
+function addContentBlock(h='',b=''){contentBlockCount++;const n=contentBlockCount,d=document.createElement('div');d.className='form-group';d.id='contentBlock'+n;d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><label style="margin:0;">Content Block ${n}</label><button onclick="this.closest('.form-group').remove()" style="background:none;border:none;color:#e61e2a;cursor:pointer;font-size:1.1rem;">✕</button></div><input type="text" id="cbHeading${n}" placeholder="Section heading" value="${escH(h)}" style="margin-bottom:8px;"><textarea id="cbBody${n}" rows="5" placeholder="Section content">${escH(b)}</textarea>`;document.getElementById('mainContentBlocks').appendChild(d)}
+function addInsight(t='',x=''){insightCount++;const n=insightCount,d=document.createElement('div');d.className='insight-card';d.id='insightCard'+n;d.innerHTML=`<label>Insight ${n} Title</label><input type="text" id="insTitle${n}" value="${escH(t)}" placeholder="Insight title"><label>Detail</label><textarea id="insText${n}" placeholder="Insight detail">${escH(x)}</textarea>`;document.getElementById('insightCards').appendChild(d)}
+function removeInsight(){if(insightCount>0){const e=document.getElementById('insightCard'+insightCount);if(e)e.remove();insightCount--}}
+function addToolEntry(label='',text=''){toolEntryCount++;const n=toolEntryCount,d=document.createElement('div');d.className='tools-entry';d.id='toolEntry'+n;d.innerHTML=`<label>Entry ${n} Label</label><input type="text" id="toolLabel${n}" value="${escH(label)}" placeholder="e.g. Current tools"><label>Detail</label><textarea id="toolText${n}" placeholder="Tool details">${escH(text)}</textarea><button onclick="this.closest('.tools-entry').remove()" style="background:none;border:none;color:#e61e2a;cursor:pointer;font-size:.85rem;margin-top:4px;">✕ Remove</button>`;document.getElementById('toolsEntries').appendChild(d)}
+function removeToolEntry(){if(toolEntryCount>0){const e=document.getElementById('toolEntry'+toolEntryCount);if(e)e.remove();toolEntryCount--}}
+function addQuizQuestion(q='',opts=[],ci=0){quizCount++;const n=quizCount,d=document.createElement('div');d.className='quiz-question';d.id='quizQ'+n;const os=opts.length>=2?opts:['','','',''];d.innerHTML=`<h4>Question ${n}</h4><div class="form-group"><input type="text" id="qqText${n}" placeholder="Question text" value="${escH(q)}"></div>${os.map((o,i)=>`<div class="quiz-option"><input type="radio" name="qqCorrect${n}" value="${i}" ${i===ci?'checked':''}><input type="text" id="qqOpt${n}_${i}" placeholder="Option ${String.fromCharCode(97+i)}" value="${escH(o)}">${i===ci?'<span class="correct-label">✔ Correct</span>':''}</div>`).join('')}`;document.getElementById('quizQuestions').appendChild(d);d.querySelectorAll('input[type="radio"]').forEach(r=>{r.addEventListener('change',()=>{d.querySelectorAll('.correct-label').forEach(l=>l.remove());const ch=d.querySelector('input[type="radio"]:checked');if(ch){const s=document.createElement('span');s.className='correct-label';s.textContent='✔ Correct';ch.parentElement.appendChild(s)}})})}
+function removeQuizQuestion(){if(quizCount>0){const e=document.getElementById('quizQ'+quizCount);if(e)e.remove();quizCount--}}
+function addReflection(t=''){reflectionCount++;const n=reflectionCount,d=document.createElement('div');d.className='form-group';d.id='reflQ'+n;d.innerHTML=`<div style="display:flex;gap:8px;align-items:center;"><span style="font-weight:600;color:#000054;min-width:20px;">${n}.</span><input type="text" id="reflText${n}" value="${escH(t)}" placeholder="Reflection question" style="flex:1;"><button onclick="this.closest('.form-group').remove()" style="background:none;border:none;color:#e61e2a;cursor:pointer;">✕</button></div>`;document.getElementById('reflectionQuestions').appendChild(d)}
+function removeReflection(){if(reflectionCount>0){const e=document.getElementById('reflQ'+reflectionCount);if(e)e.remove();reflectionCount--}}
+function escH(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
+
+// ═══════════════════════════════════════════════════════
+// ROBUST PARSER v4 — Supports both delimited (────) and label-based formats
+// ═══════════════════════════════════════════════════════
+function parseCopilotOutput(){
+    debugLog=[];
+    const raw=document.getElementById('copilotInput').value.trim();
+    if(!raw)return alert('Please paste Copilot output first.');
+    dbg('INPUT',raw.length+' chars, '+raw.split('\n').length+' lines');
+
+    // ── Detect format: delimited (────) vs label-based ──
+    const isDelimited=raw.includes('────');
+    dbg('FORMAT',isDelimited?'DELIMITED (────)':'LABEL-BASED');
+
+    if(isDelimited){
+        parseDelimitedFormat(raw);
+    } else {
+        parseLabelFormat(raw);
+    }
+
+    document.getElementById('debugPanel').textContent=debugLog.join('\n');
+    populateForm();showExtractionStatus();showEditForm();
+}
+
+// ═══════════════════════════════════════════════════════
+// DELIMITED FORMAT PARSER (──── Section Name ────)
+// ═══════════════════════════════════════════════════════
+function parseDelimitedFormat(raw){
+    parsedData={};
+    const lines=raw.split('\n');
+
+    // Split into sections by ──── delimiters
+    const sections=[];
+    let currentSection=null;
+    for(const line of lines){
+        const delimMatch=line.match(/^─{2,}\s*(.+?)\s*(?:\([^)]*\))?\s*─*$/);
+        if(delimMatch){
+            const name=delimMatch[1].replace(/─/g,'').trim();
+            currentSection={name:name,lines:[]};
+            sections.push(currentSection);
+            dbg('DELIM_SECTION',name);
+        } else if(currentSection){
+            currentSection.lines.push(line);
+        }
+    }
+
+    // Capture any text before the first delimiter as preamble
+    const preambleLines=[];
+    for(const line of lines){
+        if(line.match(/^─{2,}/)) break;
+        if(line.trim()) preambleLines.push(line.trim());
+    }
+    dbg('PREAMBLE',preambleLines.join(' | ')||'(none)');
+
+    // Map section names to data
+    const sectionMap={};
+    for(const s of sections){
+        const key=classifyDelimitedSection(s.name);
+        if(key){
+            if(!sectionMap[key]) sectionMap[key]=[];
+            sectionMap[key].push(s);
+        }
+        dbg('SECTION_MAP',`"${s.name}" → ${key||'UNKNOWN'}`);
+    }
+
+    // Page Title — from explicit section, or fallback to preamble first line
+    if(sectionMap.pageTitle){
+        const tLines=sectionMap.pageTitle[0].lines.filter(l=>l.trim());
+        parsedData.pageTitle=tLines[0]||'';
+    } else if(preambleLines.length){
+        parsedData.pageTitle=preambleLines[0];
+    } else parsedData.pageTitle='';
+
+    // Photo
+    if(sectionMap.photo){
+        parsedData.photoDesc=sectionMap.photo[0].lines.filter(l=>l.trim()).join(' ');
+    } else parsedData.photoDesc='';
+
+    // Opening Paragraph — preserve paragraph breaks
+    if(sectionMap.opening){
+        const oLines=sectionMap.opening[0].lines;
+        // Group non-empty lines into paragraphs separated by blank lines
+        const paras=[];let cur=[];
+        for(const l of oLines){
+            if(l.trim()===''){if(cur.length){paras.push(cur.join(' '));cur=[];}}
+            else cur.push(l.trim());
+        }
+        if(cur.length)paras.push(cur.join(' '));
+        parsedData.openingParas=paras; // Store as array for multi-paragraph support
+        parsedData.openingPara=paras.join('\n\n');
+    } else {parsedData.openingPara='';parsedData.openingParas=[];}
+
+    // Content Blocks
+    parsedData.contentBlocks=[];
+    if(sectionMap.contentBlock){
+        for(const s of sectionMap.contentBlock){
+            const cLines=s.lines.filter(l=>l.trim());
+            let heading='',bodyLines=[];
+            // First line: check for "Heading: ..." prefix
+            if(cLines.length>0){
+                const hMatch=cLines[0].match(/^Heading:\s*(.+)/i);
+                if(hMatch){
+                    heading=hMatch[1].trim();
+                    bodyLines=cLines.slice(1);
+                } else {
+                    // First short line might be heading
+                    if(cLines[0].length<80&&cLines.length>1){
+                        heading=cLines[0];bodyLines=cLines.slice(1);
+                    } else {
+                        bodyLines=cLines;
+                    }
+                }
+            }
+            // Join body paragraphs preserving blank-line breaks
+            const body=joinParas(s.lines.slice(cLines[0]===s.lines.find(l=>l.trim())?0:0));
+            // Re-parse body from original lines (including blanks) after heading
+            let afterHeading=false;const rawBody=[];
+            for(const l of s.lines){
+                if(!afterHeading){
+                    if(l.trim()&&(l.trim().match(/^Heading:/i)||l.trim()===heading||l.trim()===cLines[0])){
+                        afterHeading=true;
+                        // If heading was on this line, skip it
+                        if(l.trim().match(/^Heading:/i)||l.trim()===heading) continue;
+                    }
+                    continue;
+                }
+                rawBody.push(l);
+            }
+            const bodyText=joinParas(rawBody.length?rawBody:s.lines.slice(1));
+            parsedData.contentBlocks.push({heading:heading,body:bodyText});
+        }
+    }
+    dbg('CONTENT_BLOCKS',parsedData.contentBlocks.length);
+
+    // Visual Element
+    if(sectionMap.visual){
+        parsedData.visualDesc=sectionMap.visual[0].lines.filter(l=>l.trim()).join('\n');
+    } else parsedData.visualDesc='';
+
+    // Key Insights
+    parsedData.insights=[];
+    if(sectionMap.insights){
+        const iLines=sectionMap.insights[0].lines.filter(l=>l.trim());
+        for(const line of iLines){
+            let c=line.replace(/^\s*[*•\-—]\s+/,'').replace(/^\d+[.)]\s+/,'').trim();
+            if(!c)continue;
+            const colM=c.match(/^(.+?):\s+(.+)$/);
+            if(colM&&colM[1].length<60){
+                parsedData.insights.push({title:colM[1].trim(),text:colM[2].trim()});
+            } else {
+                parsedData.insights.push({title:'Insight '+(parsedData.insights.length+1),text:c});
+            }
+        }
+    }
+    dbg('INSIGHTS',parsedData.insights.length);
+
+    // Industry Tools & Technology
+    parsedData.toolEntries=[];
+    if(sectionMap.tools){
+        const tLines=sectionMap.tools[0].lines.filter(l=>l.trim());
+        for(const line of tLines){
+            const colM=line.match(/^(.+?):\s+(.+)$/);
+            if(colM&&colM[1].length<60){
+                parsedData.toolEntries.push({label:colM[1].trim(),text:colM[2].trim()});
+            } else if(line.trim()){
+                parsedData.toolEntries.push({label:'Tool '+(parsedData.toolEntries.length+1),text:line.trim()});
+            }
+        }
+    }
+    dbg('TOOLS',parsedData.toolEntries.length);
+
+    // Video
+    parsedData.videoDesc='';parsedData.videoSearch='';
+    if(sectionMap.video){
+        const vLines=sectionMap.video[0].lines.filter(l=>l.trim());
+        const vt=vLines.join('\n');
+        dbg('VIDEO_RAW',vt);
+        for(const p of[/Suggested\s+search:\s*"?([^"\n]+)"?/i,/Suggested\s+YouTube\s+topic:\s*"?([^"\n]+)"?/i,/YouTube\s+Topic:\s*"?([^"\n]+)"?/i,/Search:\s*"?([^"\n]+)"?/i]){const m=vt.match(p);if(m){parsedData.videoSearch=m[1].replace(/^["]+|["]+$/g,'').trim();break;}}
+        // Description — look for Description:, Ideal content:, Purpose:, or fallback
+        for(const p of[/Description:\s*(.+)/i,/Ideal\s+content:\s*(.+)/i,/What\s+to\s+look\s+for:\s*(.+)/i,/Look\s+for:\s*(.+)/i]){const m=vt.match(p);if(m){parsedData.videoDesc=(parsedData.videoDesc?parsedData.videoDesc+' ':'')+m[1].trim();}}
+        // Also grab Purpose line if present
+        const purM=vt.match(/Purpose:\s*(.+)/i);
+        if(purM) parsedData.videoDesc=(parsedData.videoDesc?parsedData.videoDesc+' ':'')+purM[1].trim();
+        if(!parsedData.videoDesc){const fl=vLines.find(l=>!l.match(/^(?:Suggested|YouTube|Search|Purpose)/i));if(fl)parsedData.videoDesc=fl;}
+    }
+
+    // Knowledge Check / Quiz
+    parsedData.quizQuestions=[];
+    if(sectionMap.quiz){
+        const ql=sectionMap.quiz[0].lines.filter(l=>l.trim()).filter(l=>!l.match(/^(?:TEACHER|Multiple\s+Choice|True\s*\/?\s*False\s*$|Fill\s+in)/i));
+        dbg('QUIZ_LINES',ql.join(' | '));
+        parseQuizLines(ql);
+    }
+    dbg('QUIZ',parsedData.quizQuestions.length);
+
+    // Reflection Questions
+    parsedData.reflections=[];
+    if(sectionMap.reflection){
+        const rLines=sectionMap.reflection[0].lines.filter(l=>l.trim());
+        for(const line of rLines){
+            const t=line.trim();
+            const nm=t.match(/^\d+[.)]\s+(.+)/);
+            if(nm){parsedData.reflections.push(nm[1].trim());continue;}
+            const bm=t.match(/^[*•\-—]\s+(.+)/);
+            if(bm){parsedData.reflections.push(bm[1].trim());continue;}
+            // Plain question lines (ends with ?)
+            if(t.endsWith('?')&&t.length>10){parsedData.reflections.push(t);continue;}
+            // Any non-trivial line might be a question
+            if(t.length>15) parsedData.reflections.push(t);
+        }
+    }
+    dbg('REFLECTIONS',parsedData.reflections.length);
+
+    // Activity
+    parsedData.actTitle='';parsedData.actDuration='';parsedData.actFormat='';parsedData.actPurpose='';parsedData.actResources='';parsedData.actInstructions='';
+    if(sectionMap.activity){
+        const aLines=sectionMap.activity[0].lines.filter(l=>l.trim());
+        const at=aLines.join('\n');
+        dbg('ACTIVITY_RAW',at);
+        // Title line
+        const titleM=at.match(/Title:\s*(.+)/i);
+        parsedData.actTitle=titleM?titleM[1].trim():(aLines[0]||'');
+        // Duration
+        const durM=at.match(/Duration:\s*([^\n|]+)/i);if(durM)parsedData.actDuration=durM[1].trim();
+        // Format
+        const fmtM=at.match(/Format:\s*([^\n|]+)/i);if(fmtM)parsedData.actFormat=fmtM[1].trim();
+        // Purpose
+        const purM=at.match(/Purpose:\s*(.+)/i);if(purM)parsedData.actPurpose=purM[1].trim();
+        // Resources
+        const resM=at.match(/Resources?(?:\s*needed)?:\s*(.+)/i);if(resM)parsedData.actResources=resM[1].trim();
+        // Instructions — collect lines after "Instructions:" until next labelled line
+        const instrIdx=at.search(/Instructions:?\s*$/im);
+        if(instrIdx>-1){
+            let iEnd=at.indexOf('\n',instrIdx);if(iEnd===-1)iEnd=at.length;
+            const afterI=at.substring(iEnd+1);const iLines=[];
+            for(const l of afterI.split('\n')){
+                const t=l.trim();
+                if(t.match(/^(?:Title|Duration|Format|Purpose|Resources?\s*(?:needed)?):/i))break;
+                // Capture Alternative: as a final instruction note
+                if(t.match(/^Alternative:/i)){iLines.push(t);break;}
+                if(t)iLines.push(t.replace(/^\d+[.)]\s*/,'').trim());
+            }
+            parsedData.actInstructions=iLines.filter(l=>l).join('\n');
+        } else {
+            // Try inline instructions
+            const instrInline=at.match(/Instructions:\s*(.+?)(?=Title:|Duration:|Format:|Purpose:|Resources?|Alternative:|$)/is);
+            if(instrInline){
+                parsedData.actInstructions=instrInline[1].split('\n').map(l=>l.trim()).filter(l=>l).map(l=>l.replace(/^\d+[.)]\s*/,'').trim()).filter(l=>l).join('\n');
+            }
+        }
+        // Also try plain numbered lines after Instructions
+        if(!parsedData.actInstructions){
+            let inInstr=false;const iLines=[];
+            for(const l of aLines){
+                if(l.match(/^Instructions/i)){inInstr=true;continue;}
+                if(inInstr){
+                    if(l.match(/^(?:Alternative|Purpose|Resources?|Duration|Format|Title):/i))break;
+                    const cleaned=l.replace(/^\d+[.)]\s*/,'').trim();
+                    if(cleaned)iLines.push(cleaned);
+                }
+            }
+            if(iLines.length)parsedData.actInstructions=iLines.join('\n');
+        }
+    }
+}
+
+function classifyDelimitedSection(name){
+    const n=name.toLowerCase().replace(/[^a-z0-9\s&]/g,'');
+    if(/page\s*title|^page\s*\d/.test(n)) return 'pageTitle';
+    if(/photograph/.test(n)) return 'photo';
+    if(/opening\s*paragraph/.test(n)) return 'opening';
+    if(/content\s*block/.test(n)) return 'contentBlock';
+    if(/visual\s*element/.test(n)) return 'visual';
+    if(/key\s*insight/.test(n)) return 'insights';
+    if(/industry\s*tool|tools?\s*&?\s*tech/.test(n)) return 'tools';
+    if(/video/.test(n)) return 'video';
+    if(/knowledge\s*check|quiz/.test(n)) return 'quiz';
+    if(/reflection/.test(n)) return 'reflection';
+    if(/activity/.test(n)) return 'activity';
+    return null;
+}
+
+function joinParas(lines){
+    // Group lines into paragraphs separated by blank lines
+    const paras=[];let cur=[];
+    for(const l of lines){
+        if(l.trim()===''){if(cur.length){paras.push(cur.join(' '));cur=[];}}
+        else cur.push(l.trim());
+    }
+    if(cur.length)paras.push(cur.join(' '));
+    return paras.join('\n\n');
+}
+
+// ═══════════════════════════════════════════════════════
+// LABEL-BASED FORMAT PARSER (Original v3 logic)
+// ═══════════════════════════════════════════════════════
+function parseLabelFormat(raw){
+    const matchers=[
+        {key:'pageTitle',    re:/^(?:Page\s+[\d.]+[:\s]|Page\s+Title[:\s])/i},
+        {key:'photo',        re:/^(?:[\u{1F4F7}\u{1F5BC}]\s*)?Photographic\s+Element/iu},
+        {key:'opening',      re:/^(?:[\u{1F4DD}\u{270F}]\s*)?Opening\s+Paragraph/iu},
+        {key:'mainContent',  re:/^(?:[\u{1F4D6}\u{1F4AC}]\s*)?Main\s+Content/iu},
+        {key:'visual',       re:/^(?:[\u{1F5BC}\u{1F4CA}]\s*)?Visual\s+Element/iu},
+        {key:'insights',     re:/^(?:[\u{1F4A1}\u{2B50}\u{1F4CA}]\s*)?Key\s+Insights/iu},
+        {key:'tools',        re:/^(?:Industry\s+)?Tools?\s*[&+]\s*Technolog/iu},
+        {key:'video',        re:/^(?:[\u{1F3AC}\u{1F4F9}]\s*)?Video\s+(?:Resource|Element)/iu},
+        {key:'quiz',         re:/^(?:[\u{2705}\u{1F4DD}]\s*)?Knowledge\s+Check/iu},
+        {key:'reflection',   re:/^(?:[\u{1F914}\u{1F4AD}]\s*)?Reflection\s+Questions?/iu},
+        {key:'activity',     re:/^(?:[\u{1F3AF}\u{270F}]\s*)?Activity[:\s]/iu},
+    ];
+
+    const lines=raw.split('\n');
+    const tagged=[];
+    let currentSection='preamble';
+    for(let i=0;i<lines.length;i++){
+        const line=lines[i];
+        const trimmed=line.trim();
+        let matched=false;
+        for(const m of matchers){
+            if(m.re.test(trimmed)){
+                currentSection=m.key;
+                const afterLabel=trimmed.replace(m.re,'').replace(/^[:\s]*(?:\([^)]*\))?[:\s]*/,'').trim();
+                if(afterLabel) tagged.push({section:currentSection,text:afterLabel,isHeader:true});
+                matched=true;
+                dbg('LINE_MATCH',`Line ${i}: ${m.key} → "${afterLabel.substring(0,60)}"`);
+                break;
+            }
+        }
+        if(!matched && trimmed){
+            tagged.push({section:currentSection,text:trimmed,isHeader:false});
+        }
+    }
+
+    const sectionTexts={};
+    for(const t of tagged){
+        if(!sectionTexts[t.section])sectionTexts[t.section]=[];
+        sectionTexts[t.section].push(t.text);
+    }
+    dbg('SECTIONS',Object.keys(sectionTexts).join(', '));
+
+    parsedData={};
+
+    // Page title
+    if(sectionTexts.pageTitle&&sectionTexts.pageTitle.length){
+        parsedData.pageTitle=sectionTexts.pageTitle[0];
+    } else if(sectionTexts.preamble&&sectionTexts.preamble.length){
+        parsedData.pageTitle=sectionTexts.preamble.find(l=>!l.match(/^Module\s+\d/i))||sectionTexts.preamble[0];
+    } else { parsedData.pageTitle=''; }
+
+    parsedData.photoDesc=sectionTexts.photo?sectionTexts.photo.join(' '):'';
+    parsedData.openingPara=sectionTexts.opening?sectionTexts.opening.join(' '):'';
+    parsedData.openingParas=sectionTexts.opening?[sectionTexts.opening.join(' ')]:[];
+
+    // Main Content Blocks
+    parsedData.contentBlocks=[];
+    function parseContentLines(arr){
+        let curH='',curB=[];
+        for(let ri=0;ri<arr.length;ri++){
+            const t=arr[ri];
+            const shMatch=t.match(/^(?:Section\s+Heading\s*\d*|Heading\s*\d*)[:\s]+(.+)/i);
+            if(shMatch){
+                if(curH||curB.length)parsedData.contentBlocks.push({heading:curH,body:curB.join('\n')});
+                const afterLabel=shMatch[1].trim();
+                const phraseEnd=afterLabel.match(/^([^.!?]{3,60}?)\s+([A-Z].{20,})$/);
+                if(phraseEnd){curH=phraseEnd[1].trim();curB=[phraseEnd[2].trim()];}
+                else{curH=afterLabel;curB=[];}
+                continue;
+            }
+            const isNumHead=/^\d+\.\s+[A-Z]/.test(t)&&t.length<80;
+            const isBullet=/^[*•\-—]\s/.test(t);
+            const endsLikeSent=/[.!?]$/.test(t);
+            const isShort=t.length<80&&!endsLikeSent&&!isBullet;
+            let nextT='';for(let rj=ri+1;rj<arr.length;rj++){if(arr[rj].trim()){nextT=arr[rj].trim();break;}}
+            const nextLonger=nextT.length>t.length;
+            const nextBullet=/^[*•\-—]\s/.test(nextT);
+            if(isNumHead||(isShort&&t.length>3&&(nextLonger||nextBullet))){
+                if(curH||curB.length)parsedData.contentBlocks.push({heading:curH,body:curB.join('\n')});
+                curH=t.replace(/^\d+\.\s+/,'');curB=[];
+            } else if(t){
+                curB.push(t);
+            }
+        }
+        if(curH||curB.length)parsedData.contentBlocks.push({heading:curH,body:curB.join('\n')});
+    }
+    if(sectionTexts.mainContent&&sectionTexts.mainContent.length){parseContentLines(sectionTexts.mainContent);}
+    if(parsedData.contentBlocks.length===0){const sl=sectionTexts.opening||[];if(sl.length>1){parsedData.openingPara=sl[0];parseContentLines(sl.slice(1));}}
+    if(parsedData.contentBlocks.length===0){const pl=sectionTexts.preamble||[];if(pl.length>1)parseContentLines(pl.slice(1));}
+    dbg('CONTENT_BLOCKS',parsedData.contentBlocks.length);
+
+    parsedData.visualDesc=sectionTexts.visual?sectionTexts.visual.join(' '):'';
+
+    // Key Insights
+    parsedData.insights=[];
+    if(sectionTexts.insights&&sectionTexts.insights.length){
+        const insLines=sectionTexts.insights;
+        dbg('INSIGHTS_RAW',insLines.join('|'));
+        const hasBullets=insLines.some(l=>/^\s*[*•\-—]\s/.test(l));
+        const hasColons=insLines.some(l=>/^.{3,50}:\s+.{10,}/.test(l));
+        const totalLen=insLines.join('').length;
+        const isSmashed=!hasBullets&&!hasColons&&insLines.length<=3&&totalLen>80;
+
+        if(isSmashed){
+            let blob=insLines.join(' ');
+            blob=blob.replace(/^(?:Insight|Theme|Topic)\s*(?:Explanation|Detail|Description|Summary)\s*/i,'');
+            const sentences=blob.match(/[^.!]+[.!]+/g);
+            if(sentences&&sentences.length>=2){
+                const results=[];
+                for(const sent of sentences){
+                    const trimmed=sent.trim();
+                    const splitMatch=trimmed.match(/^(.+?[a-z])([A-Z].+)$/);
+                    if(splitMatch){results.push({title:splitMatch[1].trim(),text:splitMatch[2].trim()});}
+                    else{const altMatch=trimmed.match(/^(.{3,40}?)([A-Z][a-z].{10,})$/);if(altMatch){results.push({title:altMatch[1].trim(),text:altMatch[2].trim()});}else{results.push({title:'Insight '+(results.length+1),text:trimmed});}}
+                }
+                if(results.length>=2)parsedData.insights=results;
+            }
+            if(parsedData.insights.length===0){const re=/([A-Z][a-z]+(?:\s+[a-z]+){0,5}?)([A-Z][A-Za-z,;'\s\-—–]+?[.!])/g;let m;while((m=re.exec(blob))!==null){parsedData.insights.push({title:m[1].trim(),text:m[2].trim()});}}
+            if(parsedData.insights.length===0)parsedData.insights=[{title:'Insight 1',text:blob}];
+        } else {
+            for(const line of insLines){
+                let c=line.replace(/^\s*[*•\-—]\s+/,'').replace(/^\d+[.)]\s+/,'').trim();
+                if(!c)continue;
+                const colM=c.match(/^(.+?):\s+(.+)$/);
+                if(colM&&colM[1].length<60){parsedData.insights.push({title:colM[1].trim(),text:colM[2].trim()});}
+                else{parsedData.insights.push({title:'Insight '+(parsedData.insights.length+1),text:c});}
+            }
+        }
+    }
+    dbg('INSIGHTS',parsedData.insights.length);
+
+    // Industry Tools & Technology
+    parsedData.toolEntries=[];
+    if(sectionTexts.tools&&sectionTexts.tools.length){
+        for(const line of sectionTexts.tools){
+            const colM=line.match(/^(.+?):\s+(.+)$/);
+            if(colM&&colM[1].length<60){parsedData.toolEntries.push({label:colM[1].trim(),text:colM[2].trim()});}
+            else if(line.trim()){parsedData.toolEntries.push({label:'Tool '+(parsedData.toolEntries.length+1),text:line.trim()});}
+        }
+    }
+
+    // Video
+    parsedData.videoDesc='';parsedData.videoSearch='';
+    if(sectionTexts.video&&sectionTexts.video.length){
+        const vt=sectionTexts.video.join('\n');
+        dbg('VIDEO_RAW',vt);
+        for(const p of[/Suggested\s+search:\s*"?([^"\n]+)"?/i,/Suggested\s+YouTube\s+topic:\s*"?([^"\n]+)"?/i,/YouTube\s+Topic:\s*"?([^"\n]+)"?/i,/Search:\s*"?([^"\n]+)"?/i]){const m=vt.match(p);if(m){parsedData.videoSearch=m[1].replace(/^["]+|["]+$/g,'').trim();break;}}
+        for(const p of[/What\s+to\s+look\s+for:\s*(.+)/i,/Look\s+for:\s*(.+)/i,/Ideal\s+content:\s*(.+)/i,/Description:\s*(.+)/i]){const m=vt.match(p);if(m){parsedData.videoDesc=m[1].trim();break;}}
+        if(!parsedData.videoDesc){const fl=sectionTexts.video.find(l=>!l.match(/^(?:Suggested|YouTube|Search|Purpose|Description|Ideal)/i));if(fl)parsedData.videoDesc=fl;}
+    }
+
+    // Quiz
+    parsedData.quizQuestions=[];
+    if(sectionTexts.quiz&&sectionTexts.quiz.length){
+        const ql=sectionTexts.quiz.filter(l=>!l.match(/^(?:TEACHER|Multiple\s+Choice|True\s*\/?\s*False\s*$|Fill\s+in)/i));
+        dbg('QUIZ_LINES',ql.join(' | '));
+        parseQuizLines(ql);
+    }
+    dbg('QUIZ',parsedData.quizQuestions.length);
+
+    // Reflection
+    parsedData.reflections=[];
+    if(sectionTexts.reflection&&sectionTexts.reflection.length){
+        for(const line of sectionTexts.reflection){
+            const t=line.trim();
+            const nm=t.match(/^\d+[.)]\s+(.+)/);
+            if(nm){parsedData.reflections.push(nm[1].trim());continue;}
+            const bm=t.match(/^[*•\-—]\s+(.+)/);
+            if(bm){parsedData.reflections.push(bm[1].trim());continue;}
+            if(t.endsWith('?')&&t.length>10)parsedData.reflections.push(t);
+            else if(t.length>15)parsedData.reflections.push(t);
+        }
+    }
+    dbg('REFLECTIONS',parsedData.reflections.length);
+
+    // Activity
+    parsedData.actTitle='';parsedData.actDuration='';parsedData.actFormat='';parsedData.actPurpose='';parsedData.actResources='';parsedData.actInstructions='';
+    if(sectionTexts.activity&&sectionTexts.activity.length){
+        const at=sectionTexts.activity.join('\n');
+        dbg('ACTIVITY_RAW',at);
+        parsedData.actTitle=sectionTexts.activity[0].trim();
+        const durM=at.match(/Duration:\s*([^|\n]+)/i);if(durM)parsedData.actDuration=durM[1].trim();
+        const fmtM=at.match(/Format:\s*([^\n|]+)/i);if(fmtM)parsedData.actFormat=fmtM[1].trim();
+        const purM=at.match(/Purpose:\s*\n?\s*(.+)/i);
+        if(purM){let p=purM[1].trim();if(p.match(/^Resources/i))p='';if(!p){const pi=at.search(/Purpose:/i);if(pi>-1){const al=at.substring(pi+8).split('\n').map(l=>l.trim()).filter(l=>l&&!l.match(/^Resources/i));if(al.length)p=al[0];}}parsedData.actPurpose=p;}
+        const resM=at.match(/Resources?\s*(?:needed)?:\s*\n?\s*(.+)/i);if(resM)parsedData.actResources=resM[1].trim();
+        const instrIdx=at.search(/Instructions:?\s*$/im);
+        if(instrIdx>-1){
+            let iEnd=at.indexOf('\n',instrIdx);if(iEnd===-1)iEnd=at.length;
+            const afterI=at.substring(iEnd+1);const iLines=[];
+            for(const l of afterI.split('\n')){const t=l.trim();if(t.match(/^(?:Purpose|Resources?\s*(?:needed)?):/i))break;if(t.match(/^Alternative:/i)){iLines.push(t);break;}if(t)iLines.push(t.replace(/^\d+[.)]\s*/,'').trim());}
+            parsedData.actInstructions=iLines.filter(l=>l).join('\n');
+        } else {
+            const instrInline=at.match(/Instructions:\s*(.+?)(?=Purpose:|Resources?\s*(?:needed)?:|Alternative:|$)/is);
+            if(instrInline){parsedData.actInstructions=instrInline[1].split('\n').map(l=>l.trim()).filter(l=>l).map(l=>l.replace(/^\d+[.)]\s*/,'').trim()).filter(l=>l).join('\n');}
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════
+// SHARED: Quiz Line Parser
+// ═══════════════════════════════════════════════════════
+function parseQuizLines(ql){
+    let i=0;
+    while(i<ql.length){
+        const line=ql[i];
+        const qM=line.match(/^(?:Q|Question|Statement)\s*(\d+):\s*(.+)/i);
+        if(qM){
+            let qText=qM[2].trim();
+            // Inline True/False with answer at end: "...text. False"
+            const inlineAns=qText.match(/^(.+?)\s+(True|False)\s*$/i);
+            if(inlineAns&&!inlineAns[1].match(/True\s*\/\s*False/i)){
+                parsedData.quizQuestions.push({text:inlineAns[1].replace(/✅/g,'').trim(),options:['True','False'],correct:inlineAns[2].toLowerCase()==='true'?0:1});
+                i++;continue;
+            }
+            // Inline ✅ True / False
+            if(qText.match(/✅\s*True\s*\/?\s*False/i)||qText.match(/True\s*\/?\s*False.*✅/i)){
+                const clean=qText.replace(/✅/g,'').replace(/True\s*\/?\s*False/i,'').trim();
+                const trueC=qText.indexOf('✅')<qText.search(/False/i);
+                parsedData.quizQuestions.push({text:clean,options:['True','False'],correct:trueC?0:1});
+                i++;continue;
+            }
+            // Look ahead for answer lines or a)/b) options
+            let opts=[],ci=0;
+            let foundTF=false;
+            for(let j=i+1;j<Math.min(i+8,ql.length);j++){
+                // "Answer: True/False" or bare "True" / "False"
+                const am=ql[j].match(/^(?:Answer:\s*)?(True|False)\s*$/i);
+                if(am){
+                    parsedData.quizQuestions.push({text:qText.replace(/✅/g,'').trim(),options:['True','False'],correct:am[1].toLowerCase()==='true'?0:1});
+                    i=j+1;foundTF=true;break;
+                }
+                if(ql[j].match(/^True\s*\/\s*False$/i))continue;
+                if(ql[j].match(/^(?:[*•\-—]\s*)?[a-d]\)/)||ql[j].match(/^(?:Q|Question|Statement)\s*\d/i))break;
+            }
+            if(foundTF)continue;
+            // Collect a) b) c) d) options
+            i++;
+            while(i<ql.length){
+                const oM=ql[i].match(/^(?:[*•\-—]\s*)?([a-d])\)\s*(.+)/);
+                if(oM){
+                    const ot=oM[2].replace(/✅/g,'').trim();
+                    if(ql[i].includes('✅'))ci=opts.length;
+                    opts.push(ot);i++;
+                } else break;
+            }
+            if(opts.length>=2){parsedData.quizQuestions.push({text:qText.replace(/✅/g,'').trim(),options:opts,correct:ci});}
+            else{parsedData.quizQuestions.push({text:qText.replace(/✅/g,'').trim(),options:['','','',''],correct:0});}
+            continue;
+        }
+        // Fill in the blank
+        const fibM=line.match(/^Sentence\s*\d*:\s*(.+)/i);
+        if(fibM){
+            let fOpts=[];
+            for(let j=i+1;j<Math.min(i+3,ql.length);j++){const om=ql[j].match(/^Options:\s*(.+)/i);if(om){fOpts=om[1].match(/\[([^\]]+)\]/g)?.map(o=>o.replace(/[\[\]]/g,'').trim())||[];i=j;break;}}
+            parsedData.quizQuestions.push({text:'Fill in the blank: '+fibM[1].trim(),options:fOpts.length>=2?fOpts:['','','',''],correct:0});
+            i++;continue;
+        }
+        i++;
+    }
+}
+
+function populateForm(){
+    const d=parsedData;
+    document.getElementById('fPageTitle').value=d.pageTitle||'';
+    document.getElementById('fPhotoDesc').value=d.photoDesc||'';
+    // Opening paragraph — support multi-paragraph
+    if(d.openingParas&&d.openingParas.length>1){
+        document.getElementById('fOpeningPara').innerHTML=d.openingParas.map(p=>`<p>${escH(p)}</p>`).join('');
+    } else {
+        document.getElementById('fOpeningPara').innerHTML=d.openingPara?`<p>${escH(d.openingPara)}</p>`:'';
+    }
+    document.getElementById('mainContentBlocks').innerHTML='';contentBlockCount=0;
+    if(d.contentBlocks&&d.contentBlocks.length){d.contentBlocks.forEach(b=>addContentBlock(b.heading,b.body));}else{addContentBlock();}
+    document.getElementById('fVisualDesc').value=d.visualDesc||'';
+    document.getElementById('togVisual').checked=!!d.visualDesc;document.getElementById('visualSection').style.display=d.visualDesc?'':'none';
+    document.getElementById('insightCards').innerHTML='';insightCount=0;
+    if(d.insights&&d.insights.length){d.insights.forEach(i=>addInsight(i.title,i.text));}else{addInsight('Insight 1','');addInsight('Insight 2','');addInsight('Insight 3','');}
+    const hi=d.insights&&d.insights.length>0;document.getElementById('togInsights').checked=hi;document.getElementById('insightsSection').style.display=hi?'':'none';
+    // Tools
+    document.getElementById('toolsEntries').innerHTML='';toolEntryCount=0;
+    if(d.toolEntries&&d.toolEntries.length){d.toolEntries.forEach(t=>addToolEntry(t.label,t.text));}
+    const ht=d.toolEntries&&d.toolEntries.length>0;document.getElementById('togTools').checked=ht;document.getElementById('toolsSection').style.display=ht?'':'none';
+    document.getElementById('fVideoDesc').value=d.videoDesc||'';document.getElementById('fVideoSearch').value=d.videoSearch||'';
+    const hv=!!(d.videoDesc||d.videoSearch);document.getElementById('togVideo').checked=hv;document.getElementById('videoSection').style.display=hv?'':'none';
+    document.getElementById('quizQuestions').innerHTML='';quizCount=0;
+    if(d.quizQuestions&&d.quizQuestions.length){d.quizQuestions.forEach(q=>addQuizQuestion(q.text,q.options,q.correct));}
+    const hq=d.quizQuestions&&d.quizQuestions.length>0;document.getElementById('togQuiz').checked=hq;document.getElementById('quizSection').style.display=hq?'':'none';
+    document.getElementById('reflectionQuestions').innerHTML='';reflectionCount=0;
+    if(d.reflections&&d.reflections.length){d.reflections.forEach(r=>addReflection(r));}
+    const hr=d.reflections&&d.reflections.length>0;document.getElementById('togReflection').checked=hr;document.getElementById('reflectionSection').style.display=hr?'':'none';
+    document.getElementById('fActTitle').value=d.actTitle||'';document.getElementById('fActDuration').value=d.actDuration||'';document.getElementById('fActFormat').value=d.actFormat||'';document.getElementById('fActPurpose').value=d.actPurpose||'';document.getElementById('fActResources').value=d.actResources||'';
+    if(d.actInstructions){const items=d.actInstructions.split('\n').filter(l=>l.trim());document.getElementById('fActInstructions').innerHTML='<ol>'+items.map(i=>'<li>'+escH(i)+'</li>').join('')+'</ol>';}else{document.getElementById('fActInstructions').innerHTML='';}
+    const ha=!!d.actTitle;document.getElementById('togActivity').checked=ha;document.getElementById('activitySection').style.display=ha?'':'none';
+}
+
+function showExtractionStatus(){
+    const d=parsedData,items=[
+        {f:!!d.pageTitle,t:'Page Title'+(d.pageTitle?': '+d.pageTitle.substring(0,40):'')},
+        {f:!!d.photoDesc,t:'Photo Description'},
+        {f:!!d.openingPara,t:'Opening Paragraph'},
+        {f:d.contentBlocks&&d.contentBlocks.length>0,t:'Content Blocks ('+(d.contentBlocks?d.contentBlocks.length:0)+')'},
+        {f:!!d.visualDesc,t:'Visual Element'},
+        {f:d.insights&&d.insights.length>0,t:'Key Insights ('+(d.insights?d.insights.length:0)+')'},
+        {f:d.toolEntries&&d.toolEntries.length>0,t:'Industry Tools ('+(d.toolEntries?d.toolEntries.length:0)+')'},
+        {f:!!(d.videoDesc||d.videoSearch),t:'Video Resource'},
+        {f:d.quizQuestions&&d.quizQuestions.length>0,t:'Quiz Questions ('+(d.quizQuestions?d.quizQuestions.length:0)+')'},
+        {f:d.reflections&&d.reflections.length>0,t:'Reflection Questions ('+(d.reflections?d.reflections.length:0)+')'},
+        {f:!!d.actTitle,t:'Activity'+(d.actTitle?': '+d.actTitle:'')},
+    ];
+    document.getElementById('statusList').innerHTML=items.map(i=>`<div class="status-item"><div class="status-icon ${i.f?'found':'missing'}">${i.f?'✔':'✗'}</div><span>${i.t}</span></div>`).join('');
+    document.getElementById('extractionStatus').style.display='block';
+}
+function showEditForm(){updateStep(1,'completed');updateStep(2,'active');document.getElementById('initialInstructions').style.display='none';document.getElementById('editForm').style.display='block';document.getElementById('outputSection').style.display='none';}
+
+// ═══════════════════════════════════════════════════════
+// HTML GENERATOR
+// ═══════════════════════════════════════════════════════
+function generateHTML(){
+    const title=document.getElementById('fPageTitle').value||'Page Title';
+    const photoDesc=document.getElementById('fPhotoDesc').value;
+    const openingHtml=document.getElementById('fOpeningPara').innerHTML.trim();
+    let h='';
+    h+=`<h2>${esc(title)}</h2>\n\n`;
+    h+=`<hr class="emble heading-rule rmit-blue border-medium width-full" data-context-menu="customise delete" data-customise="hr-border-style hr-line-width hr-line-color" data-emble-name="Horizontal Line" data-emble-version="2.0" />\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
+    h+=photoDesc?`<p><span style="background-color: #fac800;">Add photograph here: ${esc(photoDesc)}</span></p>\n\n`:`<p><span style="background-color: #fac800;">Add your photograph here</span></p>\n\n`;
+    h+=openingHtml?`${openingHtml}\n\n`:`<p><span style="background-color: #fac800;">Add your opening paragraph here</span></p>\n`;
+    h+=`<p class="narrow-p">&nbsp;</p>\n\n`;
+    // Content blocks
+    document.getElementById('mainContentBlocks').querySelectorAll('[id^="contentBlock"]').forEach(block=>{
+        const n=block.id.replace('contentBlock','');
+        const heading=document.getElementById('cbHeading'+n)?.value||'';
+        const body=document.getElementById('cbBody'+n)?.value||'';
+        if(!heading&&!body)return;
+        if(heading)h+=`<h3>${esc(heading)}</h3>\n`;
+        if(body){
+            const paras=body.split('\n').filter(l=>l.trim());
+            let inList=false;
+            paras.forEach(p=>{
+                const t=p.trim();
+                if(/^[*•\-—]\s/.test(t)){
+                    if(!inList){h+='<ul>\n';inList=true;}
+                    h+=`<li>${esc(t.replace(/^[*•\-—]\s+/,''))}</li>\n`;
+                } else {
+                    if(inList){h+='</ul>\n';inList=false;}
+                    h+=(/^Tip:/i.test(t)?`<p><strong>${esc(t)}</strong></p>\n`:`<p>${esc(t)}</p>\n`);
+                }
+            });
+            if(inList)h+='</ul>\n';
+        }
+        h+=`<p class="narrow-p">&nbsp;</p>\n\n`;
+    });
+    // Visual
+    if(document.getElementById('togVisual').checked){
+        const vd=document.getElementById('fVisualDesc').value;
+        h+=`<div id="${genId()}" class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n`;
+        h+=`<p><span style="background-color: #fac800;">Add your diagram/visual element here</span></p>\n`;
+        h+=`<details>\n<summary style="cursor: pointer; font-size: 14px; color: #000054; font-family: Helvetica, Arial, sans-serif; background-color: #ffffff; padding: 12px;">Image Description</summary>\n`;
+        h+=`<div style="padding: 12px;">${vd?esc(vd):'Paste your detailed image description here'}</div>\n</details></div>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
+    }
+    // Key Insights — 3 columns per row
+    if(document.getElementById('togInsights').checked){
+        h+=`<h3>Key Insights</h3>\n\n`;
+        const cards=Array.from(document.getElementById('insightCards').querySelectorAll('.insight-card'));
+        for(let c=0;c<cards.length;c+=3){
+            const chunk=cards.slice(c,c+3);
+            h+=`<div id="${genId()}" class="customise emble-columns-container emble-columns-stretch-child-height" data-context-menu="customise delete" data-customise="new-columns-arrangement new-columns-border new-columns-padding columns-stretch-children cobl-column-channel cobl-column-theme" data-emble-name="Columns" data-emble-version="2.0">\n`;
+            chunk.forEach(card=>{const n=card.id.replace('insightCard','');const t=document.getElementById('insTitle'+n)?.value||'Insight';const txt=document.getElementById('insText'+n)?.value||'';h+=`<div class="emble-columns-child emble-prevent-delete">\n<div id="${genId()}" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n<h3>${esc(t)}</h3>\n<p>${esc(txt)}</p>\n</div>\n<p class="narrow-p">&nbsp;</p>\n</div>\n`;});
+            for(let p=chunk.length;p<3;p++)h+=`<div class="emble-columns-child emble-prevent-delete">\n<p>&nbsp;</p>\n</div>\n`;
+            h+=`</div>\n\n`;
+        }
+        h+=`<p class="narrow-p">&nbsp;</p>\n\n`;
+    }
+    // Industry Tools & Technology — colour block with entries
+    if(document.getElementById('togTools').checked){
+        h+=`<div id="${genId()}" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-courses">&nbsp;</i></div>\n<div class="title-with-icon-title">\n<h3>Industry Tools &amp; Technology</h3>\n</div>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
+        h+=`<div id="${genId()}" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n`;
+        document.getElementById('toolsEntries').querySelectorAll('.tools-entry').forEach(entry=>{
+            const n=entry.id.replace('toolEntry','');
+            const label=document.getElementById('toolLabel'+n)?.value||'';
+            const text=document.getElementById('toolText'+n)?.value||'';
+            if(label||text) h+=`<p><strong>${esc(label)}:</strong> ${esc(text)}</p>\n`;
+        });
+        h+=`</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
+    }
+    // Video — 2 columns
+    if(document.getElementById('togVideo').checked){
+        const vd=document.getElementById('fVideoDesc').value,vs=document.getElementById('fVideoSearch').value;
+        h+=`<div id="${genId()}" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-video">&nbsp;</i></div>\n<div class="title-with-icon-title">\n<h3>Video</h3>\n</div>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
+        h+=`<div id="${genId()}" class="customise emble-columns-container emble-columns-controller-1-2 emble-columns-stretch-child-height" data-context-menu="customise delete" data-customise="new-columns-arrangement new-columns-border new-columns-padding columns-stretch-children cobl-column-channel cobl-column-theme" data-emble-name="Columns" data-emble-version="2.0">\n`;
+        h+=`<div class="emble-columns-child emble-prevent-delete">\n`;
+        const vdClean=vd?esc(vd).replace(/[.!]+$/,''):'';
+        h+=`<p>Watch this (<span style="background-color: #fac800;">X:XX mins</span>) video to learn about <span style="background-color: #fac800;">...</span>${vdClean?' '+vdClean+'.':''}</p>\n`;
+        h+=`<p>&nbsp;</p>\n</div>\n`;
+        h+=`<div class="emble-columns-child emble-prevent-delete">\n`;
+        h+=`<p>*</p>\n`;
+        h+=`<p><span style="background-color: #fac800;">Embed your YouTube video here.`;
+        if(vs)h+=` [Suggested search: &quot;&ldquo;${esc(vs)}&rdquo;&quot;]`;
+        h+=` To embed: In YouTube &gt; Share &gt; Embed &gt; Copy the code. In Canvas, position your cursor above this prompt (where the * is), then select Insert &gt; Embed. Paste your copied code from YouTube and hit Submit. Finally delete this text</span></p>\n`;
+        h+=`<p>&nbsp;</p>\n</div>\n`;
+        h+=`<div class="emble-columns-child emble-prevent-delete">\n<p>Column 3</p>\n<p>&nbsp;</p>\n</div>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
+    }
+    // Knowledge Check
+    if(document.getElementById('togQuiz').checked){
+        h+=`<div id="${genId()}" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-check">&nbsp;</i></div>\n<div class="title-with-icon-title">\n<h3>Knowledge Check</h3>\n</div>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
+        h+=`<div id="${genId()}" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n<ul style="margin-bottom: 15px;">\n<li><span style="font-size: 14pt; color: #000054;">Read each question carefully before selecting your answer</span></li>\n<li><span style="font-size: 14pt; color: #000054;">Use the &gt; &lt; buttons or the circles below the questions to navigate between questions</span></li>\n<li><span style="font-size: 14pt; color: #000054;">Select "Check" when you've answered each question</span></li>\n</ul>\n<ul style="margin-bottom: 15px;">\n<li><span style="font-size: 14pt; color: #000054;">Select "Show Solution" or "Retry" if you need to try again.</span></li>\n</ul>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
+        h+=`<p><span style="background-color: #fac800;">Placeholder for Knowledge Check — Create an H5P content type 'Quiz (Question Set)' using the questions below:</span></p>\n\n`;
+        const qs=document.getElementById('quizQuestions').querySelectorAll('.quiz-question');
+        if(qs.length){
+            h+=`<div id="${genId()}" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n`;
+            qs.forEach((q,idx)=>{const n=q.id.replace('quizQ','');const qt=document.getElementById('qqText'+n)?.value||'';h+=`<p><strong>Q${idx+1}: ${esc(qt)}</strong></p>\n`;const cr=q.querySelector('input[type="radio"]:checked');const ci=cr?parseInt(cr.value):0;for(let i=0;i<4;i++){const op=document.getElementById('qqOpt'+n+'_'+i);if(op&&op.value)h+=`<p>${String.fromCharCode(97+i)}) ${esc(op.value)}${i===ci?' ✅':''}</p>\n`;}h+=`<p>&nbsp;</p>\n`;});
+            h+=`</div>\n\n`;
+        }
+        h+=`<p class="narrow-p">&nbsp;</p>\n\n`;
+    }
+    // Reflection
+    if(document.getElementById('togReflection').checked){
+        h+=`<div id="${genId()}" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-question">&nbsp;</i></div>\n<div class="title-with-icon-title">\n<h3>Reflection Questions</h3>\n</div>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n<ol>\n`;
+        document.getElementById('reflectionQuestions').querySelectorAll('[id^="reflQ"]').forEach(rq=>{const n=rq.id.replace('reflQ','');const t=document.getElementById('reflText'+n)?.value||'';if(t)h+=`<li>${esc(t)}</li>\n`;});
+        h+=`</ol>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
+    }
+    // Activity — 2 columns
+    if(document.getElementById('togActivity').checked){
+        const at=document.getElementById('fActTitle').value||'Activity Title',ad=document.getElementById('fActDuration').value,af=document.getElementById('fActFormat').value,ap=document.getElementById('fActPurpose').value,ar=document.getElementById('fActResources').value,ai=document.getElementById('fActInstructions').innerHTML.trim();
+        h+=`<div id="${genId()}" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-edit">&nbsp;</i></div>\n<div class="title-with-icon-title">\n<h3>Activity: ${esc(at)}</h3>\n</div>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
+        h+=`<div id="${genId()}" class="customise emble-columns-container emble-columns-controller-1-2 emble-columns-stretch-child-height" data-context-menu="customise delete" data-customise="new-columns-arrangement new-columns-border new-columns-padding columns-stretch-children cobl-column-channel cobl-column-theme" data-emble-name="Columns" data-emble-version="2.0">\n`;
+        h+=`<div class="emble-columns-child emble-prevent-delete">\n<div id="${genId()}" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n`;
+        h+=`<p><strong>Duration:</strong> ${ad?esc(ad):'&nbsp;'}</p>\n<p><strong>Format:</strong> ${af?esc(af):'&nbsp;'}</p>\n<p><strong>Purpose:</strong> ${ap?esc(ap):'&nbsp;'}</p>\n`;
+        if(ar)h+=`<p><strong>Resources:</strong> ${esc(ar)}</p>\n`;
+        h+=`</div>\n<p class="narrow-p">&nbsp;</p>\n</div>\n`;
+        h+=`<div class="emble-columns-child emble-prevent-delete">\n<div id="${genId()}" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n<p><strong>Instructions:</strong></p>\n`;
+        if(ai)h+=ai+'\n';
+        h+=`</div>\n<p class="narrow-p">&nbsp;</p>\n</div>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
+    }
+    document.getElementById('outputContent').textContent=h;
+    document.getElementById('previewContent').innerHTML=h;
+    updateStep(2,'completed');updateStep(3,'active');
+    document.getElementById('editForm').style.display='none';document.getElementById('outputSection').style.display='block';window.scrollTo(0,0);
+}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function copyHTML(){const c=document.getElementById('outputContent').textContent,ta=document.createElement('textarea');ta.value=c;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');const b=event.target,o=b.textContent;b.textContent='Copied!';b.style.background='#28a745';setTimeout(()=>{b.textContent=o;b.style.background=''},2000)}catch(e){alert('Please copy manually')}document.body.removeChild(ta)}
+function backToEdit(){updateStep(3,'');updateStep(2,'active');document.getElementById('editForm').style.display='block';document.getElementById('outputSection').style.display='none'}
+function resetAll(){if(confirm('Start over with new content?'))location.reload()}
+function loadSample(){document.getElementById('copilotInput').value=`──── Page Title (Page 1 of 3) ──────────────────────────\nDesign Thinking Through Eclecticism: Expanding the Designer's Creative Vocabulary\n──── Photographic Element ──────────────────────────────\nA high-resolution photograph of an Australian creative studio space with an eclectic combination of mid-century timber furniture, contemporary lighting, and Indigenous art on the wall.\n──── Opening Paragraph ─────────────────────────────────\nIn contemporary Australian design practice, eclectic composition often emerges organically when clients bring diverse personal histories into a single project. Imagine a young couple in Brisbane renovating a Queenslander cottage: one partner collects vintage science lab glassware, while the other has inherited carved wooden screens from their Sri Lankan family home.\n\nFor interior designers, recognising how disparate elements can form a coherent visual narrative is essential. This approach goes beyond visual mixing; it tests the designer's judgment in selecting, editing, and recombining elements in ways that meet both functional and cultural aims.\n──── Content Block ─────────────────────────────────────\nHeading: How Eclecticism Challenges Traditional Design Logic\nEclectic interiors in Australian homes frequently emerge where architectural heritage meets contemporary needs. In older terrace houses in Sydney's Inner West, for example, clients often preserve original Victorian features while introducing recycled steel, polished concrete, and digital artworks.\n\nA common misconception is that eclecticism lacks discipline. In practice, it requires deeper conceptual clarity and stronger curatorial control than single-style interiors.\n──── Content Block ─────────────────────────────────────\nHeading: Curating With Intention in Australian Contexts\nInterior designers increasingly work with clients whose cultural influences, travel histories, and professional experiences translate into unique design expectations.\n\nRather than simply assembling objects, designers must analyse which combinations support function, well-being, and cultural authenticity.\n──── Content Block ─────────────────────────────────────\nHeading: Navigating Misinterpretations of Style\nMany emerging designers assume eclectic schemes are client-led rather than designer-led. In professional practice, the opposite is true.\n\nUnderstanding what eclecticism is not also strengthens practice. It is not indiscriminate decoration, nor is it a simple homage to historical styles.\n──── Visual Element ────────────────────────────────────\nType: Mind map\nThe mind map centres on the concept "Eclectic Design Logic" with four main branches: Historical Influences, Material Strategies, Client Identity, and Spatial Cohesion.\n──── Key Insights ──────────────────────────────────────\nInterconnected concepts: Eclectic design relies on underlying relationships, not random assortment.\nCuratorial discipline: Designers must apply structured decision-making to avoid visual confusion.\nAustralian cultural layers: Diverse client identities shape eclectic outcomes in contemporary practice.\n──── Industry Tools & Technology ───────────────────────\nCurrent tools: Physical material boards, colour sample sets, reference books on global design histories.\nRecommended RMIT tools: Miro for mind-mapping and VAL for documenting precedent images.\nWhere helpful: Use Miro to map client influences and design logic before material selection.\nDiscipline-specific tools: Museum-grade conservation guidelines for handling artefacts; digital colour analysis tools.\n──── Video ─────────────────────────────────────────────\nDescription: A short explainer on how designers synthesise diverse stylistic influences into coherent interior schemes.\nPurpose: To help students understand how eclectic combinations are curated through analysis rather than intuition.\nSuggested search: "professional interior design eclectic curation process"\n──── Knowledge Check ───────────────────────────────────\nTEACHER INSTRUCTION: Use the H5P Quiz (Question Set) content type in Canvas.\nQ1: When working on an eclectic interior, which action best demonstrates advanced design reasoning?\na) Selecting objects based solely on client preference\nb) Choosing contrasting items without considering relationships\nc) Identifying an organising logic that guides material and object selection ✅\nd) Avoiding historical references entirely\nQ2: Eclectic interiors in Australia often involve blending diverse cultural influences within a single space.\na) True ✅\nb) False\nQ3: In a Victorian terrace with mixed heritage elements, what strategy best supports cohesive eclectic design?\na) Random placement of items\nb) Avoiding any contemporary materials\nc) Establishing visual hierarchy through colour, scale, and rhythm ✅\nd) Matching all materials perfectly\n──── Reflection Questions ──────────────────────────────\nHow can eclectic design approaches help you respond to the cultural diversity of Australian clients?\nWhat decision-making strategies can ensure eclectic schemes remain cohesive and intentional?\n──── Activity ──────────────────────────────────────────\nTitle: Curating a Visual Logic for an Eclectic Room\nDuration: 45 minutes\nFormat: Individual\nPurpose: To practise identifying relationships between varied elements and organising them into a cohesive visual strategy.\nResources: Miro or physical sketchbook; digital images of objects and materials.\nInstructions:\nSelect four unrelated objects or materials representing different historical or cultural influences.\nIdentify two underlying relationships between them (e.g., texture, colour temperature, symbolic meaning).\nProduce a visual map showing how these relationships create cohesion within a proposed room.\nAlternative: Students may complete the activity using tactile material samples if digital access is limited.`;showTextarea()}
+document.getElementById('copilotInput').addEventListener('input',function(){document.getElementById('parseBtn').disabled=!this.value.trim()});
+</script>
+</body>
+</html>
