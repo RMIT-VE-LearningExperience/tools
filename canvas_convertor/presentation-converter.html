@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoVE Copilot &#8594; Canvas Class Presentation Converter</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+        .main-wrapper{flex:1;padding:20px}
+        .container{max-width:1400px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+        .header{background:#000054;color:#fff;padding:30px;text-align:center}
+        .header h1{font-size:2rem;margin-bottom:10px;font-weight:700}
+        .header p{font-size:1.05rem;opacity:.9}
+        .workflow-steps{display:flex;justify-content:center;padding:20px 30px;background:#f2f2f2;border-bottom:3px solid #fac800;flex-wrap:wrap;gap:10px}
+        .step{display:flex;align-items:center;margin:0 15px;font-weight:600;color:#000054;font-size:.95rem}
+        .step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+        .step.active .step-number{background:#e61e2a}
+        .step.completed .step-number{background:#28a745}
+        .main-layout{display:grid;grid-template-columns:420px 1fr;min-height:60vh}
+        .sidebar{background:#f2f2f2;padding:30px;border-right:1px solid #e3e5e0;display:flex;flex-direction:column}
+        .content-area{padding:30px;overflow-y:auto}
+        .paste-area{border:3px dashed #000054;border-radius:8px;padding:20px;text-align:center;transition:all .3s;cursor:pointer;background:#fff;margin-bottom:20px}
+        .paste-area:hover{border-color:#e61e2a;background:#f8f9fa}
+        .paste-icon{font-size:2.5rem;color:#000054;margin-bottom:10px}
+        .paste-text{font-size:1.05rem;color:#000054;margin-bottom:8px;font-weight:600}
+        .paste-subtext{font-size:.85rem;color:#666}
+        textarea#copilotInput{width:100%;min-height:200px;padding:15px;border:2px solid #e3e5e0;border-radius:6px;font-size:.9rem;font-family:'Monaco','Menlo',monospace;resize:vertical;background:#fff;line-height:1.5;display:none}
+        textarea#copilotInput:focus{outline:none;border-color:#000054}
+        .extraction-status{display:none;background:#fff;border:2px solid #fac800;border-radius:6px;padding:20px;margin-top:15px}
+        .extraction-status h3{color:#000054;margin-bottom:12px;font-size:1.1rem}
+        .status-item{display:flex;align-items:center;margin-bottom:8px;font-size:.9rem}
+        .status-icon{width:20px;height:20px;border-radius:50%;margin-right:10px;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0}
+        .status-icon.found{background:#28a745}.status-icon.missing{background:#e61e2a}
+        .btn{padding:12px 28px;border:none;border-radius:4px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s}
+        .btn-primary{background:#e61e2a;color:#fff}.btn-primary:hover{background:#c51923;transform:translateY(-1px)}
+        .btn-secondary{background:#000054;color:#fff}.btn-secondary:hover{background:#000043;transform:translateY(-1px)}
+        .btn-outline{background:#fff;color:#000054;border:2px solid #000054}.btn-outline:hover{background:#f2f2f2}
+        .btn:disabled{background:#999;cursor:not-allowed;transform:none}
+        .button-group{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+        .edit-form{display:none}
+        .form-section{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:25px;margin-bottom:25px}
+        .form-section h3{color:#000054;margin-bottom:18px;font-size:1.2rem;border-bottom:2px solid #fac800;padding-bottom:10px}
+        .form-section.presentation{border-left:4px solid #000054}
+        .form-section.file-link{border-left:4px solid #fac800}
+        .form-group{margin-bottom:18px}
+        .form-group label{display:block;font-weight:600;color:#000054;margin-bottom:6px;font-size:.9rem}
+        .form-group input[type="text"],.form-group textarea{width:100%;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit;transition:border-color .3s;background:#fafbfc}
+        .form-group input:focus,.form-group textarea:focus{outline:none;border-color:#000054}
+        .form-group textarea{min-height:80px;resize:vertical}
+        .help-text{font-size:.8rem;color:#666;margin-top:4px}
+        .list-editor{margin-top:8px}
+        .list-item{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+        .list-item input{flex:1;padding:8px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit}
+        .list-item input:focus{outline:none;border-color:#000054}
+        .list-item button{background:none;border:none;color:#e61e2a;cursor:pointer;font-size:1.1rem;padding:4px}
+        .add-remove-btns{display:flex;gap:8px;margin-top:8px}
+        .add-remove-btns button{padding:4px 12px;font-size:.8rem;border-radius:3px;border:1px solid #ddd;cursor:pointer;background:#fff}
+        .add-remove-btns button:hover{background:#f2f2f2}
+        .url-preview{background:#f2f2f2;border:1px solid #e3e5e0;border-radius:4px;padding:12px;margin-top:8px;font-size:.85rem;display:none}
+        .url-preview .label{font-weight:600;color:#000054;display:block;margin-bottom:4px}
+        .url-preview .value{color:#333;font-family:'Monaco','Menlo',monospace;font-size:.8rem;word-break:break-all}
+        .url-preview .value.error{color:#e61e2a}
+        .format-badge{display:inline-block;background:#f2f2f2;border:1px solid #e3e5e0;border-radius:3px;padding:2px 8px;font-size:.75rem;color:#000054;font-weight:600;margin-left:8px}
+        .format-badge.new{background:#e6f9e6;border-color:#28a745;color:#28a745}
+        .format-badge.legacy{background:#fff9e6;border-color:#fac800;color:#856404}
+        .output-section{display:none}
+        .output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+        .output-header{background:#000054;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+        .output-content{padding:20px;font-family:'Monaco','Menlo',monospace;font-size:.8rem;line-height:1.5;max-height:500px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
+        .preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:30px;margin-top:20px}
+        .preview-container h3{color:#000054;margin-bottom:20px}
+        .alert{padding:15px;border-radius:4px;margin-bottom:20px;display:flex;align-items:flex-start}
+        .alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
+        .alert-icon{font-size:1.4rem;margin-right:12px;flex-shrink:0}
+        .footer{background:#000054;color:#fff;text-align:center;padding:20px;font-size:.9rem}
+        @media(max-width:1000px){.main-layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid #e3e5e0}}
+    </style>
+</head>
+<body>
+<div class="main-wrapper">
+<div class="container">
+    <div class="header">
+        <h1>CoVE Copilot &#8594; Canvas Class Presentation Converter</h1>
+        <p>Paste Copilot Output &#8594; Review &amp; Edit &#8594; Generate Emble-Ready HTML</p>
+    </div>
+    <div class="workflow-steps">
+        <div class="step active" id="step1"><div class="step-number">1</div><span>Paste Copilot Output</span></div>
+        <div class="step" id="step2"><div class="step-number">2</div><span>Review &amp; Edit</span></div>
+        <div class="step" id="step3"><div class="step-number">3</div><span>Generate HTML</span></div>
+    </div>
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="paste-area" id="pasteArea" onclick="showTextarea()">
+                <div class="paste-icon">&#128203;</div>
+                <div class="paste-text">Paste Copilot Output</div>
+                <div class="paste-subtext">Click here, then paste your Class Presentation intro</div>
+            </div>
+            <textarea id="copilotInput" placeholder="Paste your Copilot output here..."></textarea>
+            <div class="form-group" style="margin-top:15px;">
+                <label>Week / Module Number</label>
+                <input type="text" id="weekNumber" placeholder="e.g. 1, 2, 3..." style="width:100px;">
+            </div>
+            <div class="form-group">
+                <label>Topic Name</label>
+                <input type="text" id="topicName" placeholder="e.g. Workplace Communication">
+                <p class="help-text">Used in the page heading</p>
+            </div>
+            <div style="border-top:2px solid #fac800;margin-top:18px;padding-top:18px;">
+                <div class="form-group">
+                    <label>&#128206; File Display Name</label>
+                    <input type="text" id="fFileName" placeholder="e.g. Week 1 - Layered Interior Design.pptx">
+                    <p class="help-text">The link text students see and click</p>
+                </div>
+                <div class="form-group">
+                    <label>&#128206; Canvas File URL</label>
+                    <input type="text" id="fFileURL" placeholder="Paste URL from Canvas Files area" oninput="parseCanvasURL()">
+                    <p class="help-text">Course ID and File ID are extracted automatically</p>
+                    <div class="url-preview" id="urlPreview">
+                        <span class="label">Extracted IDs:</span>
+                        <span class="value" id="urlPreviewText"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" id="parseBtn" onclick="parseInput()" disabled>Parse Content</button>
+                <button class="btn btn-outline" onclick="loadSample()">Load Generic Content</button>
+            </div>
+            <div class="extraction-status" id="extractionStatus"><h3>&#128202; Parsed Sections</h3><div id="statusList"></div></div>
+        </div>
+        <div class="content-area">
+            <div id="initialInstructions">
+                <h2 style="color:#000054;margin-bottom:20px;">How to Use This Tool</h2>
+                <ol style="font-size:1.05rem;line-height:2;">
+                    <li><strong>Paste</strong> your Copilot-generated Class Presentation intro into the sidebar</li>
+                    <li><strong>Enter</strong> the week number and topic name</li>
+                    <li><strong>Review</strong> the parsed introduction and usage tips</li>
+                    <li><strong>Add</strong> the Canvas file link details for your uploaded PPTX</li>
+                    <li><strong>Generate</strong> your Canvas-ready Emble HTML</li>
+                </ol>
+                <div class="alert alert-warning" style="margin-top:25px;"><div class="alert-icon">&#128161;</div><div><strong>Tip:</strong> Upload your PPTX to Canvas first, then grab the file URL from the Files area. The tool extracts the course ID and file ID automatically to build the correct Canvas file link.</div></div>
+                <div style="background:#f2f2f2;border:1px solid #e3e5e0;border-radius:6px;padding:20px;margin-top:20px;">
+                    <h3 style="color:#000054;margin-bottom:12px;font-size:1.05rem;">Not using Copilot?</h3>
+                    <p style="font-size:.95rem;margin-bottom:12px;">No problem &#8212; click the button below to load ready-made generic content that works for any presentation. Just fill in your week number, file name, and Canvas URL, then generate.</p>
+                    <button class="btn btn-outline" onclick="loadSample()" style="font-size:.9rem;padding:10px 20px;">Load Generic Content</button>
+                </div>
+            </div>
+
+            <div class="edit-form" id="editForm">
+                <h2 style="color:#000054;margin-bottom:20px;">Review &amp; Edit Parsed Content</h2>
+
+                <div class="form-section presentation">
+                    <h3>&#127916; Presentation Introduction</h3>
+                    <div class="form-group">
+                        <label>Introduction</label>
+                        <textarea id="fIntro" rows="5" placeholder="Bespoke student-facing introduction paragraph"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Usage Tips</label>
+                        <div id="tipsItems" class="list-editor"></div>
+                        <div class="add-remove-btns">
+                            <button onclick="addTipItem()">+ Add Tip</button>
+                            <button onclick="removeTipItem()">&#8722; Remove Last</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group" style="padding-top:20px;border-top:2px solid #e3e5e0;">
+                    <button class="btn btn-primary" onclick="generateHTML()">Generate Canvas HTML</button>
+                    <button class="btn btn-secondary" onclick="resetAll()">Start Over</button>
+                </div>
+            </div>
+
+            <div class="output-section" id="outputSection">
+                <h2 style="color:#000054;margin-bottom:20px;">Generated Canvas HTML</h2>
+                <div class="output-container">
+                    <div class="output-header">
+                        <span>Class Presentation &#8212; Emble HTML</span>
+                        <button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem;" onclick="copyHTML('outputHTML', this)">Copy HTML</button>
+                    </div>
+                    <div class="output-content" id="outputHTML"></div>
+                </div>
+                <div class="preview-container">
+                    <h3>Preview &#8212; Class Presentation Page</h3>
+                    <div id="outputPreview"></div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="backToEdit()">Back to Edit</button>
+                    <button class="btn btn-primary" onclick="resetAll()">New Content</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team &#8212; RMIT College of Vocational Education</p></footer>
+
+<script>
+var tipsCount = 0;
+
+function showTextarea() {
+    document.getElementById('copilotInput').style.display = 'block';
+    document.getElementById('pasteArea').style.display = 'none';
+    document.getElementById('copilotInput').focus();
+    document.getElementById('parseBtn').disabled = false;
+}
+
+function updateStep(n, s) {
+    var e = document.getElementById('step' + n);
+    e.classList.remove('active', 'completed');
+    if (s) e.classList.add(s);
+}
+
+function esc(s) {
+    if (!s) return '';
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+function genId() {
+    return 'emble-customise-' + Math.random().toString(16).slice(2, 10);
+}
+
+// ── Tip list editor ──
+function addTipItem(val) {
+    val = val || '';
+    tipsCount++;
+    var container = document.getElementById('tipsItems');
+    var d = document.createElement('div');
+    d.className = 'list-item';
+    d.id = 'tipItem' + tipsCount;
+    d.innerHTML = '<span style="font-weight:600;color:#000054;min-width:20px;">' + tipsCount + '.</span>' +
+        '<input type="text" id="tipText' + tipsCount + '" value="' + esc(val) + '" placeholder="Usage tip ' + tipsCount + '">' +
+        '<button onclick="this.closest(\'.list-item\').remove();renumberTips()" title="Remove">\u2715</button>';
+    container.appendChild(d);
+}
+
+function removeTipItem() {
+    if (tipsCount > 0) {
+        var e = document.getElementById('tipItem' + tipsCount);
+        if (e) e.remove();
+        tipsCount--;
+    }
+}
+
+function renumberTips() {
+    var container = document.getElementById('tipsItems');
+    var items = container.querySelectorAll('.list-item');
+    tipsCount = items.length;
+    items.forEach(function (item, i) {
+        var n = i + 1;
+        item.id = 'tipItem' + n;
+        item.querySelector('span').textContent = n + '.';
+        item.querySelector('input').id = 'tipText' + n;
+    });
+}
+
+// ── Canvas URL parser ──
+function parseCanvasURL() {
+    var url = document.getElementById('fFileURL').value.trim();
+    var preview = document.getElementById('urlPreview');
+    var previewText = document.getElementById('urlPreviewText');
+
+    if (!url) {
+        preview.style.display = 'none';
+        return;
+    }
+
+    preview.style.display = 'block';
+
+    // Pattern 1: /courses/{courseId}/files/folder/...?preview={fileId}
+    var m1 = url.match(/\/courses\/(\d+)\/files\/.*[?&]preview=(\d+)/);
+    // Pattern 2: /courses/{courseId}/files/{fileId}
+    var m2 = url.match(/\/courses\/(\d+)\/files\/(\d+)/);
+
+    var match = m1 || m2;
+
+    if (match) {
+        previewText.className = 'value';
+        previewText.textContent = 'Course ID: ' + match[1] + '  |  File ID: ' + match[2];
+    } else {
+        previewText.className = 'value error';
+        previewText.textContent = 'Could not extract IDs \u2014 check URL format';
+    }
+}
+
+function getCanvasIDs() {
+    var url = document.getElementById('fFileURL').value.trim();
+    var m1 = url.match(/\/courses\/(\d+)\/files\/.*[?&]preview=(\d+)/);
+    var m2 = url.match(/\/courses\/(\d+)\/files\/(\d+)/);
+    var match = m1 || m2;
+    if (match) return { courseId: match[1], fileId: match[2] };
+    return null;
+}
+
+// ── Dual-format parser ──
+function parseInput() {
+    var raw = document.getElementById('copilotInput').value.trim();
+    if (!raw) return alert('Please paste Copilot output first.');
+
+    var sectionRe = /^[\u2500\u2501\u2014\-=]{2,}\s*(.+?)\s*[\u2500\u2501\u2014\-=]{2,}\s*$/;
+    var lines = raw.split('\n');
+    var sectionLines = [];
+    var foundSection = false;
+
+    // Collect all lines after the section delimiter
+    for (var i = 0; i < lines.length; i++) {
+        var t = lines[i].trim();
+        if (sectionRe.test(t)) {
+            foundSection = true;
+            continue;
+        }
+        if (foundSection) {
+            sectionLines.push(lines[i]);
+        }
+    }
+
+    // If no delimiter found, treat all lines as content
+    if (!foundSection) sectionLines = lines;
+
+    // Detect format
+    var isNewFormat = false;
+    for (var j = 0; j < sectionLines.length; j++) {
+        if (/^Introduction:\s*$/i.test(sectionLines[j].trim())) { isNewFormat = true; break; }
+        if (/^Introduction:\s*.+/i.test(sectionLines[j].trim())) { isNewFormat = false; break; }
+    }
+
+    var data = { intro: '', tips: [] };
+
+    if (isNewFormat) {
+        // Label-per-line format
+        var fieldLabels = [
+            { re: /^Introduction:\s*$/i, key: 'intro' },
+            { re: /^Usage\s+tips:\s*$/i, key: 'tips' }
+        ];
+        var currentField = null;
+        var contentLines = [];
+
+        function flushField() {
+            if (!currentField) return;
+            if (currentField === 'tips') {
+                data.tips = [];
+                for (var ci = 0; ci < contentLines.length; ci++) {
+                    var step = contentLines[ci].trim().replace(/^\d+[.)]\s*/, '').trim();
+                    if (step) data.tips.push(step);
+                }
+            } else {
+                data[currentField] = contentLines.join(' ').trim();
+            }
+        }
+
+        for (var k = 0; k < sectionLines.length; k++) {
+            var line = sectionLines[k].trim();
+            var matched = false;
+            for (var fi = 0; fi < fieldLabels.length; fi++) {
+                if (fieldLabels[fi].re.test(line)) {
+                    flushField();
+                    currentField = fieldLabels[fi].key;
+                    contentLines = [];
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched) continue;
+            if (!line && currentField && currentField !== 'tips') {
+                if (contentLines.length > 0) { flushField(); currentField = null; contentLines = []; }
+                continue;
+            }
+            if (currentField && line) contentLines.push(line);
+        }
+        flushField();
+    } else {
+        // Inline format
+        var mode = '';
+        for (var m = 0; m < sectionLines.length; m++) {
+            var ln = sectionLines[m].trim();
+            if (!ln) continue;
+
+            var introMatch = ln.match(/^Introduction:\s*(.+)/i);
+            if (introMatch) { data.intro = introMatch[1].trim(); mode = 'intro'; continue; }
+
+            if (/^Usage\s+tips:/i.test(ln)) { mode = 'tips'; continue; }
+
+            if (mode === 'tips') {
+                var tip = ln.replace(/^\d+[.)]\s*/, '').trim();
+                if (tip) data.tips.push(tip);
+                continue;
+            }
+
+            if (mode === 'intro' && ln) {
+                data.intro += ' ' + ln;
+            }
+        }
+    }
+
+    // Populate form
+    document.getElementById('fIntro').value = data.intro;
+    document.getElementById('tipsItems').innerHTML = '';
+    tipsCount = 0;
+    if (data.tips.length) {
+        data.tips.forEach(function (t) { addTipItem(t); });
+    } else {
+        addTipItem(); addTipItem(); addTipItem();
+    }
+
+    showExtractionStatus(data, isNewFormat);
+    showEditForm();
+}
+
+function showExtractionStatus(data, isNewFormat) {
+    var fmtLabel = isNewFormat ? 'Label-per-line' : 'Inline';
+    var fmtClass = isNewFormat ? 'new' : 'legacy';
+    var introWords = data.intro ? data.intro.split(/\s+/).length : 0;
+    var items = [
+        { f: true, t: 'Format detected: <span class="format-badge ' + fmtClass + '">' + fmtLabel + '</span>' },
+        { f: !!data.intro, t: 'Introduction: ' + (data.intro ? introWords + ' words' : 'missing') },
+        { f: data.tips.length > 0, t: 'Usage tips: ' + data.tips.length + ' tips' }
+    ];
+    document.getElementById('statusList').innerHTML = items.map(function (i) {
+        return '<div class="status-item"><div class="status-icon ' + (i.f ? 'found' : 'missing') + '">' + (i.f ? '\u2714' : '\u2718') + '</div><span>' + i.t + '</span></div>';
+    }).join('');
+    document.getElementById('extractionStatus').style.display = 'block';
+}
+
+function showEditForm() {
+    updateStep(1, 'completed'); updateStep(2, 'active');
+    document.getElementById('initialInstructions').style.display = 'none';
+    document.getElementById('editForm').style.display = 'block';
+    document.getElementById('outputSection').style.display = 'none';
+}
+
+// ── HTML Generator ──
+function generateHTML() {
+    var week = document.getElementById('weekNumber').value || 'X';
+    var intro = document.getElementById('fIntro').value;
+    var fileName = document.getElementById('fFileName').value || 'Presentation.pptx';
+    var ids = getCanvasIDs();
+
+    var tips = [];
+    document.querySelectorAll('#tipsItems .list-item input').forEach(function (inp) {
+        if (inp.value.trim()) tips.push(inp.value.trim());
+    });
+
+    var h = '';
+
+    // Page heading
+    h += '<h2 style="text-align: left;">Week ' + esc(week) + ': Class Presentation</h2>\n\n';
+    h += '<hr class="emble heading-rule rmit-blue border-medium width-full" data-context-menu="customise delete" data-customise="hr-border-style hr-line-width hr-line-color" data-emble-name="Horizontal Line" data-emble-version="2.0" />\n\n';
+    h += '<p class="narrow-p">&nbsp;</p>\n\n';
+
+    // Title with icon
+    h += '<div id="' + genId() + '" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n';
+    h += '<div class="emble-icon small wrap square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false yellow" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-image">&nbsp;</i></div>\n';
+    h += '<div class="title-with-icon-title">\n';
+    h += '<h3>Class Presentation</h3>\n';
+    h += '</div>\n</div>\n\n';
+    h += '<p class="narrow-p">&nbsp;</p>\n\n';
+
+    // Introduction paragraph
+    if (intro) {
+        h += '<p>' + esc(intro) + '</p>\n\n';
+        h += '<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+
+    // Usage tips
+    if (tips.length) {
+        h += '<div id="' + genId() + '" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n';
+        h += '<p><strong>Getting the most from this presentation:</strong></p>\n';
+        h += '<ol>\n';
+        tips.forEach(function (t) { h += '<li>' + esc(t) + '</li>\n'; });
+        h += '</ol>\n';
+        h += '</div>\n\n';
+        h += '<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+
+    // File link
+    if (ids) {
+        h += '<p><a class="instructure_file_link instructure_scribd_file auto_open" title="' + esc(fileName) + '" href="https://rmit.instructure.com/courses/' + ids.courseId + '/files/' + ids.fileId + '?wrap=1" target="_blank" rel="noopener" data-api-endpoint="https://rmit.instructure.com/api/v1/courses/' + ids.courseId + '/files/' + ids.fileId + '" data-api-returntype="File">' + esc(fileName) + '</a></p>\n';
+    } else {
+        h += '<p><span style="background-color: #fac800;">Upload your PPTX to Canvas, then paste the file URL into this tool to generate the file link. Alternatively, manually insert the file link in Canvas after pasting this HTML.</span></p>\n';
+    }
+    h += '<p class="">&nbsp;</p>\n';
+    h += '<p>&nbsp;</p>\n';
+    h += '<p class="">&nbsp;</p>\n';
+    h += '<p>&nbsp;</p>\n';
+
+    document.getElementById('outputHTML').textContent = h;
+    document.getElementById('outputPreview').innerHTML = h;
+    updateStep(2, 'completed'); updateStep(3, 'active');
+    document.getElementById('editForm').style.display = 'none';
+    document.getElementById('outputSection').style.display = 'block';
+    window.scrollTo(0, 0);
+}
+
+function copyHTML(id, btn) {
+    var c = document.getElementById(id).textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(c).then(function () {
+            showCopyFeedback(btn);
+        }).catch(function () {
+            fallbackCopy(c, btn);
+        });
+    } else {
+        fallbackCopy(c, btn);
+    }
+}
+
+function fallbackCopy(text, btn) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); showCopyFeedback(btn); }
+    catch (e) { alert('Please copy manually'); }
+    document.body.removeChild(ta);
+}
+
+function showCopyFeedback(btn) {
+    var orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.background = '#28a745';
+    setTimeout(function () { btn.textContent = orig; btn.style.background = ''; }, 2000);
+}
+
+function backToEdit() {
+    updateStep(3, ''); updateStep(2, 'active');
+    document.getElementById('editForm').style.display = 'block';
+    document.getElementById('outputSection').style.display = 'none';
+}
+
+function resetAll() {
+    if (confirm('Start over with new content?')) location.reload();
+}
+
+function loadSample() {
+    document.getElementById('weekNumber').value = '1';
+    document.getElementById('topicName').value = 'Layered Interior Design';
+    document.getElementById('copilotInput').value =
+'\u2500\u2500\u2500\u2500 Class Presentation \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\
+Introduction: Your in-class presentation guides you through the key ideas, examples, and discussions we\u2019ll explore this week. It provides the visual aids and talking points covered during class and complements your online learning materials. Reviewing it before class will help you prepare and follow along, while revisiting it afterwards will reinforce your understanding and support upcoming activities and assessments.\n\
+Usage tips:\n\
+1. Before class, skim through the presentation to familiarise yourself with the key topics and examples we\u2019ll be covering.\n\
+2. During class, follow along with the presentation and use it as a prompt for taking notes on key concepts and discussions.\n\
+3. After class, revisit the presentation to consolidate your understanding and support your preparation for activities and assessments.';
+    showTextarea();
+}
+
+document.getElementById('copilotInput').addEventListener('input', function () {
+    document.getElementById('parseBtn').disabled = !this.value.trim();
+});
+</script>
+</body>
+</html>

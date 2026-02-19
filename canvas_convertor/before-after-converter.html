@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoVE Copilot → Canvas Before &amp; After Class Converter</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+        .main-wrapper{flex:1;padding:20px}
+        .container{max-width:1400px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+        .header{background:#000054;color:#fff;padding:30px;text-align:center}
+        .header h1{font-size:2rem;margin-bottom:10px;font-weight:700}
+        .header p{font-size:1.05rem;opacity:.9}
+        .workflow-steps{display:flex;justify-content:center;padding:20px 30px;background:#f2f2f2;border-bottom:3px solid #fac800;flex-wrap:wrap;gap:10px}
+        .step{display:flex;align-items:center;margin:0 15px;font-weight:600;color:#000054;font-size:.95rem}
+        .step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+        .step.active .step-number{background:#e61e2a}
+        .step.completed .step-number{background:#28a745}
+        .main-layout{display:grid;grid-template-columns:420px 1fr;min-height:60vh}
+        .sidebar{background:#f2f2f2;padding:30px;border-right:1px solid #e3e5e0;display:flex;flex-direction:column}
+        .content-area{padding:30px;overflow-y:auto}
+        .paste-area{border:3px dashed #000054;border-radius:8px;padding:20px;text-align:center;transition:all .3s;cursor:pointer;background:#fff;margin-bottom:20px}
+        .paste-area:hover{border-color:#e61e2a;background:#f8f9fa}
+        .paste-icon{font-size:2.5rem;color:#000054;margin-bottom:10px}
+        .paste-text{font-size:1.05rem;color:#000054;margin-bottom:8px;font-weight:600}
+        .paste-subtext{font-size:.85rem;color:#666}
+        textarea#copilotInput{width:100%;min-height:300px;padding:15px;border:2px solid #e3e5e0;border-radius:6px;font-size:.9rem;font-family:'Monaco','Menlo',monospace;resize:vertical;background:#fff;line-height:1.5;display:none}
+        textarea#copilotInput:focus{outline:none;border-color:#000054}
+        .extraction-status{display:none;background:#fff;border:2px solid #fac800;border-radius:6px;padding:20px;margin-top:15px}
+        .extraction-status h3{color:#000054;margin-bottom:12px;font-size:1.1rem}
+        .status-item{display:flex;align-items:center;margin-bottom:8px;font-size:.9rem}
+        .status-icon{width:20px;height:20px;border-radius:50%;margin-right:10px;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0}
+        .status-icon.found{background:#28a745}.status-icon.missing{background:#e61e2a}
+        .btn{padding:12px 28px;border:none;border-radius:4px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s}
+        .btn-primary{background:#e61e2a;color:#fff}.btn-primary:hover{background:#c51923;transform:translateY(-1px)}
+        .btn-secondary{background:#000054;color:#fff}.btn-secondary:hover{background:#000043;transform:translateY(-1px)}
+        .btn-outline{background:#fff;color:#000054;border:2px solid #000054}.btn-outline:hover{background:#f2f2f2}
+        .btn:disabled{background:#999;cursor:not-allowed;transform:none}
+        .button-group{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+        .edit-form{display:none}
+        .form-section{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:25px;margin-bottom:25px}
+        .form-section h3{color:#000054;margin-bottom:18px;font-size:1.2rem;border-bottom:2px solid #fac800;padding-bottom:10px}
+        .form-section.before-class{border-left:4px solid #000054}
+        .form-section.after-class{border-left:4px solid #e61e2a}
+        .form-group{margin-bottom:18px}
+        .form-group label{display:block;font-weight:600;color:#000054;margin-bottom:6px;font-size:.9rem}
+        .form-group input[type="text"],.form-group textarea,.form-group select{width:100%;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit;transition:border-color .3s;background:#fafbfc}
+        .form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:#000054}
+        .form-group textarea{min-height:80px;resize:vertical}
+        .help-text{font-size:.8rem;color:#666;margin-top:4px}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+        .list-editor{margin-top:8px}
+        .list-item{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+        .list-item input{flex:1;padding:8px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit}
+        .list-item input:focus{outline:none;border-color:#000054}
+        .list-item button{background:none;border:none;color:#e61e2a;cursor:pointer;font-size:1.1rem;padding:4px}
+        .add-remove-btns{display:flex;gap:8px;margin-top:8px}
+        .add-remove-btns button{padding:4px 12px;font-size:.8rem;border-radius:3px;border:1px solid #ddd;cursor:pointer;background:#fff}
+        .add-remove-btns button:hover{background:#f2f2f2}
+        .video-fields{background:#f2f2f2;border:1px solid #e3e5e0;border-radius:4px;padding:15px;margin-top:12px}
+        .video-fields h4{color:#000054;font-size:.95rem;margin-bottom:12px}
+        .section-toggle{margin-bottom:10px}
+        .section-toggle label{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;color:#000054}
+        .section-toggle input[type="checkbox"]{width:18px;height:18px;cursor:pointer}
+        .output-section{display:none}
+        .output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+        .output-header{background:#000054;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+        .output-content{padding:20px;font-family:'Monaco','Menlo',monospace;font-size:.8rem;line-height:1.5;max-height:500px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
+        .preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:30px;margin-top:20px}
+        .preview-container h3{color:#000054;margin-bottom:20px}
+        .alert{padding:15px;border-radius:4px;margin-bottom:20px;display:flex;align-items:flex-start}
+        .alert-info{background:#e6f3ff;border:1px solid #0066cc;color:#004085}
+        .alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
+        .alert-icon{font-size:1.4rem;margin-right:12px;flex-shrink:0}
+        .tab-bar{display:flex;border-bottom:2px solid #e3e5e0;margin-bottom:20px}
+        .tab{padding:12px 24px;font-weight:600;color:#666;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s}
+        .tab:hover{color:#000054}
+        .tab.active{color:#000054;border-bottom-color:#e61e2a}
+        .tab-content{display:none}.tab-content.active{display:block}
+        .format-badge{display:inline-block;background:#f2f2f2;border:1px solid #e3e5e0;border-radius:3px;padding:2px 8px;font-size:.75rem;color:#000054;font-weight:600;margin-left:8px}
+        .format-badge.new{background:#e6f9e6;border-color:#28a745;color:#28a745}
+        .format-badge.legacy{background:#fff9e6;border-color:#fac800;color:#856404}
+        .footer{background:#000054;color:#fff;text-align:center;padding:20px;font-size:.9rem}
+        @media(max-width:1000px){.main-layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid #e3e5e0}.form-row{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+<div class="main-wrapper">
+<div class="container">
+    <div class="header">
+        <h1>CoVE Copilot &#8594; Canvas Before &amp; After Class Converter</h1>
+        <p>Paste Copilot Output &#8594; Review &amp; Edit &#8594; Generate Emble-Ready HTML</p>
+    </div>
+    <div class="workflow-steps">
+        <div class="step active" id="step1"><div class="step-number">1</div><span>Paste Copilot Output</span></div>
+        <div class="step" id="step2"><div class="step-number">2</div><span>Review &amp; Edit</span></div>
+        <div class="step" id="step3"><div class="step-number">3</div><span>Generate HTML</span></div>
+    </div>
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="paste-area" id="pasteArea" onclick="showTextarea()">
+                <div class="paste-icon">&#128203;</div>
+                <div class="paste-text">Paste Copilot Output</div>
+                <div class="paste-subtext">Click here, then paste your Before &amp; After Class activities</div>
+            </div>
+            <textarea id="copilotInput" placeholder="Paste your Copilot output here..."></textarea>
+            <div class="form-group" style="margin-top:15px;">
+                <label>Week / Module Number</label>
+                <input type="text" id="weekNumber" placeholder="e.g. 1, 2, 3..." style="width:100px;">
+            </div>
+            <div class="form-group">
+                <label>Topic Name</label>
+                <input type="text" id="topicName" placeholder="e.g. Workplace Communication">
+                <p class="help-text">Used in the page heading</p>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" id="parseBtn" onclick="parseInput()" disabled>Parse Content</button>
+                <button class="btn btn-outline" onclick="loadSample()">Load Sample</button>
+            </div>
+            <div class="extraction-status" id="extractionStatus"><h3>&#128202; Parsed Sections</h3><div id="statusList"></div></div>
+        </div>
+        <div class="content-area">
+            <div id="initialInstructions">
+                <h2 style="color:#000054;margin-bottom:20px;">How to Use This Tool</h2>
+                <ol style="font-size:1.05rem;line-height:2;">
+                    <li><strong>Paste</strong> your Copilot-generated Before &amp; After Class activities into the sidebar</li>
+                    <li><strong>Enter</strong> the week number and topic name</li>
+                    <li><strong>Review</strong> the automatically parsed activities</li>
+                    <li><strong>Edit</strong> any fields that need correction</li>
+                    <li><strong>Generate</strong> your Canvas-ready Emble HTML (one page per activity)</li>
+                </ol>
+                <div class="alert alert-warning" style="margin-top:25px;"><div class="alert-icon">&#128161;</div><div><strong>Tip:</strong> This tool generates TWO separate HTML outputs &#8212; one for the Before Class page and one for the After Class page. Copy each individually into Canvas. If a video is referenced, an Emble video embed block is automatically included.</div></div>
+            </div>
+
+            <div class="edit-form" id="editForm">
+                <h2 style="color:#000054;margin-bottom:20px;">Review &amp; Edit Parsed Content</h2>
+
+                <div class="form-section before-class">
+                    <h3>&#128229; Before Class Activity</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>Activity Title</label><input type="text" id="fBeforeTitle" placeholder="e.g. Exploring Workplace Communication"></div>
+                        <div class="form-group"><label>Format</label>
+                            <select id="fBeforeFormat">
+                                <option value="Watch + Respond">Watch + Respond</option>
+                                <option value="Read + Reflect">Read + Reflect</option>
+                                <option value="Quiz">Quiz</option>
+                                <option value="Online Activity">Online Activity</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>Description</label><textarea id="fBeforeDesc" rows="2" placeholder="Brief description of what students should do before class"></textarea></div>
+                    <div class="form-group">
+                        <label>Instructions</label>
+                        <div id="beforeInstrItems" class="list-editor"></div>
+                        <div class="add-remove-btns">
+                            <button onclick="addInstrItem('before')">+ Add Step</button>
+                            <button onclick="removeInstrItem('before')">&#8722; Remove Last</button>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>Purpose</label><textarea id="fBeforePurpose" rows="2" placeholder="How this prepares students for class"></textarea></div>
+                    <div id="beforeVideoSection">
+                        <div class="section-toggle">
+                            <label><input type="checkbox" id="togBeforeVideo"> Include Video Embed Block</label>
+                        </div>
+                        <div id="beforeVideoFields" class="video-fields" style="display:none;">
+                            <h4>&#127916; Video Embed</h4>
+                            <p class="help-text" style="margin-bottom:12px;">Complete these fields for the Emble video embed block.</p>
+                            <div class="form-group"><label>Video Description</label><input type="text" id="fBeforeVideoDesc" placeholder="e.g. professional communication in Australian workplaces"></div>
+                            <div class="form-group"><label>Video Search Suggestion</label><input type="text" id="fBeforeVideoSearch" placeholder="e.g. Australian workplace communication skills"><p class="help-text">Helps teachers find the right video to embed</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section after-class">
+                    <h3>&#128228; After Class Activity</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>Activity Title</label><input type="text" id="fAfterTitle" placeholder="e.g. Communication Reflection"></div>
+                        <div class="form-group"><label>Format</label>
+                            <select id="fAfterFormat">
+                                <option value="Discussion">Discussion</option>
+                                <option value="Quiz">Quiz</option>
+                                <option value="Canvas Submission">Canvas Submission</option>
+                                <option value="Practical Task">Practical Task</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>Description</label><textarea id="fAfterDesc" rows="2" placeholder="Brief description of what students should do after class"></textarea></div>
+                    <div class="form-group">
+                        <label>Instructions</label>
+                        <div id="afterInstrItems" class="list-editor"></div>
+                        <div class="add-remove-btns">
+                            <button onclick="addInstrItem('after')">+ Add Step</button>
+                            <button onclick="removeInstrItem('after')">&#8722; Remove Last</button>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>Purpose</label><textarea id="fAfterPurpose" rows="2" placeholder="How this consolidates or extends learning"></textarea></div>
+                    <div id="afterVideoSection">
+                        <div class="section-toggle">
+                            <label><input type="checkbox" id="togAfterVideo"> Include Video Embed Block</label>
+                        </div>
+                        <div id="afterVideoFields" class="video-fields" style="display:none;">
+                            <h4>&#127916; Video Embed</h4>
+                            <p class="help-text" style="margin-bottom:12px;">Complete these fields for the Emble video embed block.</p>
+                            <div class="form-group"><label>Video Description</label><input type="text" id="fAfterVideoDesc" placeholder="e.g. team collaboration techniques"></div>
+                            <div class="form-group"><label>Video Search Suggestion</label><input type="text" id="fAfterVideoSearch" placeholder="e.g. effective team collaboration workplace"><p class="help-text">Helps teachers find the right video to embed</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group" style="padding-top:20px;border-top:2px solid #e3e5e0;">
+                    <button class="btn btn-primary" onclick="generateHTML()">Generate Canvas HTML</button>
+                    <button class="btn btn-secondary" onclick="resetAll()">Start Over</button>
+                </div>
+            </div>
+
+            <div class="output-section" id="outputSection">
+                <h2 style="color:#000054;margin-bottom:20px;">Generated Canvas HTML</h2>
+                <div class="tab-bar">
+                    <div class="tab active" data-tab="before" onclick="switchTab('before')">Before Class Page</div>
+                    <div class="tab" data-tab="after" onclick="switchTab('after')">After Class Page</div>
+                </div>
+                <div class="tab-content active" id="tabBefore">
+                    <div class="output-container"><div class="output-header"><span>Before Class &#8212; Emble HTML</span><button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem;" onclick="copyHTML('beforeHTML', this)">Copy HTML</button></div><div class="output-content" id="beforeHTML"></div></div>
+                    <div class="preview-container"><h3>Preview &#8212; Before Class</h3><div id="beforePreview"></div></div>
+                </div>
+                <div class="tab-content" id="tabAfter">
+                    <div class="output-container"><div class="output-header"><span>After Class &#8212; Emble HTML</span><button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem;" onclick="copyHTML('afterHTML', this)">Copy HTML</button></div><div class="output-content" id="afterHTML"></div></div>
+                    <div class="preview-container"><h3>Preview &#8212; After Class</h3><div id="afterPreview"></div></div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="backToEdit()">Back to Edit</button>
+                    <button class="btn btn-primary" onclick="resetAll()">New Content</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team &#8212; RMIT College of Vocational Education</p></footer>
+
+<script>
+var beforeInstrCount = 0, afterInstrCount = 0;
+
+function showTextarea() {
+    document.getElementById('copilotInput').style.display = 'block';
+    document.getElementById('pasteArea').style.display = 'none';
+    document.getElementById('copilotInput').focus();
+    document.getElementById('parseBtn').disabled = false;
+}
+
+function updateStep(n, s) {
+    var e = document.getElementById('step' + n);
+    e.classList.remove('active', 'completed');
+    if (s) e.classList.add(s);
+}
+
+function esc(s) {
+    if (!s) return '';
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+function genId() {
+    return 'emble-customise-' + Math.random().toString(16).slice(2, 10);
+}
+
+// Toggle listeners
+document.getElementById('togBeforeVideo').addEventListener('change', function () {
+    document.getElementById('beforeVideoFields').style.display = this.checked ? 'block' : 'none';
+});
+document.getElementById('togAfterVideo').addEventListener('change', function () {
+    document.getElementById('afterVideoFields').style.display = this.checked ? 'block' : 'none';
+});
+
+// Instruction list editors
+function addInstrItem(which, val) {
+    val = val || '';
+    var isB = which === 'before';
+    var count = isB ? ++beforeInstrCount : ++afterInstrCount;
+    var container = document.getElementById(isB ? 'beforeInstrItems' : 'afterInstrItems');
+    var prefix = isB ? 'bi' : 'ai';
+    var d = document.createElement('div');
+    d.className = 'list-item';
+    d.id = prefix + 'Item' + count;
+    d.innerHTML = '<span style="font-weight:600;color:#000054;min-width:20px;">' + count + '.</span>' +
+        '<input type="text" id="' + prefix + 'Text' + count + '" value="' + esc(val) + '" placeholder="Instruction step ' + count + '">' +
+        '<button onclick="this.closest(\'.list-item\').remove();renumberInstr(\'' + which + '\')" title="Remove">\u2715</button>';
+    container.appendChild(d);
+}
+
+function removeInstrItem(which) {
+    var isB = which === 'before';
+    var count = isB ? beforeInstrCount : afterInstrCount;
+    if (count > 0) {
+        var prefix = isB ? 'bi' : 'ai';
+        var e = document.getElementById(prefix + 'Item' + count);
+        if (e) e.remove();
+        if (isB) beforeInstrCount--; else afterInstrCount--;
+    }
+}
+
+function renumberInstr(which) {
+    var isB = which === 'before';
+    var prefix = isB ? 'bi' : 'ai';
+    var container = document.getElementById(isB ? 'beforeInstrItems' : 'afterInstrItems');
+    var items = container.querySelectorAll('.list-item');
+    if (isB) beforeInstrCount = items.length; else afterInstrCount = items.length;
+    items.forEach(function (item, i) {
+        var n = i + 1;
+        item.id = prefix + 'Item' + n;
+        item.querySelector('span').textContent = n + '.';
+        item.querySelector('input').id = prefix + 'Text' + n;
+    });
+}
+
+// ============================================================
+// DUAL-FORMAT PARSER
+// Handles both formats:
+//   NEW:    "Title:\n[content on next line]"  (label-on-own-line)
+//   LEGACY: "Title: [content on same line]"   (inline)
+// Auto-detects which format is in use per section.
+// ============================================================
+function parseInput() {
+    var raw = document.getElementById('copilotInput').value.trim();
+    if (!raw) return alert('Please paste Copilot output first.');
+
+    // Split into section blocks by delimiter lines
+    var sectionRe = /^[\u2500\u2501\u2014\-=]{2,}\s*(.+?)\s*[\u2500\u2501\u2014\-=]{2,}\s*$/;
+    var sections = {};
+    var currentKey = null;
+    var lines = raw.split('\n');
+
+    for (var li = 0; li < lines.length; li++) {
+        var t = lines[li].trim();
+        var m = t.match(sectionRe);
+        if (m) {
+            currentKey = m[1].trim().toLowerCase().replace(/\s+/g, '_');
+            sections[currentKey] = [];
+        } else if (currentKey) {
+            sections[currentKey].push(lines[li]); // preserve original whitespace for blank-line detection
+        }
+    }
+
+    // Detect format: does this section use label-on-own-line (new) or inline (legacy)?
+    function detectFormat(sectionLines) {
+        // New format: "Title:" alone on a line, content on next non-blank line
+        // Legacy format: "Title: Some Content" on same line
+        for (var i = 0; i < sectionLines.length; i++) {
+            var trimmed = sectionLines[i].trim();
+            if (/^Title:\s*$/i.test(trimmed)) return 'new';
+            if (/^Title:\s*.+/i.test(trimmed)) return 'legacy';
+        }
+        return 'legacy'; // fallback
+    }
+
+    // ---- NEW FORMAT PARSER ----
+    // Labels on their own line, content on next line(s), blank lines separate fields
+    function parseNewFormat(sectionLines) {
+        var data = { title: '', format: '', description: '', instructions: [], purpose: '', videoDesc: '', videoSearch: '' };
+
+        // Known field labels (order matters for matching)
+        var fieldLabels = [
+            { re: /^Title:\s*$/i, key: 'title' },
+            { re: /^Format:\s*$/i, key: 'format' },
+            { re: /^Description:\s*$/i, key: 'description' },
+            { re: /^Instructions:\s*$/i, key: 'instructions' },
+            { re: /^Purpose:\s*$/i, key: 'purpose' },
+            { re: /^Video\s+description:\s*$/i, key: 'videoDesc' },
+            { re: /^Suggested\s+search:\s*$/i, key: 'videoSearch' }
+        ];
+
+        var currentField = null;
+        var contentLines = [];
+
+        function flushField() {
+            if (!currentField) return;
+            var content = contentLines.join(' ').trim();
+            if (currentField === 'instructions') {
+                // Re-parse instruction lines individually
+                data.instructions = [];
+                for (var ci = 0; ci < contentLines.length; ci++) {
+                    var step = contentLines[ci].trim().replace(/^\d+[.)]\s*/, '').replace(/^[*\u2022\-\u2013]\s*/, '').trim();
+                    if (step) data.instructions.push(step);
+                }
+            } else {
+                data[currentField] = content;
+            }
+        }
+
+        for (var i = 0; i < sectionLines.length; i++) {
+            var line = sectionLines[i].trim();
+
+            // Check if this line is a field label
+            var matched = false;
+            for (var fi = 0; fi < fieldLabels.length; fi++) {
+                if (fieldLabels[fi].re.test(line)) {
+                    flushField();
+                    currentField = fieldLabels[fi].key;
+                    contentLines = [];
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched) continue;
+
+            // Blank line while collecting content - could be field separator
+            if (!line && currentField && currentField !== 'instructions') {
+                // Only flush if we already have content (blank line = field separator)
+                if (contentLines.length > 0) {
+                    flushField();
+                    currentField = null;
+                    contentLines = [];
+                }
+                continue;
+            }
+
+            // Content line
+            if (currentField && line) {
+                contentLines.push(line);
+            }
+        }
+        flushField(); // flush last field
+        return data;
+    }
+
+    // ---- LEGACY FORMAT PARSER ----
+    // "Label: content" on same line, "Title: xxx Format: yyy" combos
+    function parseLegacyFormat(sectionLines) {
+        var data = { title: '', format: '', description: '', instructions: [], purpose: '', videoDesc: '', videoSearch: '' };
+        var mode = '';
+
+        for (var i = 0; i < sectionLines.length; i++) {
+            var line = sectionLines[i].trim();
+            if (!line) continue;
+
+            // Video description
+            var vdMatch = line.match(/^Video\s+description:\s*(.+)/i);
+            if (vdMatch) { data.videoDesc = vdMatch[1].trim(); mode = ''; continue; }
+
+            // Suggested search
+            var vsMatch = line.match(/^Suggested\s+search:\s*(.+)/i);
+            if (vsMatch) { data.videoSearch = vsMatch[1].trim(); mode = ''; continue; }
+
+            // Purpose
+            var pMatch = line.match(/^Purpose:\s*(.+)/i);
+            if (pMatch) { data.purpose = pMatch[1].trim(); mode = ''; continue; }
+
+            // Title + Format on same line
+            var tfMatch = line.match(/^Title:\s*(.+?)\s+Format:\s*(.+)/i);
+            if (tfMatch) { data.title = tfMatch[1].trim(); data.format = tfMatch[2].trim(); mode = ''; continue; }
+
+            // Title alone
+            var tMatch = line.match(/^Title:\s*(.+)/i);
+            if (tMatch && !tfMatch) { data.title = tMatch[1].trim(); mode = ''; continue; }
+
+            // Format alone
+            var fMatch = line.match(/^Format:\s*(.+)/i);
+            if (fMatch) { data.format = fMatch[1].trim(); mode = ''; continue; }
+
+            // Description
+            var dMatch = line.match(/^Description:\s*(.*)/i);
+            if (dMatch) { data.description = dMatch[1].trim(); mode = 'desc'; continue; }
+
+            // Instructions header
+            if (/^Instructions:/i.test(line)) { mode = 'instr'; continue; }
+
+            // Instruction steps
+            if (mode === 'instr') {
+                var step = line.replace(/^\d+[.)]\s*/, '').replace(/^[*\u2022\-\u2013]\s*/, '').trim();
+                if (step) data.instructions.push(step);
+                continue;
+            }
+
+            // Description continuation
+            if (mode === 'desc' && line) {
+                data.description += ' ' + line;
+            }
+        }
+        return data;
+    }
+
+    // ---- Extract each activity using auto-detected format ----
+    function extractActivity(key) {
+        var sectionLines = sections[key] || [];
+        if (!sectionLines.length) return { title: '', format: '', description: '', instructions: [], purpose: '', videoDesc: '', videoSearch: '' };
+
+        var fmt = detectFormat(sectionLines);
+        if (fmt === 'new') {
+            return parseNewFormat(sectionLines);
+        } else {
+            return parseLegacyFormat(sectionLines);
+        }
+    }
+
+    var sectionKeys = Object.keys(sections);
+    var beforeKey = sectionKeys.find(function (k) { return k.indexOf('before_class') !== -1 || k.indexOf('before-class') !== -1; });
+    var afterKey = sectionKeys.find(function (k) { return k.indexOf('after_class') !== -1 || k.indexOf('after-class') !== -1; });
+
+    var before = extractActivity(beforeKey);
+    var after = extractActivity(afterKey);
+
+    // Populate Before form
+    document.getElementById('fBeforeTitle').value = before.title;
+    setSelectByText('fBeforeFormat', before.format);
+    document.getElementById('fBeforeDesc').value = before.description;
+    document.getElementById('fBeforePurpose').value = before.purpose;
+    document.getElementById('beforeInstrItems').innerHTML = '';
+    beforeInstrCount = 0;
+    if (before.instructions.length) {
+        before.instructions.forEach(function (s) { addInstrItem('before', s); });
+    } else {
+        addInstrItem('before'); addInstrItem('before'); addInstrItem('before');
+    }
+
+    var bHasVideo = before.videoDesc || before.videoSearch || hasVideoRef(before.instructions);
+    document.getElementById('togBeforeVideo').checked = !!bHasVideo;
+    document.getElementById('beforeVideoFields').style.display = bHasVideo ? 'block' : 'none';
+    document.getElementById('fBeforeVideoDesc').value = before.videoDesc || autoExtractVideoDesc(before.instructions);
+    document.getElementById('fBeforeVideoSearch').value = before.videoSearch || (before.videoDesc || '');
+
+    // Populate After form
+    document.getElementById('fAfterTitle').value = after.title;
+    setSelectByText('fAfterFormat', after.format);
+    document.getElementById('fAfterDesc').value = after.description;
+    document.getElementById('fAfterPurpose').value = after.purpose;
+    document.getElementById('afterInstrItems').innerHTML = '';
+    afterInstrCount = 0;
+    if (after.instructions.length) {
+        after.instructions.forEach(function (s) { addInstrItem('after', s); });
+    } else {
+        addInstrItem('after'); addInstrItem('after'); addInstrItem('after');
+    }
+
+    var aHasVideo = after.videoDesc || after.videoSearch || hasVideoRef(after.instructions);
+    document.getElementById('togAfterVideo').checked = !!aHasVideo;
+    document.getElementById('afterVideoFields').style.display = aHasVideo ? 'block' : 'none';
+    document.getElementById('fAfterVideoDesc').value = after.videoDesc || autoExtractVideoDesc(after.instructions);
+    document.getElementById('fAfterVideoSearch').value = after.videoSearch || (after.videoDesc || '');
+
+    // Detect format for display
+    var bLines = sections[beforeKey] || [];
+    var detectedFmt = detectFormat(bLines);
+
+    showExtractionStatus(before, after, bHasVideo, aHasVideo, detectedFmt);
+    showEditForm();
+}
+
+function hasVideoRef(instructions) {
+    var re = /\b(watch|video|viewing|view\s+the|youtube)\b/i;
+    return instructions.some(function (l) { return re.test(l); });
+}
+
+function autoExtractVideoDesc(instructions) {
+    var re = /\b(watch|video|viewing|view\s+the)\b/i;
+    var line = instructions.find(function (l) { return re.test(l); });
+    if (!line) return '';
+    var m = line.match(/(?:video|watch\s+(?:a\s+)?(?:short\s+)?video)\s+(?:on|about|introducing)\s+(.+?)(?:\(|$)/i);
+    return m ? m[1].replace(/[.,;:]+$/, '').trim() : '';
+}
+
+function setSelectByText(id, text) {
+    var sel = document.getElementById(id);
+    var t = (text || '').toLowerCase().replace(/[+]/g, '+');
+    for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value.toLowerCase() === t || sel.options[i].text.toLowerCase() === t) {
+            sel.selectedIndex = i; return;
+        }
+    }
+}
+
+function showExtractionStatus(before, after, bVid, aVid, detectedFormat) {
+    var fmtLabel = detectedFormat === 'new' ? 'Label-per-line' : 'Inline';
+    var fmtClass = detectedFormat === 'new' ? 'new' : 'legacy';
+    var items = [
+        { f: true, t: 'Format detected: <span class="format-badge ' + fmtClass + '">' + fmtLabel + '</span>' },
+        { f: !!before.title, t: 'Before Class: Title' + (before.title ? ' \u2014 ' + before.title : '') },
+        { f: !!before.format, t: 'Before Class: Format' + (before.format ? ' \u2014 ' + before.format : '') },
+        { f: before.instructions.length > 0, t: 'Before Class: Instructions (' + before.instructions.length + ' steps)' },
+        { f: !!before.purpose, t: 'Before Class: Purpose' },
+        { f: !!bVid, t: 'Before Class: Video embed ' + (bVid ? '(detected)' : '(none)') },
+        { f: !!after.title, t: 'After Class: Title' + (after.title ? ' \u2014 ' + after.title : '') },
+        { f: !!after.format, t: 'After Class: Format' + (after.format ? ' \u2014 ' + after.format : '') },
+        { f: after.instructions.length > 0, t: 'After Class: Instructions (' + after.instructions.length + ' steps)' },
+        { f: !!after.purpose, t: 'After Class: Purpose' },
+        { f: !!aVid, t: 'After Class: Video embed ' + (aVid ? '(detected)' : '(none)') }
+    ];
+    document.getElementById('statusList').innerHTML = items.map(function (i) {
+        return '<div class="status-item"><div class="status-icon ' + (i.f ? 'found' : 'missing') + '">' + (i.f ? '\u2714' : '\u2718') + '</div><span>' + i.t + '</span></div>';
+    }).join('');
+    document.getElementById('extractionStatus').style.display = 'block';
+}
+
+function showEditForm() {
+    updateStep(1, 'completed'); updateStep(2, 'active');
+    document.getElementById('initialInstructions').style.display = 'none';
+    document.getElementById('editForm').style.display = 'block';
+    document.getElementById('outputSection').style.display = 'none';
+}
+
+// Video Emble block builder
+function buildVideoBlock(videoDesc, videoSearch) {
+    var vdClean = videoDesc ? esc(videoDesc).replace(/[.!]+$/, '') : '';
+    var h = '';
+    h += '<div id="' + genId() + '" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n';
+    h += '<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-video">&nbsp;</i></div>\n';
+    h += '<div class="title-with-icon-title">\n';
+    h += '<h3>Video</h3>\n';
+    h += '</div>\n</div>\n\n';
+    h += '<p class="narrow-p">&nbsp;</p>\n\n';
+    h += '<div id="' + genId() + '" class="customise emble-columns-container emble-columns-controller-1-2 emble-columns-stretch-child-height" data-context-menu="customise delete" data-customise="new-columns-arrangement new-columns-border new-columns-padding columns-stretch-children cobl-column-channel cobl-column-theme" data-emble-name="Columns" data-emble-version="2.0">\n';
+    h += '<div class="emble-columns-child emble-prevent-delete">\n';
+    h += '<p>Watch this (<span style="background-color: #fac800;">X:XX mins</span>) video to learn about <span style="background-color: #fac800;">...</span>' + (vdClean ? ' ' + vdClean + '.' : '') + '</p>\n';
+    h += '<p>&nbsp;</p>\n</div>\n';
+    h += '<div class="emble-columns-child emble-prevent-delete">\n';
+    h += '<p>*</p>\n';
+    h += '<p><span style="background-color: #fac800;">Embed your YouTube video here.';
+    if (videoSearch) h += ' [Suggested search: &quot;\u201c' + esc(videoSearch) + '\u201d&quot;]';
+    h += ' To embed: In YouTube &gt; Share &gt; Embed &gt; Copy the code. In Canvas, position your cursor above this prompt (where the * is), then select Insert &gt; Embed. Paste your copied code from YouTube and hit Submit. Finally delete this text</span></p>\n';
+    h += '<p>&nbsp;</p>\n</div>\n';
+    h += '<div class="emble-columns-child emble-prevent-delete">\n<p>Column 3</p>\n<p>&nbsp;</p>\n</div>\n</div>\n\n';
+    h += '<p class="narrow-p">&nbsp;</p>\n\n';
+    return h;
+}
+
+// HTML Generator
+function buildActivityHTML(type) {
+    var isB = type === 'before';
+    var week = document.getElementById('weekNumber').value || 'X';
+    var title = document.getElementById(isB ? 'fBeforeTitle' : 'fAfterTitle').value || 'Activity';
+    var format = document.getElementById(isB ? 'fBeforeFormat' : 'fAfterFormat').value;
+    var desc = document.getElementById(isB ? 'fBeforeDesc' : 'fAfterDesc').value;
+    var purpose = document.getElementById(isB ? 'fBeforePurpose' : 'fAfterPurpose').value;
+    var container = document.getElementById(isB ? 'beforeInstrItems' : 'afterInstrItems');
+    var steps = [];
+    container.querySelectorAll('.list-item input').forEach(function (inp) {
+        if (inp.value.trim()) steps.push(inp.value.trim());
+    });
+
+    var includeVideo = document.getElementById(isB ? 'togBeforeVideo' : 'togAfterVideo').checked;
+    var videoDesc = document.getElementById(isB ? 'fBeforeVideoDesc' : 'fAfterVideoDesc').value;
+    var videoSearch = document.getElementById(isB ? 'fBeforeVideoSearch' : 'fAfterVideoSearch').value;
+
+    var pageTitle = isB ? 'Week ' + esc(week) + ': Before Class' : 'Week ' + esc(week) + ': After Class';
+    var iconClass = isB ? 'icon-circle-arrow-down' : 'icon-arrow-end';
+    var sectionLabel = isB ? 'Before Class' : 'After Class';
+
+    var h = '';
+
+    h += '<h2 style="text-align: left;">' + pageTitle + '</h2>\n\n';
+    h += '<hr class="emble heading-rule rmit-blue border-medium width-full" data-context-menu="customise delete" data-customise="hr-border-style hr-line-width hr-line-color" data-emble-name="Horizontal Line" data-emble-version="2.0" />\n\n';
+    h += '<p class="narrow-p">&nbsp;</p>\n\n';
+
+    h += '<div id="' + genId() + '" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n';
+    h += '<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="' + iconClass + '">&nbsp;</i></div>\n';
+    h += '<div class="title-with-icon-title">\n';
+    h += '<h3>' + sectionLabel + ': ' + esc(title) + '</h3>\n';
+    h += '</div>\n</div>\n\n';
+    h += '<p class="narrow-p">&nbsp;</p>\n\n';
+
+    h += '<div id="' + genId() + '" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n';
+    h += '<p><strong>Format:</strong> ' + esc(format) + '</p>\n';
+    if (desc) h += '<p>' + esc(desc) + '</p>\n';
+    h += '</div>\n\n';
+    h += '<p class="narrow-p">&nbsp;</p>\n\n';
+
+    if (includeVideo) {
+        h += buildVideoBlock(videoDesc, videoSearch);
+    }
+
+    if (steps.length) {
+        h += '<h3>Instructions</h3>\n\n';
+        h += '<ol>\n';
+        steps.forEach(function (s) { h += '<li>' + esc(s) + '</li>\n'; });
+        h += '</ol>\n\n';
+        h += '<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+
+    if (purpose) {
+        h += '<div id="' + genId() + '" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n';
+        h += '<p><strong>Purpose:</strong> ' + esc(purpose) + '</p>\n';
+        h += '</div>\n\n';
+        h += '<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+
+    return h;
+}
+
+function generateHTML() {
+    var beforeH = buildActivityHTML('before');
+    var afterH = buildActivityHTML('after');
+    document.getElementById('beforeHTML').textContent = beforeH;
+    document.getElementById('beforePreview').innerHTML = beforeH;
+    document.getElementById('afterHTML').textContent = afterH;
+    document.getElementById('afterPreview').innerHTML = afterH;
+    updateStep(2, 'completed'); updateStep(3, 'active');
+    document.getElementById('editForm').style.display = 'none';
+    document.getElementById('outputSection').style.display = 'block';
+    switchTab('before');
+    window.scrollTo(0, 0);
+}
+
+function switchTab(which) {
+    document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function (t) { t.classList.remove('active'); });
+    if (which === 'before') {
+        document.querySelector('.tab[data-tab="before"]').classList.add('active');
+        document.getElementById('tabBefore').classList.add('active');
+    } else {
+        document.querySelector('.tab[data-tab="after"]').classList.add('active');
+        document.getElementById('tabAfter').classList.add('active');
+    }
+}
+
+function copyHTML(id, btn) {
+    var c = document.getElementById(id).textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(c).then(function () {
+            showCopyFeedback(btn);
+        }).catch(function () {
+            fallbackCopy(c, btn);
+        });
+    } else {
+        fallbackCopy(c, btn);
+    }
+}
+
+function fallbackCopy(text, btn) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand('copy');
+        showCopyFeedback(btn);
+    } catch (e) {
+        alert('Please copy manually');
+    }
+    document.body.removeChild(ta);
+}
+
+function showCopyFeedback(btn) {
+    var orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.background = '#28a745';
+    setTimeout(function () {
+        btn.textContent = orig;
+        btn.style.background = '';
+    }, 2000);
+}
+
+function backToEdit() {
+    updateStep(3, ''); updateStep(2, 'active');
+    document.getElementById('editForm').style.display = 'block';
+    document.getElementById('outputSection').style.display = 'none';
+}
+
+function resetAll() {
+    if (confirm('Start over with new content?')) location.reload();
+}
+
+// Sample uses the NEW label-per-line format to match the updated Copilot prompt
+function loadSample() {
+    document.getElementById('weekNumber').value = '1';
+    document.getElementById('topicName').value = 'Layered Interior Design';
+    document.getElementById('copilotInput').value =
+'\u2500\u2500\u2500\u2500 Before Class Activity \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\
+Title:\n\
+Recognising Design Clues in Existing Interiors\n\
+\n\
+Format:\n\
+Watch + Respond\n\
+\n\
+Description:\n\
+Before our class on interpreting eclectic, professional, and adaptive interior strategies, complete the following task to activate your understanding.\n\
+\n\
+Instructions:\n\
+1. Watch a short video demonstrating how designers read spatial clues, material traces, and historical layers in an existing interior.\n\
+2. Identify two insights about how the designer determines what might be retained, adapted, or reinterpreted.\n\
+3. Post your two insights in the Week 1 discussion forum before class.\n\
+\n\
+Purpose:\n\
+This activity prepares you for class discussions by helping you notice how designers interpret and evaluate existing interiors before making design decisions.\n\
+\n\
+Video description:\n\
+A designer walks through an existing interior, highlighting cultural traces, historical evidence, and early opportunities influencing design direction.\n\
+\n\
+Suggested search:\n\
+designer walkthrough interpreting existing interior\n\
+\n\
+\u2500\u2500\u2500\u2500 After Class Activity \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\
+Title:\n\
+Synthesis Response for a New Interior Scenario\n\
+\n\
+Format:\n\
+Canvas Submission\n\
+\n\
+Description:\n\
+After our class on synthesising design decisions across heritage, user needs, environmental performance, and cultural meaning, complete the following brief task.\n\
+\n\
+Instructions:\n\
+1. Reflect on the synthesis methods discussed in class, focusing on how decisions balance competing design priorities.\n\
+2. Apply this approach to a new scenario: a small suburban mechanics\u2019 workshop being converted into a youth arts drop\u2011in space.\n\
+3. Submit a 200\u2013250 word written response via the Week 1 Canvas activity by the end of the week.\n\
+\n\
+Purpose:\n\
+This activity consolidates your learning by requiring you to apply synthesis reasoning to a new design context, clearly explaining the decisions you would prioritise.';
+    showTextarea();
+}
+
+document.getElementById('copilotInput').addEventListener('input', function () {
+    document.getElementById('parseBtn').disabled = !this.value.trim();
+});
+</script>
+</body>
+</html>
