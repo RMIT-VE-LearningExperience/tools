@@ -1,2485 +1,436 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoVE Canvas Assessment Template Converter - RMIT</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #e3e5e0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            line-height: 1.6;
-        }
-        
-        .main-wrapper {
-            flex: 1;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: #000054;
-            color: #ffffff;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-        
-        .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-        
-        .workflow-steps {
-            display: flex;
-            justify-content: center;
-            padding: 30px;
-            background: #f2f2f2;
-            border-bottom: 3px solid #fac800;
-        }
-        
-        .step {
-            display: flex;
-            align-items: center;
-            margin: 0 15px;
-            font-weight: 600;
-            color: #000054;
-        }
-        
-        .step-number {
-            width: 30px;
-            height: 30px;
-            background: #000054;
-            color: #ffffff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 10px;
-            font-size: 0.9rem;
-        }
-        
-        .step.active .step-number {
-            background: #e61e2a;
-        }
-        
-        .step.completed .step-number {
-            background: #28a745;
-        }
-        
-        .main-layout {
-            display: grid;
-            grid-template-columns: 400px 1fr;
-            min-height: 70vh;
-        }
-        
-        .sidebar {
-            background: #f2f2f2;
-            padding: 30px;
-            border-right: 1px solid #e3e5e0;
-        }
-        
-        .content-area {
-            padding: 30px;
-        }
-        
-        .upload-area {
-            border: 3px dashed #000054;
-            border-radius: 8px;
-            padding: 40px;
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            background: #ffffff;
-            margin-bottom: 20px;
-        }
-        
-        .upload-area:hover, .upload-area.dragover {
-            border-color: #e61e2a;
-            background: #f8f9fa;
-        }
-        
-        .upload-icon {
-            font-size: 3rem;
-            color: #000054;
-            margin-bottom: 15px;
-        }
-        
-        .upload-text {
-            font-size: 1.1rem;
-            color: #000054;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-        
-        .file-input {
-            display: none;
-        }
-        
-        .extraction-status {
-            display: none;
-            background: #ffffff;
-            border: 2px solid #fac800;
-            border-radius: 6px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-        
-        .extraction-status h3 {
-            color: #000054;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-        }
-        
-        .status-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            font-size: 0.95rem;
-        }
-        
-        .status-icon {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            margin-right: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .status-icon.found {
-            background: #28a745;
-        }
-        
-        .status-icon.partial {
-            background: #fac800;
-            color: #000054;
-        }
-        
-        .status-icon.missing {
-            background: #e61e2a;
-        }
-        
-        .edit-form {
-            display: none;
-        }
-        
-        .form-section {
-            background: #ffffff;
-            border: 1px solid #e3e5e0;
-            border-radius: 6px;
-            padding: 25px;
-            margin-bottom: 25px;
-        }
-        
-        .form-section h3 {
-            color: #000054;
-            margin-bottom: 20px;
-            font-size: 1.3rem;
-            border-bottom: 2px solid #fac800;
-            padding-bottom: 10px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            color: #000054;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-        }
-        
-        .form-group input[type="text"],
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e3e5e0;
-            border-radius: 4px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            transition: border-color 0.3s;
-            background: #fafbfc;
-        }
-        
-        .form-group input[type="text"]:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #000054;
-        }
-        
-        .form-group textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        
-        /* Rich text editor styles */
-        .rich-editor {
-            width: 100%;
-            min-height: 150px;
-            padding: 10px;
-            border: 2px solid #e3e5e0;
-            border-radius: 4px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            transition: border-color 0.3s;
-            background: #fff;
-            overflow-y: auto;
-            max-height: 400px;
-            position: relative;
-        }
-        
-        .rich-editor:focus {
-            outline: none;
-            border-color: #000054;
-        }
-        
-        .rich-editor p {
-            margin-bottom: 0.5em;
-        }
-        
-        .rich-editor ul, .rich-editor ol {
-            margin-left: 20px;
-            margin-bottom: 0.5em;
-        }
-        
-        .rich-editor li {
-            margin-bottom: 0.3em;
-        }
-        
-        .editor-toolbar {
-            display: flex;
-            gap: 5px;
-            padding: 5px;
-            background: #f8f9fa;
-            border: 2px solid #e3e5e0;
-            border-bottom: none;
-            border-radius: 4px 4px 0 0;
-        }
-        
-        .editor-btn {
-            padding: 5px 10px;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-        
-        .editor-btn:hover {
-            background: #e3e5e0;
-        }
-        
-        .editor-btn.active {
-            background: #000054;
-            color: white;
-        }
-        
-        .form-group.large .rich-editor {
-            min-height: 200px;
-        }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        
-        .help-text {
-            font-size: 0.85rem;
-            color: #666;
-            margin-top: 5px;
-        }
-        
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            margin: 20px 0;
-            padding: 15px;
-            background: #f2f2f2;
-            border-radius: 4px;
-        }
-        
-        .checkbox-group input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            margin-right: 10px;
-            cursor: pointer;
-        }
-        
-        .checkbox-group label {
-            cursor: pointer;
-            font-weight: normal;
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-            padding-top: 30px;
-            border-top: 2px solid #e3e5e0;
-        }
-        
-        .btn {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .btn-primary {
-            background: #e61e2a;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #c51923;
-            transform: translateY(-1px);
-        }
-        
-        .btn-secondary {
-            background: #000054;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #000043;
-            transform: translateY(-1px);
-        }
-        
-        .btn:disabled {
-            background: #999;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .output-section {
-            display: none;
-        }
-        
-        .output-container {
-            background: #ffffff;
-            border: 2px solid #e3e5e0;
-            border-radius: 6px;
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-        
-        .output-header {
-            background: #000054;
-            color: #ffffff;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .output-content {
-            padding: 20px;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 0.85rem;
-            line-height: 1.5;
-            max-height: 500px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            background: #f8f9fa;
-        }
-        
-        .preview-container {
-            background: white;
-            border: 2px solid #e3e5e0;
-            border-radius: 6px;
-            padding: 30px;
-            margin-top: 20px;
-        }
-        
-        .preview-container h3 {
-            color: #000054;
-            margin-bottom: 20px;
-        }
-        
-        .alert {
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .alert-warning {
-            background: #fff9e6;
-            border: 1px solid #fac800;
-            color: #856404;
-        }
-        
-        .alert-info {
-            background: #e6f3ff;
-            border: 1px solid #0066cc;
-            color: #004085;
-        }
-        
-        .alert-icon {
-            font-size: 1.5rem;
-            margin-right: 15px;
-        }
-        
-        .loader {
-            display: none;
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f2f2f2;
-            border-top: 4px solid #e61e2a;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .footer {
-            background: #000054;
-            color: #ffffff;
-            text-align: center;
-            padding: 20px;
-            margin-top: 40px;
-            font-size: 0.95rem;
-        }
-        
-        .footer a {
-            color: #fac800;
-            text-decoration: none;
-        }
-        
-        .footer a:hover {
-            text-decoration: underline;
-        }
-        
-        /* Debug toggle removed for production */
-        
-        .debug-section {
-            background: #f8f9fa;
-            border: 1px solid #e3e5e0;
-            border-radius: 4px;
-            padding: 15px;
-            margin-top: 20px;
-            font-family: monospace;
-            font-size: 0.85rem;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-        }
-        
-        .debug-section h4 {
-            color: #000054;
-            margin-bottom: 10px;
-        }
-        
-        @media (max-width: 1200px) {
-            .main-layout {
-                grid-template-columns: 1fr;
-            }
-            
-            .sidebar {
-                border-right: none;
-                border-bottom: 1px solid #e3e5e0;
-            }
-        }
-    </style>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-1MDBG3TN2X');
-</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoVE Canvas Assessment Template Converter</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+.main-wrapper{flex:1;padding:20px}
+.container{max-width:1600px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+.header{background:#000054;color:#fff;padding:30px;text-align:center}
+.header h1{font-size:2.5rem;margin-bottom:10px;font-weight:700}
+.header p{font-size:1.1rem;opacity:.9}
+.workflow-steps{display:flex;justify-content:center;padding:30px;background:#f2f2f2;border-bottom:3px solid #fac800}
+.step{display:flex;align-items:center;margin:0 15px;font-weight:600;color:#000054}
+.step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+.step.active .step-number{background:#e61e2a}
+.step.completed .step-number{background:#28a745}
+.main-layout{display:grid;grid-template-columns:400px 1fr;min-height:70vh}
+.sidebar{background:#f2f2f2;padding:30px;border-right:1px solid #e3e5e0}
+.content-area{padding:30px}
+.upload-area{border:3px dashed #000054;border-radius:8px;padding:40px;text-align:center;transition:all .3s ease;cursor:pointer;background:#fff;margin-bottom:20px}
+.upload-area:hover,.upload-area.dragover{border-color:#e61e2a;background:#f8f9fa}
+.upload-icon{font-size:3rem;color:#000054;margin-bottom:15px}
+.upload-text{font-size:1.1rem;color:#000054;margin-bottom:10px;font-weight:600}
+.file-input{display:none}
+.extraction-status{display:none;background:#fff;border:2px solid #fac800;border-radius:6px;padding:20px;margin-top:20px}
+.extraction-status h3{color:#000054;margin-bottom:15px;font-size:1.2rem}
+.status-item{display:flex;align-items:center;margin-bottom:10px;font-size:.95rem}
+.status-icon{width:20px;height:20px;border-radius:50%;margin-right:10px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:#fff;font-weight:700}
+.status-icon.found{background:#28a745}
+.status-icon.partial{background:#fac800;color:#000054}
+.status-icon.missing{background:#e61e2a}
+.edit-form{display:none}
+.form-section{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:25px;margin-bottom:25px}
+.form-section h3{color:#000054;margin-bottom:20px;font-size:1.3rem;border-bottom:2px solid #fac800;padding-bottom:10px}
+.form-group{margin-bottom:20px}
+.form-group label{display:block;font-weight:600;color:#000054;margin-bottom:8px;font-size:.95rem}
+.form-group input[type="text"],.form-group textarea,.form-group select{width:100%;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.95rem;font-family:inherit;transition:border-color .3s;background:#fafbfc}
+.form-group input[type="text"]:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:#000054}
+.form-group textarea{min-height:100px;resize:vertical}
+.rich-editor{width:100%;min-height:150px;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.95rem;font-family:inherit;transition:border-color .3s;background:#fff;overflow-y:auto;max-height:400px;position:relative}
+.rich-editor:focus{outline:none;border-color:#000054}
+.rich-editor p{margin-bottom:.5em}
+.rich-editor ul,.rich-editor ol{margin-left:20px;margin-bottom:.5em}
+.rich-editor li{margin-bottom:.3em}
+.editor-toolbar{display:flex;gap:5px;padding:5px;background:#f8f9fa;border:2px solid #e3e5e0;border-bottom:none;border-radius:4px 4px 0 0}
+.editor-btn{padding:5px 10px;background:#fff;border:1px solid #ddd;border-radius:3px;cursor:pointer;font-size:14px;transition:all .2s}
+.editor-btn:hover{background:#e3e5e0}
+.editor-btn.active{background:#000054;color:#fff}
+.form-group.large .rich-editor{min-height:200px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.help-text{font-size:.85rem;color:#666;margin-top:5px}
+.checkbox-group{display:flex;align-items:center;margin:20px 0;padding:15px;background:#f2f2f2;border-radius:4px}
+.checkbox-group input[type="checkbox"]{width:20px;height:20px;margin-right:10px;cursor:pointer}
+.checkbox-group label{cursor:pointer;font-weight:400}
+.button-group{display:flex;gap:15px;margin-top:30px;padding-top:30px;border-top:2px solid #e3e5e0}
+.btn{padding:12px 30px;border:none;border-radius:4px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s}
+.btn-primary{background:#e61e2a;color:#fff}
+.btn-primary:hover{background:#c51923;transform:translateY(-1px)}
+.btn-secondary{background:#000054;color:#fff}
+.btn-secondary:hover{background:#000043;transform:translateY(-1px)}
+.btn:disabled{background:#999;cursor:not-allowed;transform:none}
+.output-section{display:none}
+.output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+.output-header{background:#000054;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
+.output-content{padding:20px;font-family:'Monaco','Menlo',monospace;font-size:.85rem;line-height:1.5;max-height:500px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
+.preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:30px;margin-top:20px}
+.preview-container h3{color:#000054;margin-bottom:20px}
+.alert{padding:15px;border-radius:4px;margin-bottom:20px;display:flex;align-items:center}
+.alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
+.alert-info{background:#e6f3ff;border:1px solid #0066cc;color:#004085}
+.alert-icon{font-size:1.5rem;margin-right:15px}
+.loader{display:none;width:40px;height:40px;border:4px solid #f2f2f2;border-top:4px solid #e61e2a;border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
+@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+.footer{background:#000054;color:#fff;text-align:center;padding:20px;margin-top:40px;font-size:.95rem}
+.footer a{color:#fac800;text-decoration:none}
+.footer a:hover{text-decoration:underline}
+.debug-section{background:#f8f9fa;border:1px solid #e3e5e0;border-radius:4px;padding:15px;margin-top:20px;font-family:monospace;font-size:.85rem;max-height:300px;overflow-y:auto;display:none}
+.debug-section h4{color:#000054;margin-bottom:10px}
+@media(max-width:1200px){.main-layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid #e3e5e0}}
+</style>
 </head>
 <body>
-    <div class="main-wrapper">
-        <div class="container">
-            <div class="header">
-                <h1>CoVE Canvas Assessment Template Converter</h1>
-                <p>Extract, Review & Generate Canvas-Ready HTML</p>
-            </div>
-            
-            <div class="workflow-steps">
-                <div class="step active" id="step1">
-                    <div class="step-number">1</div>
-                    <span>Upload Document</span>
-                </div>
-                <div class="step" id="step2">
-                    <div class="step-number">2</div>
-                    <span>Review & Edit</span>
-                </div>
-                <div class="step" id="step3">
-                    <div class="step-number">3</div>
-                    <span>Generate HTML</span>
-                </div>
-            </div>
-            
-            <div class="main-layout">
-                <div class="sidebar">
-                    <div class="upload-area" id="uploadArea">
-                        <div class="upload-icon">📄</div>
-                        <div class="upload-text">Upload Assessment Guide</div>
-                        <div class="upload-subtext">Drop .docx file here or click</div>
-                        <input type="file" id="fileInput" class="file-input" accept=".docx">
-                    </div>
-                    
-                    <div class="loader" id="loader"></div>
-                    
-                    <div class="extraction-status" id="extractionStatus">
-                        <h3>📊 Extraction Results</h3>
-                        <div id="statusList"></div>
-                    </div>
-                    
-                    <div class="debug-section" id="debugSection">
-                        <h4>Debug Information</h4>
-                        <pre id="debugContent"></pre>
-                    </div>
-                </div>
-                
-                <div class="content-area">
-                    <!-- Initial Instructions -->
-                    <div id="initialInstructions">
-                        <h2 style="color: #000054; margin-bottom: 20px;">How to Use This Tool</h2>
-                        <ol style="font-size: 1.1rem; line-height: 1.8;">
-                            <li><strong>Upload</strong> your Word assessment guide (.docx)</li>
-                            <li><strong>Review</strong> the automatically extracted content</li>
-                            <li><strong>Edit</strong> any fields that need correction with rich text editing</li>
-                            <li><strong>Generate</strong> your Canvas HTML with one click</li>
-                        </ol>
-                        <div class="alert alert-warning" style="margin-top: 30px;">
-                            <div class="alert-icon">💡</div>
-                            <div>
-                                <strong>Enhanced Extraction:</strong> This tool uses advanced parsing to extract information from RMIT assessment templates, including complex table structures and multiple formatting styles.
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Edit Form -->
-                    <div class="edit-form" id="editForm">
-                        <h2 style="color: #000054; margin-bottom: 25px;">Review & Edit Extracted Content</h2>
-                        
-                        <div class="alert alert-info" style="margin-bottom: 25px;">
-                            <div class="alert-icon">ℹ️</div>
-                            <div>
-                                <strong>Note:</strong> We've extracted as much as possible from your document. Please review all fields and make any necessary corrections before generating the HTML. Use the toolbar buttons to add formatting as needed.
-                            </div>
-                        </div>
-                        
-                        <form id="assessmentForm">
-                            <!-- Section 1: Task & Compliance Information -->
-                            <div class="form-section">
-                                <h3>📋 Task & Compliance Information</h3>
-                                
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label>Task Number</label>
-                                        <input type="text" id="taskNumber" name="taskNumber" placeholder="e.g., 1, 2, 3">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Task Name</label>
-                                        <input type="text" id="taskName" name="taskName" placeholder="e.g., Portfolio presentation">
-                                    </div>
-                                </div>
-                                
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label>National Unit Code</label>
-                                        <input type="text" id="unitCode" name="unitCode" placeholder="e.g., CUAACD311 or MSFID4012 MSFID4017">
-                                        <p class="help-text">For multiple codes, separate with spaces</p>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>National Unit Title</label>
-                                        <input type="text" id="unitTitle" name="unitTitle" placeholder="e.g., Produce drawings to communicate ideas">
-                                    </div>
-                                </div>
-                                
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label>National Qualification Code</label>
-                                        <input type="text" id="qualificationCode" name="qualificationCode" placeholder="e.g., MSF40122">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>RMIT Program Code</label>
-                                        <input type="text" id="programCode" name="programCode" placeholder="e.g., C4431">
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>RMIT Course Code</label>
-                                    <input type="text" id="courseCode" name="courseCode" placeholder="e.g., VART6528C or ARCH5247C ARCH4248C">
-                                    <p class="help-text">For multiple codes, separate with spaces</p>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>Assessment Type</label>
-                                    <select id="assessmentType" name="assessmentType">
-                                        <option value="document">Document Submission</option>
-                                        <option value="quiz">Quiz</option>
-                                    </select>
-                                    <p class="help-text">Select quiz if this is an online test/quiz, otherwise leave as document submission</p>
-                                </div>
-                            </div>
-                            
-                            <!-- Section 2: Task Instructions -->
-                            <div class="form-section">
-                                <h3>📝 Task Instructions</h3>
-                                
-                                <div class="form-group large">
-                                    <label>Task Instructions</label>
-                                    <div class="editor-toolbar">
-                                        <button type="button" class="editor-btn" onclick="formatText('bold')" title="Bold">B</button>
-                                        <button type="button" class="editor-btn" onclick="formatText('italic')" title="Italic">I</button>
-                                        <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList')" title="Bullet List">• List</button>
-                                        <button type="button" class="editor-btn" onclick="formatText('insertOrderedList')" title="Numbered List">1. List</button>
-                                    </div>
-                                    <div id="taskInstructions" class="rich-editor" contenteditable="true" data-placeholder="Copy from Summary and Purpose of Assessment (consider the first paragraph of 'what')."></div>
-                                    <p class="help-text">The main instructions for the assessment task (includes what students need to do)</p>
-                                </div>
-                                
-                                <div class="checkbox-group">
-                                    <input type="checkbox" id="includeTemplate" name="includeTemplate">
-                                    <label for="includeTemplate">Include Student Response Template section (check if guide mentions "templates")</label>
-                                </div>
-                            </div>
-                            
-                            <!-- Section 3: Conditions -->
-                            <div class="form-section">
-                                <h3>⏱️ Conditions for Assessment</h3>
-                                
-                                <div class="form-group large">
-                                    <label>Assessment Conditions</label>
-                                    <div class="editor-toolbar">
-                                        <button type="button" class="editor-btn" onclick="formatText('bold', 'conditions')" title="Bold">B</button>
-                                        <button type="button" class="editor-btn" onclick="formatText('italic', 'conditions')" title="Italic">I</button>
-                                        <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList', 'conditions')" title="Bullet List">• List</button>
-                                        <button type="button" class="editor-btn" onclick="formatText('insertOrderedList', 'conditions')" title="Numbered List">1. List</button>
-                                    </div>
-                                    <div id="conditions" class="rich-editor" contenteditable="true" data-placeholder="Copy from Conditions for assessment section (do not include duplicate useful links if they are present)."></div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>Equipment/Resources Students Must Supply</label>
-                                    <div class="editor-toolbar">
-                                        <button type="button" class="editor-btn" onclick="formatText('bold', 'studentSupplies')" title="Bold">B</button>
-                                        <button type="button" class="editor-btn" onclick="formatText('italic', 'studentSupplies')" title="Italic">I</button>
-                                        <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList', 'studentSupplies')" title="Bullet List">• List</button>
-                                    </div>
-                                    <div id="studentSupplies" class="rich-editor" contenteditable="true" data-placeholder="• Item 1&#10;• Item 2&#10;• Item 3"></div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>Equipment/Resources Provided by RMIT</label>
-                                    <div class="editor-toolbar">
-                                        <button type="button" class="editor-btn" onclick="formatText('bold', 'rmitSupplies')" title="Bold">B</button>
-                                        <button type="button" class="editor-btn" onclick="formatText('italic', 'rmitSupplies')" title="Italic">I</button>
-                                        <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList', 'rmitSupplies')" title="Bullet List">• List</button>
-                                    </div>
-                                    <div id="rmitSupplies" class="rich-editor" contenteditable="true" data-placeholder="• Item 1&#10;• Item 2&#10;• Item 3"></div>
-                                </div>
-                            </div>
-                            
-                            <!-- Section 4: Submission -->
-                            <div class="form-section">
-                                <h3>📤 Submission Instructions</h3>
-                                
-                                <div class="form-group large">
-                                    <label>Submission Instructions</label>
-                                    <div class="editor-toolbar">
-                                        <button type="button" class="editor-btn" onclick="formatText('bold', 'submissionInstructions')" title="Bold">B</button>
-                                        <button type="button" class="editor-btn" onclick="formatText('italic', 'submissionInstructions')" title="Italic">I</button>
-                                        <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList', 'submissionInstructions')" title="Bullet List">• List</button>
-                                        <button type="button" class="editor-btn" onclick="formatText('insertOrderedList', 'submissionInstructions')" title="Numbered List">1. List</button>
-                                    </div>
-                                    <div id="submissionInstructions" class="rich-editor" contenteditable="true" data-placeholder="Copy from Instructions on submitting your task"></div>
-                                </div>
-                            </div>
-                            
-                            <!-- Section 5: AI Acceptable Use -->
-                            <div class="form-section">
-                                <h3>🤖 AI Acceptable Use</h3>
-                                
-                                <div class="checkbox-group">
-                                    <input type="checkbox" id="includeAI" name="includeAI" onchange="toggleAIDropdown()">
-                                    <label for="includeAI">Add AI - Acceptable use for this assessment</label>
-                                </div>
-                                
-                                <div id="aiOptionsSection" style="display: none;">
-                                    <div style="background: #f8f9fa; padding: 20px; border-radius: 4px; margin: 20px 0;">
-                                        <p style="margin-bottom: 15px;"><strong>AI Acceptable Use Statement Options:</strong></p>
-                                        
-                                        <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px;">
-                                            <p><strong>Option 1: AI tools and their use are not restricted for this assessment task</strong></p>
-                                            <p style="margin-top: 5px;">In this assessment task, you can use AI tools to assist you. All use of AI tools and their outputs should be appropriately acknowledged and referenced.</p>
-                                        </div>
-                                        
-                                        <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px;">
-                                            <p><strong>Option 2: AI tools are restricted in certain ways for this assessment task</strong></p>
-                                            <p style="margin-top: 5px;">In this assessment task, you can use AI tools to support you in developing and completing your work by [insert ways students are permitted to use AI tools e.g., generating ideas/planning/drafting] only. Any use of such tools must be appropriately acknowledged and referenced.</p>
-                                        </div>
-                                        
-                                        <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px;">
-                                            <p><strong>Option 3: AI tools are restricted in the completion of this assessment task</strong></p>
-                                            <p style="margin-top: 5px;">In this assessment task, you can use the following AI tools only [insert name(s) of tools, or types of tools e.g. image generators/text generators/standard editing software]. Any use of these tools must be appropriately acknowledged and referenced.</p>
-                                        </div>
-                                        
-                                        <div style="margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px;">
-                                            <p><strong>Option 4: AI tools cannot be used in the completion of this assessment task</strong></p>
-                                            <p style="margin-top: 5px;">In this assessment task, you must not use any AI tools (excluding text editing software e.g., Grammarly) to generate any materials, content or ideas related to the task.</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label>Select ONE (1) acceptable use statement only:</label>
-                                        <select id="aiUseStatement" name="aiUseStatement">
-                                            <option value="unrestricted">Option 1: AI tools not restricted</option>
-                                            <option value="restricted-ways">Option 2: AI tools restricted in certain ways</option>
-                                            <option value="restricted-tools">Option 3: AI tools restricted - specific tools only</option>
-                                            <option value="not-permitted">Option 4: AI tools cannot be used</option>
-                                        </select>
-                                        <p class="help-text">Choose the appropriate AI use policy for this assessment</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="button-group">
-                                <button type="button" class="btn btn-primary" onclick="generateHTML()">Generate Canvas HTML</button>
-                                <button type="button" class="btn btn-secondary" onclick="resetForm()">Start Over</button>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <!-- Output Section -->
-                    <div class="output-section" id="outputSection">
-                        <h2 style="color: #000054; margin-bottom: 25px;">Generated Canvas HTML</h2>
-                        
-                        <div class="output-container">
-                            <div class="output-header">
-                                <span>Canvas HTML Code</span>
-                                <button class="btn btn-primary" style="padding: 8px 20px; font-size: 0.9rem;" onclick="copyHTML()">Copy HTML</button>
-                            </div>
-                            <div class="output-content" id="outputContent"></div>
-                        </div>
-                        
-                        <div class="preview-container">
-                            <h3>Preview</h3>
-                            <div id="previewContent"></div>
-                        </div>
-                        
-                        <div class="button-group">
-                            <button type="button" class="btn btn-secondary" onclick="backToEdit()">Back to Edit</button>
-                            <button type="button" class="btn btn-primary" onclick="resetForm()">New Document</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <footer class="footer">
-        <p>Design: Learning & Teaching Innovation Team - RMIT College of Vocational Education</p>
-    </footer>
-
-    <script>
-        // RMIT Document Extractor Class
-        class RMITDocumentExtractor {
-            constructor() {
-                this.debugMode = false;
-                this.htmlDoc = null;
-                this.isTableBased = false;
-                this.isNewFormat = false; // NEW: distinguish old vs new table format
-                this.assessmentType = null;
-            }
-
-            extract(content, htmlDoc = null) {
-                if (this.debugMode) {
-                    console.log('=== RMIT Document Extraction Started ===');
-                    console.log('Document length:', content.length);
-                }
-
-                this.htmlDoc = htmlDoc;
-                const normalizedContent = this.normalizeContent(content);
-
-                // Detect if this is the new table-based format
-                this.detectDocumentFormat(normalizedContent);
-
-                let extractedData;
-
-                if (this.isTableBased && this.htmlDoc) {
-                    if (this.isNewFormat) {
-                        if (this.debugMode) {
-                            console.log('=== Using NEW TABLE-BASED extraction (11-row format) ===');
-                            console.log('Assessment Type:', this.assessmentType);
-                        }
-                        extractedData = this.extractFromTables();
-                    } else {
-                        if (this.debugMode) {
-                            console.log('=== Using OLD TABLE-BASED extraction (9-row format) ===');
-                            console.log('Assessment Type:', this.assessmentType);
-                        }
-                        extractedData = this.extractFromOldFormatTables();
-                    }
-                } else {
-                    if (this.debugMode) {
-                        console.log('=== Using PROSE-BASED extraction (legacy) ===');
-                    }
-                    extractedData = {
-                        taskNumber: this.extractTaskNumber(normalizedContent),
-                        taskName: this.extractTaskName(normalizedContent),
-                        unitCode: this.extractUnitCode(normalizedContent),
-                        unitTitle: this.extractUnitTitle(normalizedContent),
-                        qualificationCode: this.extractQualificationCode(normalizedContent),
-                        qualificationTitle: this.extractQualificationTitle(normalizedContent),
-                        programCode: this.extractProgramCode(normalizedContent),
-                        courseCode: this.extractCourseCode(normalizedContent),
-                        taskInstructions: this.extractTaskInstructions(normalizedContent),
-                        assessmentType: this.detectAssessmentType(normalizedContent),
-                        includeTemplate: this.detectTemplate(normalizedContent),
-                        conditions: this.extractConditions(normalizedContent),
-                        studentSupplies: this.extractStudentSupplies(normalizedContent),
-                        rmitSupplies: this.extractRMITSupplies(normalizedContent),
-                        submissionInstructions: this.extractSubmissionInstructions(normalizedContent)
-                    };
-                }
-
-                if (this.debugMode) {
-                    console.log('=== Extraction Complete ===');
-                    console.log('Extracted data:', extractedData);
-                }
-
-                return extractedData;
-            }
-
-            detectDocumentFormat(content) {
-                // Check for NEW table-based format (with "GUIDE")
-                const newKnowledgePattern = /STUDENT GUIDE\s*[-–]\s*KNOWLEDGE ASSESSMENT TASK/i;
-                const newPracticalPattern = /STUDENT GUIDE\s*[-–]\s*PRACTICAL ASSESSMENT TASK/i;
-                const newProductPattern = /STUDENT GUIDE\s*[-–]\s*PRODUCT ASSESSMENT TASK/i;
-
-                // Check for OLD table-based format (without "GUIDE")
-                const oldProductPattern = /STUDENT\s*[-–]\s*PRODUCT ASSESSMENT TASK/i;
-                const oldKnowledgePattern = /STUDENT\s*[-–]\s*KNOWLEDGE ASSESSMENT TASK/i;
-                const oldPracticalPattern = /STUDENT\s*[-–]\s*PRACTICAL ASSESSMENT TASK/i;
-
-                // Detect NEW format first (more specific pattern with "GUIDE")
-                if (newKnowledgePattern.test(content)) {
-                    this.isTableBased = true;
-                    this.isNewFormat = true;
-                    this.assessmentType = 'knowledge';
-                } else if (newPracticalPattern.test(content)) {
-                    this.isTableBased = true;
-                    this.isNewFormat = true;
-                    this.assessmentType = 'practical';
-                } else if (newProductPattern.test(content)) {
-                    this.isTableBased = true;
-                    this.isNewFormat = true;
-                    this.assessmentType = 'product';
-                }
-                // Detect OLD format (without "GUIDE")
-                else if (oldProductPattern.test(content)) {
-                    this.isTableBased = true;
-                    this.isNewFormat = false;
-                    this.assessmentType = 'product';
-                } else if (oldKnowledgePattern.test(content)) {
-                    this.isTableBased = true;
-                    this.isNewFormat = false;
-                    this.assessmentType = 'knowledge';
-                } else if (oldPracticalPattern.test(content)) {
-                    this.isTableBased = true;
-                    this.isNewFormat = false;
-                    this.assessmentType = 'practical';
-                }
-
-                // Additional verification using table structure if htmlDoc is available
-                if (this.isTableBased && this.htmlDoc) {
-                    const tables = this.htmlDoc.querySelectorAll('table');
-                    if (tables.length > 1) {
-                        const table1RowCount = tables[1].rows.length;
-                        // Old format has 9 rows, new format has 11 rows
-                        if (table1RowCount === 9) {
-                            this.isNewFormat = false;
-                        } else if (table1RowCount === 11) {
-                            this.isNewFormat = true;
-                        }
-                    }
-
-                    // Check Table 2 first cell as additional verification
-                    if (tables.length > 2) {
-                        const table2FirstCell = tables[2].rows[0]?.cells[0]?.textContent || '';
-                        if (table2FirstCell.match(/TASK:\s*Describe/i)) {
-                            this.isNewFormat = false; // Old format
-                        } else if (table2FirstCell.match(/Student\s*Name/i)) {
-                            this.isNewFormat = true; // New format
-                        }
-                    }
-                }
-
-                if (this.debugMode) {
-                    console.log('Document format detection:', {
-                        isTableBased: this.isTableBased,
-                        isNewFormat: this.isNewFormat,
-                        assessmentType: this.assessmentType
-                    });
-                }
-            }
-
-            extractFromTables() {
-                if (!this.htmlDoc) {
-                    console.error('No HTML document available for table extraction');
-                    return {};
-                }
-
-                const tables = this.htmlDoc.querySelectorAll('table');
-
-                if (this.debugMode) {
-                    console.log(`Found ${tables.length} tables in document`);
-                }
-
-                const data = {
-                    assessmentType: 'document', // Default to document submission
-                    includeTemplate: false
-                };
-
-                // Table 0: Metadata (4 rows × 4 cols) - NEW FORMAT
-                if (tables.length > 0) {
-                    const table0 = tables[0];
-                    if (this.debugMode) console.log('Extracting from Table 0 (Metadata) - NEW FORMAT');
-
-                    try {
-                        // Row 0: "Task Number" | value | "Task Name" | value
-                        if (table0.rows.length > 0 && table0.rows[0].cells.length >= 4) {
-                            data.taskNumber = this.cleanCellText(table0.rows[0].cells[1]); // Cell 1 is the value
-                            data.taskName = this.cleanCellText(table0.rows[0].cells[3]); // Cell 3 is the value
-                        }
-
-                        // Row 1: "National unit/s code" | [value] | "National unit/s title" | [value]
-                        if (table0.rows.length > 1 && table0.rows[1].cells.length >= 4) {
-                            data.unitCode = this.cleanCellText(table0.rows[1].cells[1]);
-                            data.unitTitle = this.cleanCellText(table0.rows[1].cells[3]);
-                        }
-
-                        // Row 2: "National qualification code" | [value] | "National qualification title" | [value]
-                        if (table0.rows.length > 2 && table0.rows[2].cells.length >= 4) {
-                            data.qualificationCode = this.cleanCellText(table0.rows[2].cells[1]);
-                            data.qualificationTitle = this.cleanCellText(table0.rows[2].cells[3]);
-                        }
-
-                        // Row 3: "RMIT Program code" | [value] | "RMIT Course code" | [value]
-                        if (table0.rows.length > 3 && table0.rows[3].cells.length >= 4) {
-                            data.programCode = this.cleanCellText(table0.rows[3].cells[1]);
-                            data.courseCode = this.cleanCellText(table0.rows[3].cells[3]);
-                        }
-                    } catch (e) {
-                        if (this.debugMode) console.error('Error extracting Table 0:', e);
-                    }
-                }
-
-                // Table 1: Assessment Details (11 rows × 2-3 cols)
-                if (tables.length > 1) {
-                    const table1 = tables[1];
-                    if (this.debugMode) console.log('Extracting from Table 1 (Assessment Details)');
-
-                    try {
-                        // Row 0: "Duration and/or due date" | [value]
-                        if (table1.rows.length > 0 && table1.rows[0].cells.length >= 2) {
-                            data.dueDate = this.cleanCellText(table1.rows[0].cells[1]);
-                        }
-
-                        // Row 2: Task instructions content
-                        if (table1.rows.length > 2) {
-                            data.taskInstructions = this.extractCellHTML(table1.rows[2].cells[0]);
-                        }
-
-                        // Row 4: Conditions content
-                        if (table1.rows.length > 4) {
-                            data.conditions = this.extractCellHTML(table1.rows[4].cells[0]);
-                        }
-
-                        // Row 6: Useful links content
-                        if (table1.rows.length > 6) {
-                            data.usefulLinks = this.extractCellHTML(table1.rows[6].cells[0]);
-                        }
-
-                        // Row 8: Submission instructions content
-                        if (table1.rows.length > 8) {
-                            data.submissionInstructions = this.extractCellHTML(table1.rows[8].cells[0]);
-                        }
-
-                        // Row 10: Equipment details (2 columns)
-                        if (table1.rows.length > 10 && table1.rows[10].cells.length >= 2) {
-                            data.studentSupplies = this.extractCellHTML(table1.rows[10].cells[0]);
-                            data.rmitSupplies = this.extractCellHTML(table1.rows[10].cells[1]);
-                        }
-                    } catch (e) {
-                        if (this.debugMode) console.error('Error extracting Table 1:', e);
-                    }
-                }
-
-                return data;
-            }
-
-            extractFromOldFormatTables() {
-                if (!this.htmlDoc) {
-                    console.error('No HTML document available for table extraction');
-                    return {};
-                }
-
-                const tables = this.htmlDoc.querySelectorAll('table');
-
-                if (this.debugMode) {
-                    console.log(`Found ${tables.length} tables in OLD format document`);
-                }
-
-                const data = {
-                    assessmentType: 'document', // Default to document submission
-                    includeTemplate: false
-                };
-
-                // Table 0: Metadata (4 rows × 4 cols) - SAME AS NEW FORMAT
-                if (tables.length > 0) {
-                    const table0 = tables[0];
-                    if (this.debugMode) console.log('Extracting from Table 0 (Metadata)');
-
-                    try {
-                        // Row 0: "Task Number" | value | "Task Name" | value
-                        if (table0.rows.length > 0 && table0.rows[0].cells.length >= 4) {
-                            data.taskNumber = this.cleanCellText(table0.rows[0].cells[1]);
-                            data.taskName = this.cleanCellText(table0.rows[0].cells[3]);
-                        }
-
-                        // Row 1: "National unit/s code" | [value] | "National unit/s title" | [value]
-                        if (table0.rows.length > 1 && table0.rows[1].cells.length >= 4) {
-                            data.unitCode = this.cleanCellText(table0.rows[1].cells[1]);
-                            data.unitTitle = this.cleanCellText(table0.rows[1].cells[3]);
-                        }
-
-                        // Row 2: "National qualification code" | [value] | "National qualification title" | [value]
-                        if (table0.rows.length > 2 && table0.rows[2].cells.length >= 4) {
-                            data.qualificationCode = this.cleanCellText(table0.rows[2].cells[1]);
-                            data.qualificationTitle = this.cleanCellText(table0.rows[2].cells[3]);
-                        }
-
-                        // Row 3: "RMIT Program code" | [value] | "RMIT Course code" | [value]
-                        if (table0.rows.length > 3 && table0.rows[3].cells.length >= 4) {
-                            data.programCode = this.cleanCellText(table0.rows[3].cells[1]);
-                            data.courseCode = this.cleanCellText(table0.rows[3].cells[3]);
-                        }
-                    } catch (e) {
-                        if (this.debugMode) console.error('Error extracting Table 0:', e);
-                    }
-                }
-
-                // Table 1: Assessment Details (9 rows × 3 cols) - OLD FORMAT
-                if (tables.length > 1) {
-                    const table1 = tables[1];
-                    if (this.debugMode) console.log('Extracting from Table 1 (9-row OLD format)');
-
-                    try {
-                        // Row 0: "Assessment duration and/or due date:" | value
-                        if (table1.rows.length > 0 && table1.rows[0].cells.length >= 2) {
-                            data.dueDate = this.cleanCellText(table1.rows[0].cells[1]);
-                        }
-
-                        // Row 2: Type of Product + full instructions content (MERGED CELL)
-                        if (table1.rows.length > 2) {
-                            data.taskInstructions = this.extractCellHTML(table1.rows[2].cells[0]);
-                        }
-
-                        // Row 4: Conditions content
-                        if (table1.rows.length > 4) {
-                            data.conditions = this.extractCellHTML(table1.rows[4].cells[0]);
-                        }
-
-                        // Row 6: Submission instructions content
-                        if (table1.rows.length > 6) {
-                            data.submissionInstructions = this.extractCellHTML(table1.rows[6].cells[0]);
-                        }
-
-                        // Row 8: Equipment details (2 or 3 columns)
-                        // Column 0: students must supply, Column 2: RMIT provides
-                        if (table1.rows.length > 8) {
-                            if (table1.rows[8].cells.length >= 1) {
-                                data.studentSupplies = this.extractCellHTML(table1.rows[8].cells[0]);
-                            }
-                            if (table1.rows[8].cells.length >= 3) {
-                                data.rmitSupplies = this.extractCellHTML(table1.rows[8].cells[2]);
-                            } else if (table1.rows[8].cells.length >= 2) {
-                                // Sometimes it might be in column 1
-                                data.rmitSupplies = this.extractCellHTML(table1.rows[8].cells[1]);
-                            }
-                        }
-                    } catch (e) {
-                        if (this.debugMode) console.error('Error extracting Table 1:', e);
-                    }
-                }
-
-                // Table 2: Task description (OLD FORMAT SPECIFIC)
-                if (tables.length > 2) {
-                    const table2 = tables[2];
-                    if (this.debugMode) console.log('Extracting from Table 2 (Task Description)');
-
-                    try {
-                        // Cell format: "TASK: Describe the product to be assessed" | description
-                        if (table2.rows.length > 0 && table2.rows[0].cells.length >= 2) {
-                            const taskDesc = this.extractCellHTML(table2.rows[0].cells[1]);
-                            if (taskDesc) {
-                                // Prepend or append task description to instructions
-                                if (data.taskInstructions) {
-                                    data.taskInstructions = data.taskInstructions + '\n\n' + taskDesc;
-                                } else {
-                                    data.taskInstructions = taskDesc;
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        if (this.debugMode) console.error('Error extracting Table 2:', e);
-                    }
-                }
-
-                return data;
-            }
-
-            cleanCellText(cell) {
-                if (!cell) return '';
-                const text = cell.textContent || cell.innerText || '';
-                return text.trim()
-                    .replace(/\s+/g, ' ')
-                    .replace(/[""]/g, '"')
-                    .replace(/['']/g, "'");
-            }
-
-            extractCellHTML(cell) {
-                if (!cell) return '';
-
-                // Get the innerHTML and clean it up
-                let html = cell.innerHTML || '';
-
-                // Convert to text if it's simple text content
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
-
-                // Extract list items if present
-                const listItems = Array.from(tempDiv.querySelectorAll('li'))
-                    .map(li => li.textContent.trim())
-                    .filter(text => text);
-
-                if (listItems.length > 0) {
-                    return listItems.map(item => '- ' + item).join('\n');
-                }
-
-                // Extract paragraphs if present
-                const paragraphs = Array.from(tempDiv.querySelectorAll('p'))
-                    .map(p => p.textContent.trim())
-                    .filter(text => text);
-
-                if (paragraphs.length > 0) {
-                    return paragraphs.join('\n\n');
-                }
-
-                // Fallback to plain text
-                return tempDiv.textContent.trim();
-            }
-
-            normalizeContent(content) {
-                return content
-                    .replace(/\r\n/g, '\n')
-                    .replace(/\t/g, ' ')
-                    .replace(/\s{3,}/g, '  ')
-                    .replace(/\n{3,}/g, '\n\n')
-                    .replace(/[""]/g, '"')
-                    .replace(/['']/g, "'")
-                    .trim();
-            }
-
-            extractTaskNumber(content) {
-                const patterns = [
-                    /Task\s*Number[:\s]*(\d+)\s*(?:of\s*\d+)?/i,
-                    /Task\s*Number[^0-9]*(\d+)/i,
-                    /Task\s*Number\s*\n+\s*(\d+)/i,
-                    /Assessment\s*Task\s*(\d+)/i,
-                    /Task\s*(\d+)\s*of\s*\d+/i,
-                    /AT\s*(\d+)/i,
-                    /(\d+)\s*of\s*\d+\s*Task\s*Name/i
-                ];
-
-                for (const pattern of patterns) {
-                    const match = content.match(pattern);
-                    if (match && match[1]) {
-                        return match[1].trim();
-                    }
-                }
-                return '';
-            }
-
-            extractTaskName(content) {
-                const patterns = [
-                    /Task\s*Name[:\s]*([^\n\r]+?)(?=\n|National|Unit|$)/i,
-                    /Task\s*Name[^A-Za-z]*([^\n\r]+)/i,
-                    /Task\s*Name\s*\n+\s*([^\n\r]+)/i,
-                    /\d+\s*of\s*\d+\s*Task\s*Name\s*([^\n\r]+)/i
-                ];
-
-                for (const pattern of patterns) {
-                    const match = content.match(pattern);
-                    if (match && match[1]) {
-                        const taskName = match[1].trim();
-                        if (taskName && !taskName.match(/^(National|RMIT|Section)/i)) {
-                            return taskName;
-                        }
-                    }
-                }
-                return '';
-            }
-
-            extractUnitCode(content) {
-                // Find where "National unit" or "unit code" appears
-                const unitCodeRegex = /National\s*unit[\/\s]*(?:code|s\s*code)/i;
-                const unitCodeMatch = content.match(unitCodeRegex);
-                
-                if (unitCodeMatch) {
-                    const startIndex = unitCodeMatch.index + unitCodeMatch[0].length;
-                    // Get the next 200 characters after "National unit code"
-                    const searchArea = content.substring(startIndex, startIndex + 200);
-                    
-                    // Look for any unit code pattern in this area
-                    // Match any sequence of 2+ letters followed by 3+ digits
-                    const codePatterns = [
-                        /^[:\s]*([A-Z]{2,}[0-9]{3,}[A-Z0-9]*)/i,  // At start with optional colon/space
-                        /([A-Z]{2,}[0-9]{3,}[A-Z0-9]*)/i,         // Anywhere in the text
-                    ];
-                    
-                    for (const pattern of codePatterns) {
-                        const match = searchArea.match(pattern);
-                        if (match && match[1]) {
-                            const code = match[1].toUpperCase().trim();
-                            
-                            // IMPORTANT: Check if this is actually a qualification code
-                            // Qualification codes typically have 5 digits after letters
-                            if (code.match(/^[A-Z]{2,}[0-9]{5}$/)) {
-                                // This is likely a qualification code, skip it
-                                continue;
-                            }
-                            
-                            // Check for multiple codes in the same area
-                            const allCodes = searchArea.match(/[A-Z]{2,}[0-9]{3,}[A-Z0-9]*/gi);
-                            if (allCodes && allCodes.length > 0) {
-                                // Filter out qualification codes (5 digits)
-                                const unitCodes = allCodes.filter(c => !c.match(/^[A-Z]{2,}[0-9]{5}$/));
-                                
-                                if (unitCodes.length > 1) {
-                                    return unitCodes.map(c => c.toUpperCase()).join(' ');
-                                } else if (unitCodes.length === 1) {
-                                    return unitCodes[0].toUpperCase();
-                                }
-                            }
-                            
-                            return code;
-                        }
-                    }
-                }
-                
-                // Alternative: Look for "Unit code" (without "National")
-                const simpleUnitCodeRegex = /Unit\s*code[:\s]*/i;
-                const simpleMatch = content.match(simpleUnitCodeRegex);
-                
-                if (simpleMatch) {
-                    const startIndex = simpleMatch.index + simpleMatch[0].length;
-                    const searchArea = content.substring(startIndex, startIndex + 100);
-                    
-                    const codeMatch = searchArea.match(/([A-Z]{2,}[0-9]{3,}[A-Z0-9]*)/i);
-                    if (codeMatch && codeMatch[1]) {
-                        const code = codeMatch[1].toUpperCase();
-                        // Skip if it's a qualification code
-                        if (!code.match(/^[A-Z]{2,}[0-9]{5}$/)) {
-                            return code;
-                        }
-                    }
-                }
-                
-                // Last resort: Find ANY valid unit code pattern in the entire document
-                // but only near keywords like "unit", "code", "national"
-                const lines = content.split('\n');
-                for (let i = 0; i < lines.length; i++) {
-                    const line = lines[i];
-                    if (line.match(/unit\s*code/i) || (line.match(/national\s*unit/i) && i + 1 < lines.length)) {
-                        // Check this line and the next few lines
-                        for (let j = 0; j < 3 && i + j < lines.length; j++) {
-                            const checkLine = lines[i + j];
-                            const codeMatch = checkLine.match(/[A-Z]{2,}[0-9]{3,}[A-Z0-9]*/gi);
-                            if (codeMatch && codeMatch.length > 0) {
-                                // Filter out qualification codes
-                                const unitCodes = codeMatch.filter(c => !c.match(/^[A-Z]{2,}[0-9]{5}$/));
-                                if (unitCodes.length > 0) {
-                                    return unitCodes.map(c => c.toUpperCase()).join(' ');
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                return '';
-            }
-
-            extractUnitTitle(content) {
-                const patterns = [
-                    /National\s*unit[/\s]*s?\s*title[:\s]*([^\n\r]+?)(?=National|RMIT|Qualification|$)/i,
-                    /National\s*unit[/\s]*s?\s*title[^A-Za-z]*([^\n\r]+)/i,
-                    /Unit\s*title[:\s]*([^\n\r]+)/i
-                ];
-
-                for (const pattern of patterns) {
-                    const match = content.match(pattern);
-                    if (match && match[1]) {
-                        let title = match[1].trim();
-                        title = title.replace(/\s+/g, ' ').replace(/[*]+$/, '').trim();
-                        if (title && title.length > 5 && !title.match(/^(code|RMIT|National)/i)) {
-                            return title;
-                        }
-                    }
-                }
-                return '';
-            }
-
-            extractQualificationCode(content) {
-                const patterns = [
-                    /National\s*qualification\s*code[:\s]*([A-Z]{2,}[0-9]{4,})/i,
-                    /Qualification\s*code[:\s]*([A-Z]{2,}[0-9]{4,})/i,
-                    /National\s*qualification\s*code[^A-Z]*([A-Z0-9]+)/i
-                ];
-
-                for (const pattern of patterns) {
-                    const match = content.match(pattern);
-                    if (match && match[1]) {
-                        return match[1].trim();
-                    }
-                }
-                return '';
-            }
-
-            extractQualificationTitle(content) {
-                const patterns = [
-                    /National\s*qualification\s*title[:\s]*([^\n\r]+?)(?=RMIT|Program|Course|$)/i,
-                    /Qualification\s*title[:\s]*([^\n\r]+)/i,
-                    /Certificate\s*[IVX]+\s*[^\n\r]+/i
-                ];
-
-                for (const pattern of patterns) {
-                    const match = content.match(pattern);
-                    if (match) {
-                        const title = (match[1] || match[0]).trim();
-                        if (title && !title.match(/^(RMIT|code)/i)) {
-                            return title;
-                        }
-                    }
-                }
-                return '';
-            }
-
-            extractProgramCode(content) {
-                const patterns = [
-                    /RMIT\s*Program\s*code[:\s]*([A-Z0-9]+)/i,
-                    /Program\s*code[:\s]*([A-Z][0-9]+)/i,
-                    /RMIT\s*Program\s*code[^A-Z]*([A-Z][0-9]+)/i
-                ];
-
-                for (const pattern of patterns) {
-                    const match = content.match(pattern);
-                    if (match && match[1]) {
-                        return match[1].trim();
-                    }
-                }
-                return '';
-            }
-
-            extractCourseCode(content) {
-                const patterns = [
-                    /RMIT\s*Course\s*code[:\s]*([A-Z0-9\s]+?)(?=Section|Assessment|$)/i,
-                    /Course\s*code[:\s]*([A-Z]{2,}[0-9]{4,}[A-Z]?(?:\s+[A-Z]{2,}[0-9]{4,}[A-Z]?)*)/i,
-                    /RMIT\s*Course\s*code[^A-Z]*([A-Z]{2,}[0-9]{4,}[A-Z]?)/i
-                ];
-
-                for (const pattern of patterns) {
-                    const match = content.match(pattern);
-                    if (match && match[1]) {
-                        const codes = match[1].trim().replace(/\s+/g, ' ');
-                        if (codes.match(/[A-Z]{2,}[0-9]{4,}/)) {
-                            return codes;
-                        }
-                    }
-                }
-                return '';
-            }
-
-            extractTaskInstructions(content) {
-                // Look for Summary and Purpose section first
-                const summaryMatch = content.match(/Summary\s*and\s*Purpose\s*of\s*Assessment[:\s]*([^]+?)(?=\*\*What\*\*|What\s*\n|\nWhat\s|Upon\s*successful\s*completion|Conditions\s*for|Equipment|Where\s*\n|How\s*\n|Type\s*of\s*Product|Assessment\s*Instructions|\*\*Assessment\s*Instructions\*\*|$)/i);
-                
-                if (summaryMatch && summaryMatch[1]) {
-                    let instructions = summaryMatch[1].trim();
-                    
-                    // Clean up the instructions
-                    instructions = instructions
-                        .replace(/\*\*/g, '')
-                        .replace(/Assessment\s*Instructions[:\s]*/i, '')
-                        .replace(/>\s*/g, '') // Remove angle brackets often used in formatting
-                        .trim();
-                    
-                    // If we have substantial content, return it
-                    if (instructions.length > 50) {
-                        // Check if it seems cut off (ends with "to" or similar)
-                        if (instructions.match(/\b(to|is|the|will|and|or|for)\s*$/i)) {
-                            // Try to find the next sentence or paragraph
-                            const extendedMatch = content.match(/Summary\s*and\s*Purpose\s*of\s*Assessment[:\s]*([^]+?)(?=Upon\s*successful\s*completion|[-•]\s*|What\s*\n|\nWhat\s)/i);
-                            if (extendedMatch && extendedMatch[1]) {
-                                instructions = extendedMatch[1]
-                                    .replace(/\*\*/g, '')
-                                    .replace(/>\s*/g, '')
-                                    .trim();
-                            }
-                        }
-                        return this.cleanText(instructions);
-                    }
-                }
-                
-                // Alternative: Look for a paragraph starting with "This assessment/task/project"
-                const thisAssessmentMatch = content.match(/This\s*(?:assessment|project|task|unit)[^.]+\.(?:[^.]+\.){0,10}/i);
-                if (thisAssessmentMatch) {
-                    let instructions = thisAssessmentMatch[0];
-                    // Make sure we get complete sentences, not cut off
-                    const sentences = instructions.split(/(?<=[.!?])\s+/);
-                    const completeSentences = sentences.filter(s => s.match(/[.!?]$/));
-                    if (completeSentences.length > 0) {
-                        return this.cleanText(completeSentences.join(' '));
-                    }
-                }
-                
-                // Fallback patterns
-                const patterns = [
-                    /This\s*(?:assessment|project|task)\s*(?:is|will|aims)[^]+?(?=Upon\s*successful|What\s|Where\s|How\s|$)/i,
-                    /The\s*(?:purpose|aim)\s*of\s*this\s*(?:assessment|task)[^]+?(?=Upon\s*successful|What\s|Where\s|How\s|$)/i,
-                    /You\s*(?:will|are\s*required\s*to)[^]+?(?=Upon\s*successful|What\s|Where\s|How\s|$)/i
-                ];
-
-                for (const pattern of patterns) {
-                    const match = content.match(pattern);
-                    if (match) {
-                        let instructions = match[0];
-                        if (instructions.length > 50) {
-                            return this.cleanText(instructions);
-                        }
-                    }
-                }
-                return '';
-            }
-
-            extractConditions(content) {
-                // First try to extract the entire Conditions for assessment section
-                const section = this.extractSection(
-                    content,
-                    [
-                        /\*\*Conditions\s+for\s+assessment\*\*/i,
-                        /Conditions\s+for\s+assessment/i,
-                        /Assessment\s+Conditions/i
-                    ],
-                    [
-                        /\*\*Equipment\/resources\s+students\s+must\s+supply/i,
-                        /Equipment\/resources\s+students\s+must\s+supply/i,
-                        /\*\*Instructions\s+on\s+submitting/i,
-                        /Instructions\s+on\s+submitting/i,
-                        /Section\s+[BC]/i,
-                        /Marking\s+Guide/i
-                    ]
-                );
-
-                if (section) {
-                    // Clean and extract content
-                    const cleanedSection = section.replace(/\*\*/g, '');
-                    
-                    // Split into lines and process each
-                    const lines = cleanedSection.split('\n').filter(line => line.trim());
-                    const items = [];
-                    
-                    // Patterns to exclude - these are handled in the Useful Links section
-                    const excludePatterns = [
-                        /appeal.*assessment.*according.*RMIT\s+Assessment\s+Processes/i,
-                        /Find\s+assessments.*course.*submit.*assignments/i,
-                        /Information\s+on\s+extensions.*special\s+considerations/i,
-                        /disability.*long-term\s+illness.*mental\s+health.*Equitable\s+Assessment/i,
-                        /Assessments\./i,
-                        /Extensions\s+and\s+special\s+consideration\./i,
-                        /Equitable\s+Assessment\s+Arrangements\./i,
-                        /RMIT\s+Assessment\s+Processes/i,
-                        /https?:\/\//i,  // Any URLs
-                        /\[.*\]\(.*\)/,  // Markdown links
-                        /\.underline/i   // Underlined text markers
-                    ];
-                    
-                    for (const line of lines) {
-                        const trimmed = line.trim();
-                        
-                        // Skip if it's the header itself
-                        if (trimmed.match(/^Conditions\s+for\s+assessment/i)) continue;
-                        
-                        // Skip if it matches any exclude pattern
-                        let shouldExclude = false;
-                        for (const pattern of excludePatterns) {
-                            if (trimmed.match(pattern)) {
-                                shouldExclude = true;
-                                break;
-                            }
-                        }
-                        if (shouldExclude) continue;
-                        
-                        // Skip numbered items that are about links (e.g., "9. Find assessments...")
-                        if (trimmed.match(/^\d+\.\s*(Find|Information|If\s+you\s+have\s+disability)/i)) continue;
-                        
-                        // Extract bullet points
-                        if (trimmed.match(/^[-•·]\s*/)) {
-                            const item = trimmed.replace(/^[-•·]\s*/, '').trim();
-                            // Double-check the cleaned item doesn't match exclude patterns
-                            let itemShouldExclude = false;
-                            for (const pattern of excludePatterns) {
-                                if (item.match(pattern)) {
-                                    itemShouldExclude = true;
-                                    break;
-                                }
-                            }
-                            if (!itemShouldExclude && item) {
-                                items.push(item);
-                            }
-                        }
-                        // Extract numbered items (but not the link-related ones)
-                        else if (trimmed.match(/^\d+[\.\)]\s*/) && !trimmed.match(/^\d+\.\s*(Find|Information|If\s+you\s+have\s+disability)/i)) {
-                            const item = trimmed.replace(/^\d+[\.\)]\s*/, '').trim();
-                            // Double-check the cleaned item doesn't match exclude patterns
-                            let itemShouldExclude = false;
-                            for (const pattern of excludePatterns) {
-                                if (item.match(pattern)) {
-                                    itemShouldExclude = true;
-                                    break;
-                                }
-                            }
-                            if (!itemShouldExclude && item) {
-                                items.push(item);
-                            }
-                        }
-                        // Extract sentences that are conditions (but not link-related)
-                        else if (trimmed.match(/^(You\s+(must|will|can)|Students\s+(will|must)|Please\s+|If\s+)/i)) {
-                            // Skip if it's about appeals or extensions
-                            if (trimmed.match(/You\s+can\s+appeal/i) || 
-                                trimmed.match(/If\s+you\s+have\s+disability/i)) {
-                                continue;
-                            }
-                            
-                            // Split by periods to get individual conditions
-                            const sentences = trimmed.match(/[^.!?]+[.!?]+/g);
-                            if (sentences) {
-                                for (const sentence of sentences) {
-                                    const cleanSentence = sentence.trim();
-                                    // Check if this sentence should be excluded
-                                    let sentenceShouldExclude = false;
-                                    for (const pattern of excludePatterns) {
-                                        if (cleanSentence.match(pattern)) {
-                                            sentenceShouldExclude = true;
-                                            break;
-                                        }
-                                    }
-                                    if (!sentenceShouldExclude && cleanSentence) {
-                                        items.push(cleanSentence);
-                                    }
-                                }
-                            } else if (trimmed) {
-                                items.push(trimmed);
-                            }
-                        }
-                        // Any other substantial line that's not a header
-                        else if (trimmed.length > 20 && !trimmed.endsWith(':') && !trimmed.match(/^(Equipment|Instructions|Section)/i)) {
-                            // Check if it should be excluded
-                            let shouldExcludeItem = false;
-                            for (const pattern of excludePatterns) {
-                                if (trimmed.match(pattern)) {
-                                    shouldExcludeItem = true;
-                                    break;
-                                }
-                            }
-                            if (!shouldExcludeItem) {
-                                items.push(trimmed);
-                            }
-                        }
-                    }
-                    
-                    // Remove duplicates and clean
-                    const uniqueItems = [...new Set(items)].filter(item => item && item.length > 10);
-                    
-                    if (uniqueItems.length > 0) {
-                        return uniqueItems.join('\n');
-                    }
-                }
-
-                // Fallback: Look for common condition phrases in the entire document
-                const conditionPhrases = [];
-                const patterns = [
-                    /You\s+must\s+[^.]+\./gi,
-                    /You\s+will\s+[^.]+\./gi,
-                    /Students\s+will\s+[^.]+\./gi,
-                    /Please\s+make\s+arrangements[^.]+\./gi
-                    // Removed: /You\s+can\s+appeal[^.]+\./gi - this is a link item
-                ];
-                
-                for (const pattern of patterns) {
-                    const matches = content.match(pattern);
-                    if (matches) {
-                        // Filter out matches that contain link-related content
-                        const filteredMatches = matches.filter(match => {
-                            return !match.match(/RMIT\s+Assessment\s+Processes/i) &&
-                                   !match.match(/Equitable\s+Assessment/i) &&
-                                   !match.match(/Extensions\s+and\s+special/i) &&
-                                   !match.match(/https?:\/\//i);
-                        });
-                        conditionPhrases.push(...filteredMatches);
-                    }
-                }
-                
-                if (conditionPhrases.length > 0) {
-                    return conditionPhrases.slice(0, 10).map(p => p.trim()).join('\n');
-                }
-
-                return '';
-            }
-
-            extractStudentSupplies(content) {
-                if (this.debugMode) {
-                    console.log('=== EXTRACTING STUDENT SUPPLIES ===');
-                }
-                
-                // Looking for a table with this structure:
-                // Equipment/resources students must supply (if applicable): | Equipment/resources to be provided by RMIT or the workplace (if applicable):
-                // - Computer and relevant software                         | - Onsite computer and internet access
-                // - Online access for research                            | - Data projector for presentation if needed
-                //                                                         | - Templates
-                
-                // First, find where the equipment section starts
-                const equipmentStart = content.search(/Equipment\/resources\s+students\s+must\s+supply/i);
-                if (equipmentStart === -1) return '';
-                
-                // Get a chunk of content starting from equipment section
-                const chunk = content.substring(equipmentStart, equipmentStart + 2000);
-                
-                // Look for the specific pattern where student items are listed
-                // Pattern: "students must supply" followed by content, then a pipe |, then "RMIT" section
-                const studentPattern = /Equipment\/resources\s+students\s+must\s+supply[^:]*:\s*([^|]+)\|/i;
-                const studentMatch = chunk.match(studentPattern);
-                
-                if (studentMatch && studentMatch[1]) {
-                    // Extract just the student items from the first column
-                    const studentContent = studentMatch[1];
-                    const items = [];
-                    const lines = studentContent.split('\n');
-                    
-                    for (const line of lines) {
-                        const trimmed = line.trim();
-                        
-                        // Skip empty lines
-                        if (!trimmed || trimmed.length < 3) continue;
-                        
-                        // Remove bullet markers
-                        let cleaned = trimmed;
-                        if (trimmed.match(/^[-·•]\s+/)) {
-                            cleaned = trimmed.replace(/^[-·•]\s+/, '').trim();
-                        }
-                        
-                        // Add the item if it's valid
-                        if (cleaned && 
-                            !cleaned.match(/Equipment|resources/i) &&
-                            !cleaned.match(/Onsite|projector|Templates/i)) { // Exclude RMIT items
-                            items.push(cleaned);
-                        }
-                    }
-                    
-                    if (this.debugMode) {
-                        console.log('Found student items:', items);
-                    }
-                    
-                    return items.join('\n');
-                }
-                
-                return '';
-            }
-
-            extractRMITSupplies(content) {
-                if (this.debugMode) {
-                    console.log('=== EXTRACTING RMIT SUPPLIES ===');
-                }
-                
-                // Find where the RMIT equipment section starts
-                const rmitStart = content.search(/Equipment\/resources\s+to\s+be\s+provided\s+by\s+RMIT/i);
-                if (rmitStart === -1) return '';
-                
-                // Get a chunk of content starting from RMIT section
-                const chunk = content.substring(rmitStart, rmitStart + 1000);
-                
-                // Look for content after "RMIT...:" and before Section B
-                const rmitPattern = /Equipment\/resources\s+to\s+be\s+provided\s+by\s+RMIT[^:]*:\s*([^]+?)(?=Section\s+B|Marking\s+Guide|^\s*$)/i;
-                const rmitMatch = chunk.match(rmitPattern);
-                
-                if (rmitMatch && rmitMatch[1]) {
-                    // Extract just the RMIT items
-                    const rmitContent = rmitMatch[1];
-                    const items = [];
-                    const lines = rmitContent.split('\n');
-                    
-                    for (const line of lines) {
-                        const trimmed = line.trim();
-                        
-                        // Skip empty lines and table borders
-                        if (!trimmed || trimmed.length < 3 || trimmed === '|') continue;
-                        
-                        // Stop if we see section markers
-                        if (trimmed.match(/Section\s+[BC]|Marking/i)) break;
-                        
-                        // Remove bullet markers and pipes
-                        let cleaned = trimmed;
-                        cleaned = cleaned.replace(/^\|+/, '').replace(/\|+$/, '').trim();
-                        if (cleaned.match(/^[-·•]\s+/)) {
-                            cleaned = cleaned.replace(/^[-·•]\s+/, '').trim();
-                        }
-                        
-                        // Add the item if it's valid and not a student item
-                        if (cleaned && 
-                            !cleaned.match(/Equipment|resources/i) &&
-                            !cleaned.match(/Computer\s+and\s+relevant\s+software/i) &&
-                            !cleaned.match(/Online\s+access\s+for\s+research/i)) {
-                            items.push(cleaned);
-                        }
-                    }
-                    
-                    if (this.debugMode) {
-                        console.log('Found RMIT items:', items);
-                    }
-                    
-                    return items.join('\n');
-                }
-                
-                return '';
-            }
-
-            extractSubmissionInstructions(content) {
-                const section = this.extractSection(
-                    content,
-                    [/Instructions\s+on\s+submitting\s+your\s+(?:Product\s+)?(?:Assessment|task)/i, /Submission\s+Instructions/i],
-                    [/Equipment\/resources/i, /Section\s+[BC]/i, /Marking\s+Guide/i]
-                );
-
-                if (section) {
-                    return this.cleanText(section);
-                }
-
-                const canvasMatch = content.match(/[^.]*Canvas[^.]*\./gi);
-                if (canvasMatch && canvasMatch.length > 0) {
-                    return canvasMatch.map(m => m.trim()).join(' ');
-                }
-
-                return '';
-            }
-
-            detectAssessmentType(content) {
-                const lowerContent = content.toLowerCase();
-                const quizKeywords = ['quiz', 'online test', 'multiple choice', 'take the quiz', 'online quiz', 'complete the quiz', 'submit quiz', 'canvas quiz'];
-                return quizKeywords.some(keyword => lowerContent.includes(keyword)) ? 'quiz' : 'document';
-            }
-
-            detectTemplate(content) {
-                const lowerContent = content.toLowerCase();
-                const templateKeywords = ['response template', 'student template', 'download template', 'template download'];
-                return templateKeywords.some(keyword => lowerContent.includes(keyword));
-            }
-
-            extractSection(content, startPatterns, endPatterns, includeHeader = false) {
-                let sectionStart = -1;
-                let matchedPattern = null;
-
-                // Try each start pattern
-                for (const pattern of startPatterns) {
-                    const match = content.match(pattern);
-                    if (match) {
-                        sectionStart = match.index;
-                        matchedPattern = match[0];
-                        break;
-                    }
-                }
-
-                if (sectionStart === -1) return null;
-
-                // Adjust start position to include or exclude header
-                if (!includeHeader && matchedPattern) {
-                    sectionStart += matchedPattern.length;
-                }
-
-                // Find the end of the section
-                let sectionEnd = content.length;
-                const searchContent = content.slice(sectionStart);
-
-                // Check each end pattern
-                for (const pattern of endPatterns) {
-                    const match = searchContent.match(pattern);
-                    if (match && match.index !== undefined && match.index > 0) {
-                        sectionEnd = Math.min(sectionEnd, sectionStart + match.index);
-                    }
-                }
-
-                // Extract the section
-                const section = content.slice(sectionStart, sectionEnd).trim();
-                
-                // If section is very short, it might be cut off - try to extend to next paragraph
-                if (section && section.length < 20) {
-                    // Look for content after the header
-                    const extendedEnd = Math.min(sectionStart + 1000, content.length);
-                    const extendedSection = content.slice(sectionStart, extendedEnd);
-                    
-                    // Find the first substantial content
-                    const lines = extendedSection.split('\n');
-                    let foundContent = false;
-                    let extractedLines = [];
-                    
-                    for (const line of lines) {
-                        const trimmed = line.trim();
-                        if (trimmed && trimmed.length > 5) {
-                            foundContent = true;
-                            extractedLines.push(line);
-                        } else if (foundContent && !trimmed) {
-                            // Empty line after content might indicate end
-                            break;
-                        }
-                    }
-                    
-                    if (extractedLines.length > 0) {
-                        return extractedLines.join('\n').trim();
-                    }
-                }
-                
-                return section || null;
-            }
-
-            extractBulletedItems(text) {
-                if (!text) return [];
-                
-                // First check if we've accidentally grabbed too much content
-                const sectionBIndex = text.indexOf('Section B');
-                if (sectionBIndex > -1) {
-                    // Cut off at Section B
-                    text = text.substring(0, sectionBIndex);
-                }
-                
-                const items = [];
-                const lines = text.split('\n');
-                
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    
-                    // Skip empty lines and headers
-                    if (!trimmed || trimmed.length < 3) {
-                        continue;
-                    }
-                    
-                    // Stop conditions - if we see any of these, we've gone too far
-                    if (trimmed.match(/^(Section\s+[BC]|Marking\s+Guide|Criteria\s+for\s+assessment|Has\s+the\s+student)/i)) {
-                        break;
-                    }
-                    
-                    // Extract bullet point content
-                    let itemText = trimmed;
-                    
-                    // Remove bullet markers (including middle dot ·)
-                    const bulletMatch = trimmed.match(/^[-·•*]\s+(.+)/);
-                    if (bulletMatch && bulletMatch[1]) {
-                        itemText = bulletMatch[1].trim();
-                    }
-                    
-                    // Only add if it's a reasonable item (not too long, not a header)
-                    if (itemText && 
-                        itemText.length > 3 && 
-                        itemText.length < 100 &&
-                        !itemText.match(/^(Equipment|Resources|Section|Marking|Criteria)/i)) {
-                        items.push(itemText);
-                    }
-                }
-                
-                return items;
-            }
-
-            cleanText(text) {
-                if (!text) return '';
-                return text
-                    .replace(/\*\*/g, '')
-                    .replace(/^\s*[-•·]\s*/, '')
-                    .replace(/\s+/g, ' ')
-                    .replace(/^\d+\.\s*/, '')
-                    .trim();
-            }
-
-            setDebugMode(enabled) {
-                this.debugMode = enabled;
-            }
-        }
-
-        // Canvas Converter Class
-        class CanvasConverter {
-            constructor() {
-                this.uploadArea = document.getElementById('uploadArea');
-                this.fileInput = document.getElementById('fileInput');
-                this.loader = document.getElementById('loader');
-                this.extractionStatus = document.getElementById('extractionStatus');
-                this.statusList = document.getElementById('statusList');
-                this.initialInstructions = document.getElementById('initialInstructions');
-                this.editForm = document.getElementById('editForm');
-                this.outputSection = document.getElementById('outputSection');
-                this.debugSection = document.getElementById('debugSection');
-                this.debugContent = document.getElementById('debugContent');
-                
-                this.extractor = new RMITDocumentExtractor();
-                this.extractedData = {};
-                this.debugMode = false;
-                
-                this.initializeEvents();
-            }
-            
-            initializeEvents() {
-                this.uploadArea.addEventListener('click', () => this.fileInput.click());
-                this.fileInput.addEventListener('change', (e) => this.handleFile(e.target.files[0]));
-                
-                this.uploadArea.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    this.uploadArea.classList.add('dragover');
-                });
-                
-                this.uploadArea.addEventListener('dragleave', () => {
-                    this.uploadArea.classList.remove('dragover');
-                });
-                
-                this.uploadArea.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    this.uploadArea.classList.remove('dragover');
-                    this.handleFile(e.dataTransfer.files[0]);
-                });
-            }
-            
-            async handleFile(file) {
-                if (!file || !file.name.endsWith('.docx')) {
-                    alert('Please upload a .docx file');
-                    return;
-                }
-
-                // Validate actual MIME type for .docx
-                if (file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-                    this.loader.style.display = 'none';
-                    alert('Please upload a valid .docx file');
-                    return;
-                }
-
-                this.loader.style.display = 'block';
-                this.updateStep(1, 'active');
-
-                try {
-                    const arrayBuffer = await file.arrayBuffer();
-
-                    let resultRaw, resultHtml;
-                    try {
-                        resultRaw = await mammoth.extractRawText({arrayBuffer});
-                        // Extract HTML to parse tables for equipment/resources
-                        resultHtml = await mammoth.convertToHtml({arrayBuffer});
-                    } catch (error) {
-                        console.error('Mammoth error:', error);
-                        this.loader.style.display = 'none';
-                        if (error.message && error.message.includes('end of central directory')) {
-                            alert('This .docx appears to be password-protected or encrypted. Please upload an unprotected Word document.');
-                        } else {
-                            alert('Error processing .docx file. Please ensure the file is a valid Word document.');
-                        }
-                        return;
-                    }
-
-                    // Parse HTML to find tables
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(resultHtml.value, "text/html");
-                    const tables = doc.querySelectorAll("table");
-
-                    // Extract main content using existing extractor
-                    this.extractor.setDebugMode(this.debugMode);
-                    // Pass both raw text and HTML document to the extractor
-                    this.extractedData = this.extractor.extract(resultRaw.value, doc);
-
-                    // Legacy table extraction for prose-based documents (only run if not table-based format)
-                    if (!this.extractor.isTableBased && tables.length > 0) {
-                        // Look through all tables for conditions section
-                        for (let tableIndex = 0; tableIndex < tables.length; tableIndex++) {
-                            const table = tables[tableIndex];
-
-                            // Check if this table contains conditions for assessment
-                            let conditionsCell = null;
-                            for (let row of table.rows) {
-                                for (let cell of row.cells) {
-                                    if (cell.textContent.match(/Conditions\s+for\s+assessment/i)) {
-                                        // Found the header, now look for the content cell (usually next row or next cell)
-                                        const rowIndex = Array.from(table.rows).indexOf(row);
-                                        const cellIndex = Array.from(row.cells).indexOf(cell);
-
-                                        // Check same row, next cell
-                                        if (cellIndex + 1 < row.cells.length) {
-                                            conditionsCell = row.cells[cellIndex + 1];
-                                        }
-                                        // Check next row, same column
-                                        else if (rowIndex + 1 < table.rows.length) {
-                                            conditionsCell = table.rows[rowIndex + 1].cells[cellIndex];
-                                        }
-                                        // Check next row, first column (common pattern)
-                                        else if (rowIndex + 1 < table.rows.length && table.rows[rowIndex + 1].cells.length > 0) {
-                                            conditionsCell = table.rows[rowIndex + 1].cells[0];
-                                        }
-                                        break;
-                                    }
-                                }
-                                if (conditionsCell) break;
-                            }
-
-                            if (conditionsCell) {
-                                // Extract conditions from the cell
-                                const cellHtml = conditionsCell.innerHTML;
-                                const tempDiv = document.createElement('div');
-                                tempDiv.innerHTML = cellHtml;
-
-                                // Extract list items
-                                const liElements = Array.from(tempDiv.querySelectorAll('li'))
-                                    .map(li => li.textContent.trim())
-                                    .filter(text => text);
-
-                                let conditionsText = "";
-
-                                if (liElements.length > 0) {
-                                    // Filter out link-related items
-                                    const excludePatterns = [
-                                        /appeal.*assessment.*RMIT\s+Assessment\s+Processes/i,
-                                        /Find\s+assessments.*course/i,
-                                        /Information\s+on\s+extensions/i,
-                                        /disability.*long-term\s+illness.*Equitable\s+Assessment/i,
-                                        /https?:\/\//i
-                                    ];
-
-                                    const filteredItems = liElements.filter(item => {
-                                        for (const pattern of excludePatterns) {
-                                            if (item.match(pattern)) return false;
-                                        }
-                                        return true;
-                                    });
-
-                                    conditionsText = filteredItems.join('\n');
-                                } else {
-                                    // Try paragraphs
-                                    const paras = Array.from(tempDiv.querySelectorAll('p'))
-                                        .map(p => p.textContent.trim())
-                                        .filter(text => text);
-
-                                    if (paras.length) {
-                                        conditionsText = paras.join('\n');
-                                    } else {
-                                        // Fallback to text content
-                                        conditionsText = conditionsCell.textContent.trim();
-                                    }
-                                }
-
-                                // If we found conditions in table, use them
-                                if (conditionsText && conditionsText.length > 20) {
-                                    // Convert to bullet format if not already
-                                    const lines = conditionsText.split('\n').filter(line => line.trim());
-                                    this.extractedData.conditions = lines.map(line =>
-                                        line.startsWith('-') ? line : '- ' + line
-                                    ).join('\n');
-                                }
-                                break;
-                            }
-                        }
-                    }
-
-                    // Extract Equipment/Resources Students Must Supply from table
-                    let studentSuppliesText = "";
-                    if (tables.length > 1) {
-                        const table2 = tables[1];
-                        if (table2.rows.length >= 9) {
-                            // Get cell HTML and parse
-                            const cellHtml = table2.rows[8].cells[0].innerHTML;
-                            const tempDiv = document.createElement('div');
-                            tempDiv.innerHTML = cellHtml;
-
-                            // 1) Detect any <li> items
-                            const liElements = Array.from(tempDiv.querySelectorAll('li'))
-                                .map(li => li.textContent.trim())
-                                .filter(text => text);
-
-                            if (liElements.length) {
-                                // Use all list items
-                                studentSuppliesText = liElements.join('\n');
-                            } else {
-                                // 2) Detect <p> paragraphs
-                                const paras = Array.from(tempDiv.querySelectorAll('p'))
-                                    .map(p => p.textContent.trim())
-                                    .filter(text => text);
-
-                                if (paras.length) {
-                                    studentSuppliesText = paras.join('\n');
-                                } else {
-                                    // 3) Final fallback: use innerText
-                                    studentSuppliesText = table2.rows[8].cells[0].innerText.trim();
-                                }
-                            }
-                        }
-                    }
-
-                    // Convert each line into a bullet point if we found content
-                    if (studentSuppliesText) {
-                        const lines = studentSuppliesText.split('\n').map(line => line.trim()).filter(line => line);
-                        this.extractedData.studentSupplies = lines.map(line => '- ' + line).join('\n');
-                    }
-
-                    // Extract RMIT Supplies from table
-                    let rmitSuppliesText = "";
-                    if (tables.length > 1) {
-                        const table2 = tables[1];
-                        if (table2.rows.length >= 9 && table2.rows[8].cells.length > 1) {
-                            // Grab the raw HTML of cell (row 9, col 2)
-                            const cellHtml2 = table2.rows[8].cells[1].innerHTML;
-                            const tempDiv2 = document.createElement('div');
-                            tempDiv2.innerHTML = cellHtml2;
-
-                            // Look for existing <li> tags
-                            const liElements2 = Array.from(tempDiv2.querySelectorAll('li'))
-                                .map(li => li.textContent.trim())
-                                .filter(text => text);
-
-                            if (liElements2.length > 1) {
-                                // Drop the first combined list item if it exists
-                                rmitSuppliesText = liElements2.slice(1).join('\n');
-                            } else if (liElements2.length === 1) {
-                                rmitSuppliesText = liElements2[0];
-                            } else {
-                                // Otherwise, fall back to all <p> paragraphs
-                                const paras2 = Array.from(tempDiv2.querySelectorAll('p'))
-                                    .map(p => p.textContent.trim())
-                                    .filter(text => text);
-
-                                if (paras2.length) {
-                                    // If multiple <p> tags, join them with "\n"
-                                    rmitSuppliesText = paras2.join('\n');
-                                } else {
-                                    // Final fallback: take the cell's raw innerText
-                                    rmitSuppliesText = table2.rows[8].cells[1].innerText.trim();
-                                }
-                            }
-                        }
-                    }
-
-                    // Prefix each line with "- " so populateForm() can build a <ul>
-                    if (rmitSuppliesText) {
-                        const rmitLines = rmitSuppliesText
-                            .split('\n')
-                            .map(line => line.trim())
-                            .filter(line => line);
-                        this.extractedData.rmitSupplies = rmitLines.map(line => '- ' + line).join('\n');
-                    }
-
-                    if (this.debugMode) {
-                        this.debugContent.textContent = JSON.stringify(this.extractedData, null, 2);
-                        this.debugSection.style.display = 'block';
-                    }
-
-                    this.displayExtractionStatus();
-                    this.populateForm();
-                    this.showEditForm();
-
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('Error processing document. Please try again.');
-                } finally {
-                    this.loader.style.display = 'none';
-                }
-            }
-            
-            displayExtractionStatus() {
-                const status = [];
-                const data = this.extractedData;
-                
-                status.push({
-                    icon: data.taskNumber ? 'found' : 'missing',
-                    text: `Task Number${data.taskNumber ? ': ' + data.taskNumber : ''}`
-                });
-                
-                status.push({
-                    icon: data.taskName ? 'found' : 'missing',
-                    text: `Task Name${data.taskName ? ': ' + data.taskName.substring(0, 30) + (data.taskName.length > 30 ? '...' : '') : ''}`
-                });
-                
-                status.push({
-                    icon: data.taskInstructions ? 'found' : 'missing',
-                    text: `Task Instructions${data.taskInstructions ? ' (' + data.taskInstructions.split(' ').length + ' words)' : ''}`
-                });
-                
-                status.push({
-                    icon: data.unitCode ? 'found' : 'missing',
-                    text: `Unit Code${data.unitCode ? ': ' + data.unitCode : ''}`
-                });
-                
-                status.push({
-                    icon: data.conditions ? 'found' : 'missing',
-                    text: `Assessment Conditions${data.conditions ? ' (' + data.conditions.split('\n').filter(l => l.trim()).length + ' items)' : ''}`
-                });
-                
-                status.push({
-                    icon: (data.studentSupplies || data.rmitSupplies) ? 'found' : 'missing',
-                    text: `Equipment/Resources${data.studentSupplies || data.rmitSupplies ? ' (Found)' : ''}`
-                });
-                
-                status.push({
-                    icon: data.submissionInstructions ? 'found' : 'missing',
-                    text: `Submission Instructions${data.submissionInstructions ? ' (Found)' : ''}`
-                });
-                
-                this.statusList.innerHTML = status.map(item => `
-                    <div class="status-item">
-                        <div class="status-icon ${item.icon}">
-                            ${item.icon === 'found' ? '✓' : item.icon === 'partial' ? '!' : '✗'}
-                        </div>
-                        <span>${item.text}</span>
-                    </div>
-                `).join('');
-                
-                this.extractionStatus.style.display = 'block';
-            }
-            
-            populateForm() {
-                const data = this.extractedData;
-                const form = document.getElementById('assessmentForm');
-                
-                ['taskNumber', 'taskName', 'unitCode', 'unitTitle', 'qualificationCode', 'programCode', 'courseCode'].forEach(field => {
-                    if (form.elements[field] && data[field]) {
-                        form.elements[field].value = data[field];
-                    }
-                });
-                
-                ['taskInstructions', 'conditions', 'studentSupplies', 'rmitSupplies', 'submissionInstructions'].forEach(field => {
-                    const editor = document.getElementById(field);
-                    if (editor && data[field]) {
-                        let content = data[field];
-                        
-                        // Force conditions to always be bulleted with regular bullets
-                        if (field === 'conditions') {
-                            const lines = content.split('\n').filter(line => line.trim());
-                            if (lines.length > 0) {
-                                const items = lines.map(line => 
-                                    line.replace(/^[-•·]\s*/, '')
-                                        .replace(/^\d+[\.\)]\s*/, '')
-                                        .trim()
-                                ).filter(item => item);
-                                
-                                // Create HTML with regular bullet list
-                                content = '<ul>' + items.map(item => `<li>${item}</li>`).join('') + '</ul>';
-                            }
-                        }
-                        // Force equipment sections to be bulleted with regular bullets if they have content
-                        else if (field === 'studentSupplies' || field === 'rmitSupplies') {
-                            const lines = content.split('\n').filter(line => line.trim());
-                            if (lines.length > 0) {
-                                const items = lines.map(line => 
-                                    line.replace(/^[-•·]\s*/, '')
-                                        .replace(/^\d+[\.\)]\s*/, '')
-                                        .trim()
-                                ).filter(item => item);
-                                
-                                // Always create HTML with regular bullet list
-                                content = '<ul>' + items.map(item => `<li>${item}</li>`).join('') + '</ul>';
-                            }
-                        }
-                        // Handle other content normally
-                        else if (content.includes('\n')) {
-                            const lines = content.split('\n').filter(line => line.trim());
-                            const isBulletList = lines.some(line => 
-                                /^[-•·]\s*/.test(line) || 
-                                /^\d+[\.\)]\s*/.test(line) ||
-                                lines.length > 2
-                            );
-                            
-                            if (isBulletList) {
-                                const items = lines.map(line => 
-                                    line.replace(/^[-•·]\s*/, '')
-                                        .replace(/^\d+[\.\)]\s*/, '')
-                                        .trim()
-                                ).filter(item => item);
-                                
-                                content = '<ul>' + items.map(item => `<li>${item}</li>`).join('') + '</ul>';
-                            } else {
-                                content = lines.map(line => `<p>${line}</p>`).join('');
-                            }
-                        } else if (content.trim()) {
-                            // Single line content
-                            if (field === 'studentSupplies' || field === 'rmitSupplies') {
-                                // Even single items should be bulleted for equipment
-                                content = '<ul><li>' + content + '</li></ul>';
-                            } else {
-                                content = `<p>${content}</p>`;
-                            }
-                        }
-                        
-                        editor.innerHTML = content;
-                        editor.classList.remove('empty');
-                    }
-                });
-                
-                if (data.includeTemplate) {
-                    form.elements.includeTemplate.checked = true;
-                }
-                
-                if (data.assessmentType) {
-                    form.elements.assessmentType.value = data.assessmentType;
-                }
-            }
-            
-            showEditForm() {
-                this.updateStep(1, 'completed');
-                this.updateStep(2, 'active');
-                this.initialInstructions.style.display = 'none';
-                this.editForm.style.display = 'block';
-                this.outputSection.style.display = 'none';
-            }
-            
-            updateStep(stepNum, status) {
-                const step = document.getElementById(`step${stepNum}`);
-                step.classList.remove('active', 'completed');
-                if (status) step.classList.add(status);
-            }
-            
-            toggleDebug() {
-                this.debugMode = !this.debugMode;
-                this.extractor.setDebugMode(this.debugMode);
-                this.debugSection.style.display = this.debugMode ? 'block' : 'none';
-            }
-        }
-
-        // Paste handler for rich editors
-        document.querySelectorAll('.rich-editor').forEach(editor => {
-            editor.addEventListener('paste', function(e) {
-                e.preventDefault();
-                const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-                document.execCommand('insertText', false, text);
-            });
-            
-            editor.addEventListener('input', function() {
-                if (this.innerHTML === '<br>' || this.innerHTML === '') {
-                    this.innerHTML = '';
-                }
-            });
-        });
-        
-        // Format text function
-        function formatText(command, editorId = 'taskInstructions') {
-            const editor = document.getElementById(editorId);
-            editor.focus();
-            
-            if (command !== 'bold') {
-                document.execCommand('removeFormat', false, null);
-            }
-            
-            document.execCommand(command, false, null);
-        }
-        
-        // Toggle AI dropdown visibility
-        function toggleAIDropdown() {
-            const checkbox = document.getElementById('includeAI');
-            const aiOptionsSection = document.getElementById('aiOptionsSection');
-            aiOptionsSection.style.display = checkbox.checked ? 'block' : 'none';
-        }
-        
-        // Clean HTML function
-        function cleanHTML(html) {
-            const temp = document.createElement('div');
-            temp.innerHTML = html;
-            
-            temp.querySelectorAll('*[style]').forEach(el => el.removeAttribute('style'));
-            temp.querySelectorAll('p').forEach(p => {
-                if (p.innerHTML.trim() === '' || p.innerHTML === '&nbsp;') {
-                    p.remove();
-                }
-            });
-            
-            return temp.innerHTML;
-        }
-        
-        // Generate HTML function
-        function generateHTML() {
-            const form = document.getElementById('assessmentForm');
-            const data = {};
-            
-            ['taskNumber', 'taskName', 'unitCode', 'unitTitle', 'qualificationCode', 'programCode', 'courseCode'].forEach(field => {
-                data[field] = form.elements[field].value;
-            });
-            
-            ['taskInstructions', 'conditions', 'studentSupplies', 'rmitSupplies', 'submissionInstructions'].forEach(field => {
-                const editor = document.getElementById(field);
-                data[field] = cleanHTML(editor.innerHTML);
-            });
-            
-            data.includeTemplate = form.elements.includeTemplate.checked;
-            data.assessmentType = form.elements.assessmentType.value;
-            data.includeAI = form.elements.includeAI.checked;
-            data.aiUseStatement = form.elements.aiUseStatement.value;
-            
-            let html = `<div id="emble-customise-6c7e686a" class="customise emble emble-cblock emble-width-control fullwidth-on emble-cblock-boxshadow white" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
+<div class="main-wrapper">
+<div class="container">
+<div class="header">
+<h1>CoVE Canvas Assessment Template Converter</h1>
+<p>Extract, Review &amp; Generate Canvas-Ready HTML</p>
+</div>
+<div class="workflow-steps">
+<div class="step active" id="step1"><div class="step-number">1</div><span>Upload Document</span></div>
+<div class="step" id="step2"><div class="step-number">2</div><span>Review &amp; Edit</span></div>
+<div class="step" id="step3"><div class="step-number">3</div><span>Generate HTML</span></div>
+</div>
+<div class="main-layout">
+<div class="sidebar">
+<div class="upload-area" id="uploadArea">
+<div class="upload-icon">📄</div>
+<div class="upload-text">Upload Student Version of Assessment Guide</div>
+<div class="upload-subtext">Drop .docx file here or click</div>
+<input type="file" id="fileInput" class="file-input" accept=".docx">
+</div>
+<div class="loader" id="loader"></div>
+<div class="extraction-status" id="extractionStatus">
+<h3>📊 Extraction Results</h3>
+<div id="statusList"></div>
+</div>
+<div class="debug-section" id="debugSection">
+<h4>Debug Information</h4>
+<pre id="debugContent"></pre>
+</div>
+</div>
+<div class="content-area">
+<div id="initialInstructions">
+<h2 style="color:#000054;margin-bottom:20px">How to Use This Tool</h2>
+<ol style="font-size:1.1rem;line-height:1.8">
+<li><strong>Upload</strong> your student version of the Word assessment guide (.docx)</li>
+<li><strong>Review</strong> the automatically extracted content</li>
+<li><strong>Edit</strong> any fields that need correction with rich text editing</li>
+<li><strong>Generate</strong> your Canvas HTML with one click</li>
+<li><strong>Upload</strong> the student version of the task and any templates/supporting documents to Canvas and link the buttons to the files so that students can download</li>
+</ol>
+<div class="alert alert-warning" style="margin-top:30px">
+<div class="alert-icon">💡</div>
+<div><strong>Enhanced Extraction:</strong> This tool uses advanced parsing to extract information from RMIT assessment templates, including complex table structures and multiple formatting styles.</div>
+</div>
+</div>
+
+<div class="edit-form" id="editForm">
+<h2 style="color:#000054;margin-bottom:25px">Review &amp; Edit Extracted Content</h2>
+<div class="alert alert-info" style="margin-bottom:25px">
+<div class="alert-icon">ℹ️</div>
+<div><strong>Note:</strong> We've extracted as much as possible from your document. Please review all fields and make any necessary corrections before generating the HTML.</div>
+</div>
+<form id="assessmentForm">
+<div class="form-section">
+<h3>📋 Task &amp; Compliance Information</h3>
+<div class="form-row">
+<div class="form-group"><label>Task Number</label><input type="text" id="taskNumber" name="taskNumber" placeholder="e.g., 1, 2, 3"></div>
+<div class="form-group"><label>Task Name</label><input type="text" id="taskName" name="taskName" placeholder="e.g., Portfolio presentation"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>National Unit Code</label><input type="text" id="unitCode" name="unitCode" placeholder="e.g., CUAACD311"><p class="help-text">For multiple codes, separate with spaces</p></div>
+<div class="form-group"><label>National Unit Title</label><input type="text" id="unitTitle" name="unitTitle" placeholder="e.g., Produce drawings to communicate ideas"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>National Qualification Code</label><input type="text" id="qualificationCode" name="qualificationCode" placeholder="e.g., MSF40122"></div>
+<div class="form-group"><label>RMIT Program Code</label><input type="text" id="programCode" name="programCode" placeholder="e.g., C4431"></div>
+</div>
+<div class="form-group"><label>RMIT Course Code</label><input type="text" id="courseCode" name="courseCode" placeholder="e.g., VART6528C"><p class="help-text">For multiple codes, separate with spaces</p></div>
+<div class="form-group"><label>Assessment Type</label>
+<select id="assessmentType" name="assessmentType"><option value="document">Document Submission</option><option value="quiz">Quiz</option></select>
+<p class="help-text">Select quiz if this is an online test/quiz</p></div>
+</div>
+
+<div class="form-section">
+<h3>📝 Task Instructions</h3>
+<div class="form-group large"><label>Task Instructions</label>
+<div class="editor-toolbar">
+<button type="button" class="editor-btn" onclick="fmtText('bold')" title="Bold">B</button>
+<button type="button" class="editor-btn" onclick="fmtText('italic')" title="Italic">I</button>
+<button type="button" class="editor-btn" onclick="fmtText('insertUnorderedList')" title="Bullet List">• List</button>
+<button type="button" class="editor-btn" onclick="fmtText('insertOrderedList')" title="Numbered List">1. List</button>
+</div>
+<div id="taskInstructions" class="rich-editor" contenteditable="true" data-placeholder="Copy from Summary and Purpose of Assessment"></div>
+<p class="help-text">The main instructions for the assessment task</p>
+</div>
+<div class="checkbox-group"><input type="checkbox" id="includeTemplate" name="includeTemplate"><label for="includeTemplate">Include Student Response Template section</label></div>
+</div>
+
+<div class="form-section">
+<h3>⏱️ Conditions for Assessment</h3>
+<div class="form-group large"><label>Assessment Conditions</label>
+<div class="editor-toolbar">
+<button type="button" class="editor-btn" onclick="fmtText('bold','conditions')" title="Bold">B</button>
+<button type="button" class="editor-btn" onclick="fmtText('italic','conditions')" title="Italic">I</button>
+<button type="button" class="editor-btn" onclick="fmtText('insertUnorderedList','conditions')" title="Bullet List">• List</button>
+<button type="button" class="editor-btn" onclick="fmtText('insertOrderedList','conditions')" title="Numbered List">1. List</button>
+</div>
+<div id="conditions" class="rich-editor" contenteditable="true" data-placeholder="Copy from Conditions for assessment section"></div>
+</div>
+<div class="form-group"><label>Equipment/Resources Students Must Supply</label>
+<div class="editor-toolbar">
+<button type="button" class="editor-btn" onclick="fmtText('bold','studentSupplies')">B</button>
+<button type="button" class="editor-btn" onclick="fmtText('italic','studentSupplies')">I</button>
+<button type="button" class="editor-btn" onclick="fmtText('insertUnorderedList','studentSupplies')">• List</button>
+</div>
+<div id="studentSupplies" class="rich-editor" contenteditable="true" data-placeholder="• Item 1"></div>
+</div>
+<div class="form-group"><label>Equipment/Resources Provided by RMIT</label>
+<div class="editor-toolbar">
+<button type="button" class="editor-btn" onclick="fmtText('bold','rmitSupplies')">B</button>
+<button type="button" class="editor-btn" onclick="fmtText('italic','rmitSupplies')">I</button>
+<button type="button" class="editor-btn" onclick="fmtText('insertUnorderedList','rmitSupplies')">• List</button>
+</div>
+<div id="rmitSupplies" class="rich-editor" contenteditable="true" data-placeholder="• Item 1"></div>
+</div>
+</div>
+
+<div class="form-section">
+<h3>📤 Submission Instructions</h3>
+<div class="form-group large"><label>Submission Instructions</label>
+<div class="editor-toolbar">
+<button type="button" class="editor-btn" onclick="fmtText('bold','submissionInstructions')">B</button>
+<button type="button" class="editor-btn" onclick="fmtText('italic','submissionInstructions')">I</button>
+<button type="button" class="editor-btn" onclick="fmtText('insertUnorderedList','submissionInstructions')">• List</button>
+<button type="button" class="editor-btn" onclick="fmtText('insertOrderedList','submissionInstructions')">1. List</button>
+</div>
+<div id="submissionInstructions" class="rich-editor" contenteditable="true" data-placeholder="Copy from Instructions on submitting your task"></div>
+</div>
+</div>
+
+<div class="form-section">
+<h3>🤖 AI Acceptable Use</h3>
+<div class="checkbox-group"><input type="checkbox" id="includeAI" name="includeAI" onchange="toggleAI()"><label for="includeAI">Add AI - Acceptable use for this assessment</label></div>
+<div id="aiOptionsSection" style="display:none">
+<div style="background:#f8f9fa;padding:20px;border-radius:4px;margin:20px 0">
+<p style="margin-bottom:15px"><strong>AI Acceptable Use Statement Options:</strong></p>
+<div style="margin-bottom:15px;padding:10px;background:#fff;border-radius:4px"><p><strong>Option 1: AI tools and their use are not restricted for this assessment task</strong></p><p style="margin-top:5px">In this assessment task, you can use AI tools to assist you. All use of AI tools and their outputs should be appropriately acknowledged and referenced.</p></div>
+<div style="margin-bottom:15px;padding:10px;background:#fff;border-radius:4px"><p><strong>Option 2: AI tools are restricted in certain ways for this assessment task</strong></p><p style="margin-top:5px">In this assessment task, you can use AI tools to support you in developing and completing your work by [insert ways] only. Any use of such tools must be appropriately acknowledged and referenced.</p></div>
+<div style="margin-bottom:15px;padding:10px;background:#fff;border-radius:4px"><p><strong>Option 3: AI tools are restricted in the completion of this assessment task</strong></p><p style="margin-top:5px">In this assessment task, you can use the following AI tools only [insert names]. Any use of these tools must be appropriately acknowledged and referenced.</p></div>
+<div style="margin-bottom:15px;padding:10px;background:#fff;border-radius:4px"><p><strong>Option 4: AI tools cannot be used in the completion of this assessment task</strong></p><p style="margin-top:5px">In this assessment task, you must not use any AI tools (excluding text editing software e.g., Grammarly) to generate any materials, content or ideas related to the task.</p></div>
+</div>
+<div class="form-group"><label>Select ONE (1) acceptable use statement only:</label>
+<select id="aiUseStatement" name="aiUseStatement">
+<option value="unrestricted">Option 1: AI tools not restricted</option>
+<option value="restricted-ways">Option 2: AI tools restricted in certain ways</option>
+<option value="restricted-tools">Option 3: AI tools restricted - specific tools only</option>
+<option value="not-permitted">Option 4: AI tools cannot be used</option>
+</select></div>
+</div>
+</div>
+
+<div class="button-group">
+<button type="button" class="btn btn-primary" onclick="generateHTML()">Generate Canvas HTML</button>
+<button type="button" class="btn btn-secondary" onclick="resetForm()">Start Over</button>
+</div>
+</form>
+</div>
+
+<div class="output-section" id="outputSection">
+<h2 style="color:#000054;margin-bottom:25px">Generated Canvas HTML</h2>
+<div class="output-container">
+<div class="output-header"><span>Canvas HTML Code</span><button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem" onclick="copyHTML()">Copy HTML</button></div>
+<div class="output-content" id="outputContent"></div>
+</div>
+<div class="preview-container"><h3>Preview</h3><div id="previewContent"></div></div>
+<div class="button-group">
+<button type="button" class="btn btn-secondary" onclick="backToEdit()">Back to Edit</button>
+<button type="button" class="btn btn-primary" onclick="resetForm()">New Document</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team - RMIT College of Vocational Education</p></footer>
+
+<script>
+/* ── Helper: pick the best content cell from a table given a header‑match cell ── */
+function bestContentCell(table, row, cell, ri, ci){
+  // Strip the header text itself to see if the SAME cell also holds the content
+  const selfText = cell.textContent.replace(/Summary\s+and\s+Purpose\s+of\s+Assessment/i,'')
+    .replace(/Instructions\s+on\s+Submitting\s+your\s+(?:Product\s+)?(?:Assessment|task)/i,'')
+    .replace(/Conditions\s+for\s+assessment/i,'')
+    .replace(/Equipment\/resources\s+students\s+must\s+supply[^:]*/i,'')
+    .replace(/Equipment\/resources\s+to\s+be\s+provided[^:]*/i,'')
+    .trim();
+
+  // Candidate: adjacent cell (ci+1)
+  let adj = null, adjLen = 0;
+  if(ci+1 < row.cells.length){
+    adj = row.cells[ci+1];
+    adjLen = adj.textContent.trim().length;
+  }
+  // Candidate: cell below
+  let below = null, belowLen = 0;
+  if(ri+1 < table.rows.length){
+    const nr = table.rows[ri+1];
+    if(nr.cells[ci]){below = nr.cells[ci]; belowLen = below.textContent.trim().length}
+  }
+
+  // Pick the candidate with the most content, but only if it beats a 50‑char threshold
+  const candidates = [
+    {cell: adj,   len: adjLen},
+    {cell: below,  len: belowLen},
+    {cell: cell,   len: selfText.length}   // fallback: same cell (content after header)
+  ].filter(c => c.cell && c.len > 50);
+
+  candidates.sort((a,b) => b.len - a.len);
+  return candidates.length > 0 ? candidates[0].cell : cell;
+}
+
+class RMITExtractor{
+constructor(){this.debugMode=false}
+extract(c){const n=this.norm(c);return{taskNumber:this.exTaskNum(n),taskName:this.exTaskName(n),unitCode:this.exUnitCode(n),unitTitle:this.exUnitTitle(n),qualificationCode:this.exQualCode(n),qualificationTitle:this.exQualTitle(n),programCode:this.exProgCode(n),courseCode:this.exCourseCode(n),taskInstructions:this.exTaskInstr(n),assessmentType:this.detectType(n),includeTemplate:this.detectTpl(n),conditions:this.exConditions(n),studentSupplies:this.exStudentSup(n),rmitSupplies:this.exRMITSup(n),submissionInstructions:this.exSubmission(n)}}
+norm(c){return c.replace(/\r\n/g,'\n').replace(/\t/g,' ').replace(/\s{3,}/g,'  ').replace(/\n{3,}/g,'\n\n').replace(/[\u201C\u201D]/g,'"').replace(/[\u2018\u2019]/g,"'").trim()}
+exTaskNum(c){const ps=[/Task\s*Number[:\s]*(\d+)\s*(?:of\s*\d+)?/i,/Task\s*Number[^0-9]*(\d+)/i,/Task\s*Number\s*\n+\s*(\d+)/i,/Assessment\s*Task\s*(\d+)/i,/Task\s*(\d+)\s*of\s*\d+/i,/AT\s*(\d+)/i,/(\d+)\s*of\s*\d+\s*Task\s*Name/i];for(const p of ps){const m=c.match(p);if(m&&m[1])return m[1].trim()}return''}
+exTaskName(c){const ps=[/Task\s*Name[:\s]*([^\n\r]+?)(?=\n|National|Unit|$)/i,/Task\s*Name[^A-Za-z]*([^\n\r]+)/i,/Task\s*Name\s*\n+\s*([^\n\r]+)/i,/\d+\s*of\s*\d+\s*Task\s*Name\s*([^\n\r]+)/i];for(const p of ps){const m=c.match(p);if(m&&m[1]){const n=m[1].trim();if(n&&!n.match(/^(National|RMIT|Section)/i))return n}}return''}
+exUnitCode(c){const r=/National\s*unit[\/\s]*(?:code|s\s*code)/i,m=c.match(r);if(m){const s=m.index+m[0].length,a=c.substring(s,s+200),ps=[/^[:\s]*([A-Z]{2,}[0-9]{3,}[A-Z0-9]*)/i,/([A-Z]{2,}[0-9]{3,}[A-Z0-9]*)/i];for(const p of ps){const mx=a.match(p);if(mx&&mx[1]){const cd=mx[1].toUpperCase().trim();if(cd.match(/^[A-Z]{2,}[0-9]{5}$/))continue;const all=a.match(/[A-Z]{2,}[0-9]{3,}[A-Z0-9]*/gi);if(all&&all.length>0){const uc=all.filter(x=>!x.match(/^[A-Z]{2,}[0-9]{5}$/));if(uc.length>1)return uc.map(x=>x.toUpperCase()).join(' ');if(uc.length===1)return uc[0].toUpperCase()}return cd}}}const sm=c.match(/Unit\s*code[:\s]*/i);if(sm){const s=sm.index+sm[0].length,a=c.substring(s,s+100),cm=a.match(/([A-Z]{2,}[0-9]{3,}[A-Z0-9]*)/i);if(cm&&cm[1]){const cd=cm[1].toUpperCase();if(!cd.match(/^[A-Z]{2,}[0-9]{5}$/))return cd}}return''}
+exUnitTitle(c){const ps=[/National\s*unit[/\s]*s?\s*title[:\s]*([^\n\r]+?)(?=National|RMIT|Qualification|$)/i,/National\s*unit[/\s]*s?\s*title[^A-Za-z]*([^\n\r]+)/i,/Unit\s*title[:\s]*([^\n\r]+)/i];for(const p of ps){const m=c.match(p);if(m&&m[1]){let t=m[1].trim().replace(/\s+/g,' ').replace(/[*]+$/,'').trim();if(t&&t.length>5&&!t.match(/^(code|RMIT|National)/i))return t}}return''}
+exQualCode(c){const ps=[/National\s*qualification\s*code[:\s]*([A-Z]{2,}[0-9]{4,})/i,/Qualification\s*code[:\s]*([A-Z]{2,}[0-9]{4,})/i,/National\s*qualification\s*code[^A-Z]*([A-Z0-9]+)/i];for(const p of ps){const m=c.match(p);if(m&&m[1])return m[1].trim()}return''}
+exQualTitle(c){const ps=[/National\s*qualification\s*title[:\s]*([^\n\r]+?)(?=RMIT|Program|Course|$)/i,/Qualification\s*title[:\s]*([^\n\r]+)/i,/Certificate\s*[IVX]+\s*[^\n\r]+/i];for(const p of ps){const m=c.match(p);if(m){const t=(m[1]||m[0]).trim();if(t&&!t.match(/^(RMIT|code)/i))return t}}return''}
+exProgCode(c){const ps=[/RMIT\s*Program\s*code[:\s]*([A-Z0-9]+)/i,/Program\s*code[:\s]*([A-Z][0-9]+)/i,/RMIT\s*Program\s*code[^A-Z]*([A-Z][0-9]+)/i];for(const p of ps){const m=c.match(p);if(m&&m[1])return m[1].trim()}return''}
+exCourseCode(c){const ps=[/RMIT\s*Course\s*code[:\s]*([A-Z0-9\s]+?)(?=Section|Assessment|$)/i,/Course\s*code[:\s]*([A-Z]{2,}[0-9]{4,}[A-Z]?(?:\s+[A-Z]{2,}[0-9]{4,}[A-Z]?)*)/i,/RMIT\s*Course\s*code[^A-Z]*([A-Z]{2,}[0-9]{4,}[A-Z]?)/i];for(const p of ps){const m=c.match(p);if(m&&m[1]){const cd=m[1].trim().replace(/\s+/g,' ');if(cd.match(/[A-Z]{2,}[0-9]{4,}/))return cd}}return''}
+exTaskInstr(c){const sm=c.match(/Summary\s*and\s*Purpose\s*of\s*Assessment[:\s]*([^]+?)(?=\*\*What\*\*|What\s*\n|\nWhat\s|Upon\s*successful\s*completion|Conditions\s*for|Equipment|Where\s*\n|How\s*\n|Type\s*of\s*Product|$)/i);if(sm&&sm[1]){let i=sm[1].trim().replace(/\*\*/g,'').replace(/Assessment\s*Instructions[:\s]*/i,'').replace(/>\s*/g,'').trim();if(i.length>50)return this.clean(i)}const ta=c.match(/This\s*(?:assessment|project|task|unit)[^.]+\.(?:[^.]+\.){0,10}/i);if(ta){const s=ta[0].split(/(?<=[.!?])\s+/).filter(x=>x.match(/[.!?]$/));if(s.length>0)return this.clean(s.join(' '))}return''}
+exConditions(c){const sec=this.exSection(c,[/\*\*Conditions\s+for\s+assessment\*\*/i,/Conditions\s+for\s+assessment/i,/Assessment\s+Conditions/i],[/\*\*Useful\s+Links\*\*/i,/Useful\s+Links/i,/\*\*Equipment\/resources\s+students\s+must\s+supply/i,/Equipment\/resources\s+students\s+must\s+supply/i,/\*\*Instructions\s+on\s+submitting/i,/Instructions\s+on\s+submitting/i,/Section\s+[BC]/i,/Marking\s+Guide/i]);if(sec){const cl=sec.replace(/\*\*/g,''),lines=cl.split('\n').filter(l=>l.trim()),items=[];const ex=[/^Useful\s+Links/i,/Please\s+use\s+the\s+following\s+links/i,/appeal.*assessment.*according.*RMIT\s+Assessment\s+Processes/i,/Find\s+assessments.*course.*submit.*assignments/i,/Information\s+on\s+extensions.*special\s+considerations/i,/disability.*long-term\s+illness.*mental\s+health.*Equitable\s+Assessment/i,/Assessment\s+submission\s+and\s+appeals/i,/recognition\s+of\s+prior\s+learning/i,/recording\s+and\s+retaining\s+assessments/i,/Assessments\./i,/Extensions\s+and\s+special\s+consideration\./i,/Equitable\s+Assessment\s+Arrangements?\./i,/RMIT\s+Assessment\s+Processes/i,/https?:\/\//i,/\[.*\]\(.*\)/,/\.underline/i];const chk=(t)=>{for(const p of ex)if(t.match(p))return true;return false};for(const line of lines){const t=line.trim();if(t.match(/^Conditions\s+for\s+assessment/i))continue;if(chk(t))continue;if(t.match(/^\d+\.\s*(Find|Information|If\s+you\s+have\s+disability)/i))continue;if(t.match(/^[-\u2022\u00B7]\s*/)){const it=t.replace(/^[-\u2022\u00B7]\s*/,'').trim();if(!chk(it)&&it)items.push(it)}else if(t.match(/^\d+[\.\)]\s*/)&&!t.match(/^\d+\.\s*(Find|Information|If\s+you\s+have\s+disability)/i)){const it=t.replace(/^\d+[\.\)]\s*/,'').trim();if(!chk(it)&&it)items.push(it)}else if(t.match(/^(You\s+(must|will|can)|Students\s+(will|must)|Please\s+|If\s+)/i)){if(t.match(/You\s+can\s+appeal/i)||t.match(/If\s+you\s+have\s+disability/i))continue;const sn=t.match(/[^.!?]+[.!?]+/g);if(sn){for(const s of sn){const cs=s.trim();if(!chk(cs)&&cs)items.push(cs)}}else if(t)items.push(t)}else if(t.length>20&&!t.endsWith(':')&&!t.match(/^(Equipment|Instructions|Section)/i)){if(!chk(t))items.push(t)}}const u=[...new Set(items)].filter(i=>i&&i.length>10);if(u.length>0)return u.join('\n')}return''}
+exStudentSup(c){const i=c.search(/Equipment\/resources\s+students\s+must\s+supply/i);if(i===-1)return'';const ch=c.substring(i,i+2000),m=ch.match(/Equipment\/resources\s+students\s+must\s+supply[^:]*:\s*([^|]+)\|/i);if(m&&m[1]){const items=[];for(const l of m[1].split('\n')){const t=l.trim();if(!t||t.length<3)continue;let cl=t;if(t.match(/^[-\u00B7\u2022]\s+/))cl=t.replace(/^[-\u00B7\u2022]\s+/,'').trim();if(cl&&!cl.match(/Equipment|resources/i)&&!cl.match(/Onsite|projector|Templates/i))items.push(cl)}return items.join('\n')}return''}
+exRMITSup(c){const i=c.search(/Equipment\/resources\s+to\s+be\s+provided\s+by\s+RMIT/i);if(i===-1)return'';const ch=c.substring(i,i+1000),m=ch.match(/Equipment\/resources\s+to\s+be\s+provided\s+by\s+RMIT[^:]*:\s*([^]+?)(?=Section\s+B|Marking\s+Guide|^\s*$)/i);if(m&&m[1]){const items=[];for(const l of m[1].split('\n')){const t=l.trim();if(!t||t.length<3||t==='|')continue;if(t.match(/Section\s+[BC]|Marking/i))break;let cl=t.replace(/^\|+/,'').replace(/\|+$/,'').trim();if(cl.match(/^[-\u00B7\u2022]\s+/))cl=cl.replace(/^[-\u00B7\u2022]\s+/,'').trim();if(cl&&!cl.match(/Equipment|resources/i)&&!cl.match(/Computer\s+and\s+relevant\s+software/i)&&!cl.match(/Online\s+access\s+for\s+research/i))items.push(cl)}return items.join('\n')}return''}
+exSubmission(c){const sec=this.exSection(c,[/Instructions\s+on\s+submitting\s+your\s+(?:Product\s+)?(?:Assessment|task)/i,/Submission\s+Instructions/i],[/Equipment\/resources/i,/Useful\s+Links/i,/Section\s+[BC]/i,/Marking\s+Guide/i]);if(sec)return this.clean(sec);const cm=c.match(/[^.]*Canvas[^.]*\./gi);if(cm&&cm.length>0)return cm.map(x=>x.trim()).join(' ');return''}
+detectType(c){const l=c.toLowerCase();return['quiz','online test','multiple choice','take the quiz','online quiz','complete the quiz','canvas quiz'].some(k=>l.includes(k))?'quiz':'document'}
+detectTpl(c){const l=c.toLowerCase();return['response template','student template','download template','template download'].some(k=>l.includes(k))}
+exSection(c,sp,ep,ih=false){let si=-1,mp=null;for(const p of sp){const m=c.match(p);if(m){si=m.index;mp=m[0];break}}if(si===-1)return null;if(!ih&&mp)si+=mp.length;let se=c.length;const sc=c.slice(si);for(const p of ep){const m=sc.match(p);if(m&&m.index!==undefined&&m.index>0)se=Math.min(se,si+m.index)}const sec=c.slice(si,se).trim();if(sec&&sec.length<20){const ee=Math.min(si+1000,c.length),es=c.slice(si,ee),lines=es.split('\n');let found=false,el=[];for(const l of lines){const t=l.trim();if(t&&t.length>5){found=true;el.push(l)}else if(found&&!t)break}if(el.length>0)return el.join('\n').trim()}return sec||null}
+clean(t){if(!t)return'';return t.replace(/\*\*/g,'').replace(/^\s*[-\u2022\u00B7]\s*/,'').replace(/\s+/g,' ').replace(/^\d+\.\s*/,'').trim()}
+setDebugMode(e){this.debugMode=e}
+}
+
+class App{
+constructor(){this.uploadArea=document.getElementById('uploadArea');this.fileInput=document.getElementById('fileInput');this.loader=document.getElementById('loader');this.extractionStatus=document.getElementById('extractionStatus');this.statusList=document.getElementById('statusList');this.initialInstructions=document.getElementById('initialInstructions');this.editForm=document.getElementById('editForm');this.outputSection=document.getElementById('outputSection');this.debugSection=document.getElementById('debugSection');this.debugContent=document.getElementById('debugContent');this.extractor=new RMITExtractor();this.extractedData={};this.debugMode=false;this.init()}
+init(){this.uploadArea.addEventListener('click',()=>this.fileInput.click());this.fileInput.addEventListener('change',e=>this.handleFile(e.target.files[0]));this.uploadArea.addEventListener('dragover',e=>{e.preventDefault();this.uploadArea.classList.add('dragover')});this.uploadArea.addEventListener('dragleave',()=>this.uploadArea.classList.remove('dragover'));this.uploadArea.addEventListener('drop',e=>{e.preventDefault();this.uploadArea.classList.remove('dragover');this.handleFile(e.dataTransfer.files[0])})}
+async handleFile(file){if(!file||!file.name.endsWith('.docx')){alert('Please upload a .docx file');return}if(file.type!=='application/vnd.openxmlformats-officedocument.wordprocessingml.document'){this.loader.style.display='none';alert('Please upload a valid .docx file');return}this.loader.style.display='block';this.updateStep(1,'active');try{const ab=await file.arrayBuffer();let rr,rh;try{rr=await mammoth.extractRawText({arrayBuffer:ab});rh=await mammoth.convertToHtml({arrayBuffer:ab})}catch(e){console.error('Mammoth:',e);this.loader.style.display='none';alert(e.message&&e.message.includes('end of central directory')?'This .docx appears to be password-protected.':'Error processing .docx file.');return}const parser=new DOMParser(),doc=parser.parseFromString(rh.value,"text/html"),tables=doc.querySelectorAll("table");this.extractor.setDebugMode(this.debugMode);this.extractedData=this.extractor.extract(rr.value);
+
+// ── Table-based Task Instructions extraction (Summary & Purpose) ──
+if(tables.length>0){for(const table of tables){for(let ri=0;ri<table.rows.length;ri++){const row=table.rows[ri];for(let ci=0;ci<row.cells.length;ci++){const cell=row.cells[ci];
+if(cell.textContent.match(/Summary\s+and\s+Purpose\s+of\s+Assessment/i)){
+  // Use helper to find the cell with the most content
+  let tc=bestContentCell(table,row,cell,ri,ci);
+  const td=document.createElement('div');td.innerHTML=tc.innerHTML;
+  const all=Array.from(td.childNodes);let keep=[];let foundSummary=false;let hitStop=false;
+  for(const node of all){if(hitStop)break;const txt=node.textContent||'';
+    if(!foundSummary){if(txt.match(/Summary\s+and\s+Purpose/i)){foundSummary=true;continue}
+      if(node.nodeName==='P'&&txt.trim().length>30){foundSummary=true;keep.push(node)}}
+    else{if(txt.match(/^\s*\*?\*?Assessment\s+Instructions/i)||txt.match(/^\s*\*?\*?What\s*\*?\*?\s*$/i)||txt.match(/^\s*This\s+is\s+\*?\*?Observation\s+Task/i)){hitStop=true;continue}
+      if(node.nodeName==='P'&&txt.match(/^\s*\*?\*?What\s*\*?\*?/i)){hitStop=true;continue}
+      keep.push(node)}}
+  if(keep.length>0){const wrap=document.createElement('div');keep.forEach(n=>wrap.appendChild(n.cloneNode(true)));
+    wrap.querySelectorAll('*[style]').forEach(e=>e.removeAttribute('style'));
+    let html=wrap.innerHTML.replace(/<p>\s*<\/p>/g,'').replace(/<strong>\s*Assessment\s+Instructions\s*<\/strong>/gi,'').trim();
+    if(html.length>50)this.extractedData.taskInstructions=html}
+  break}}
+if(this.extractedData.taskInstructions&&this.extractedData.taskInstructions.startsWith('<'))break}
+if(this.extractedData.taskInstructions&&this.extractedData.taskInstructions.startsWith('<'))break}}
+
+// ── Table-based Submission Instructions extraction ──
+if(tables.length>0){for(const table of tables){for(let ri=0;ri<table.rows.length;ri++){const row=table.rows[ri];for(let ci=0;ci<row.cells.length;ci++){const cell=row.cells[ci];
+if(cell.textContent.match(/Instructions\s+on\s+Submitting\s+your\s+(?:Product\s+)?(?:Assessment|task)/i)){
+  let tc=bestContentCell(table,row,cell,ri,ci);
+  // If best cell IS the header cell, strip the header paragraph
+  if(tc===cell){const td=document.createElement('div');td.innerHTML=cell.innerHTML;
+    const headerP=td.querySelector('p');if(headerP&&headerP.textContent.match(/Instructions\s+on\s+Submitting/i))headerP.remove();
+    tc={innerHTML:td.innerHTML}}
+  const td=document.createElement('div');td.innerHTML=tc.innerHTML;
+  td.querySelectorAll('*[style]').forEach(e=>e.removeAttribute('style'));
+  let html=td.innerHTML.replace(/<p>\s*<\/p>/g,'').trim();
+  if(html.length>50)this.extractedData.submissionInstructions=html;
+  break}}
+if(this.extractedData.submissionInstructions&&this.extractedData.submissionInstructions.startsWith('<'))break}
+if(this.extractedData.submissionInstructions&&this.extractedData.submissionInstructions.startsWith('<'))break}}
+
+// ── Table-based conditions extraction ──
+if(tables.length>0){for(let ti=0;ti<tables.length;ti++){const table=tables[ti];let cc=null;
+for(let ri=0;ri<table.rows.length;ri++){const row=table.rows[ri];for(let ci=0;ci<row.cells.length;ci++){const cell=row.cells[ci];
+if(cell.textContent.match(/Conditions\s+for\s+assessment/i)){
+  cc=bestContentCell(table,row,cell,ri,ci);break}}
+if(cc)break}
+if(cc){const td=document.createElement('div');td.innerHTML=cc.innerHTML;
+const lis=Array.from(td.querySelectorAll('li')).map(l=>l.textContent.trim()).filter(t=>t);let ct="";
+if(lis.length>0){const ex=[/^Useful\s+Links/i,/Please\s+use\s+the\s+following\s+links/i,/appeal.*assessment.*RMIT\s+Assessment\s+Processes/i,/Find\s+assessments.*course/i,/Assessment\s+submission\s+and\s+appeals/i,/Information\s+on\s+extensions/i,/recognition\s+of\s+prior\s+learning/i,/recording\s+and\s+retaining\s+assessments/i,/Equitable\s+Assessment\s+Arrange/i,/disability.*long-term\s+illness.*Equitable\s+Assessment/i,/https?:\/\//i];
+ct=lis.filter(i=>{for(const p of ex)if(i.match(p))return false;return true}).join('\n')}
+else{const ps=Array.from(td.querySelectorAll('p')).map(p=>p.textContent.trim()).filter(t=>t);
+ct=ps.length?ps.join('\n'):cc.textContent.trim()}
+if(ct&&ct.length>20){const ls=ct.split('\n').filter(l=>l.trim());
+this.extractedData.conditions=ls.map(l=>l.startsWith('-')?l:'- '+l).join('\n')}break}}}
+
+// ── Student supplies and RMIT supplies from tables ──
+if(tables.length>0){let studentCell=null;let rmitCell=null;
+for(let ti=0;ti<tables.length;ti++){const table=tables[ti];let found=false;
+for(let ri=0;ri<table.rows.length;ri++){const row=table.rows[ri];
+for(let ci=0;ci<row.cells.length;ci++){const cell=row.cells[ci];const txt=cell.textContent.trim();
+if(txt.match(/Equipment\/resources\s+students\s+must\s+supply/i)){
+const stripped=txt.replace(/Equipment\/resources\s+students\s+must\s+supply[^:]*:?\s*/i,'').trim();
+if(stripped.length>10){studentCell=cell}
+else if(ri+1<table.rows.length&&table.rows[ri+1].cells[ci]){studentCell=table.rows[ri+1].cells[ci]}
+if(ci+1<row.cells.length){const adjTxt=row.cells[ci+1].textContent.trim();
+if(adjTxt.match(/Equipment\/resources\s+to\s+be\s+provided/i)){
+const rmitStripped=adjTxt.replace(/Equipment\/resources\s+to\s+be\s+provided[^:]*:?\s*/i,'').trim();
+if(rmitStripped.length>10){rmitCell=row.cells[ci+1]}
+else if(ri+1<table.rows.length&&table.rows[ri+1].cells.length>ci+1){rmitCell=table.rows[ri+1].cells[ci+1]}}}
+found=true;break}}
+if(found)break}
+if(found)break}
+if(studentCell){try{const td=document.createElement('div');td.innerHTML=studentCell.innerHTML;
+Array.from(td.querySelectorAll('p')).forEach(function(p){if(p.textContent.match(/Equipment\/resources\s+students\s+must\s+supply/i))p.remove()});
+const lis=Array.from(td.querySelectorAll('li')).map(function(l){return l.textContent.trim()}).filter(function(t){return t});
+let sst='';
+if(lis.length){sst=lis.join('\n')}
+else{const ps=Array.from(td.querySelectorAll('p')).map(function(p){return p.textContent.trim()}).filter(function(t){return t});
+if(ps.length){sst=ps.join('\n')}else{sst=td.textContent.replace(/Equipment\/resources\s+students\s+must\s+supply[^:]*:?\s*/i,'').trim()}}
+if(sst){this.extractedData.studentSupplies=sst.split('\n').map(function(l){return l.trim()}).filter(function(l){return l&&l.length>2}).map(function(l){return '- '+l}).join('\n')}}catch(e){console.error('Student supplies extraction error:',e)}}
+if(rmitCell){try{const td2=document.createElement('div');td2.innerHTML=rmitCell.innerHTML;
+Array.from(td2.querySelectorAll('p')).forEach(function(p){if(p.textContent.match(/Equipment\/resources\s+to\s+be\s+provided/i))p.remove()});
+const lis2=Array.from(td2.querySelectorAll('li')).map(function(l){return l.textContent.trim()}).filter(function(t){return t});
+let rst='';
+if(lis2.length){rst=lis2.join('\n')}
+else{const ps2=Array.from(td2.querySelectorAll('p')).map(function(p){return p.textContent.trim()}).filter(function(t){return t});
+if(ps2.length){rst=ps2.join('\n')}else{rst=td2.textContent.replace(/Equipment\/resources\s+to\s+be\s+provided[^:]*:?\s*/i,'').trim()}}
+if(rst){this.extractedData.rmitSupplies=rst.split('\n').map(function(l){return l.trim()}).filter(function(l){return l&&l.length>2}).map(function(l){return '- '+l}).join('\n')}}catch(e){console.error('RMIT supplies extraction error:',e)}}}
+
+this.showStatus();this.populateForm();this.showEdit()}catch(e){console.error(e);alert('Error processing document.')}finally{this.loader.style.display='none'}}
+showStatus(){const d=this.extractedData,s=[];s.push({icon:d.taskNumber?'found':'missing',text:'Task Number'+(d.taskNumber?': '+d.taskNumber:'')});s.push({icon:d.taskName?'found':'missing',text:'Task Name'+(d.taskName?': '+d.taskName.substring(0,30)+(d.taskName.length>30?'...':''):'')});s.push({icon:d.taskInstructions?'found':'missing',text:'Task Instructions'+(d.taskInstructions?' ('+d.taskInstructions.split(' ').length+' words)':'')});s.push({icon:d.unitCode?'found':'missing',text:'Unit Code'+(d.unitCode?': '+d.unitCode:'')});s.push({icon:d.conditions?'found':'missing',text:'Assessment Conditions'+(d.conditions?' ('+d.conditions.split('\n').filter(l=>l.trim()).length+' items)':'')});s.push({icon:(d.studentSupplies||d.rmitSupplies)?'found':'missing',text:'Equipment/Resources'+((d.studentSupplies||d.rmitSupplies)?' (Found)':'')});s.push({icon:d.submissionInstructions?'found':'missing',text:'Submission Instructions'+(d.submissionInstructions?' (Found)':'')});this.statusList.innerHTML=s.map(i=>`<div class="status-item"><div class="status-icon ${i.icon}">${i.icon==='found'?'✓':i.icon==='partial'?'!':'✗'}</div><span>${i.text}</span></div>`).join('');this.extractionStatus.style.display='block'}
+populateForm(){const d=this.extractedData,f=document.getElementById('assessmentForm');['taskNumber','taskName','unitCode','unitTitle','qualificationCode','programCode','courseCode'].forEach(k=>{if(f.elements[k]&&d[k])f.elements[k].value=d[k]});['taskInstructions','conditions','studentSupplies','rmitSupplies','submissionInstructions'].forEach(k=>{const el=document.getElementById(k);if(el&&d[k]){let c=d[k];
+if(c.trim().startsWith('<')){el.innerHTML=c;return}
+if(k==='conditions'||k==='studentSupplies'||k==='rmitSupplies'){const ls=c.split('\n').filter(l=>l.trim());if(ls.length>0){const items=ls.map(l=>l.replace(/^[-\u2022\u00B7]\s*/,'').replace(/^\d+[\.\)]\s*/,'').trim()).filter(i=>i);c='<ul>'+items.map(i=>'<li>'+i+'</li>').join('')+'</ul>'}}else if(c.includes('\n')){const ls=c.split('\n').filter(l=>l.trim());const isBul=ls.some(l=>/^[-\u2022\u00B7]\s*/.test(l)||/^\d+[\.\)]\s*/.test(l)||ls.length>2);if(isBul){const items=ls.map(l=>l.replace(/^[-\u2022\u00B7]\s*/,'').replace(/^\d+[\.\)]\s*/,'').trim()).filter(i=>i);c='<ul>'+items.map(i=>'<li>'+i+'</li>').join('')+'</ul>'}else c=ls.map(l=>'<p>'+l+'</p>').join('')}else if(c.trim()){c=(k==='studentSupplies'||k==='rmitSupplies')?'<ul><li>'+c+'</li></ul>':'<p>'+c+'</p>'}el.innerHTML=c}});if(d.includeTemplate)f.elements.includeTemplate.checked=true;if(d.assessmentType)f.elements.assessmentType.value=d.assessmentType}
+showEdit(){this.updateStep(1,'completed');this.updateStep(2,'active');this.initialInstructions.style.display='none';this.editForm.style.display='block';this.outputSection.style.display='none'}
+updateStep(n,s){const el=document.getElementById('step'+n);el.classList.remove('active','completed');if(s)el.classList.add(s)}
+}
+
+document.querySelectorAll('.rich-editor').forEach(el=>{el.addEventListener('paste',function(e){e.preventDefault();document.execCommand('insertText',false,(e.clipboardData||window.clipboardData).getData('text/plain'))});el.addEventListener('input',function(){if(this.innerHTML==='<br>'||this.innerHTML==='')this.innerHTML=''})});
+function fmtText(cmd,id='taskInstructions'){const el=document.getElementById(id);el.focus();if(cmd!=='bold')document.execCommand('removeFormat',false,null);document.execCommand(cmd,false,null)}
+function toggleAI(){document.getElementById('aiOptionsSection').style.display=document.getElementById('includeAI').checked?'block':'none'}
+function cleanHTML(h){const t=document.createElement('div');t.innerHTML=h;t.querySelectorAll('*[style]').forEach(e=>e.removeAttribute('style'));t.querySelectorAll('p').forEach(p=>{if(p.innerHTML.trim()===''||p.innerHTML==='&nbsp;')p.remove()});return t.innerHTML}
+
+function generateHTML(){const f=document.getElementById('assessmentForm'),d={};['taskNumber','taskName','unitCode','unitTitle','qualificationCode','programCode','courseCode'].forEach(k=>d[k]=f.elements[k].value);['taskInstructions','conditions','studentSupplies','rmitSupplies','submissionInstructions'].forEach(k=>d[k]=cleanHTML(document.getElementById(k).innerHTML));d.includeTemplate=f.elements.includeTemplate.checked;d.assessmentType=f.elements.assessmentType.value;d.includeAI=f.elements.includeAI.checked;d.aiUseStatement=f.elements.aiUseStatement.value;
+let h=`<div id="emble-customise-6c7e686a" class="customise emble emble-cblock emble-width-control fullwidth-on emble-cblock-boxshadow white" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
 <div id="emble-customise-38d14b77" class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-context-menu="customise delete" data-customise="icon-shape icon icon-wrap icon-size icon-colour-options" data-emble-name="Icon" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-download">&nbsp;</i></div>
 <h3><br />Task instructions</h3>
 <p>&nbsp;</p>
-${data.taskInstructions || '<p><span style="background-color: #fac800;">Copy from Summary and Purpose of Assessment (consider the first paragraph of \'what\').</span></p>'}
+${d.taskInstructions||'<p><span style="background-color: #fac800;">Copy from Summary and Purpose of Assessment.</span></p>'}
 <p>&nbsp;</p>`;
-
-            // If it's a quiz, add the specific quiz content AFTER the task instructions
-            if (data.assessmentType === 'quiz') {
-                html += `<p><strong>What</strong></p>
+if(d.assessmentType==='quiz'){h+=`<p><strong>What</strong></p>
 <p>For this assessment task, you are required to respond to a series of questions. These questions may include short-answer, multiple-choice, matching, and fill-in-the-blank formats, which allow you to demonstrate your skills and knowledge for the unit.</p>
 <p>&nbsp;</p>
 <p><strong>Where</strong></p>
@@ -2487,49 +438,37 @@ ${data.taskInstructions || '<p><span style="background-color: #fac800;">Copy fro
 <p>&nbsp;</p>
 <p><strong>How</strong></p>
 <p>You must answer all questions correctly for you to be assessed as satisfactory for this assessment task.</p>
-<p>&nbsp;</p>`;
-            }
-
-            if (data.assessmentType !== 'quiz') {
-                html += `<p><strong>Download detailed task instructions</strong></p>
-<p id="emble-customise-7538f67e" class="btn emble-btn btn-blue customise emble-prevent-delete-recursive" data-context-menu="customise rce-link rce-course-links delete" data-customise="icon button-theme" data-emble-name="Button" data-emble-version="2.0"><i class="icon-circle-arrow-down">&nbsp;</i> <strong>Student Version: AT${data.taskNumber || '[Task Number]'}</strong></p>`;
-            }
-
-            if (data.includeTemplate && data.assessmentType !== 'quiz') {
-                html += `
+<p>&nbsp;</p>`}
+if(d.assessmentType!=='quiz'){h+=`<p><strong>Download detailed task instructions</strong></p>
+<p id="emble-customise-7538f67e" class="btn emble-btn btn-blue customise emble-prevent-delete-recursive" data-context-menu="customise rce-link rce-course-links delete" data-customise="icon button-theme" data-emble-name="Button" data-emble-version="2.0"><i class="icon-circle-arrow-down">&nbsp;</i> <strong>Student Version: AT${d.taskNumber||'[Task Number]'}</strong></p>`}
+if(d.includeTemplate&&d.assessmentType!=='quiz'){h+=`
 <p><strong>Student Response Template</strong></p>
 <p>(Download and complete for final submission by due date)</p>
-<p id="emble-customise-5d42da95" class="btn emble-btn btn-blue customise emble-prevent-delete-recursive" data-context-menu="customise rce-link rce-course-links delete" data-customise="icon button-theme" data-emble-name="Button" data-emble-version="2.0"><i class="icon-circle-arrow-down">&nbsp;</i> <strong>Student Response Template: AT${data.taskNumber || '[Task Number]'}</strong></p>`;
-            }
-
-            html += `
+<p id="emble-customise-5d42da95" class="btn emble-btn btn-blue customise emble-prevent-delete-recursive" data-context-menu="customise rce-link rce-course-links delete" data-customise="icon button-theme" data-emble-name="Button" data-emble-version="2.0"><i class="icon-circle-arrow-down">&nbsp;</i> <strong>Student Response Template: AT${d.taskNumber||'[Task Number]'}</strong></p>`}
+h+=`
 </div>
 <p class="narrow-p">&nbsp;</p>
-
 <div id="emble-customise-ccf6c49e" class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
 <div id="emble-customise-fc8de3c6" class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-context-menu="customise delete" data-customise="icon-shape icon icon-wrap icon-size icon-colour-options" data-emble-name="Icon" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-hour-glass">&nbsp;</i></div>
 <h3><br />Conditions for assessment</h3>
 <p>&nbsp;</p>
-${data.conditions || '<p><span style="background-color: #fac800;">Copy from Conditions for assessment section (do not include duplicate useful links if they are present).</span></p>'}
+${d.conditions||'<p><span style="background-color: #fac800;">Copy from Conditions for assessment section.</span></p>'}
 <p>&nbsp;</p>
 <details>
-<summary style="cursor: pointer; font-size: 14pt; color: #222160; font-family: Helvetica, sans-serif; background-color: #f5f5f5; padding: 10px; margin-bottom: 5px;" aria-expanded="false" aria-label="Toggle details for Heading 1"><span style="font-size: 12pt;">Equipment/resources students must supply</span></summary>
-${data.studentSupplies || '<p><span style="background-color: #fac800;">Copy as a bulleted list</span></p>'}
+<summary style="cursor: pointer; font-size: 14pt; color: #222160; font-family: Helvetica, sans-serif; background-color: #f5f5f5; padding: 10px; margin-bottom: 5px;" aria-expanded="false"><span style="font-size: 12pt;">Equipment/resources students must supply</span></summary>
+${d.studentSupplies||'<p><span style="background-color: #fac800;">Copy as a bulleted list</span></p>'}
 <p>&nbsp;</p>
 </details><details>
-<summary style="cursor: pointer; font-size: 14pt; color: #222160; font-family: Helvetica, sans-serif; background-color: #f5f5f5; padding: 10px; margin-bottom: 5px;" aria-expanded="false" aria-label="Toggle details for Heading 1"><span style="font-size: 12pt;">Equipment/resources to be provided by RMIT or the workplace</span></summary>
-${data.rmitSupplies || '<p><span style="background-color: #fac800;">Copy as a bulleted list</span></p>'}
+<summary style="cursor: pointer; font-size: 14pt; color: #222160; font-family: Helvetica, sans-serif; background-color: #f5f5f5; padding: 10px; margin-bottom: 5px;" aria-expanded="false"><span style="font-size: 12pt;">Equipment/resources to be provided by RMIT or the workplace</span></summary>
+${d.rmitSupplies||'<p><span style="background-color: #fac800;">Copy as a bulleted list</span></p>'}
 <p>&nbsp;</p>
 </details></div>
 <p class="narrow-p">&nbsp;</p>
-
 <div id="emble-customise-c31a0397" class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
 <div id="emble-customise-a356f3e8" class="emble-icon small wrap emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false square yellow" data-context-menu="customise delete" data-customise="icon-shape icon icon-wrap icon-size icon-colour-options" data-emble-name="Icon" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-info">&nbsp;</i></div>
 <h3><br />Instructions on submitting your assessment</h3>
-${data.submissionInstructions ? `<p>${data.submissionInstructions}</p>` : '<p><span style="background-color: #fac800;">Copy from Instructions on submitting your task</span></p>'}`;
-
-            if (data.assessmentType === 'quiz') {
-                html += `
+${d.submissionInstructions?(d.submissionInstructions.trim().startsWith('<')?d.submissionInstructions:'<p>'+d.submissionInstructions+'</p>'):'<p><span style="background-color: #fac800;">Copy from Instructions on submitting your task</span></p>'}`;
+if(d.assessmentType==='quiz'){h+=`
 <p><strong>Step-by-Step Submission Instructions:</strong></p>
 <ol>
 <li>Select Take the quiz</li>
@@ -2538,9 +477,7 @@ ${data.submissionInstructions ? `<p>${data.submissionInstructions}</p>` : '<p><s
 <li>Note: Once you select the Submit quiz button you will not be able to make any changes to this attempt.</li>
 <li>For questions that require manual grading (e.g. essay type questions), you will have to wait until your assessor marks these.</li>
 <li>If required, you must wait until your assignment is graded by your teachers before beginning another attempt.</li>
-</ol>`;
-            } else {
-                html += `
+</ol>`}else{h+=`
 <p><strong>Step-by-Step Submission Instructions:</strong></p>
 <ol>
 <li>Select Start assignment</li>
@@ -2548,65 +485,37 @@ ${data.submissionInstructions ? `<p>${data.submissionInstructions}</p>` : '<p><s
 <li>Locate and select your final completed assessment file (named as per the naming convention)</li>
 <li>Add any comments, if required</li>
 <li>Select Submit assignment</li>
-</ol>`;
-            }
-
-            html += `
+</ol>`}
+h+=`
 <h3>RMIT Electronic Submission of Work For Assessment</h3>
-<p>I declare that in submitting all work for this assessment I have read, understood and agree to the content and expectations of the&nbsp;<a class="external" href="https://www.rmit.edu.au/students/student-essentials/assessment-and-exams/assessment/assessment-declaration" target="_blank" rel="noopener">Assessment declaration</a><span style="color: var(--ic-brand-font-color-dark); font-family: inherit; font-size: 1rem;">&nbsp;</span></p>`;
-
-            // Add AI acceptable use statement if selected
-            if (data.includeAI) {
-                html += `<h3>AI - Acceptable use for this assessment</h3>`;
-                
-                switch(data.aiUseStatement) {
-                    case 'unrestricted':
-                        html += `<p><strong>AI tools and their use are not restricted for this assessment task</strong></p>
-<p>In this assessment task, you can use AI tools to assist you. All use of AI tools and their outputs should be appropriately acknowledged and referenced.</p>`;
-                        break;
-                    case 'restricted-ways':
-                        html += `<p><strong>AI tools are restricted in certain ways for this assessment task</strong></p>
-<p>In this assessment task, you can use AI tools to support you in developing and completing your work by <span style="background-color: #fac800;">[insert ways students are permitted to use AI tools e.g., generating ideas/planning/drafting]</span> only. Any use of such tools must be appropriately acknowledged and referenced.</p>`;
-                        break;
-                    case 'restricted-tools':
-                        html += `<p><strong>AI tools are restricted in the completion of this assessment task</strong></p>
-<p>In this assessment task, you can use the following AI tools only <span style="background-color: #fac800;">[insert name(s) of tools, or types of tools e.g. image generators/text generators/standard editing software]</span>. Any use of these tools must be appropriately acknowledged and referenced.</p>`;
-                        break;
-                    case 'not-permitted':
-                        html += `<p><strong>AI tools cannot be used in the completion of this assessment task</strong></p>
-<p>In this assessment task, you must not use any AI tools (excluding text editing software e.g., Grammarly) to generate any materials, content or ideas related to the task.</p>`;
-                        break;
-                }
-            }
-
-            html += `
+<p>I declare that in submitting all work for this assessment I have read, understood and agree to the content and expectations of the&nbsp;<a class="external" href="https://www.rmit.edu.au/students/student-essentials/assessment-and-exams/assessment/assessment-declaration" target="_blank" rel="noopener">Assessment declaration</a>&nbsp;</p>`;
+if(d.includeAI){h+='<h3>AI - Acceptable use for this assessment</h3>';switch(d.aiUseStatement){case'unrestricted':h+='<p><strong>AI tools and their use are not restricted for this assessment task</strong></p><p>In this assessment task, you can use AI tools to assist you. All use of AI tools and their outputs should be appropriately acknowledged and referenced.</p>';break;case'restricted-ways':h+='<p><strong>AI tools are restricted in certain ways for this assessment task</strong></p><p>In this assessment task, you can use AI tools to support you in developing and completing your work by <span style="background-color: #fac800;">[insert ways students are permitted to use AI tools e.g., generating ideas/planning/drafting]</span> only. Any use of such tools must be appropriately acknowledged and referenced.</p>';break;case'restricted-tools':h+='<p><strong>AI tools are restricted in the completion of this assessment task</strong></p><p>In this assessment task, you can use the following AI tools only <span style="background-color: #fac800;">[insert name(s) of tools, or types of tools e.g. image generators/text generators/standard editing software]</span>. Any use of these tools must be appropriately acknowledged and referenced.</p>';break;case'not-permitted':h+='<p><strong>AI tools cannot be used in the completion of this assessment task</strong></p><p>In this assessment task, you must not use any AI tools (excluding text editing software e.g., Grammarly) to generate any materials, content or ideas related to the task.</p>';break}}
+h+=`
 </div>
 <p class="narrow-p">&nbsp;</p>
-
 <div id="emble-customise-9aba4b52" class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0"><details>
 <summary style="cursor: pointer; font-size: 1.4rem; color: #222160; font-family: Helvetica, sans-serif; background-color: #f5f5f5; padding: 10px; margin-bottom: 5px;">Useful Assessment Links&nbsp;</summary>
-<p><span>Please use links below to access important information on assessments:</span><span>&nbsp;</span></p>
+<p><span>Please use links below to access important information on assessments:</span>&nbsp;</p>
 <ul>
-<li><span>Assessment submission and appeals - </span><span><a href="https://www.rmit.edu.au/students/my-course/assessment-results/assessment">Assessments</a></span><span>&nbsp;</span></li>
-<li><span>Extensions and special considerations -&nbsp; </span><span><a href="https://www.rmit.edu.au/students/my-course/assessment-results/special-consideration-extensions/equitable-assessment-arrangements">Extensions and special consideration</a></span><span>&nbsp;</span><span>&nbsp;</span></li>
-<li><span>Equitable Assessment Arrangement (EAA) - </span><span><a href="https://www.rmit.edu.au/students/support-services/equitable-learning">Equitable Assessment Arrangements</a></span><span>&nbsp;</span></li>
-<li><span>Information on recording and retaining assessments and dealing with assessment appeals can be found in the&nbsp;</span><a style="font-size: 1rem; font-family: inherit;" href="https://policies.rmit.edu.au/download.php?associated=1&amp;id=348&amp;version=1">RMIT Assessment Processes document</a></li>
-<li>Information on recognition of prior learning &ndash; <a href="https://www.rmit.edu.au/students/my-course/enrolment/apply-for-credit"><span>RMIT recognition of prior learning (RPL)</span></a></li>
+<li><span>Assessment submission and appeals - </span><a href="https://www.rmit.edu.au/students/my-course/assessment-results/assessment">Assessments</a>&nbsp;</li>
+<li><span>Extensions and special considerations - </span><a href="https://www.rmit.edu.au/students/my-course/assessment-results/special-consideration-extensions/equitable-assessment-arrangements">Extensions and special consideration</a>&nbsp;</li>
+<li><span>Equitable Assessment Arrangement (EAA) - </span><a href="https://www.rmit.edu.au/students/support-services/equitable-learning">Equitable Assessment Arrangements</a>&nbsp;</li>
+<li><span>Information on recording and retaining assessments and dealing with assessment appeals can be found in the </span><a href="https://policies.rmit.edu.au/download.php?associated=1&amp;id=348&amp;version=1">RMIT Assessment Processes document</a></li>
+<li>Information on recognition of prior learning &ndash; <a href="https://www.rmit.edu.au/students/my-course/enrolment/apply-for-credit">RMIT recognition of prior learning (RPL)</a></li>
 </ul>
 </details></div>
 <p class="narrow-p">&nbsp;</p>
-
 <div id="emble-customise-75d98739" class="customise emble-columns-container emble-columns-controller-2 emble-columns-stretch-child-height" data-context-menu="customise delete" data-customise="new-columns-arrangement new-columns-border new-columns-padding columns-stretch-children" data-emble-name="Columns" data-emble-version="2.0">
 <div class="emble-columns-child emble-prevent-delete">
 <div id="emble-customise-bf5219ac" class="customise emble emble-cblock emble-width-control fullwidth-on emble-cblock-boxshadow white" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">
 <div id="emble-customise-be5385dd" class="emble-icon small wrap emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false yellow square" data-context-menu="customise delete" data-customise="icon-shape icon icon-wrap icon-size icon-colour-options" data-emble-name="Icon" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-info">&nbsp;</i></div>
-<p><span style="font-size: 12pt;"><strong>Task number:</strong> ${data.taskNumber || '<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
-<p><span style="font-size: 12pt;"><strong>National unit code:</strong> ${data.unitCode || '<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
-<p><span style="font-size: 12pt;"><strong>National qualification code:</strong> ${data.qualificationCode || '<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
-<p><span style="font-size: 12pt;"><strong>RMIT program code:</strong>&nbsp; ${data.programCode || '<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
-<p><span style="font-size: 12pt;"><strong>Task name:</strong> ${data.taskName || '<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
-<p><span style="font-size: 12pt;"><strong>National unit title:</strong> ${data.unitTitle || '<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
-<p><span style="font-size: 12pt;"><strong>RMIT course code:</strong> ${data.courseCode || '<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
+<p><span style="font-size: 12pt;"><strong>Task number:</strong> ${d.taskNumber||'<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
+<p><span style="font-size: 12pt;"><strong>National unit code:</strong> ${d.unitCode||'<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
+<p><span style="font-size: 12pt;"><strong>National qualification code:</strong> ${d.qualificationCode||'<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
+<p><span style="font-size: 12pt;"><strong>RMIT program code:</strong>&nbsp; ${d.programCode||'<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
+<p><span style="font-size: 12pt;"><strong>Task name:</strong> ${d.taskName||'<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
+<p><span style="font-size: 12pt;"><strong>National unit title:</strong> ${d.unitTitle||'<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
+<p><span style="font-size: 12pt;"><strong>RMIT course code:</strong> ${d.courseCode||'<span style="background-color: #fac800;">xxxxx</span>'}</span></p>
 </div>
 <p class="narrow-p">&nbsp;</p>
 </div>
@@ -2616,85 +525,17 @@ ${data.submissionInstructions ? `<p>${data.submissionInstructions}</p>` : '<p><s
 <p><strong>Duration/and or due date: <span style="background-color: #fac800;">TEACHER TO UPDATE</span> at 11:59pm</strong></p>
 <p><span style="font-size: 12pt;"><strong>Feedback and Grades:</strong> Feedback on your assignment and your grade will be released via the Grades. Assessment tasks will receive the following outcomes: Satisfactory or Not Satisfactory.</span></p>
 </div>
-<p class="">&nbsp;<span style="color: var(--ic-brand-font-color-dark); font-family: inherit; font-size: 1rem;">&nbsp;</span></p>
+<p>&nbsp;</p>
 </div>
 </div>
 <p class="narrow-p">&nbsp;</p>`;
+document.getElementById('outputContent').textContent=h;document.getElementById('previewContent').innerHTML=h;window.app.updateStep(2,'completed');window.app.updateStep(3,'active');document.getElementById('editForm').style.display='none';document.getElementById('outputSection').style.display='block';window.scrollTo(0,0)}
 
-            document.getElementById('outputContent').textContent = html;
-            document.getElementById('previewContent').innerHTML = html;
-            
-            window.converter.updateStep(2, 'completed');
-            window.converter.updateStep(3, 'active');
-            document.getElementById('editForm').style.display = 'none';
-            document.getElementById('outputSection').style.display = 'block';
-            
-            window.scrollTo(0, 0);
-        }
-        
-        function copyHTML() {
-            const content = document.getElementById('outputContent').textContent;
-            
-            const textArea = document.createElement('textarea');
-            textArea.value = content;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-999999px';
-            textArea.style.top = '-999999px';
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            
-            try {
-                document.execCommand('copy');
-                const btn = event.target;
-                const originalText = btn.textContent;
-                btn.textContent = 'Copied!';
-                btn.style.background = '#28a745';
-                
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.style.background = '';
-                }, 2000);
-            } catch (err) {
-                alert('Please select the text and copy manually (Ctrl+C or Cmd+C)');
-            }
-            
-            document.body.removeChild(textArea);
-        }
-        
-        function backToEdit() {
-            window.converter.updateStep(3, '');
-            window.converter.updateStep(2, 'active');
-            document.getElementById('editForm').style.display = 'block';
-            document.getElementById('outputSection').style.display = 'none';
-        }
-        
-        function resetForm() {
-            if (confirm('Start over with a new document?')) {
-                location.reload();
-            }
-        }
-        
-        // Initialize the converter
-        window.converter = new CanvasConverter();
-        
-        // Add CSS for placeholder effect
-        const style = document.createElement('style');
-        style.textContent = `
-            .rich-editor[data-placeholder]:empty:before {
-                content: attr(data-placeholder);
-                color: #999;
-                position: absolute;
-                pointer-events: none;
-                white-space: pre-line;
-            }
-            
-            .rich-editor:focus[data-placeholder]:empty:before {
-                content: attr(data-placeholder);
-                color: #ccc;
-            }
-        `;
-        document.head.appendChild(style);
-    </script>
+function copyHTML(){const c=document.getElementById('outputContent').textContent,ta=document.createElement('textarea');ta.value=c;ta.style.position='fixed';ta.style.left='-999999px';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');const b=event.target,o=b.textContent;b.textContent='Copied!';b.style.background='#28a745';setTimeout(()=>{b.textContent=o;b.style.background=''},2000)}catch(e){alert('Please copy manually (Ctrl+C)')}document.body.removeChild(ta)}
+function backToEdit(){window.app.updateStep(3,'');window.app.updateStep(2,'active');document.getElementById('editForm').style.display='block';document.getElementById('outputSection').style.display='none'}
+function resetForm(){if(confirm('Start over with a new document?'))location.reload()}
+window.app=new App();
+const st=document.createElement('style');st.textContent=`.rich-editor[data-placeholder]:empty:before{content:attr(data-placeholder);color:#999;position:absolute;pointer-events:none;white-space:pre-line}.rich-editor:focus[data-placeholder]:empty:before{content:attr(data-placeholder);color:#ccc}`;document.head.appendChild(st);
+</script>
 </body>
 </html>
