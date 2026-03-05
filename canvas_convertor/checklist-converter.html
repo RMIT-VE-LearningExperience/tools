@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoVE Checklist Converter</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+        .main-wrapper{flex:1;padding:20px}
+        .container{max-width:1400px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+        .header{background:#000054;color:#fff;padding:30px;text-align:center}
+        .header h1{font-size:2rem;margin-bottom:10px;font-weight:700}
+        .header p{font-size:1.05rem;opacity:.9}
+        .workflow-steps{display:flex;justify-content:center;padding:20px 30px;background:#f2f2f2;border-bottom:3px solid #fac800;flex-wrap:wrap;gap:10px}
+        .step{display:flex;align-items:center;margin:0 15px;font-weight:600;color:#000054;font-size:.95rem}
+        .step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+        .step.active .step-number{background:#e61e2a}
+        .step.completed .step-number{background:#28a745}
+        .main-layout{display:grid;grid-template-columns:420px 1fr;min-height:60vh}
+        .sidebar{background:#f2f2f2;padding:30px;border-right:1px solid #e3e5e0;display:flex;flex-direction:column}
+        .content-area{padding:30px;overflow-y:auto}
+        .paste-area{border:3px dashed #000054;border-radius:8px;padding:20px;text-align:center;transition:all .3s;cursor:pointer;background:#fff;margin-bottom:20px}
+        .paste-area:hover{border-color:#e61e2a;background:#f8f9fa}
+        .paste-icon{font-size:2.5rem;color:#000054;margin-bottom:10px}
+        .paste-text{font-size:1.05rem;color:#000054;margin-bottom:8px;font-weight:600}
+        .paste-subtext{font-size:.85rem;color:#666}
+        textarea#listInput{width:100%;min-height:250px;padding:15px;border:2px solid #e3e5e0;border-radius:6px;font-size:.9rem;font-family:'Monaco','Menlo',monospace;resize:vertical;background:#fff;line-height:1.5;display:none}
+        textarea#listInput:focus{outline:none;border-color:#000054}
+        .extraction-status{display:none;background:#fff;border:2px solid #fac800;border-radius:6px;padding:20px;margin-top:15px}
+        .extraction-status h3{color:#000054;margin-bottom:12px;font-size:1.1rem}
+        .status-item{display:flex;align-items:center;margin-bottom:8px;font-size:.9rem}
+        .status-icon{width:20px;height:20px;border-radius:50%;margin-right:10px;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0}
+        .status-icon.found{background:#28a745}
+        .btn{padding:12px 28px;border:none;border-radius:4px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s}
+        .btn-primary{background:#e61e2a;color:#fff}.btn-primary:hover{background:#c51923;transform:translateY(-1px)}
+        .btn-secondary{background:#000054;color:#fff}.btn-secondary:hover{background:#000043;transform:translateY(-1px)}
+        .btn-outline{background:#fff;color:#000054;border:2px solid #000054}.btn-outline:hover{background:#f2f2f2}
+        .btn:disabled{background:#999;cursor:not-allowed;transform:none}
+        .button-group{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+        .edit-form{display:none}
+        .form-section{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:25px;margin-bottom:25px;border-left:4px solid #000054}
+        .form-section h3{color:#000054;margin-bottom:18px;font-size:1.2rem;border-bottom:2px solid #fac800;padding-bottom:10px}
+        .form-group{margin-bottom:18px}
+        .form-group label{display:block;font-weight:600;color:#000054;margin-bottom:6px;font-size:.9rem}
+        .form-group input[type="text"]{width:100%;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit;transition:border-color .3s;background:#fafbfc}
+        .form-group input:focus{outline:none;border-color:#000054}
+        .help-text{font-size:.8rem;color:#666;margin-top:4px}
+        .list-editor{margin-top:8px}
+        .list-item{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+        .list-item input{flex:1;padding:8px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit}
+        .list-item input:focus{outline:none;border-color:#000054}
+        .list-item button{background:none;border:none;color:#e61e2a;cursor:pointer;font-size:1.1rem;padding:4px}
+        .list-item .drag-handle{cursor:grab;color:#999;font-size:1.1rem;padding:4px;user-select:none}
+        .list-item .drag-handle:active{cursor:grabbing}
+        .list-item.dragging{opacity:.4}
+        .list-item.drag-over{border-top:2px solid #e61e2a}
+        .add-remove-btns{display:flex;gap:8px;margin-top:8px}
+        .add-remove-btns button{padding:4px 12px;font-size:.8rem;border-radius:3px;border:1px solid #ddd;cursor:pointer;background:#fff}
+        .add-remove-btns button:hover{background:#f2f2f2}
+        .output-section{display:none}
+        .output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+        .output-header{background:#000054;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+        .output-content{padding:20px;font-family:'Monaco','Menlo',monospace;font-size:.8rem;line-height:1.5;max-height:500px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
+        .preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:30px;margin-top:20px}
+        .preview-container h3{color:#000054;margin-bottom:20px}
+        .alert{padding:15px;border-radius:4px;margin-bottom:20px;display:flex;align-items:flex-start}
+        .alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
+        .alert-icon{font-size:1.4rem;margin-right:12px;flex-shrink:0}
+        .footer{background:#000054;color:#fff;text-align:center;padding:20px;font-size:.9rem}
+        @media(max-width:1000px){.main-layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid #e3e5e0}}
+    </style>
+</head>
+<body>
+<div class="main-wrapper">
+<div class="container">
+    <div class="header">
+        <h1>CoVE Checklist Converter</h1>
+        <p>Paste a List &#8594; Review &amp; Edit &#8594; Generate Emble-Ready Checklist HTML</p>
+    </div>
+    <div class="workflow-steps">
+        <div class="step active" id="step1"><div class="step-number">1</div><span>Paste List</span></div>
+        <div class="step" id="step2"><div class="step-number">2</div><span>Review &amp; Edit</span></div>
+        <div class="step" id="step3"><div class="step-number">3</div><span>Generate HTML</span></div>
+    </div>
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="paste-area" id="pasteArea" onclick="showTextarea()">
+                <div class="paste-icon">&#9745;</div>
+                <div class="paste-text">Paste Your List</div>
+                <div class="paste-subtext">Click here, then paste a bulleted or numbered list</div>
+            </div>
+            <textarea id="listInput" placeholder="Paste your list here &#8212; one item per line. Supports:&#10;&#10;&#8226; Bulleted items&#10;- Dash items&#10;1. Numbered items&#10;Or just plain lines of text"></textarea>
+            <div class="form-group" style="margin-top:15px;">
+                <label>Checklist Heading (optional)</label>
+                <input type="text" id="checklistHeading" placeholder="e.g. Weekly Checklist, What to Bring">
+                <p class="help-text">Adds a heading above the checklist block</p>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" id="parseBtn" onclick="parseInput()" disabled>Parse List</button>
+                <button class="btn btn-outline" onclick="loadSample()">Load Sample</button>
+            </div>
+            <div class="extraction-status" id="extractionStatus"><h3>&#128202; Parsed Items</h3><div id="statusList"></div></div>
+        </div>
+        <div class="content-area">
+            <div id="initialInstructions">
+                <h2 style="color:#000054;margin-bottom:20px;">How to Use This Tool</h2>
+                <ol style="font-size:1.05rem;line-height:2;">
+                    <li><strong>Paste</strong> a bulleted, numbered, or plain-text list into the sidebar</li>
+                    <li><strong>Review</strong> the parsed checklist items</li>
+                    <li><strong>Edit</strong> items, reorder by dragging, or add/remove as needed</li>
+                    <li><strong>Generate</strong> your Canvas-ready Emble checklist HTML</li>
+                </ol>
+                <div class="alert alert-warning" style="margin-top:25px;"><div class="alert-icon">&#128161;</div><div><strong>Accepts any list format:</strong> numbered lists (1. 2. 3.), bulleted lists (&#8226; &#8211; &#8212; -), or just plain lines of text &#8212; one item per line. Empty lines are ignored.</div></div>
+            </div>
+
+            <div class="edit-form" id="editForm">
+                <h2 style="color:#000054;margin-bottom:20px;">Review &amp; Edit Checklist Items</h2>
+
+                <div class="form-section">
+                    <h3>&#9745; Checklist Items</h3>
+                    <p class="help-text" style="margin-bottom:15px;">Drag items to reorder. Edit text inline. Add or remove items as needed.</p>
+                    <div id="checklistItems" class="list-editor"></div>
+                    <div class="add-remove-btns">
+                        <button onclick="addCheckItem()">+ Add Item</button>
+                        <button onclick="removeCheckItem()">&#8722; Remove Last</button>
+                    </div>
+                </div>
+
+                <div class="button-group" style="padding-top:20px;border-top:2px solid #e3e5e0;">
+                    <button class="btn btn-primary" onclick="generateHTML()">Generate Checklist HTML</button>
+                    <button class="btn btn-secondary" onclick="resetAll()">Start Over</button>
+                </div>
+            </div>
+
+            <div class="output-section" id="outputSection">
+                <h2 style="color:#000054;margin-bottom:20px;">Generated Canvas HTML</h2>
+                <div class="output-container">
+                    <div class="output-header">
+                        <span>Emble Checklist HTML</span>
+                        <button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem;" onclick="copyHTML('outputHTML', this)">Copy HTML</button>
+                    </div>
+                    <div class="output-content" id="outputHTML"></div>
+                </div>
+                <div class="preview-container">
+                    <h3>Preview</h3>
+                    <div id="outputPreview"></div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="backToEdit()">Back to Edit</button>
+                    <button class="btn btn-primary" onclick="resetAll()">New Checklist</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team &#8212; RMIT College of Vocational Education</p></footer>
+
+<script>
+var checkCount = 0;
+var dragSrcEl = null;
+
+function showTextarea() {
+    document.getElementById('listInput').style.display = 'block';
+    document.getElementById('pasteArea').style.display = 'none';
+    document.getElementById('listInput').focus();
+    document.getElementById('parseBtn').disabled = false;
+}
+
+function updateStep(n, s) {
+    var e = document.getElementById('step' + n);
+    e.classList.remove('active', 'completed');
+    if (s) e.classList.add(s);
+}
+
+function esc(s) {
+    if (!s) return '';
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+function genId() {
+    return 'emble-customise-' + Math.random().toString(16).slice(2, 10);
+}
+
+// ── Checklist item editor with drag-and-drop ──
+function addCheckItem(val) {
+    val = val || '';
+    checkCount++;
+    var container = document.getElementById('checklistItems');
+    var d = document.createElement('div');
+    d.className = 'list-item';
+    d.id = 'ckItem' + checkCount;
+    d.draggable = true;
+    d.innerHTML = '<span class="drag-handle" title="Drag to reorder">&#9776;</span>' +
+        '<span style="font-weight:600;color:#000054;min-width:20px;">' + checkCount + '.</span>' +
+        '<input type="text" id="ckText' + checkCount + '" value="' + esc(val) + '" placeholder="Checklist item ' + checkCount + '">' +
+        '<button onclick="this.closest(\'.list-item\').remove();renumberCheck()" title="Remove">\u2715</button>';
+    container.appendChild(d);
+
+    // Drag events
+    d.addEventListener('dragstart', handleDragStart);
+    d.addEventListener('dragover', handleDragOver);
+    d.addEventListener('drop', handleDrop);
+    d.addEventListener('dragend', handleDragEnd);
+}
+
+function removeCheckItem() {
+    if (checkCount > 0) {
+        var e = document.getElementById('ckItem' + checkCount);
+        if (e) e.remove();
+        checkCount--;
+    }
+}
+
+function renumberCheck() {
+    var container = document.getElementById('checklistItems');
+    var items = container.querySelectorAll('.list-item');
+    checkCount = items.length;
+    items.forEach(function (item, i) {
+        var n = i + 1;
+        item.id = 'ckItem' + n;
+        item.querySelectorAll('span')[1].textContent = n + '.';
+        item.querySelector('input').id = 'ckText' + n;
+    });
+}
+
+// ── Drag and drop ──
+function handleDragStart(e) {
+    dragSrcEl = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    var items = document.querySelectorAll('#checklistItems .list-item');
+    items.forEach(function (item) { item.classList.remove('drag-over'); });
+    this.classList.add('drag-over');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    if (dragSrcEl !== this) {
+        var container = document.getElementById('checklistItems');
+        var allItems = Array.from(container.querySelectorAll('.list-item'));
+        var srcIdx = allItems.indexOf(dragSrcEl);
+        var tgtIdx = allItems.indexOf(this);
+        if (srcIdx < tgtIdx) {
+            container.insertBefore(dragSrcEl, this.nextSibling);
+        } else {
+            container.insertBefore(dragSrcEl, this);
+        }
+        renumberCheck();
+    }
+}
+
+function handleDragEnd() {
+    var items = document.querySelectorAll('#checklistItems .list-item');
+    items.forEach(function (item) {
+        item.classList.remove('dragging');
+        item.classList.remove('drag-over');
+    });
+}
+
+// ── Parser ──
+function parseInput() {
+    var raw = document.getElementById('listInput').value.trim();
+    if (!raw) return alert('Please paste a list first.');
+
+    var lines = raw.split('\n');
+    var items = [];
+
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line) continue;
+
+        // Strip leading bullets, dashes, numbers, checkbox markers
+        line = line
+            .replace(/^[\u2022\u2023\u25E6\u2043\u2219\u25AA\u25AB\u25CF\u25CB\u2713\u2714\u2715\u2716\u2610\u2611\u2612\u2713\u2714\u2705\u2611\uFE0F?\u2610\u2612]\s*/,'') // bullet/check chars
+            .replace(/^[\-\u2013\u2014\*\>]\s*/, '')    // dashes, asterisks, >
+            .replace(/^\d+[.)]\s*/, '')                  // numbered: 1. or 1)
+            .replace(/^[a-zA-Z][.)]\s*/, '')             // lettered: a. or a)
+            .trim();
+
+        if (line) items.push(line);
+    }
+
+    // Populate editor
+    document.getElementById('checklistItems').innerHTML = '';
+    checkCount = 0;
+    if (items.length) {
+        items.forEach(function (item) { addCheckItem(item); });
+    } else {
+        addCheckItem(); addCheckItem(); addCheckItem();
+    }
+
+    // Status
+    document.getElementById('statusList').innerHTML =
+        '<div class="status-item"><div class="status-icon found">\u2714</div><span>' + items.length + ' checklist item' + (items.length !== 1 ? 's' : '') + ' parsed</span></div>';
+    document.getElementById('extractionStatus').style.display = 'block';
+
+    showEditForm();
+}
+
+function showEditForm() {
+    updateStep(1, 'completed'); updateStep(2, 'active');
+    document.getElementById('initialInstructions').style.display = 'none';
+    document.getElementById('editForm').style.display = 'block';
+    document.getElementById('outputSection').style.display = 'none';
+}
+
+// ── HTML Generator ──
+function generateHTML() {
+    var heading = document.getElementById('checklistHeading').value.trim();
+    var items = [];
+    document.querySelectorAll('#checklistItems .list-item input').forEach(function (inp) {
+        if (inp.value.trim()) items.push(inp.value.trim());
+    });
+
+    if (!items.length) return alert('Please add at least one checklist item.');
+
+    var h = '';
+
+    h += '<p class="">&nbsp;</p>\n';
+    h += '<div id="' + genId() + '" class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n';
+
+    if (heading) {
+        h += '<h3>' + esc(heading) + '</h3>\n';
+    }
+
+    items.forEach(function (item) {
+        h += '<p><span style="font-size: 24pt; color: #000054;">\u2611 </span><span style="font-size: 12pt; color: #000000;">' + esc(item) + '</span></p>\n';
+    });
+
+    h += '</div>\n';
+    h += '<p class="narrow-p">&nbsp;</p>\n';
+
+    document.getElementById('outputHTML').textContent = h;
+    document.getElementById('outputPreview').innerHTML = h;
+    updateStep(2, 'completed'); updateStep(3, 'active');
+    document.getElementById('editForm').style.display = 'none';
+    document.getElementById('outputSection').style.display = 'block';
+    window.scrollTo(0, 0);
+}
+
+function copyHTML(id, btn) {
+    var c = document.getElementById(id).textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(c).then(function () {
+            showCopyFeedback(btn);
+        }).catch(function () {
+            fallbackCopy(c, btn);
+        });
+    } else {
+        fallbackCopy(c, btn);
+    }
+}
+
+function fallbackCopy(text, btn) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); showCopyFeedback(btn); }
+    catch (e) { alert('Please copy manually'); }
+    document.body.removeChild(ta);
+}
+
+function showCopyFeedback(btn) {
+    var orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.background = '#28a745';
+    setTimeout(function () { btn.textContent = orig; btn.style.background = ''; }, 2000);
+}
+
+function backToEdit() {
+    updateStep(3, ''); updateStep(2, 'active');
+    document.getElementById('editForm').style.display = 'block';
+    document.getElementById('outputSection').style.display = 'none';
+}
+
+function resetAll() {
+    if (confirm('Start over with a new checklist?')) location.reload();
+}
+
+function loadSample() {
+    document.getElementById('checklistHeading').value = 'Before You Start';
+    document.getElementById('listInput').value =
+'1. Review the module content and complete the Before Class activity\n\
+2. Download the class presentation from the link below\n\
+3. Bring your notebook and any reference materials to class\n\
+4. Complete the online quiz before the end of the week\n\
+5. Post your reflection in the Week 1 discussion forum';
+    showTextarea();
+}
+
+document.getElementById('listInput').addEventListener('input', function () {
+    document.getElementById('parseBtn').disabled = !this.value.trim();
+});
+</script>
+</body>
+</html>
