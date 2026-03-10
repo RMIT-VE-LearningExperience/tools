@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoVE Homepage Updater</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+        .main-wrapper{flex:1;padding:20px}
+        .container{max-width:1400px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+        .header{background:#000054;color:#fff;padding:30px;text-align:center}
+        .header h1{font-size:2rem;margin-bottom:10px;font-weight:700}
+        .header p{font-size:1.05rem;opacity:.9}
+        .workflow-steps{display:flex;justify-content:center;padding:20px 30px;background:#f2f2f2;border-bottom:3px solid #fac800;flex-wrap:wrap;gap:10px}
+        .step{display:flex;align-items:center;margin:0 15px;font-weight:600;color:#000054;font-size:.95rem}
+        .step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+        .step.active .step-number{background:#e61e2a}
+        .step.completed .step-number{background:#28a745}
+        .main-layout{display:grid;grid-template-columns:2fr 1fr;min-height:60vh}
+        .input-area{background:#f2f2f2;padding:25px;border-right:1px solid #e3e5e0;overflow-y:auto;max-height:85vh}
+        .info-area{padding:25px;overflow-y:auto}
+        .program-mode-bar{background:#fff;border:2px solid #000054;border-radius:6px;padding:15px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+        .program-mode-bar label{display:flex;align-items:center;gap:8px;font-weight:600;color:#000054;font-size:.95rem;cursor:pointer}
+        .program-mode-bar input[type="checkbox"]{width:20px;height:20px;accent-color:#000054;cursor:pointer}
+        .program-mode-bar .pm-desc{font-size:.82rem;color:#666}
+        .program-mode-bar.active{border-color:#e61e2a;background:#fef8f8}
+        .program-mode-bar.active label{color:#e61e2a}
+        .next-course-btn{display:none;padding:10px 22px;background:#e61e2a;color:#fff;border:none;border-radius:4px;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .3s}
+        .next-course-btn:hover{background:#c51923}
+        .program-mode-bar.active .next-course-btn{display:inline-block}
+        .section-box{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:18px;margin-bottom:18px}
+        .section-box h3{color:#000054;font-size:1rem;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #fac800}
+        .section-box.program-fields{border-left:4px solid #e61e2a}
+        .section-box.course-fields{border-left:4px solid #000054}
+        .section-box.template-section{border-left:4px solid #fac800}
+        .locked-badge{display:inline-block;background:#e61e2a;color:#fff;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle}
+        .form-group{margin-bottom:14px}
+        .form-group label{display:block;font-weight:600;color:#000054;margin-bottom:4px;font-size:.85rem}
+        .form-group input[type="text"],.form-group textarea{width:100%;padding:9px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.88rem;font-family:inherit;transition:border-color .3s;background:#fafbfc}
+        .form-group input:focus,.form-group textarea:focus{outline:none;border-color:#000054}
+        .form-group textarea{min-height:70px;resize:vertical}
+        .form-group input.locked,.form-group textarea.locked{background:#f2f2f2;border-color:#e61e2a;color:#666}
+        .help-text{font-size:.78rem;color:#666;margin-top:3px}
+        .inline-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .paste-area{border:3px dashed #000054;border-radius:8px;padding:20px;text-align:center;transition:all .3s;cursor:pointer;background:#fff;margin-bottom:12px}
+        .paste-area:hover{border-color:#e61e2a;background:#f8f9fa}
+        .paste-icon{font-size:2.2rem;color:#000054;margin-bottom:8px}
+        .paste-text{font-size:1rem;color:#000054;margin-bottom:5px;font-weight:600}
+        .paste-subtext{font-size:.82rem;color:#666}
+        textarea.html-input{width:100%;min-height:120px;padding:12px;border:2px solid #e3e5e0;border-radius:6px;font-size:.8rem;font-family:'Monaco','Menlo',monospace;resize:vertical;background:#fff;line-height:1.4;display:none}
+        textarea.html-input:focus{outline:none;border-color:#000054}
+        .extracted-info{background:#fff;border:2px solid #28a745;border-radius:6px;padding:15px;margin-top:12px;display:none}
+        .extracted-info h4{color:#28a745;margin-bottom:10px;font-size:.95rem}
+        .extracted-item{display:flex;align-items:center;margin-bottom:6px;font-size:.85rem}
+        .extracted-item .ei-icon{width:18px;height:18px;border-radius:50%;background:#28a745;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;margin-right:8px;flex-shrink:0}
+        .extracted-item .ei-icon.warn{background:#fac800;color:#000}
+        .btn{padding:12px 28px;border:none;border-radius:4px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s}
+        .btn-primary{background:#e61e2a;color:#fff}.btn-primary:hover{background:#c51923;transform:translateY(-1px)}
+        .btn-secondary{background:#000054;color:#fff}.btn-secondary:hover{background:#000043;transform:translateY(-1px)}
+        .btn-outline{background:#fff;color:#000054;border:2px solid #000054}.btn-outline:hover{background:#f2f2f2}
+        .btn:disabled{background:#999;cursor:not-allowed;transform:none}
+        .button-group{display:flex;gap:12px;flex-wrap:wrap}
+        .output-section{display:none}
+        .output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+        .output-header{background:#000054;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+        .output-content{padding:20px;font-family:'Monaco','Menlo',monospace;font-size:.75rem;line-height:1.5;max-height:400px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
+        .preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:25px;margin-top:20px;overflow:auto}
+        .preview-container h3{color:#000054;margin-bottom:15px}
+        .alert{padding:15px;border-radius:4px;margin-bottom:15px;display:flex;align-items:flex-start}
+        .alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
+        .alert-info{background:#e8f0fe;border:1px solid #000054;color:#000054}
+        .alert-icon{font-size:1.3rem;margin-right:10px;flex-shrink:0}
+        .course-counter{background:#000054;color:#fff;padding:8px 15px;border-radius:4px;font-size:.9rem;font-weight:600;text-align:center;margin-bottom:15px}
+        .footer{background:#000054;color:#fff;text-align:center;padding:20px;font-size:.9rem}
+        @media(max-width:1000px){.main-layout{grid-template-columns:1fr}.input-area{border-right:none;border-bottom:1px solid #e3e5e0;max-height:none}}
+    </style>
+</head>
+<body>
+<div class="main-wrapper">
+<div class="container">
+    <div class="header">
+        <h1>CoVE Homepage Updater</h1>
+        <p>Enter Details &#8594; Paste Template HTML &#8594; Generate Updated Homepage</p>
+    </div>
+    <div class="workflow-steps">
+        <div class="step active" id="step1"><div class="step-number">1</div><span>Enter Details</span></div>
+        <div class="step" id="step2"><div class="step-number">2</div><span>Paste Template</span></div>
+        <div class="step" id="step3"><div class="step-number">3</div><span>Generate HTML</span></div>
+    </div>
+    <div class="main-layout">
+        <div class="input-area">
+            <!-- Program mode -->
+            <div class="program-mode-bar" id="programBar">
+                <div>
+                    <label><input type="checkbox" id="programMode" onchange="toggleProgramMode()"> Program Mode</label>
+                    <div class="pm-desc">Lock shared fields when updating multiple courses in the same program</div>
+                </div>
+                <button class="next-course-btn" id="nextCourseBtn" onclick="nextCourse()">Next Course &#8594;</button>
+            </div>
+            <div class="course-counter" id="courseCounter" style="display:none;">Course #<span id="courseNum">1</span></div>
+
+            <!-- Program-level fields -->
+            <div class="section-box program-fields">
+                <h3>&#127891; Program Details <span class="locked-badge" id="lockedBadge" style="display:none;">LOCKED IN PROGRAM MODE</span></h3>
+                <div class="form-group">
+                    <label>National Qualification Code &amp; Title</label>
+                    <input type="text" id="fQualCode" placeholder="e.g. CPC32420 Certificate III in Plumbing">
+                </div>
+                <div class="inline-fields">
+                    <div class="form-group">
+                        <label>RMIT Program Code</label>
+                        <input type="text" id="fProgCode" placeholder="e.g. C3411">
+                    </div>
+                    <div class="form-group">
+                        <label>Industry Cluster Name</label>
+                        <input type="text" id="fCluster" placeholder="e.g. Built Environment &amp; Sustainability">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course-level fields -->
+            <div class="section-box course-fields">
+                <h3>&#128218; Course Details</h3>
+                <div class="form-group">
+                    <label>Course Name (Banner Heading)</label>
+                    <input type="text" id="fCourseName" placeholder="e.g. Install and fit off sanitary fixtures...">
+                </div>
+                <div class="inline-fields">
+                    <div class="form-group">
+                        <label>RMIT Course / Cluster Code(s)</label>
+                        <input type="text" id="fCourseCode" placeholder="e.g. BUIL7639C">
+                        <p class="help-text">Banner sub-heading</p>
+                    </div>
+                    <div class="form-group">
+                        <label>National Unit Code</label>
+                        <input type="text" id="fUnitCode" placeholder="e.g. CPCPWT3026">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Welcome / Intro Text</label>
+                    <textarea id="fWelcome" placeholder="e.g. learn how to fit off and commission heated, tempered, and cold-water services..."></textarea>
+                    <p class="help-text">Follows "Welcome! In this course, you will " &#8212; start with a lowercase verb</p>
+                </div>
+            </div>
+
+            <!-- Template HTML paste -->
+            <div class="section-box template-section">
+                <h3>&#128203; Template HTML</h3>
+                <div class="paste-area" id="pasteArea" onclick="showHtmlInput()">
+                    <div class="paste-icon">&#128203;</div>
+                    <div class="paste-text">Paste Homepage Template HTML</div>
+                    <div class="paste-subtext">From the build course &#8212; switch to HTML Editor in Canvas, select all, copy</div>
+                </div>
+                <textarea class="html-input" id="htmlInput" placeholder="Paste your homepage HTML here..."></textarea>
+                <div class="extracted-info" id="extractedInfo">
+                    <h4>&#9989; Template verified</h4>
+                    <div id="extractedList"></div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" id="generateBtn" onclick="generateHTML()" disabled>Generate Homepage HTML</button>
+            </div>
+        </div>
+
+        <div class="info-area">
+            <div id="instructions">
+                <h2 style="color:#000054;margin-bottom:15px;">How to Use This Tool</h2>
+                <ol style="font-size:.95rem;line-height:2;">
+                    <li><strong>Enter</strong> your program details (qual code, program code, cluster)</li>
+                    <li><strong>Enter</strong> your course details (name, codes, welcome text)</li>
+                    <li><strong>Paste</strong> the homepage HTML from the build course</li>
+                    <li><strong>Generate</strong> and copy the updated HTML back into Canvas</li>
+                </ol>
+
+                <div class="alert alert-info" style="margin-top:20px;"><div class="alert-icon">&#128296;</div><div><strong>Program Mode</strong><br>Updating multiple courses in the same program? Toggle on &#8212; qual code, program code, and cluster lock in place. Just update the course-specific fields, paste the new template, and generate.</div></div>
+
+                <div class="alert alert-warning" style="margin-top:15px;"><div class="alert-icon">&#128161;</div><div><strong>Getting the template HTML:</strong><br><br>
+                In Canvas, open the build course homepage, switch to <strong>HTML Editor</strong> view, select all (<strong>Ctrl+A</strong>) and copy (<strong>Ctrl+C</strong>).</div></div>
+
+                <div style="background:#f2f2f2;border:1px solid #e3e5e0;border-radius:6px;padding:15px;margin-top:15px;">
+                    <h3 style="color:#000054;margin-bottom:8px;font-size:.95rem;">What the tool replaces</h3>
+                    <p style="font-size:.88rem;margin-bottom:8px;">Banner heading &amp; sub-heading &#8226; Cluster line &#8226; National qualification, program code &amp; unit code &#8226; Welcome text</p>
+                    <h3 style="color:#000054;margin-bottom:8px;margin-top:12px;font-size:.95rem;">What stays untouched</h3>
+                    <p style="font-size:.88rem;">All course IDs &amp; links &#8226; Button destinations &#8226; Banner &amp; ribbon images &#8226; Cultural safety warning &#8226; All Emble structure</p>
+                </div>
+            </div>
+
+            <div class="output-section" id="outputSection">
+                <h2 style="color:#000054;margin-bottom:15px;">Generated Homepage HTML</h2>
+                <div class="output-container">
+                    <div class="output-header">
+                        <span>Homepage HTML</span>
+                        <button class="btn btn-primary" style="padding:8px 18px;font-size:.88rem;" onclick="copyHTML('outputHTML',this)">Copy HTML</button>
+                    </div>
+                    <div class="output-content" id="outputHTML"></div>
+                </div>
+                <div class="button-group" style="margin-top:15px;">
+                    <button class="btn btn-secondary" onclick="backToInput()">Back to Edit</button>
+                    <button class="btn btn-primary" onclick="resetAll()">New Content</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team &#8212; RMIT College of Vocational Education</p></footer>
+
+<script>
+var courseCount=1;
+var templateHTML=null;
+
+function esc(s){
+    if(!s) return '';
+    var d=document.createElement('div');
+    d.textContent=s;
+    return d.innerHTML;
+}
+
+function updateStep(n,s){
+    var e=document.getElementById('step'+n);
+    e.classList.remove('active','completed');
+    if(s) e.classList.add(s);
+}
+
+/* ── Show HTML input ── */
+function showHtmlInput(){
+    document.getElementById('htmlInput').style.display='block';
+    document.getElementById('pasteArea').style.display='none';
+    document.getElementById('htmlInput').focus();
+}
+
+/* ── Validate template on input ── */
+function validateTemplate(){
+    var raw=document.getElementById('htmlInput').value.trim();
+    if(!raw){
+        document.getElementById('extractedInfo').style.display='none';
+        document.getElementById('generateBtn').disabled=true;
+        return;
+    }
+
+    templateHTML=raw;
+    var items=[];
+
+    // Check for key structural elements
+    var hasBanner=raw.indexOf('emble-banner-heading')!==-1;
+    var hasColumns=raw.indexOf('emble-columns-container')!==-1;
+    var hasCultural=raw.indexOf('Cultural safety warning')!==-1;
+    var courseMatch=raw.match(/\/courses\/(\d+)/);
+    var discMatch=raw.match(/\/discussion_topics\/(\d+)/);
+    var modMatch=raw.match(/\/modules\/(\d+)/);
+
+    if(hasBanner) items.push({ok:true,t:'Banner structure found'});
+    else items.push({ok:false,t:'Banner structure not found'});
+
+    if(courseMatch) items.push({ok:true,t:'Course ID: <strong>'+courseMatch[1]+'</strong> (retained)'});
+
+    if(discMatch) items.push({ok:true,t:'Discussion topic ID: <strong>'+discMatch[1]+'</strong> (retained)'});
+
+    if(modMatch) items.push({ok:true,t:'Module ID: <strong>'+modMatch[1]+'</strong> (retained)'});
+
+    if(hasColumns) items.push({ok:true,t:'Columns layout found'});
+    if(hasCultural) items.push({ok:true,t:'Cultural safety warning found'});
+
+    document.getElementById('extractedList').innerHTML=items.map(function(i){
+        return '<div class="extracted-item"><div class="ei-icon'+(i.ok?'':' warn')+'">'+(i.ok?'\u2714':'!')+'</div><span>'+i.t+'</span></div>';
+    }).join('');
+    document.getElementById('extractedInfo').style.display='block';
+    document.getElementById('generateBtn').disabled=!hasBanner;
+}
+
+/* ── Program mode ── */
+function toggleProgramMode(){
+    var on=document.getElementById('programMode').checked;
+    document.getElementById('programBar').classList.toggle('active',on);
+    document.getElementById('lockedBadge').style.display=on?'inline-block':'none';
+    document.getElementById('courseCounter').style.display=on?'block':'none';
+    ['fQualCode','fProgCode','fCluster'].forEach(function(id){
+        var el=document.getElementById(id);
+        el.classList.toggle('locked',on);
+        el.readOnly=on;
+    });
+}
+
+function nextCourse(){
+    courseCount++;
+    document.getElementById('courseNum').textContent=courseCount;
+    ['fCourseName','fCourseCode','fUnitCode','fWelcome'].forEach(function(id){
+        document.getElementById(id).value='';
+    });
+    // Reset template
+    templateHTML=null;
+    document.getElementById('htmlInput').value='';
+    document.getElementById('htmlInput').style.display='none';
+    document.getElementById('pasteArea').style.display='block';
+    document.getElementById('extractedInfo').style.display='none';
+    document.getElementById('generateBtn').disabled=true;
+    // Reset view
+    document.getElementById('outputSection').style.display='none';
+    document.getElementById('instructions').style.display='block';
+    updateStep(1,'active'); updateStep(2,''); updateStep(3,'');
+    document.getElementById('fCourseName').focus();
+}
+
+/* ── Generate ── */
+function generateHTML(){
+    if(!templateHTML) return alert('Please paste the template HTML first.');
+
+    var courseName=document.getElementById('fCourseName').value.trim();
+    var courseCode=document.getElementById('fCourseCode').value.trim();
+    var qualCode=document.getElementById('fQualCode').value.trim();
+    var progCode=document.getElementById('fProgCode').value.trim();
+    var unitCode=document.getElementById('fUnitCode').value.trim();
+    var cluster=document.getElementById('fCluster').value.trim();
+    var welcome=document.getElementById('fWelcome').value.trim();
+
+    if(!courseName) return alert('Please enter a course name.');
+
+    var h=templateHTML;
+
+    // Replace banner heading
+    h=h.replace(
+        /(<h2 class="emble-banner-heading emble-prevent-delete">)([\s\S]*?)(<\/h2>)/,
+        '$1'+esc(courseName)+'$3'
+    );
+
+    // Replace banner sub-heading
+    h=h.replace(
+        /(<h2 class="emble-banner-sub-heading">)([\s\S]*?)(<\/h2>)/,
+        '$1'+esc(courseCode||courseName)+'$3'
+    );
+
+    // Replace cluster line — handle both dash and parentheses formats
+    h=h.replace(
+        /(background-color: #000054;">&nbsp;College of Vocational Education)[\s\S]*?(<\/span><\/span>)/,
+        '$1 - '+esc(cluster||'[Industry Cluster name]')+'$2'
+    );
+
+    // Replace qualification line
+    h=h.replace(
+        /<p><span><strong>National qualification code and title:[\s\S]*?<\/span><\/p>/,
+        '<p><span><strong>National qualification code and title: '+esc(qualCode||'[National qualification code and title]')+'</strong> [RMIT program code: '+esc(progCode||'[RMIT program code]')+'] </span><span><strong>National unit code:</strong> '+esc(unitCode||'[National unit code]')+'</span></p>'
+    );
+
+    // Replace welcome text — match the full welcome paragraph and rebuild it cleanly
+    h=h.replace(
+        /<p style="text-align: left;"><span style="color: #000000; font-size: 1rem; font-family: inherit;">Welcome! In this course, you will [\s\S]*?<\/p>/,
+        '<p style="text-align: left;"><span style="color: #000000; font-size: 1rem; font-family: inherit;">Welcome! In this course, you will <span>'+esc(welcome||'[insert course description].')+'</span></span></p>'
+    );
+
+    document.getElementById('outputHTML').textContent=h;
+    updateStep(1,'completed'); updateStep(2,'completed'); updateStep(3,'active');
+    document.getElementById('instructions').style.display='none';
+    document.getElementById('outputSection').style.display='block';
+}
+
+function backToInput(){
+    updateStep(1,'completed'); updateStep(2,'active'); updateStep(3,'');
+    document.getElementById('instructions').style.display='block';
+    document.getElementById('outputSection').style.display='none';
+}
+
+function copyHTML(id,btn){
+    var c=document.getElementById(id).textContent;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(c).then(function(){showCopyFeedback(btn)}).catch(function(){fallbackCopy(c,btn)});
+    } else { fallbackCopy(c,btn); }
+}
+function fallbackCopy(text,btn){
+    var ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');showCopyFeedback(btn)}catch(e){alert('Please copy manually')}
+    document.body.removeChild(ta);
+}
+function showCopyFeedback(btn){
+    var orig=btn.textContent;btn.textContent='Copied!';btn.style.background='#28a745';
+    setTimeout(function(){btn.textContent=orig;btn.style.background=''},2000);
+}
+
+function resetAll(){
+    if(confirm('Start over with new content?')) location.reload();
+}
+
+// Listen for template input
+document.getElementById('htmlInput').addEventListener('input',validateTemplate);
+</script>
+</body>
+</html>

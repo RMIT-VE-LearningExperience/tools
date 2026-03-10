@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoVE Accordion File Generator</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+        .main-wrapper{flex:1;padding:20px}
+        .container{max-width:1400px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+        .header{background:#000054;color:#fff;padding:30px;text-align:center}
+        .header h1{font-size:2rem;margin-bottom:10px;font-weight:700}
+        .header p{font-size:1.05rem;opacity:.9}
+        .workflow-steps{display:flex;justify-content:center;padding:20px 30px;background:#f2f2f2;border-bottom:3px solid #fac800;flex-wrap:wrap;gap:10px}
+        .step{display:flex;align-items:center;margin:0 15px;font-weight:600;color:#000054;font-size:.95rem}
+        .step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+        .step.active .step-number{background:#e61e2a}
+        .step.completed .step-number{background:#28a745}
+        .main-layout{display:grid;grid-template-columns:2fr 1fr;min-height:60vh}
+        .sidebar{background:#f2f2f2;padding:25px;border-right:1px solid #e3e5e0;display:flex;flex-direction:column;overflow-y:auto;max-height:85vh;order:0}
+        .content-area{padding:30px;overflow-y:auto;order:1}
+        .section-box{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:18px;margin-bottom:18px}
+        .section-box h3{color:#000054;font-size:1rem;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #fac800}
+        .prefix-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.9rem;color:#000054;margin-bottom:10px}
+        .prefix-toggle input[type="checkbox"]{width:18px;height:18px;accent-color:#000054;cursor:pointer}
+        .prefix-fields{display:flex;align-items:center;gap:10px}
+        .prefix-fields select,.prefix-fields input[type="text"]{padding:8px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.95rem;font-family:inherit}
+        .prefix-fields select:focus,.prefix-fields input:focus{outline:none;border-color:#000054}
+        .prefix-fields input[type="text"]{width:70px;text-align:center}
+        .prefix-fields select{min-width:110px}
+        .prefix-preview{font-size:.82rem;color:#666;margin-top:8px}
+        .file-entry{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:15px;margin-bottom:12px;border-left:4px solid #000054;position:relative}
+        .file-entry .entry-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+        .file-entry .entry-num{background:#000054;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700}
+        .file-entry .entry-actions{display:flex;gap:4px}
+        .file-entry .entry-actions button{background:none;border:1px solid #e3e5e0;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:.78rem;color:#666;transition:all .2s}
+        .file-entry .entry-actions button:hover{background:#f2f2f2;color:#000054}
+        .file-entry .entry-actions button.remove-entry:hover{color:#e61e2a;border-color:#e61e2a}
+        .entry-field{margin-bottom:10px}
+        .entry-field:last-child{margin-bottom:0}
+        .entry-field label{display:block;font-weight:600;color:#000054;margin-bottom:4px;font-size:.82rem}
+        .entry-field input{width:100%;padding:8px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.88rem;font-family:inherit}
+        .entry-field input:focus{outline:none;border-color:#000054}
+        .entry-field .id-extract{font-size:.78rem;color:#28a745;margin-top:3px;font-family:'Monaco','Menlo',monospace}
+        .entry-field .id-extract.error{color:#e61e2a}
+        .heading-live-preview{font-size:.82rem;color:#000054;background:#f2f2f2;padding:5px 10px;border-radius:3px;margin-top:8px;font-weight:600}
+        .heading-live-preview span{color:#e61e2a}
+        .btn{padding:12px 28px;border:none;border-radius:4px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s}
+        .btn-primary{background:#e61e2a;color:#fff}.btn-primary:hover{background:#c51923;transform:translateY(-1px)}
+        .btn-secondary{background:#000054;color:#fff}.btn-secondary:hover{background:#000043;transform:translateY(-1px)}
+        .btn-outline{background:#fff;color:#000054;border:2px solid #000054}.btn-outline:hover{background:#f2f2f2}
+        .btn-sm{padding:8px 16px;font-size:.88rem}
+        .btn:disabled{background:#999;cursor:not-allowed;transform:none}
+        .button-group{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
+        .add-file-btn{width:100%;padding:10px;background:#fff;border:2px dashed #000054;border-radius:6px;color:#000054;font-weight:600;font-size:.9rem;cursor:pointer;transition:all .2s;margin-bottom:12px}
+        .add-file-btn:hover{background:#f2f2f2;border-color:#e61e2a;color:#e61e2a}
+        .file-count{font-size:.85rem;color:#666;margin-bottom:10px}
+        .output-section{display:none}
+        .output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+        .output-header{background:#000054;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+        .output-content{padding:20px;font-family:'Monaco','Menlo',monospace;font-size:.8rem;line-height:1.5;max-height:500px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
+        .preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:30px;margin-top:20px}
+        .preview-container h3{color:#000054;margin-bottom:20px}
+        .alert{padding:15px;border-radius:4px;margin-bottom:20px;display:flex;align-items:flex-start}
+        .alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
+        .alert-icon{font-size:1.4rem;margin-right:12px;flex-shrink:0}
+        .footer{background:#000054;color:#fff;text-align:center;padding:20px;font-size:.9rem}
+        @media(max-width:1000px){.main-layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid #e3e5e0;max-height:none;order:0}.content-area{order:1}}
+    </style>
+</head>
+<body>
+<div class="main-wrapper">
+<div class="container">
+    <div class="header">
+        <h1>CoVE Accordion File Generator</h1>
+        <p>Add Your Files &#8594; Generate Accordion HTML</p>
+    </div>
+    <div class="workflow-steps">
+        <div class="step active" id="step1"><div class="step-number">1</div><span>Add Files</span></div>
+        <div class="step" id="step2"><div class="step-number">2</div><span>Generate HTML</span></div>
+    </div>
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="section-box">
+                <h3>Heading Prefix (Optional)</h3>
+                <label class="prefix-toggle">
+                    <input type="checkbox" id="prefixEnabled" checked onchange="updatePrefixUI()">
+                    Include a prefix on each heading
+                </label>
+                <div class="prefix-fields" id="prefixFields">
+                    <select id="prefixType" onchange="updatePrefixUI()">
+                        <option value="Week">Week</option>
+                        <option value="Module">Module</option>
+                        <option value="Topic">Topic</option>
+                    </select>
+                    <input type="text" id="prefixNumber" placeholder="e.g. 1" oninput="updatePrefixUI()">
+                </div>
+                <div class="prefix-preview" id="prefixPreviewText">Headings will read: <strong>Week X: Name</strong></div>
+            </div>
+
+            <div class="section-box" style="flex:1;">
+                <h3>Files</h3>
+                <div class="file-count" id="fileCount">0 files added</div>
+                <div id="fileEntries"></div>
+                <button class="add-file-btn" onclick="addFileEntry()">+ Add File</button>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" id="generateBtn" onclick="generateHTML()" disabled>Generate Accordion HTML</button>
+                <button class="btn btn-outline btn-sm" onclick="loadSample()">Load Sample</button>
+            </div>
+        </div>
+        <div class="content-area">
+            <div id="initialInstructions">
+                <h2 style="color:#000054;margin-bottom:20px;">How to Use This Tool</h2>
+                <ol style="font-size:1.05rem;line-height:2;">
+                    <li><strong>Set prefix</strong> (optional) &#8212; choose Week, Module, or Topic with a number, or turn it off</li>
+                    <li><strong>Add files</strong> &#8212; enter a display name and paste the Canvas file URL for each</li>
+                    <li><strong>Generate</strong> &#8212; copy the accordion HTML into your Canvas page</li>
+                </ol>
+                <div class="alert alert-warning" style="margin-top:25px;"><div class="alert-icon">&#128161;</div><div><strong>Getting the Canvas file URL:</strong> Upload your file to Canvas first. Go to Files in your course, right-click the file name, then select <strong>Copy link address</strong>.</div></div>
+                <div style="background:#f2f2f2;border:1px solid #e3e5e0;border-radius:6px;padding:20px;margin-top:20px;">
+                    <h3 style="color:#000054;margin-bottom:12px;font-size:1.05rem;">Supported URL formats</h3>
+                    <p style="font-size:.9rem;font-family:'Monaco','Menlo',monospace;margin-bottom:8px;word-break:break-all">/courses/{id}/files/{id}</p>
+                    <p style="font-size:.9rem;font-family:'Monaco','Menlo',monospace;margin-bottom:8px;word-break:break-all">/courses/{id}/files/{id}?wrap=1</p>
+                    <p style="font-size:.9rem;font-family:'Monaco','Menlo',monospace;word-break:break-all">/courses/{id}/files/folder/...?preview={id}</p>
+                </div>
+                <div style="background:#f2f2f2;border:1px solid #e3e5e0;border-radius:6px;padding:20px;margin-top:20px;">
+                    <h3 style="color:#000054;margin-bottom:12px;font-size:1.05rem;">Heading examples</h3>
+                    <p style="font-size:.95rem;margin-bottom:6px;">With prefix: <strong>Week 1: Classes</strong></p>
+                    <p style="font-size:.95rem;margin-bottom:6px;">With prefix: <strong>Module 3: Study Guide</strong></p>
+                    <p style="font-size:.95rem;">Without prefix: <strong>Classes</strong></p>
+                </div>
+            </div>
+
+            <div class="output-section" id="outputSection">
+                <h2 style="color:#000054;margin-bottom:20px;">Generated Accordion HTML</h2>
+                <div class="output-container">
+                    <div class="output-header">
+                        <span>Accordion &#8212; Emble HTML</span>
+                        <button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem;" onclick="copyHTML('outputHTML',this)">Copy HTML</button>
+                    </div>
+                    <div class="output-content" id="outputHTML"></div>
+                </div>
+                <div class="preview-container">
+                    <h3>Preview</h3>
+                    <div id="outputPreview"></div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="backToInput()">Back to Edit</button>
+                    <button class="btn btn-primary" onclick="resetAll()">New Content</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team &#8212; RMIT College of Vocational Education</p></footer>
+
+<script>
+var entryCount=0;
+
+function esc(s){
+    if(!s) return '';
+    var d=document.createElement('div');
+    d.textContent=s;
+    return d.innerHTML;
+}
+
+function updateStep(n,s){
+    var e=document.getElementById('step'+n);
+    e.classList.remove('active','completed');
+    if(s) e.classList.add(s);
+}
+
+/* ── Prefix ── */
+function getPrefix(){
+    var enabled=document.getElementById('prefixEnabled').checked;
+    if(!enabled) return '';
+    var type=document.getElementById('prefixType').value;
+    var num=document.getElementById('prefixNumber').value.trim()||'X';
+    return type+' '+num+': ';
+}
+
+function updatePrefixUI(){
+    var enabled=document.getElementById('prefixEnabled').checked;
+    document.getElementById('prefixFields').style.display=enabled?'flex':'none';
+    var preview=document.getElementById('prefixPreviewText');
+    if(!enabled){
+        preview.innerHTML='Headings will read: <strong>Name only</strong>';
+    } else {
+        preview.innerHTML='Headings will read: <strong>'+esc(getPrefix())+'Name</strong>';
+    }
+    updateAllHeadingPreviews();
+}
+
+function updateAllHeadingPreviews(){
+    var entries=document.querySelectorAll('#fileEntries .file-entry');
+    entries.forEach(function(e){
+        var id=e.dataset.entryId;
+        updateHeadingPreview(id);
+    });
+}
+
+/* ── Canvas URL parsing ── */
+function parseCanvasURL(url){
+    url=(url||'').trim();
+    var m1=url.match(/\/courses\/(\d+)\/files\/.*[?&]preview=(\d+)/);
+    var m2=url.match(/\/courses\/(\d+)\/files\/(\d+)/);
+    var match=m1||m2;
+    if(!match) return null;
+    return {courseId:match[1], fileId:match[2]};
+}
+
+/* ── File entries ── */
+function addFileEntry(name,url){
+    entryCount++;
+    var id=entryCount;
+    var container=document.getElementById('fileEntries');
+    var div=document.createElement('div');
+    div.className='file-entry';
+    div.id='entry_'+id;
+    div.dataset.entryId=id;
+    div.innerHTML=
+        '<div class="entry-header">'+
+            '<div class="entry-num" id="entryNum_'+id+'">'+getEntryCount()+'</div>'+
+            '<div class="entry-actions">'+
+                '<button onclick="moveEntry('+id+',-1)" title="Move up">&#9650;</button>'+
+                '<button onclick="moveEntry('+id+',1)" title="Move down">&#9660;</button>'+
+                '<button class="remove-entry" onclick="removeEntry('+id+')" title="Remove">&times;</button>'+
+            '</div>'+
+        '</div>'+
+        '<div class="entry-field">'+
+            '<label>Display Name</label>'+
+            '<input type="text" id="ename_'+id+'" placeholder="e.g. Classes, Study Guide, Assessment Brief" value="'+(name?esc(name):'')+'" oninput="updateHeadingPreview('+id+');updateGenerateBtn()">'+
+        '</div>'+
+        '<div class="entry-field">'+
+            '<label>Canvas File URL</label>'+
+            '<input type="text" id="eurl_'+id+'" placeholder="Paste URL from Canvas Files area" value="'+(url?esc(url):'')+'" oninput="validateEntryURL('+id+');updateGenerateBtn()">'+
+            '<div class="id-extract" id="eid_'+id+'" style="display:none;"></div>'+
+        '</div>'+
+        '<div class="heading-live-preview" id="hpreview_'+id+'"></div>';
+    container.appendChild(div);
+    renumberEntries();
+    updateFileCount();
+    updateGenerateBtn();
+    if(url) validateEntryURL(id);
+    updateHeadingPreview(id);
+}
+
+function removeEntry(id){
+    var el=document.getElementById('entry_'+id);
+    if(el) el.remove();
+    renumberEntries();
+    updateFileCount();
+    updateGenerateBtn();
+}
+
+function moveEntry(id,dir){
+    var el=document.getElementById('entry_'+id);
+    if(!el) return;
+    var container=document.getElementById('fileEntries');
+    if(dir===-1 && el.previousElementSibling){
+        container.insertBefore(el,el.previousElementSibling);
+    } else if(dir===1 && el.nextElementSibling){
+        container.insertBefore(el.nextElementSibling,el);
+    }
+    renumberEntries();
+}
+
+function getEntryCount(){
+    return document.querySelectorAll('#fileEntries .file-entry').length+1;
+}
+
+function renumberEntries(){
+    var entries=document.querySelectorAll('#fileEntries .file-entry');
+    entries.forEach(function(e,i){
+        var numEl=e.querySelector('.entry-num');
+        if(numEl) numEl.textContent=i+1;
+    });
+}
+
+function validateEntryURL(id){
+    var input=document.getElementById('eurl_'+id);
+    var display=document.getElementById('eid_'+id);
+    if(!input||!display) return;
+    var url=input.value.trim();
+    if(!url){display.style.display='none';return;}
+    var ids=parseCanvasURL(url);
+    display.style.display='block';
+    if(ids){
+        display.className='id-extract';
+        display.textContent='\u2714 Course: '+ids.courseId+' | File: '+ids.fileId;
+    } else {
+        display.className='id-extract error';
+        display.textContent='\u2718 Could not extract IDs \u2014 check URL format';
+    }
+}
+
+function updateHeadingPreview(id){
+    var nameInput=document.getElementById('ename_'+id);
+    var prev=document.getElementById('hpreview_'+id);
+    if(!nameInput||!prev) return;
+    var name=nameInput.value.trim();
+    if(!name){
+        prev.style.display='none';
+        return;
+    }
+    prev.style.display='block';
+    prev.innerHTML='Accordion heading: <span>'+esc(getPrefix())+esc(name)+'</span>';
+}
+
+function updateFileCount(){
+    var count=document.querySelectorAll('#fileEntries .file-entry').length;
+    document.getElementById('fileCount').textContent=count+' file'+(count!==1?'s':'')+' added';
+}
+
+function updateGenerateBtn(){
+    var entries=document.querySelectorAll('#fileEntries .file-entry');
+    var hasValid=false;
+    entries.forEach(function(e){
+        var id=e.dataset.entryId;
+        var nameInput=document.getElementById('ename_'+id);
+        var urlInput=document.getElementById('eurl_'+id);
+        if(nameInput&&nameInput.value.trim()&&urlInput&&parseCanvasURL(urlInput.value)){
+            hasValid=true;
+        }
+    });
+    document.getElementById('generateBtn').disabled=!hasValid;
+}
+
+/* ── Collect valid files ── */
+function collectFiles(){
+    var result=[];
+    var entries=document.querySelectorAll('#fileEntries .file-entry');
+    entries.forEach(function(e){
+        var id=e.dataset.entryId;
+        var nameInput=document.getElementById('ename_'+id);
+        var urlInput=document.getElementById('eurl_'+id);
+        var name=(nameInput?nameInput.value.trim():'')||'Untitled';
+        var url=urlInput?urlInput.value.trim():'';
+        var ids=parseCanvasURL(url);
+        if(ids){
+            result.push({courseId:ids.courseId, fileId:ids.fileId, displayName:name});
+        }
+    });
+    return result;
+}
+
+/* ── Generate HTML ── */
+function generateHTML(){
+    var files=collectFiles();
+    if(files.length===0) return alert('No valid files found. Check names and URLs.');
+    var prefix=getPrefix();
+
+    var h='';
+    for(var i=0;i<files.length;i++){
+        var f=files[i];
+        var heading=esc(prefix)+esc(f.displayName);
+        h+='<details>\n\n';
+        h+='<summary style="cursor: pointer; font-size: 1.4rem; color: #000054; font-family: Helvetica, sans-serif; background-color: #f2f2f2; padding: 10px; margin-bottom: 5px;">'+heading+'</summary>\n\n';
+        h+='<p><a class="instructure_file_link instructure_scribd_file auto_open" title="'+esc(f.displayName)+'" href="https://rmit.instructure.com/courses/'+f.courseId+'/files/'+f.fileId+'?wrap=1" target="_blank" rel="noopener" data-api-endpoint="https://rmit.instructure.com/api/v1/courses/'+f.courseId+'/files/'+f.fileId+'" data-api-returntype="File">'+esc(f.displayName)+'</a></p>\n\n';
+        h+='<p>&nbsp;</p>\n\n';
+        h+='</details>\n\n';
+    }
+
+    document.getElementById('outputHTML').textContent=h;
+    document.getElementById('outputPreview').innerHTML=h;
+    updateStep(1,'completed'); updateStep(2,'active');
+    document.getElementById('initialInstructions').style.display='none';
+    document.getElementById('outputSection').style.display='block';
+    window.scrollTo(0,0);
+}
+
+function backToInput(){
+    updateStep(1,'active'); updateStep(2,'');
+    document.getElementById('initialInstructions').style.display='block';
+    document.getElementById('outputSection').style.display='none';
+}
+
+function copyHTML(id,btn){
+    var c=document.getElementById(id).textContent;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(c).then(function(){showCopyFeedback(btn)}).catch(function(){fallbackCopy(c,btn)});
+    } else { fallbackCopy(c,btn); }
+}
+function fallbackCopy(text,btn){
+    var ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');showCopyFeedback(btn)}catch(e){alert('Please copy manually')}
+    document.body.removeChild(ta);
+}
+function showCopyFeedback(btn){
+    var orig=btn.textContent;btn.textContent='Copied!';btn.style.background='#28a745';
+    setTimeout(function(){btn.textContent=orig;btn.style.background=''},2000);
+}
+
+function resetAll(){
+    if(confirm('Start over with new content?')) location.reload();
+}
+
+function loadSample(){
+    document.getElementById('fileEntries').innerHTML='';
+    entryCount=0;
+    document.getElementById('prefixEnabled').checked=true;
+    document.getElementById('prefixType').value='Week';
+    document.getElementById('prefixNumber').value='1';
+    updatePrefixUI();
+    addFileEntry('Classes','https://rmit.instructure.com/courses/159121/files/51793164?wrap=1');
+    addFileEntry('Assessments','https://rmit.instructure.com/courses/159121/files/51793165?wrap=1');
+    addFileEntry('Study Guide','https://rmit.instructure.com/courses/159121/files/51793166?wrap=1');
+    addFileEntry('Additional Resources','https://rmit.instructure.com/courses/159121/files/51793167?wrap=1');
+}
+
+// Start with one empty entry
+addFileEntry();
+</script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canvas Flat ZIP Creator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+    .main-wrapper{flex:1;padding:20px;display:flex;justify-content:center;align-items:center}
+    .container{max-width:620px;width:100%;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+    .header{background:#000054;color:#fff;padding:30px;text-align:center}
+    .header h1{font-size:1.8rem;margin-bottom:8px;font-weight:700}
+    .header p{font-size:.95rem;opacity:.9}
+    .workflow-steps{display:flex;justify-content:center;padding:16px 30px;background:#f2f2f2;border-bottom:3px solid #fac800;gap:20px;flex-wrap:wrap}
+    .step{display:flex;align-items:center;font-weight:600;color:#000054;font-size:.9rem}
+    .step-number{width:28px;height:28px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:8px;font-size:.85rem}
+    .step.active .step-number{background:#e61e2a}
+    .step.completed .step-number{background:#28a745}
+    .content-area{padding:25px}
+    .section-box{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:18px;margin-bottom:18px}
+    .section-box h3{color:#000054;font-size:1rem;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #fac800}
+    .section-box.upload-section{border-left:4px solid #000054}
+    .section-box.rename-section{border-left:4px solid #fac800}
+    .section-box.output-section{border-left:4px solid #28a745}
+
+    .drop-zone{border:3px dashed #000054;border-radius:8px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .3s;background:#f2f2f2}
+    .drop-zone:hover,.drop-zone.drag-over{border-color:#e61e2a;background:#fef8f8}
+    .drop-zone-icon{font-size:2.4rem;margin-bottom:10px}
+    .drop-zone-text{font-size:1rem;color:#000054;font-weight:600;margin-bottom:4px}
+    .drop-zone-subtext{font-size:.85rem;color:#666}
+    input[type="file"]{display:none}
+
+    .form-group{margin-bottom:14px}
+    .form-group label{display:block;font-weight:600;color:#000054;margin-bottom:4px;font-size:.85rem}
+    .rename-row{display:flex;align-items:center}
+    .rename-row input{flex:1;padding:9px 10px;border:2px solid #e3e5e0;border-radius:4px 0 0 4px;font-size:.9rem;font-family:inherit;transition:border-color .3s;background:#fafbfc}
+    .rename-row input:focus{outline:none;border-color:#000054}
+    .rename-ext{padding:9px 12px;background:#f2f2f2;border:2px solid #e3e5e0;border-left:none;border-radius:0 4px 4px 0;font-size:.9rem;color:#000054;font-weight:600}
+    .help-text{font-size:.78rem;color:#666;margin-top:3px}
+
+    .file-info{display:flex;align-items:center;gap:10px;padding:12px;background:#f2f2f2;border-radius:6px;margin-bottom:14px}
+    .file-info-icon{font-size:1.4rem}
+    .file-info-name{font-weight:600;color:#000054;font-size:.9rem}
+    .file-info-size{font-size:.8rem;color:#666}
+    .file-info-remove{margin-left:auto;background:none;border:none;color:#e61e2a;cursor:pointer;font-weight:600;font-size:.85rem}
+    .file-info-remove:hover{text-decoration:underline}
+
+    .btn{padding:12px 28px;border:none;border-radius:4px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s;width:100%}
+    .btn-primary{background:#e61e2a;color:#fff}.btn-primary:hover{background:#c51923;transform:translateY(-1px)}
+    .btn-secondary{background:#000054;color:#fff}.btn-secondary:hover{background:#000043;transform:translateY(-1px)}
+    .btn:disabled{background:#999;cursor:not-allowed;transform:none}
+    .button-group{display:flex;gap:12px;margin-top:8px}
+    .button-group .btn{width:auto;flex:1}
+
+    .status{padding:16px;border-radius:6px;font-size:.9rem;line-height:1.5;display:none;margin-top:18px}
+    .status.visible{display:block}
+    .status.success{background:#eafbf0;border:2px solid #28a745;color:#1a7d42}
+    .status.error{background:#fef2f2;border:2px solid #e61e2a;color:#b91c1c}
+    .status .status-heading{font-weight:700;font-size:.95rem;margin-bottom:4px}
+    .status .status-detail{font-size:.85rem}
+
+    .info-box{background:#f2f2f2;border:1px solid #e3e5e0;border-radius:6px;padding:15px;margin-top:18px}
+    .info-box h3{color:#000054;margin-bottom:8px;font-size:.9rem}
+    .info-box p{font-size:.85rem;color:#555;line-height:1.6}
+
+    .alert{padding:15px;border-radius:4px;margin-bottom:15px;display:flex;align-items:flex-start}
+    .alert-info{background:#e8f0fe;border:1px solid #000054;color:#000054}
+    .alert-icon{font-size:1.3rem;margin-right:10px;flex-shrink:0}
+
+    .footer{background:#000054;color:#fff;text-align:center;padding:16px;font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="main-wrapper">
+<div class="container">
+    <div class="header">
+        <h1>Canvas Flat ZIP Creator</h1>
+        <p>Upload a text or XML file &rarr; get a flat ZIP ready for Canvas LMS import</p>
+    </div>
+    <div class="workflow-steps">
+        <div class="step active" id="step1"><div class="step-number">1</div><span>Select File</span></div>
+        <div class="step" id="step2"><div class="step-number">2</div><span>Confirm Name</span></div>
+        <div class="step" id="step3"><div class="step-number">3</div><span>Download ZIP</span></div>
+    </div>
+    <div class="content-area">
+
+        <!-- Step 1: Upload -->
+        <div id="uploadPanel">
+            <div class="section-box upload-section">
+                <h3>&#128196; Select Your File</h3>
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-icon">&#128203;</div>
+                    <div class="drop-zone-text">Click to browse or drag &amp; drop</div>
+                    <div class="drop-zone-subtext">.txt, .xml, or any text file</div>
+                </div>
+                <input type="file" id="fileInput" accept=".txt,.xml,.text">
+            </div>
+
+            <div class="alert alert-info">
+                <div class="alert-icon">&#128161;</div>
+                <div><strong>Why this tool?</strong><br>Windows often nests files inside a folder when zipping &mdash; Canvas needs the XML at the root level. This tool creates a guaranteed flat ZIP that works every time, on any OS.</div>
+            </div>
+        </div>
+
+        <!-- Step 2: Rename & Generate -->
+        <div id="renamePanel" style="display:none">
+            <div class="file-info" id="fileInfo">
+                <span class="file-info-icon">&#128196;</span>
+                <div>
+                    <div class="file-info-name" id="origFileName"></div>
+                    <div class="file-info-size" id="origFileSize"></div>
+                </div>
+                <button class="file-info-remove" onclick="resetFile()">Change file</button>
+            </div>
+
+            <div class="section-box rename-section">
+                <h3>&#9999;&#65039; Filename Inside the ZIP</h3>
+                <div class="form-group">
+                    <label>File will be saved as:</label>
+                    <div class="rename-row">
+                        <input type="text" id="renameInput" spellcheck="false">
+                        <span class="rename-ext">.xml</span>
+                    </div>
+                    <p class="help-text">Edit if needed &mdash; this is the filename Canvas will see inside the ZIP</p>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="generateBtn" onclick="generateZip()">&#128230; Create Flat ZIP &amp; Download</button>
+        </div>
+
+        <!-- Status -->
+        <div class="status" id="status"></div>
+
+        <!-- Success: another file -->
+        <div id="successActions" style="display:none">
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="resetFile()">&#128196; ZIP Another File</button>
+            </div>
+        </div>
+
+        <!-- Info box -->
+        <div class="info-box">
+            <h3>How it works</h3>
+            <p>Select your downloaded text or XML file &rarr; confirm the filename (auto-renamed to .xml) &rarr; a flat ZIP downloads instantly. Upload it straight to Canvas. No software to install, works on Windows, Mac &amp; Linux.</p>
+        </div>
+    </div>
+</div>
+</div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team &mdash; RMIT College of Vocational Education</p></footer>
+
+<script>
+var currentFile = null;
+var dropZone = document.getElementById('dropZone');
+var fileInput = document.getElementById('fileInput');
+
+function updateStep(n, s) {
+    var e = document.getElementById('step' + n);
+    e.classList.remove('active', 'completed');
+    if (s) e.classList.add(s);
+}
+
+// Drop zone interactions
+dropZone.addEventListener('click', function() { fileInput.click(); });
+dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('drag-over'); });
+dropZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', function() {
+    if (fileInput.files.length) handleFile(fileInput.files[0]);
+});
+
+function handleFile(file) {
+    currentFile = file;
+    var baseName = file.name.replace(/\.[^.]+$/, '');
+    document.getElementById('renameInput').value = baseName;
+    document.getElementById('origFileName').textContent = file.name;
+    document.getElementById('origFileSize').textContent = formatSize(file.size);
+
+    document.getElementById('uploadPanel').style.display = 'none';
+    document.getElementById('renamePanel').style.display = 'block';
+    document.getElementById('successActions').style.display = 'none';
+    document.getElementById('status').className = 'status';
+
+    updateStep(1, 'completed');
+    updateStep(2, 'active');
+    updateStep(3, '');
+}
+
+function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' bytes';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+async function generateZip() {
+    if (!currentFile) return;
+    var btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.textContent = 'Creating ZIP...';
+
+    try {
+        var content = await currentFile.text();
+        var xmlFilename = document.getElementById('renameInput').value.trim().replace(/\.xml$/i, '') + '.xml';
+
+        var zip = new JSZip();
+        zip.file(xmlFilename, content);
+        var blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+        var zipFilename = xmlFilename.replace(/\.xml$/i, '.zip');
+
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = zipFilename;
+        link.click();
+        URL.revokeObjectURL(link.href);
+
+        var status = document.getElementById('status');
+        status.className = 'status visible success';
+        status.innerHTML = '<div class="status-heading">&#9989; ZIP created successfully!</div>' +
+            '<div class="status-detail"><strong>' + esc(zipFilename) + '</strong> contains <strong>' + esc(xmlFilename) + '</strong> at the root level &mdash; ready for Canvas.</div>';
+
+        updateStep(2, 'completed');
+        updateStep(3, 'active');
+        document.getElementById('successActions').style.display = 'block';
+
+    } catch (err) {
+        var status = document.getElementById('status');
+        status.className = 'status visible error';
+        status.innerHTML = '<div class="status-heading">&#10060; Something went wrong</div>' +
+            '<div class="status-detail">' + esc(err.message) + '</div>';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '&#128230; Create Flat ZIP &amp; Download';
+}
+
+function resetFile() {
+    currentFile = null;
+    fileInput.value = '';
+    document.getElementById('uploadPanel').style.display = 'block';
+    document.getElementById('renamePanel').style.display = 'none';
+    document.getElementById('successActions').style.display = 'none';
+    document.getElementById('status').className = 'status';
+    updateStep(1, 'active');
+    updateStep(2, '');
+    updateStep(3, '');
+}
+
+function esc(s) {
+    if (!s) return '';
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+</script>
+</body>
+</html>

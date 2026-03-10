@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoVE Copilot → Canvas In Summary Page Converter - RMIT</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+        .main-wrapper{flex:1;padding:20px}
+        .container{max-width:1600px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+        .header{background:#000054;color:#fff;padding:30px;text-align:center}
+        .header h1{font-size:2.2rem;margin-bottom:10px;font-weight:700}
+        .header p{font-size:1.1rem;opacity:.9}
+        .workflow-steps{display:flex;justify-content:center;padding:20px 30px;background:#f2f2f2;border-bottom:3px solid #fac800;flex-wrap:wrap;gap:10px}
+        .step{display:flex;align-items:center;margin:0 15px;font-weight:600;color:#000054;font-size:.95rem}
+        .step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+        .step.active .step-number{background:#e61e2a}
+        .step.completed .step-number{background:#28a745}
+        .main-layout{display:grid;grid-template-columns:420px 1fr;min-height:70vh}
+        .sidebar{background:#f2f2f2;padding:30px;border-right:1px solid #e3e5e0;display:flex;flex-direction:column}
+        .content-area{padding:30px;overflow-y:auto}
+        .paste-area{border:3px dashed #000054;border-radius:8px;padding:20px;text-align:center;transition:all .3s;cursor:pointer;background:#fff;margin-bottom:20px}
+        .paste-area:hover{border-color:#e61e2a;background:#f8f9fa}
+        .paste-icon{font-size:2.5rem;color:#000054;margin-bottom:10px}
+        .paste-text{font-size:1.05rem;color:#000054;margin-bottom:8px;font-weight:600}
+        .paste-subtext{font-size:.85rem;color:#666}
+        textarea#copilotInput{width:100%;min-height:300px;padding:15px;border:2px solid #e3e5e0;border-radius:6px;font-size:.9rem;font-family:'Monaco','Menlo',monospace;resize:vertical;background:#fff;line-height:1.5;display:none}
+        textarea#copilotInput:focus{outline:none;border-color:#000054}
+        .extraction-status{display:none;background:#fff;border:2px solid #fac800;border-radius:6px;padding:20px;margin-top:15px}
+        .extraction-status h3{color:#000054;margin-bottom:12px;font-size:1.1rem}
+        .status-item{display:flex;align-items:center;margin-bottom:8px;font-size:.9rem}
+        .status-icon{width:20px;height:20px;border-radius:50%;margin-right:10px;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0}
+        .status-icon.found{background:#28a745}.status-icon.missing{background:#e61e2a}
+        .btn{padding:12px 28px;border:none;border-radius:4px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s}
+        .btn-primary{background:#e61e2a;color:#fff}.btn-primary:hover{background:#c51923;transform:translateY(-1px)}
+        .btn-secondary{background:#000054;color:#fff}.btn-secondary:hover{background:#000043;transform:translateY(-1px)}
+        .btn-outline{background:#fff;color:#000054;border:2px solid #000054}.btn-outline:hover{background:#f2f2f2}
+        .btn:disabled{background:#999;cursor:not-allowed;transform:none}
+        .button-group{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+        .edit-form{display:none}
+        .form-section{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:25px;margin-bottom:25px}
+        .form-section h3{color:#000054;margin-bottom:18px;font-size:1.2rem;border-bottom:2px solid #fac800;padding-bottom:10px}
+        .form-group{margin-bottom:18px}
+        .form-group label{display:block;font-weight:600;color:#000054;margin-bottom:6px;font-size:.9rem}
+        .form-group input[type="text"],.form-group textarea,.form-group select{width:100%;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit;transition:border-color .3s;background:#fafbfc}
+        .form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:#000054}
+        .form-group textarea{min-height:100px;resize:vertical}
+        .help-text{font-size:.8rem;color:#666;margin-top:4px}
+        .content-block-entry{background:#f8f9fa;border:1px solid #e3e5e0;border-radius:6px;padding:15px;margin-bottom:15px}
+        .content-block-entry h4{color:#000054;margin-bottom:10px;font-size:.95rem;display:flex;justify-content:space-between;align-items:center}
+        .activity-entry{background:#f2f2f2;border-radius:6px;padding:15px;margin-bottom:12px}
+        .activity-entry label{font-size:.85rem;font-weight:600;color:#000054;display:block;margin-bottom:4px}
+        .activity-entry input,.activity-entry textarea{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:.85rem;margin-bottom:8px}
+        .activity-entry textarea{min-height:50px;resize:vertical}
+        .quiz-question{background:#f8f9fa;border:1px solid #e3e5e0;border-radius:6px;padding:15px;margin-bottom:15px}
+        .quiz-question h4{color:#000054;margin-bottom:10px;font-size:.95rem}
+        .quiz-option{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
+        .quiz-option input[type="text"]{flex:1;padding:6px 10px;font-size:.85rem}
+        .quiz-option input[type="radio"]{width:16px;height:16px;margin-top:4px}
+        .quiz-option .correct-label{font-size:.8rem;color:#28a745;font-weight:600;white-space:nowrap}
+        .feedback-group{margin-top:6px;padding-left:24px}
+        .feedback-group label{font-size:.8rem;color:#666;font-weight:600}
+        .feedback-group input{width:100%;padding:5px 8px;font-size:.8rem;border:1px solid #ddd;border-radius:3px;margin-bottom:4px}
+        .section-toggle{margin-bottom:10px}
+        .section-toggle label{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;color:#000054}
+        .section-toggle input[type="checkbox"]{width:18px;height:18px;cursor:pointer}
+        .add-remove-btns{display:flex;gap:8px;margin-top:8px}
+        .add-remove-btns button{padding:4px 12px;font-size:.8rem;border-radius:3px;border:1px solid #ddd;cursor:pointer;background:#fff}
+        .add-remove-btns button:hover{background:#f2f2f2}
+        .output-section{display:none}
+        .output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+        .output-header{background:#000054;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+        .output-content{padding:20px;font-family:'Monaco','Menlo',monospace;font-size:.8rem;line-height:1.5;max-height:500px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
+        .preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:30px;margin-top:20px}
+        .preview-container h3{color:#000054;margin-bottom:20px}
+        .alert{padding:15px;border-radius:4px;margin-bottom:20px;display:flex;align-items:flex-start}
+        .alert-info{background:#e6f3ff;border:1px solid #0066cc;color:#004085}
+        .alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
+        .alert-icon{font-size:1.4rem;margin-right:12px;flex-shrink:0}
+        .footer{background:#000054;color:#fff;text-align:center;padding:20px;font-size:.9rem}
+        .debug-panel{display:none;background:#1e1e2e;color:#cdd6f4;border:2px solid #fac800;border-radius:6px;padding:15px;margin-top:15px;font-family:'Monaco','Menlo',monospace;font-size:.7rem;max-height:300px;overflow-y:auto;white-space:pre-wrap}
+        .debug-toggle{font-size:.8rem;color:#666;cursor:pointer;margin-top:8px;text-decoration:underline}
+        .debug-toggle:hover{color:#000054}
+        @media(max-width:1200px){.main-layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid #e3e5e0}}
+    </style>
+</head>
+<body>
+<div class="main-wrapper">
+<div class="container">
+    <div class="header">
+        <h1>CoVE Copilot → Canvas "In Summary" Page Converter</h1>
+        <p>Paste Copilot Output → Review &amp; Edit → Generate Emble-Ready HTML</p>
+    </div>
+    <div class="workflow-steps">
+        <div class="step active" id="step1"><div class="step-number">1</div><span>Paste Copilot Output</span></div>
+        <div class="step" id="step2"><div class="step-number">2</div><span>Review &amp; Edit</span></div>
+        <div class="step" id="step3"><div class="step-number">3</div><span>Generate HTML</span></div>
+    </div>
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="paste-area" id="pasteArea" onclick="showTextarea()">
+                <div class="paste-icon">📋</div>
+                <div class="paste-text">Paste Copilot Output</div>
+                <div class="paste-subtext">Click here, then paste your Copilot-generated "In Summary" content</div>
+            </div>
+            <textarea id="copilotInput" placeholder="Paste your Copilot output here..."></textarea>
+            <div class="button-group">
+                <button class="btn btn-primary" id="parseBtn" onclick="parseCopilotOutput()" disabled>Parse Content</button>
+                <button class="btn btn-outline" onclick="loadSample()">Load Sample</button>
+            </div>
+            <div class="extraction-status" id="extractionStatus"><h3>Parsed Sections</h3><div id="statusList"></div></div>
+            <div class="debug-toggle" onclick="toggleDebug()">Toggle debug info</div>
+            <div class="debug-panel" id="debugPanel"></div>
+        </div>
+        <div class="content-area">
+            <!-- INSTRUCTIONS -->
+            <div id="initialInstructions">
+                <h2 style="color:#000054;margin-bottom:20px;">How to Use This Tool</h2>
+                <ol style="font-size:1.05rem;line-height:2;">
+                    <li><strong>Paste</strong> your Copilot-generated "In Summary" content into the sidebar</li>
+                    <li><strong>Review</strong> the automatically parsed sections</li>
+                    <li><strong>Edit</strong> any fields that need correction</li>
+                    <li><strong>Toggle</strong> optional sections on/off as needed</li>
+                    <li><strong>Generate</strong> your Canvas-ready Emble HTML</li>
+                </ol>
+                <div class="alert alert-warning" style="margin-top:25px;"><div class="alert-icon">💡</div><div><strong>Tip:</strong> This converter is designed for the "In Summary" page template. It parses delimited (────) Copilot output. Use "Load Sample" to test with example content.</div></div>
+            </div>
+
+            <!-- EDIT FORM -->
+            <div class="edit-form" id="editForm">
+                <h2 style="color:#000054;margin-bottom:20px;">Review &amp; Edit Parsed Content</h2>
+                <div class="alert alert-info" style="margin-bottom:20px;"><div class="alert-icon">ℹ️</div><div><strong>Note:</strong> Content has been parsed from your Copilot output. Review all fields and toggle sections on/off before generating.</div></div>
+
+                <!-- Page Heading -->
+                <div class="form-section"><h3>Page Heading</h3>
+                    <div class="form-group"><label>Heading (e.g. "5.0 In summary")</label><input type="text" id="fPageHeading" placeholder="e.g. 5.0 In summary"></div>
+                </div>
+
+                <!-- Topic Summary -->
+                <div class="form-section"><h3>Topic Summary</h3>
+                    <div class="form-group"><label>Summary</label><textarea id="fTopicSummary" rows="4" placeholder="Synthesised paragraph summarising the full topic"></textarea></div>
+                </div>
+
+                <!-- Content Sections -->
+                <div class="form-section"><h3>Content Sections</h3>
+                    <p class="help-text" style="margin-bottom:15px;">Sub-topic overviews are brief with a file reference. Expanded sub-topic overviews include supporting detail plus a file reference. Detailed reference content includes full explanatory text with no file reference.</p>
+                    <div id="contentSections"></div>
+                    <div class="add-remove-btns"><button onclick="addContentSection()">+ Add Content Section</button></div>
+                </div>
+
+                <!-- Resources/Video -->
+                <div class="form-section">
+                    <div class="section-toggle"><label><input type="checkbox" id="togVideo"> Include Resources/Video</label></div>
+                    <div id="videoSection" style="display:none;">
+                        <div class="form-group"><label>Section Title</label><input type="text" id="fVideoTitle" placeholder="e.g. Recommended Resources"></div>
+                        <div class="form-group"><label>Video Description</label><textarea id="fVideoDesc" rows="2" placeholder="Description of what the video covers"></textarea></div>
+                        <div class="form-group"><label>Suggested Search</label><input type="text" id="fVideoSearch" placeholder="YouTube search term"></div>
+                        <div class="form-group"><label>Additional Resources</label><textarea id="fVideoResources" rows="2" placeholder="List of resource recommendations"></textarea></div>
+                    </div>
+                </div>
+
+                <!-- In Class Activities -->
+                <div class="form-section">
+                    <div class="section-toggle"><label><input type="checkbox" id="togActivities" checked> Include In Class Activities</label></div>
+                    <div id="activitiesSection">
+                        <p class="help-text" style="margin-bottom:15px;">Single activity → white block with shadow. Multiple activities → grey column blocks.</p>
+                        <div id="classActivities"></div>
+                        <div class="add-remove-btns"><button onclick="addClassActivity()">+ Add Activity</button></div>
+                    </div>
+                </div>
+
+                <!-- Knowledge Check -->
+                <div class="form-section">
+                    <div class="section-toggle"><label><input type="checkbox" id="togKC" checked> Include Knowledge Check</label></div>
+                    <div id="kcSection">
+                        <div class="form-group"><label>Title</label><input type="text" id="fKCTitle" placeholder="e.g. Knowledge Check: Arrays and Loops"></div>
+                        <p class="help-text" style="margin-bottom:12px;">Questions with per-option guided feedback. Feedback for incorrect options should guide thinking without revealing the answer.</p>
+                        <div id="kcQuestions"></div>
+                        <div class="add-remove-btns"><button onclick="addKCQuestion()">+ Add Question</button><button onclick="removeKCQuestion()">− Remove Last</button></div>
+                    </div>
+                </div>
+
+                <div class="button-group" style="padding-top:20px;border-top:2px solid #e3e5e0;">
+                    <button class="btn btn-primary" onclick="generateHTML()">Generate Canvas HTML</button>
+                    <button class="btn btn-secondary" onclick="resetAll()">Start Over</button>
+                </div>
+            </div>
+
+            <!-- OUTPUT -->
+            <div class="output-section" id="outputSection">
+                <h2 style="color:#000054;margin-bottom:20px;">Generated Canvas HTML</h2>
+                <div class="output-container"><div class="output-header"><span>Emble HTML Code</span><button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem;" onclick="copyHTML()">Copy HTML</button></div><div class="output-content" id="outputContent"></div></div>
+                <div class="preview-container"><h3>Preview</h3><div id="previewContent"></div></div>
+                <div class="button-group"><button class="btn btn-secondary" onclick="backToEdit()">Back to Edit</button><button class="btn btn-primary" onclick="resetAll()">New Content</button></div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team — RMIT College of Vocational Education</p></footer>
+
+<script>
+let parsedData={},contentSectionCount=0,classActivityCount=0,kcQuestionCount=0,debugLog=[];
+
+function dbg(l,v){debugLog.push(`[${l}] ${typeof v==='string'?v:JSON.stringify(v,null,1)}`)}
+function toggleDebug(){const p=document.getElementById('debugPanel');p.style.display=p.style.display==='none'?'block':'none';p.textContent=debugLog.join('\n')}
+function showTextarea(){document.getElementById('copilotInput').style.display='block';document.getElementById('pasteArea').style.display='none';document.getElementById('copilotInput').focus();document.getElementById('parseBtn').disabled=false}
+function updateStep(n,s){const e=document.getElementById('step'+n);e.classList.remove('active','completed');if(s)e.classList.add(s)}
+function genId(){return 'emble-customise-'+Math.random().toString(16).slice(2,10)}
+function escH(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+// ── Toggle listeners ──
+document.addEventListener('DOMContentLoaded',function(){
+    var toggleMap={togVideo:'videoSection',togActivities:'activitiesSection',togKC:'kcSection'};
+    Object.keys(toggleMap).forEach(function(id){
+        var cb=document.getElementById(id);
+        var sec=document.getElementById(toggleMap[id]);
+        if(cb&&sec){
+            cb.addEventListener('change',function(){sec.style.display=this.checked?'':'none';});
+        }
+    });
+    document.getElementById('copilotInput').addEventListener('input',function(){document.getElementById('parseBtn').disabled=!this.value.trim()});
+});
+
+// ═══════════════════════════════════════════════════════
+// FORM BUILDERS
+// ═══════════════════════════════════════════════════════
+function addContentSection(title,type,desc,fileRef){
+    title=title||'';type=type||'Sub-topic overview';desc=desc||'';fileRef=fileRef||'';
+    contentSectionCount++;
+    var n=contentSectionCount;
+    var d=document.createElement('div');
+    d.className='content-block-entry';
+    d.id='csBlock'+n;
+    var tl=type.toLowerCase();
+    var isSub=tl.includes('sub-topic')&&!tl.includes('expanded');
+    var isExpanded=tl.includes('expanded');
+    var showFile=isSub||isExpanded;
+    d.innerHTML='<h4><span>Content Section '+n+'</span><button onclick="this.closest(\'.content-block-entry\').remove()" style="background:none;border:none;color:#e61e2a;cursor:pointer;font-size:1.1rem;">✕</button></h4>'
+        +'<div class="form-group"><label>Title</label><input type="text" id="csTitle'+n+'" value="'+escH(title)+'" placeholder="Section title"></div>'
+        +'<div class="form-group"><label>Type</label><select id="csType'+n+'" onchange="toggleFileRef('+n+')">'
+        +'<option value="Sub-topic overview"'+(isSub?' selected':'')+'>Sub-topic overview</option>'
+        +'<option value="Expanded sub-topic overview"'+(isExpanded?' selected':'')+'>Expanded sub-topic overview</option>'
+        +'<option value="Detailed reference content"'+(!isSub&&!isExpanded?' selected':'')+'>Detailed reference content</option>'
+        +'</select></div>'
+        +'<div class="form-group"><label>Description</label><textarea id="csDesc'+n+'" rows="4" placeholder="Section content">'+escH(desc)+'</textarea></div>'
+        +'<div class="form-group" id="csFileRefGroup'+n+'" style="display:'+(showFile?'block':'none')+'"><label>File Reference</label><input type="text" id="csFileRef'+n+'" value="'+escH(fileRef||'Use the following to support your learning and for revision: [Insert filename placeholder]')+'" placeholder="File reference text"></div>';
+    document.getElementById('contentSections').appendChild(d);
+}
+function toggleFileRef(n){
+    var type=document.getElementById('csType'+n);
+    var grp=document.getElementById('csFileRefGroup'+n);
+    if(type&&grp){
+        var v=type.value.toLowerCase();
+        grp.style.display=(v.includes('sub-topic')||v.includes('expanded'))?'block':'none';
+    }
+}
+
+function addClassActivity(name,instructions){
+    name=name||'';instructions=instructions||'';
+    classActivityCount++;
+    var n=classActivityCount;
+    var d=document.createElement('div');
+    d.className='activity-entry';
+    d.id='caBlock'+n;
+    d.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><label style="margin:0;">Activity '+n+'</label><button onclick="this.closest(\'.activity-entry\').remove()" style="background:none;border:none;color:#e61e2a;cursor:pointer;font-size:.9rem;">✕</button></div>'
+        +'<label>Activity Name</label><input type="text" id="caName'+n+'" value="'+escH(name)+'" placeholder="e.g. Create and process an integer array">'
+        +'<label>Instructions (one per line)</label><textarea id="caInstr'+n+'" rows="4" placeholder="Step 1\nStep 2\nStep 3">'+escH(instructions)+'</textarea>';
+    document.getElementById('classActivities').appendChild(d);
+}
+
+function addKCQuestion(q,type,opts,correct,feedbacks){
+    q=q||'';type=type||'Multiple choice';opts=opts&&opts.length>=2?opts:['','','',''];correct=correct||0;feedbacks=feedbacks&&feedbacks.length>=2?feedbacks:opts.map(function(){return ''});
+    kcQuestionCount++;
+    var n=kcQuestionCount;
+    var d=document.createElement('div');
+    d.className='quiz-question';
+    d.id='kcQ'+n;
+    var isTF=type.toLowerCase().includes('true');
+    var html='<h4>Question '+n+' <span style="font-size:.8rem;font-weight:400;color:#666;">('+escH(type)+')</span></h4>'
+        +'<div class="form-group"><input type="text" id="kcQText'+n+'" placeholder="Question text" value="'+escH(q)+'"></div>'
+        +'<div class="form-group"><label>Type</label><select id="kcQType'+n+'"><option value="Multiple choice"'+(!isTF?' selected':'')+'>Multiple choice</option><option value="True/False"'+(isTF?' selected':'')+'>True/False</option></select></div>';
+    for(var i=0;i<opts.length;i++){
+        html+='<div class="quiz-option"><input type="radio" name="kcCorrect'+n+'" value="'+i+'"'+(i===correct?' checked':'')+'><input type="text" id="kcOpt'+n+'_'+i+'" placeholder="Option '+String.fromCharCode(65+i)+'" value="'+escH(opts[i])+'">'+(i===correct?'<span class="correct-label">✔ Correct</span>':'')+'</div>';
+        html+='<div class="feedback-group"><label>Feedback '+String.fromCharCode(65+i)+'</label><input type="text" id="kcFb'+n+'_'+i+'" value="'+escH(feedbacks[i]||'')+'" placeholder="Guided feedback for this option"></div>';
+    }
+    d.innerHTML=html;
+    document.getElementById('kcQuestions').appendChild(d);
+    d.querySelectorAll('input[type="radio"]').forEach(function(r){
+        r.addEventListener('change',function(){
+            d.querySelectorAll('.correct-label').forEach(function(l){l.remove()});
+            var ch=d.querySelector('input[type="radio"]:checked');
+            if(ch){var s=document.createElement('span');s.className='correct-label';s.textContent='✔ Correct';ch.parentElement.appendChild(s)}
+        });
+    });
+}
+function removeKCQuestion(){if(kcQuestionCount>0){var e=document.getElementById('kcQ'+kcQuestionCount);if(e)e.remove();kcQuestionCount--}}
+
+// ═══════════════════════════════════════════════════════
+// PARSER
+// ═══════════════════════════════════════════════════════
+function parseCopilotOutput(){
+    debugLog=[];
+    var raw=document.getElementById('copilotInput').value.trim();
+    if(!raw)return alert('Please paste Copilot output first.');
+    dbg('INPUT',raw.length+' chars, '+raw.split('\n').length+' lines');
+    parsedData={};
+
+    var lines=raw.split('\n');
+    var sections=[];
+    var currentSection=null;
+
+    for(var li=0;li<lines.length;li++){
+        var line=lines[li];
+        var delimMatch=line.match(/^─{2,}\s*(.+?)\s*─{2,}\s*(.*)$/);
+        if(delimMatch){
+            var name=delimMatch[1].replace(/─/g,'').trim();
+            var trailing=(delimMatch[2]||'').trim();
+            if(name.toUpperCase()==='END'){dbg('END_MARKER','found');continue;}
+            currentSection={name:name,lines:[]};
+            sections.push(currentSection);
+            dbg('SECTION',name+(trailing?' [+inline: '+trailing.substring(0,60)+']':''));
+            if(trailing) currentSection.lines.push(trailing);
+        } else if(currentSection){
+            currentSection.lines.push(line);
+        }
+    }
+
+    // Classify
+    var classified=sections.map(function(s){return {name:s.name,lines:s.lines,key:classifySection(s.name)}});
+    classified.forEach(function(s){dbg('CLASSIFY','"'+s.name+'" → '+s.key)});
+
+    function getSection(key){return classified.filter(function(s){return s.key===key})}
+    function getFirst(key){var arr=getSection(key);return arr.length?arr[0]:null}
+    function getFieldValue(flines,field){
+        for(var i=0;i<flines.length;i++){
+            var t=flines[i].trim();
+            var re=new RegExp('^'+field+'\\s*:\\s*(.+)','i');
+            var m=t.match(re);
+            if(m) return m[1].trim();
+            if(t.toLowerCase()===field.toLowerCase()+':'){
+                // Value on next non-empty line
+                for(var j=i+1;j<flines.length;j++){
+                    if(flines[j].trim()) return flines[j].trim();
+                }
+            }
+        }
+        return '';
+    }
+    function getMultiLineField(flines,field){
+        var found=false,result=[];
+        for(var i=0;i<flines.length;i++){
+            var t=flines[i].trim();
+            if(t.toLowerCase().startsWith(field.toLowerCase()+':')){
+                var afterColon=t.replace(new RegExp('^.*?:\\s*','i'),'').trim();
+                if(afterColon) result.push(afterColon);
+                found=true;continue;
+            }
+            if(found){
+                if(t.match(/^[A-Z][a-z]+(\s+[a-z]+){0,3}\s*:/)&&!t.match(/^\d+\./)) break;
+                if(t) result.push(t);
+            }
+        }
+        return result.join('\n');
+    }
+
+    // Page Heading
+    var headingSec=getFirst('pageHeading');
+    var rawHeading=headingSec?getFieldValue(headingSec.lines,'Heading')||headingSec.lines.filter(function(l){return l.trim()})[0]||'':'';
+    parsedData.pageHeading=rawHeading.replace(/\[|\]/g,'').trim();
+    dbg('PAGE_HEADING',parsedData.pageHeading);
+
+    // Topic Summary
+    var summarySec=getFirst('topicSummary');
+    parsedData.topicSummary=summarySec?getFieldValue(summarySec.lines,'Summary')||summarySec.lines.filter(function(l){return l.trim()}).join(' '):'';
+    dbg('TOPIC_SUMMARY',parsedData.topicSummary.substring(0,80));
+
+    // Content Sections
+    parsedData.contentSections=[];
+    var cSections=getSection('contentSection');
+    for(var ci=0;ci<cSections.length;ci++){
+        var cs=cSections[ci];
+        var fl=cs.lines.filter(function(l){return l.trim()});
+        var csType=getFieldValue(fl,'Type')||'Sub-topic overview';
+        var csTitle=getFieldValue(fl,'Title')||cs.name.replace(/^Content\s+Section:\s*/i,'').trim();
+        var csDesc=getMultiLineField(fl,'Description')||'';
+        var csFileRef=getFieldValue(fl,'File reference')||'';
+        parsedData.contentSections.push({title:csTitle,type:csType,desc:csDesc,fileRef:csFileRef});
+    }
+    dbg('CONTENT_SECTIONS',parsedData.contentSections.length);
+
+    // Resources/Video
+    var videoSec=getFirst('video');
+    parsedData.hasVideo=!!videoSec;
+    if(videoSec){
+        var vl=videoSec.lines.filter(function(l){return l.trim()});
+        parsedData.videoTitle=getFieldValue(vl,'Title')||'';
+        parsedData.videoDesc=getFieldValue(vl,'Video description')||getFieldValue(vl,'Description')||'';
+        parsedData.videoSearch=getFieldValue(vl,'Suggested search')||'';
+        parsedData.videoResources=getFieldValue(vl,'Resources')||'';
+    } else {
+        parsedData.videoTitle='';parsedData.videoDesc='';parsedData.videoSearch='';parsedData.videoResources='';
+    }
+
+    // In Class Activities
+    parsedData.classActivities=[];
+    var caSecAll=getSection('classActivities');
+    var allCALines=[];
+    for(var ai=0;ai<caSecAll.length;ai++){allCALines=allCALines.concat(caSecAll[ai].lines)}
+    if(allCALines.length){
+        var currentAct=null;
+        var inInstructions=false;
+        for(var ali=0;ali<allCALines.length;ali++){
+            var t=allCALines[ali].trim();
+            if(!t) continue;
+            var actMatch=t.match(/^Activity\s+(\d+):\s*(.+)/i);
+            if(actMatch){
+                if(currentAct) parsedData.classActivities.push(currentAct);
+                currentAct={name:actMatch[2].trim(),instructions:[]};
+                inInstructions=false;
+                continue;
+            }
+            if(t.toLowerCase()==='instructions:'){inInstructions=true;continue;}
+            if(currentAct){
+                var stepMatch=t.match(/^\d+\.\s*(.+)/);
+                if(stepMatch){currentAct.instructions.push(stepMatch[1].trim());inInstructions=true;continue;}
+                if(inInstructions){
+                    var cleaned=t.replace(/^[*•\-—]\s+/,'');
+                    if(cleaned&&cleaned.length>3) currentAct.instructions.push(cleaned);
+                }
+            }
+        }
+        if(currentAct) parsedData.classActivities.push(currentAct);
+    }
+    dbg('CLASS_ACTIVITIES',parsedData.classActivities.length);
+
+    // Knowledge Check
+    parsedData.kcTitle='';
+    parsedData.kcQuestions=[];
+    var kcSec=getFirst('knowledgeCheck');
+    if(kcSec){
+        var kl=kcSec.lines;
+        parsedData.kcTitle=getFieldValue(kl,'Title')||'';
+        var curQ=null;
+        // Pre-process: split any line that has "Questions: Question 1:" into separate lines
+        var klExpanded=[];
+        for(var kp=0;kp<kl.length;kp++){
+            var kline=kl[kp];
+            // Split "Questions: Question 1: ..." or "Instructions: Read each..."
+            var qSplit=kline.match(/^Questions:\s*(Question\s+\d+:.+)/i);
+            if(qSplit){
+                klExpanded.push(qSplit[1]);
+            } else {
+                // Also handle lines where multiple fields run together
+                // Split on "Question N:" boundaries mid-line
+                var parts=kline.split(/(Question\s+\d+:\s*)/i);
+                if(parts.length>1){
+                    var rebuilt='';
+                    for(var pp=0;pp<parts.length;pp++){
+                        if(parts[pp].match(/^Question\s+\d+:\s*/i)){
+                            if(rebuilt.trim()) klExpanded.push(rebuilt.trim());
+                            rebuilt=parts[pp];
+                        } else {
+                            rebuilt+=parts[pp];
+                        }
+                    }
+                    if(rebuilt.trim()) klExpanded.push(rebuilt.trim());
+                } else {
+                    klExpanded.push(kline);
+                }
+            }
+        }
+        // Also split lines that have multiple fields concatenated (e.g. "Type: Multiple choice A) option...")
+        var klFinal=[];
+        for(var kf=0;kf<klExpanded.length;kf++){
+            var kfLine=klExpanded[kf];
+            // Split on field boundaries: Type:, A), B), C), D), Correct answer:, Feedback A:
+            var fieldParts=kfLine.split(/(?=\b(?:Type:\s|[A-D]\)\s|Correct answer:\s|Feedback [A-D]:\s))/i);
+            for(var fp=0;fp<fieldParts.length;fp++){
+                if(fieldParts[fp].trim()) klFinal.push(fieldParts[fp].trim());
+            }
+        }
+        dbg('KC_EXPANDED',klFinal.length+' lines from '+kl.length+' original');
+        for(var ki=0;ki<klFinal.length;ki++){
+            var kt=klFinal[ki].trim();
+            var qMatch=kt.match(/^Question\s+(\d+):\s*(.+)/i);
+            if(qMatch){
+                if(curQ) parsedData.kcQuestions.push(curQ);
+                curQ={text:qMatch[2].trim(),type:'Multiple choice',options:[],correct:0,feedbacks:[]};
+                continue;
+            }
+            if(!curQ) continue;
+            var typeMatch=kt.match(/^Type:\s*(.+)/i);
+            if(typeMatch){curQ.type=typeMatch[1].trim();continue;}
+            var optMatch=kt.match(/^([A-D])\)\s*(.+)/i);
+            if(optMatch){curQ.options.push(optMatch[2].trim());continue;}
+            var correctMatch=kt.match(/^Correct\s+answer:\s*([A-D])/i);
+            if(correctMatch){curQ.correct='ABCD'.indexOf(correctMatch[1].toUpperCase());continue;}
+            var fbMatch=kt.match(/^Feedback\s+([A-D]):\s*(.+)/i);
+            if(fbMatch){
+                var idx='ABCD'.indexOf(fbMatch[1].toUpperCase());
+                while(curQ.feedbacks.length<=idx) curQ.feedbacks.push('');
+                curQ.feedbacks[idx]=fbMatch[2].trim();
+                continue;
+            }
+        }
+        if(curQ) parsedData.kcQuestions.push(curQ);
+    }
+    dbg('KC_QUESTIONS',parsedData.kcQuestions.length);
+
+    document.getElementById('debugPanel').textContent=debugLog.join('\n');
+    populateForm();showExtractionStatus();showEditForm();
+}
+
+function classifySection(name){
+    var n=name.toLowerCase().replace(/[^a-z0-9\s&:]/g,'');
+    if(/^page\s*head/i.test(n)) return 'pageHeading';
+    if(/topic\s*summary/i.test(n)) return 'topicSummary';
+    if(/content\s*section/i.test(n)) return 'contentSection';
+    if(/resource|video/i.test(n)) return 'video';
+    if(/in\s*class\s*activit/i.test(n)) return 'classActivities';
+    if(/knowledge\s*check/i.test(n)) return 'knowledgeCheck';
+    return 'unknown';
+}
+
+function populateForm(){
+    var d=parsedData;
+    document.getElementById('fPageHeading').value=d.pageHeading||'';
+    document.getElementById('fTopicSummary').value=d.topicSummary||'';
+
+    // Content sections
+    document.getElementById('contentSections').innerHTML='';contentSectionCount=0;
+    if(d.contentSections&&d.contentSections.length){
+        d.contentSections.forEach(function(cs){addContentSection(cs.title,cs.type,cs.desc,cs.fileRef)});
+    } else {addContentSection();}
+
+    // Video
+    var hv=d.hasVideo;
+    document.getElementById('togVideo').checked=hv;
+    document.getElementById('videoSection').style.display=hv?'':'none';
+    document.getElementById('fVideoTitle').value=d.videoTitle||'';
+    document.getElementById('fVideoDesc').value=d.videoDesc||'';
+    document.getElementById('fVideoSearch').value=d.videoSearch||'';
+    document.getElementById('fVideoResources').value=d.videoResources||'';
+
+    // Class activities
+    document.getElementById('classActivities').innerHTML='';classActivityCount=0;
+    if(d.classActivities&&d.classActivities.length){
+        d.classActivities.forEach(function(a){addClassActivity(a.name,a.instructions.join('\n'))});
+    } else {addClassActivity();}
+    document.getElementById('togActivities').checked=true;
+    document.getElementById('activitiesSection').style.display='';
+
+    // Knowledge check
+    document.getElementById('fKCTitle').value=d.kcTitle||'';
+    document.getElementById('kcQuestions').innerHTML='';kcQuestionCount=0;
+    if(d.kcQuestions&&d.kcQuestions.length){
+        d.kcQuestions.forEach(function(q){addKCQuestion(q.text,q.type,q.options,q.correct,q.feedbacks)});
+    }
+    document.getElementById('togKC').checked=true;
+    document.getElementById('kcSection').style.display='';
+}
+
+function showExtractionStatus(){
+    var d=parsedData;
+    var items=[
+        {f:!!d.pageHeading,t:'Page Heading'+(d.pageHeading?' — '+d.pageHeading.substring(0,50):'')},
+        {f:!!d.topicSummary,t:'Topic Summary'},
+        {f:d.contentSections&&d.contentSections.length>0,t:'Content Sections ('+((d.contentSections||[]).length)+')'},
+        {f:d.hasVideo,t:'Resources/Video'},
+        {f:d.classActivities&&d.classActivities.length>0,t:'In Class Activities ('+((d.classActivities||[]).length)+')'},
+        {f:d.kcQuestions&&d.kcQuestions.length>0,t:'Knowledge Check ('+((d.kcQuestions||[]).length)+' questions)'},
+    ];
+    document.getElementById('statusList').innerHTML=items.map(function(i){return '<div class="status-item"><div class="status-icon '+(i.f?'found':'missing')+'">'+(i.f?'✔':'✗')+'</div><span>'+i.t+'</span></div>'}).join('');
+    document.getElementById('extractionStatus').style.display='block';
+}
+
+function showEditForm(){updateStep(1,'completed');updateStep(2,'active');document.getElementById('initialInstructions').style.display='none';document.getElementById('editForm').style.display='block';document.getElementById('outputSection').style.display='none';}
+
+// ═══════════════════════════════════════════════════════
+// HTML GENERATOR
+// ═══════════════════════════════════════════════════════
+function generateHTML(){
+    var heading=document.getElementById('fPageHeading').value||'X.X In summary';
+    var summary=document.getElementById('fTopicSummary').value||'';
+    var h='';
+
+    // ── H2 Heading + Blue HR ──
+    h+='<h2>'+esc(heading)+'&nbsp;</h2>\n';
+    h+='<hr class="emble heading-rule rmit-blue border-medium width-full" data-context-menu="customise delete" data-customise="hr-border-style hr-line-width hr-line-color" data-emble-name="Horizontal Line" data-emble-version="2.0" />\n';
+    h+='<p class="narrow-p">&nbsp;</p>\n\n';
+
+    // ── Topic Summary Card ──
+    h+='<div id="'+genId()+'" class="emble-card emble customise emble-card-default-theme emble-card-icon-left emble-card-icon-colour-blue emble-card-border-accent-top emble-card-border-colour-blue" data-context-menu="delete customise" data-customise="card-media card-theme card-icon-position icon-card card-icon-colour card-border-accent-pos card-border-colour" data-emble-name="card" data-emble-version="1.0">\n';
+    h+='<div class="card-media-container has-placeholder">\n<p class="media-container emble-placeholder-text" data-context-menu="rce-img rce-studio rce-youtube" data-placeholder="Click to upload your image or video.">&nbsp;</p>\n</div>\n';
+    h+='<div class="card-icon-container"><i class="icon-calculator icon-">&nbsp;</i></div>\n';
+    h+='<div class="card-text">\n';
+    h+=summary?'<p>'+esc(summary)+'</p>\n':'<p><span style="background-color: #c2e0f4;">Topic summary here</span></p>\n';
+    h+='<p>&nbsp;</p>\n</div>\n</div>\n';
+    h+='<p class="narrow-p">&nbsp;</p>\n\n';
+
+    // ── Content Sections ──
+    var csBlocks=document.getElementById('contentSections').querySelectorAll('.content-block-entry');
+    csBlocks.forEach(function(block){
+        var n=block.id.replace('csBlock','');
+        var title=document.getElementById('csTitle'+n);title=title?title.value:'';
+        var type=document.getElementById('csType'+n);type=type?type.value:'Sub-topic overview';
+        var desc=document.getElementById('csDesc'+n);desc=desc?desc.value:'';
+        var fileRef=document.getElementById('csFileRef'+n);fileRef=fileRef?fileRef.value:'';
+        if(!title&&!desc) return;
+
+        // Title with icon
+        h+='<div id="'+genId()+'" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n';
+        h+='<div class="emble-icon small wrap square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false yellow" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-target">&nbsp;</i></div>\n';
+        h+='<div class="title-with-icon-title">\n<h3>'+esc(title)+'</h3>\n</div>\n</div>\n';
+        h+='<p class="narrow-p">&nbsp;</p>\n\n';
+
+        // Description
+        if(desc){
+            var paras=desc.split('\n').filter(function(l){return l.trim()});
+            var inList=false;
+            paras.forEach(function(p){
+                var pt=p.trim();
+                if(/^[*•\-—]\s/.test(pt)){
+                    if(!inList){h+='<ul>\n';inList=true;}
+                    h+='<li>'+esc(pt.replace(/^[*•\-—]\s+/,''))+'</li>\n';
+                } else {
+                    if(inList){h+='</ul>\n';inList=false;}
+                    h+='<p>'+esc(pt)+'</p>\n';
+                }
+            });
+            if(inList) h+='</ul>\n';
+        }
+
+        // File reference for Sub-topic and Expanded
+        if((type.includes('Sub-topic')||type.includes('Expanded'))&&fileRef){
+            h+='<p class="">'+esc(fileRef)+'</p>\n';
+        }
+        h+='<p class="">&nbsp;</p>\n\n';
+    });
+
+    // ── In Class Activities ──
+    if(document.getElementById('togActivities').checked){
+        var caBlocks=document.getElementById('classActivities').querySelectorAll('.activity-entry');
+        if(caBlocks.length){
+            h+='<div id="'+genId()+'" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n';
+            h+='<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-group">&nbsp;</i></div>\n';
+            h+='<div class="title-with-icon-title">\n<h3>In class activities</h3>\n</div>\n</div>\n';
+            h+='<p class="narrow-p">&nbsp;</p>\n\n';
+
+            if(caBlocks.length===1){
+                var n1=caBlocks[0].id.replace('caBlock','');
+                var aName=document.getElementById('caName'+n1);aName=aName?aName.value:'Activity';
+                var aInstr=document.getElementById('caInstr'+n1);aInstr=aInstr?aInstr.value:'';
+                h+='<div id="'+genId()+'" class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n';
+                h+='<h3>'+esc(aName)+'</h3>\n';
+                if(aInstr){
+                    var steps=aInstr.split('\n').filter(function(l){return l.trim()});
+                    h+='<ol>\n';
+                    steps.forEach(function(s){var c=s.replace(/^\d+\.\s*/,'').trim();if(c)h+='<li>'+esc(c)+'</li>\n'});
+                    h+='</ol>\n';
+                } else {h+='<p>Instructions here</p>\n';}
+                h+='</div>\n';
+            } else {
+                h+='<div id="'+genId()+'" class="customise emble-columns-container emble-columns-stretch-child-height" data-context-menu="customise delete" data-customise="new-columns-arrangement new-columns-border new-columns-padding columns-stretch-children cobl-column-channel cobl-column-theme" data-emble-name="Columns" data-emble-version="2.0">\n';
+                caBlocks.forEach(function(block){
+                    var bn=block.id.replace('caBlock','');
+                    var bName=document.getElementById('caName'+bn);bName=bName?bName.value:'Activity';
+                    var bInstr=document.getElementById('caInstr'+bn);bInstr=bInstr?bInstr.value:'';
+                    h+='<div class="emble-columns-child emble-prevent-delete">\n';
+                    h+='<div id="'+genId()+'" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n';
+                    h+='<h3>'+esc(bName)+'</h3>\n';
+                    if(bInstr){
+                        var bSteps=bInstr.split('\n').filter(function(l){return l.trim()});
+                        h+='<ol>\n';
+                        bSteps.forEach(function(s){var c=s.replace(/^\d+\.\s*/,'').trim();if(c)h+='<li>'+esc(c)+'</li>\n'});
+                        h+='</ol>\n';
+                    } else {h+='<p>Instructions here</p>\n';}
+                    h+='</div>\n<p class="narrow-p">&nbsp;</p>\n</div>\n';
+                });
+                h+='</div>\n';
+            }
+            h+='<p class="narrow-p">&nbsp;</p>\n\n';
+        }
+    }
+
+    // ── Knowledge Check ──
+    if(document.getElementById('togKC').checked){
+        var kcTitle=document.getElementById('fKCTitle').value||'Knowledge Check';
+        h+='<div id="'+genId()+'" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n';
+        h+='<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-check">&nbsp;</i></div>\n';
+        h+='<div class="title-with-icon-title">\n<h3>'+esc(kcTitle)+'</h3>\n</div>\n</div>\n';
+        h+='<p class="narrow-p">&nbsp;</p>\n\n';
+
+        // Yellow instruction box
+        h+='<div style="border: 3px solid #FAC800; background-color: white; padding: 20px; margin: 10px 0; font-family: Arial, sans-serif; line-height: 1.5;">\n';
+        h+='<ul style="margin-bottom: 15px;">\n';
+        h+='<li>Read each question carefully before selecting your answer</li>\n';
+        h+='<li>Use the &gt; &lt; buttons or the circles below the questions to navigate between questions</li>\n';
+        h+='<li>Select "Check" when you\'ve answered each question</li>\n';
+        h+='</ul>\n';
+        h+='<ul style="margin-bottom: 15px;">\n';
+        h+='<li>Select "Show Solution" or "Retry" if you need to try again.</li>\n';
+        h+='</ul>\n</div>\n\n';
+
+        // H5P placeholder
+        h+='<p>&nbsp;</p>\n';
+        h+='<p><span style="background-color: #fac800;">Placeholder for Knowledge Check — Create an H5P content type \'Quiz (Question Set)\' using the questions below:</span></p>\n\n';
+
+        // Questions
+        var kcQBlocks=document.getElementById('kcQuestions').querySelectorAll('.quiz-question');
+        if(kcQBlocks.length){
+            h+='<div id="'+genId()+'" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n';
+            kcQBlocks.forEach(function(q,idx){
+                var qn=q.id.replace('kcQ','');
+                var qt=document.getElementById('kcQText'+qn);qt=qt?qt.value:'';
+                var qType=document.getElementById('kcQType'+qn);qType=qType?qType.value:'Multiple choice';
+                var cr=q.querySelector('input[type="radio"]:checked');
+                var ci=cr?parseInt(cr.value):0;
+                h+='<p><strong>Question '+(idx+1)+': '+esc(qt)+'</strong></p>\n';
+                h+='<p><em>Type: '+esc(qType)+'</em></p>\n';
+                for(var oi=0;oi<4;oi++){
+                    var op=document.getElementById('kcOpt'+qn+'_'+oi);
+                    if(op&&op.value){
+                        h+='<p>'+String.fromCharCode(65+oi)+') '+esc(op.value)+(oi===ci?' ✅':'')+'</p>\n';
+                    }
+                }
+                h+='<p><strong>Correct answer:</strong> '+String.fromCharCode(65+ci)+'</p>\n';
+                for(var fi=0;fi<4;fi++){
+                    var fb=document.getElementById('kcFb'+qn+'_'+fi);
+                    if(fb&&fb.value){
+                        h+='<p><em>Feedback '+String.fromCharCode(65+fi)+':</em> '+esc(fb.value)+'</p>\n';
+                    }
+                }
+                h+='<p>&nbsp;</p>\n';
+            });
+            h+='</div>\n\n';
+        }
+        h+='<p>&nbsp;</p>\n';
+    }
+
+    document.getElementById('outputContent').textContent=h;
+    document.getElementById('previewContent').innerHTML=h;
+    updateStep(2,'completed');updateStep(3,'active');
+    document.getElementById('editForm').style.display='none';document.getElementById('outputSection').style.display='block';window.scrollTo(0,0);
+}
+
+function copyHTML(){var c=document.getElementById('outputContent').textContent,ta=document.createElement('textarea');ta.value=c;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');var b=event.target,o=b.textContent;b.textContent='Copied!';b.style.background='#28a745';setTimeout(function(){b.textContent=o;b.style.background=''},2000)}catch(e){alert('Please copy manually')}document.body.removeChild(ta)}
+function backToEdit(){updateStep(3,'');updateStep(2,'active');document.getElementById('editForm').style.display='block';document.getElementById('outputSection').style.display='none'}
+function resetAll(){if(confirm('Start over with new content?'))location.reload()}
+
+function loadSample(){document.getElementById('copilotInput').value='──── Page Heading ────────────────────────────────────── Heading: 5.0 In summary\n\n──── Topic Summary ───────────────────────────────────── Summary: This topic introduces arrays in Java as a way to store multiple values of the same type, including arrays of objects. It covers how to create arrays, store values in them, and use different loop structures to process array data. You practise applying standard loop patterns to common tasks such as printing values, calculating a sum, finding the largest number, and counting even numbers in an integer array.\n\n──── Content Section: What Is An Array ────────────────\nType: Detailed reference content\n\nTitle: What is an Array?\n\nDescription: An array is a container that holds multiple values of the same type. You can think of it like a row of lockers, where each position stores a specific value. Example declaration and creation in Java: int[] numbers = new int[5];\n\n──── Content Section: Creating And Storing In Arrays ────────────────\nType: Sub-topic overview\n\nTitle: Creating and Storing in Arrays\n\nDescription: This section covers how to create an array and store values into its positions so you can manage multiple items as a single collection in your program.\n\nFile reference: Use the following to support your learning and for revision: [Insert filename placeholder]\n\n──── Content Section: Using Loops With Arrays ────────────────\nType: Sub-topic overview\n\nTitle: Using Loops with Arrays\n\nDescription: This section explains how to use loops to work through array items in order, allowing you to read, process, and output data stored in an array.\n\nFile reference: Use the following to support your learning and for revision: [Insert filename placeholder]\n\n──── Content Section: Enhanced For Loop (For-Each) ────────────────\nType: Sub-topic overview\n\nTitle: Enhanced For Loop (For-Each)\n\nDescription: This section introduces the enhanced for loop as an alternative way to iterate through arrays, and highlights when it may be appropriate to use it.\n\nFile reference: Use the following to support your learning and for revision: [Insert filename placeholder]\n\n──── Content Section: Arrays Of Objects ────────────────\nType: Sub-topic overview\n\nTitle: Arrays of Objects\n\nDescription: This section introduces arrays that store objects rather than primitive values, supporting situations where you need to manage multiple instances of a class.\n\nFile reference: Use the following to support your learning and for revision: [Insert filename placeholder]\n\n──── Content Section: Loop Patterns For Common Array Tasks ────────────────\nType: Detailed reference content\n\nTitle: Practice answers and code patterns\n\nDescription: Printing values from an array of objects (example pattern): for(int i=0; i<students.length; i++){ System.out.println(students[i].getName()); }\n\nFinding the largest number in an integer array (example pattern): int max = arr[0]; for(int i=1; i<arr.length; i++){ if(arr[i] > max) max = arr[i]; }\n\nCounting even numbers in an integer array (example pattern): int count=0; for(int i=0; i<arr.length; i++){ if(arr[i] % 2 == 0) count++; }\n\n──── In Class Activities ──────────────────────────────\nActivity 1: Create and process an integer array\nInstructions:\n1. Create an integer array with 5 elements and store values in it.\n2. Use a loop to iterate through the array and perform a calculation (for example, count how many values are even).\n3. Display the result of your processing (for example, the even-number count).\n\nActivity 2: Process an array of objects using a loop\nInstructions:\n1. Create an array of Student objects.\n2. Use a for loop to iterate through the array.\n3. For each object, output a value accessed via a method call (for example, print each student\'s name using a getter).\n\n──── Knowledge Check ───────────────────────────────────\nTitle: Knowledge Check: Arrays and Loops\n\nInstructions: Read each question carefully before selecting your answer Use the > < buttons or the circles below the questions to navigate between questions Select "Check" when you\'ve answered each question Select "Show Solution" or "Retry" if you need to try again\n\nQuestion 1: In Java, which statement correctly creates an integer array that can hold 5 values?\nType: Multiple choice\nA) int[] numbers = new int[5];\nB) int numbers = new int[5];\nC) int[] numbers = new int(5);\nD) int[5] numbers = new int[];\nCorrect answer: A\nFeedback A: Correct — this matches the standard Java syntax for declaring an int array and allocating space for 5 elements.\nFeedback B: Revisit how arrays are declared in Java — consider the difference between a single int variable and an int array.\nFeedback C: Consider the brackets used for array allocation in Java — think about whether Java uses parentheses or square brackets here.\nFeedback D: Revisit the placement of the brackets in an array declaration and allocation — consider what parts must be specified at compile time.\n\nQuestion 2: Which loop header matches the pattern used to iterate through an array from the first element to the last using an index?\nType: Multiple choice\nA) for(int i=0; i<arr.length; i++)\nB) for(int i=1; i<=arr.length; i++)\nC) for(int i=0; i<=arr.length; i++)\nD) for(int i=arr.length; i>=0; i++)\nCorrect answer: A\nFeedback A: Correct — starting at 0 and stopping before arr.length matches valid array index positions.\nFeedback B: Consider array indexing — revisit whether the last valid index equals arr.length or arr.length - 1.\nFeedback C: Think about what happens when i equals arr.length — explore whether that index exists in the array.\nFeedback D: Revisit loop direction and the update step — consider whether i++ matches a loop that starts at the end and moves backwards.\n\nQuestion 3: To count even numbers in an integer array, which condition is used in the example pattern?\nType: Multiple choice\nA) arr[i] % 2 == 0\nB) arr[i] / 2 == 0\nC) arr[i] % 2 == 1\nD) arr[i] * 2 == 0\nCorrect answer: A\nFeedback A: Correct — using modulo 2 checks whether there is no remainder when dividing by 2.\nFeedback B: Consider what division returns for most integers — revisit how to test evenness reliably.\nFeedback C: Think about the meaning of remainder 1 — explore which numbers produce that result when divided by 2.\nFeedback D: Revisit what multiplying by 2 changes — consider whether that operation can test evenness.\n\nQuestion 4: True or False: An array can store multiple values, but all values must be of the same type.\nType: True/False\nA) True\nB) False\nC) Not enough information\nD) Only if the array is empty\nCorrect answer: A\nFeedback A: Correct — arrays are type-specific containers, so each element must match the array\'s declared type.\nFeedback B: Revisit the definition of an array — consider why Java requires a single element type for the whole array.\nFeedback C: Consider the topic definition provided — revisit the statement "multiple values of the same type".\nFeedback D: Think about what "empty" means for an array — explore whether element type rules change based on whether values have been assigned.\n\n──── END ───────────────────────────────────────────────';showTextarea()}
+</script>
+</body>
+</html>
