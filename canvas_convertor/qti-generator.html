@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoVE Canvas QTI Quiz Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;line-height:1.6}
+.main-wrapper{padding:20px}
+.container{max-width:1600px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+.header{background:#000054;color:#fff;padding:30px;text-align:center}
+.header h1{font-size:2.5rem;margin-bottom:10px;font-weight:700}
+.header p{font-size:1.1rem;opacity:.9}
+.workflow-steps{display:flex;justify-content:center;padding:30px;background:#f2f2f2;border-bottom:3px solid #fac800}
+.step{display:flex;align-items:center;margin:0 15px;font-weight:600;color:#000054}
+.step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+.step.active .step-number{background:#e61e2a}
+.step.completed .step-number{background:#28a745}
+.step-arrow{margin:0 10px;color:#000054;font-size:1.2rem}
+.main-layout{max-width:1000px;margin:0 auto;padding:30px}
+.sidebar{background:#fff;padding:30px;border:1px solid #e3e5e0;border-radius:6px;margin-bottom:25px}
+.upload-area{border:3px dashed #000054;border-radius:8px;padding:40px;text-align:center;transition:all .3s ease;cursor:pointer;background:#fff;margin-bottom:20px}
+.upload-area:hover,.upload-area.dragover{border-color:#e61e2a;background:#f8f9fa}
+.upload-icon{font-size:3rem;color:#000054;margin-bottom:15px}
+.upload-text{font-size:1.1rem;color:#000054;margin-bottom:10px;font-weight:600}
+.upload-subtext{font-size:.9rem;color:#666}
+.file-input{display:none}
+.extraction-status{display:none;background:#fff;border:2px solid #fac800;border-radius:6px;padding:20px;margin-top:20px}
+.extraction-status h3{color:#000054;margin-bottom:15px;font-size:1.2rem}
+.status-item{display:flex;align-items:center;margin-bottom:10px;font-size:.95rem}
+.status-icon{width:20px;height:20px;border-radius:50%;margin-right:10px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:#fff;font-weight:700}
+.status-icon.found{background:#28a745}
+.loader{display:none;width:40px;height:40px;border:4px solid #f2f2f2;border-top:4px solid #e61e2a;border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
+@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+.edit-form{display:none}
+.form-section{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:25px;margin-bottom:25px}
+.form-section h3{color:#000054;margin-bottom:20px;font-size:1.3rem;border-bottom:2px solid #fac800;padding-bottom:10px}
+.form-group{margin-bottom:20px}
+.form-group label{display:block;font-weight:600;color:#000054;margin-bottom:8px;font-size:.95rem}
+.form-group input[type="text"],.form-group input[type="number"],.form-group select,.form-group textarea{width:100%;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.95rem;font-family:inherit;background:#fafbfc}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#000054}
+.form-group textarea{min-height:80px;resize:vertical}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.help-text{font-size:.85rem;color:#666;margin-top:5px}
+.question-card{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:20px;margin-bottom:15px}
+.question-card.mc{border-left:4px solid #000054}
+.question-card.ma{border-left:4px solid #6a1b9a}
+.question-card.tf{border-left:4px solid #28a745}
+.question-card.matching{border-left:4px solid #fac800}
+.question-card.short_answer{border-left:4px solid #0097a7}
+.question-card.fill_blanks{border-left:4px solid #e65100}
+.question-card.multi_dropdown{border-left:4px solid #c2185b}
+.question-card.numerical{border-left:4px solid #1565c0}
+.question-card.calculated{border-left:4px solid #4527a0}
+.question-card.essay{border-left:4px solid #558b2f}
+.question-card.file_upload{border-left:4px solid #6d4c41}
+.question-card.text_only{border-left:4px solid #9e9e9e}
+.question-header{display:flex;align-items:center;margin-bottom:12px;gap:10px}
+.question-number{flex-shrink:0;font-weight:700;color:#000054;font-size:1.1rem}
+.type-select{padding:3px 8px;border-radius:4px;font-size:.85rem;font-weight:600;border:2px solid #e3e5e0;color:#000054;background:#f2f2f2;cursor:pointer}
+.type-select:focus{outline:none;border-color:#000054}
+.question-text textarea{width:100%;min-height:60px;padding:8px;border:1px solid #e3e5e0;border-radius:4px;font-family:inherit;font-size:.95rem;resize:vertical}
+.options-list{list-style:none;padding:0}
+.options-list li{padding:6px 10px;margin-bottom:4px;border-radius:4px;font-size:.9rem;display:flex;align-items:flex-start;gap:8px}
+.options-list li.correct{background:#e6f9e6;border:1px solid #28a745}
+.options-list li.incorrect{background:#f8f9fa;border:1px solid #e3e5e0}
+.option-letter{font-weight:700;min-width:20px;color:#000054}
+.opt-input{flex:1;padding:4px 8px;border:1px solid #e3e5e0;border-radius:3px;font-family:inherit;font-size:.9rem}
+.correct-label{font-size:.75rem;color:#28a745;font-weight:700;margin-left:auto;white-space:nowrap}
+.del-opt-btn{background:none;border:none;color:#999;cursor:pointer;font-size:.85rem;padding:2px 6px;border-radius:3px;flex-shrink:0}
+.del-opt-btn:hover{color:#e61e2a;background:#fde8e8}
+.delete-q-btn{background:none;border:none;color:#e61e2a;cursor:pointer;font-size:1rem;padding:4px 8px;border-radius:4px;margin-left:auto;flex-shrink:0}
+.delete-q-btn:hover{background:#fde8e8}
+.correct-select{margin-top:10px}
+.correct-select label{font-weight:600;color:#000054;font-size:.9rem;margin-right:8px}
+.correct-select select{padding:6px 10px;border:1px solid #e3e5e0;border-radius:4px;font-size:.9rem}
+.matching-pairs{margin-top:10px}
+.matching-pair{display:grid;grid-template-columns:1fr 30px 1fr;gap:8px;align-items:center;margin-bottom:8px;padding:8px;background:#f8f9fa;border-radius:4px}
+.matching-pair input{padding:6px 8px;border:1px solid #e3e5e0;border-radius:3px;font-size:.9rem;font-family:inherit}
+.matching-arrow{text-align:center;color:#000054;font-weight:700}
+.sub-field{margin-top:10px;padding:10px;background:#f8f9fa;border-radius:4px}
+.sub-field label{font-size:.85rem;font-weight:600;color:#000054;display:block;margin-bottom:4px}
+.sub-field input,.sub-field textarea{width:100%;padding:6px 8px;border:1px solid #e3e5e0;border-radius:3px;font-family:inherit;font-size:.9rem}
+.inline-row{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.inline-row label{font-size:.85rem;font-weight:600;color:#000054;min-width:80px}
+.inline-row input{flex:1;padding:6px 8px;border:1px solid #e3e5e0;border-radius:3px;font-family:inherit;font-size:.9rem}
+.add-btn-sm{padding:4px 12px;font-size:.85rem;background:#fff;border:1px solid #000054;color:#000054;border-radius:4px;cursor:pointer;margin-top:6px}
+.add-btn-sm:hover{background:#f2f2f2}
+.button-group{display:flex;gap:15px;margin-top:30px;padding-top:30px;border-top:2px solid #e3e5e0}
+.btn{padding:12px 30px;border:none;border-radius:4px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s}
+.btn-primary{background:#e61e2a;color:#fff}.btn-primary:hover{background:#c51923;transform:translateY(-1px)}
+.btn-secondary{background:#000054;color:#fff}.btn-secondary:hover{background:#000043;transform:translateY(-1px)}
+.btn-outline{background:#fff;color:#000054;border:2px solid #000054}.btn-outline:hover{background:#f2f2f2}
+.output-section{display:none}
+.output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+.output-header{background:#000054;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.output-content{padding:20px;font-family:Monaco,Menlo,monospace;font-size:.82rem;line-height:1.5;max-height:500px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
+.output-actions{display:flex;gap:10px}
+.preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:25px;margin-top:20px}
+.preview-container h3{color:#000054;margin-bottom:15px}
+.preview-q{padding:15px;border:1px solid #e3e5e0;border-radius:4px;margin-bottom:10px;background:#fafbfc}
+.preview-q h4{color:#000054;margin-bottom:8px}
+.preview-q .pq-type{color:#666;font-size:.85rem;margin-bottom:8px}
+.preview-q ul{margin-left:20px;margin-top:8px}
+.preview-q li{margin-bottom:4px;font-size:.9rem}
+.preview-q li.ca{color:#28a745;font-weight:600}
+.alert{padding:15px;border-radius:4px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px}
+.alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
+.alert-info{background:#e6f3ff;border:1px solid #0066cc;color:#004085}
+.alert-success{background:#e6f9e6;border:1px solid #28a745;color:#155724}
+.alert-icon{font-size:1.3rem;flex-shrink:0;margin-top:2px}
+.footer{background:#000054;color:#fff;text-align:center;padding:20px;margin-top:40px;font-size:.95rem}
+.add-question-bar{text-align:center;padding:20px;border:2px dashed #e3e5e0;border-radius:6px;margin-bottom:20px}
+.add-question-bar select{padding:8px 12px;border:1px solid #e3e5e0;border-radius:4px;font-size:.9rem;margin-right:10px}
+.qbadge{padding:3px 10px;border-radius:12px;font-size:.8rem;font-weight:600;color:#fff;display:inline-block}
+.qb-mc{background:#000054}.qb-ma{background:#6a1b9a}.qb-tf{background:#28a745}.qb-matching{background:#b8860b}
+.qb-short_answer{background:#0097a7}.qb-fill_blanks{background:#e65100}.qb-multi_dropdown{background:#c2185b}
+.qb-numerical{background:#1565c0}.qb-calculated{background:#4527a0}.qb-essay{background:#558b2f}
+.qb-file_upload{background:#6d4c41}.qb-text_only{background:#9e9e9e}
+@media(max-width:768px){.main-layout{padding:15px}.form-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="main-wrapper"><div class="container">
+<div class="header"><h1>CoVE Canvas QTI Quiz Generator</h1><p>Extract Quiz Questions from Assessor Guides &amp; Generate QTI 1.2 XML for Canvas Import</p></div>
+<div class="workflow-steps">
+<div class="step active" id="step1"><div class="step-number">1</div><span>Upload Document</span></div><span class="step-arrow">&rarr;</span>
+<div class="step" id="step2"><div class="step-number">2</div><span>Review &amp; Edit</span></div><span class="step-arrow">&rarr;</span>
+<div class="step" id="step3"><div class="step-number">3</div><span>Generate QTI XML</span></div>
+</div>
+<div class="main-layout">
+<div class="sidebar">
+<div class="upload-area" id="uploadArea"><div class="upload-icon">&#128221;</div><div class="upload-text">Upload Assessor Guide</div><div class="upload-subtext">Drop .docx file here or click to browse</div><input type="file" id="fileInput" class="file-input" accept=".docx"></div>
+<div class="loader" id="loader"></div>
+<div class="extraction-status" id="extractionStatus"><h3>&#128202; Extraction Results</h3><div id="statusList"></div></div>
+<div style="margin-top:15px;padding:15px;background:#f2f2f2;border-radius:6px">
+<h4 style="color:#000054;margin-bottom:10px;font-size:.95rem">Supported Question Types</h4>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<span class="qbadge qb-mc">MC</span><span class="qbadge qb-ma">MA</span><span class="qbadge qb-tf">T/F</span><span class="qbadge qb-matching">Matching</span><span class="qbadge qb-short_answer">Fill Blank</span><span class="qbadge qb-fill_blanks">Multi Blanks</span><span class="qbadge qb-multi_dropdown">Dropdowns</span><span class="qbadge qb-numerical">Numerical</span><span class="qbadge qb-calculated">Formula</span><span class="qbadge qb-essay">Essay</span><span class="qbadge qb-file_upload">File Upload</span><span class="qbadge qb-text_only">Text Only</span>
+</div></div>
+</div>
+<div id="initialInstructions">
+<h2 style="color:#000054;margin-bottom:20px">How to Use This Tool</h2>
+<ol style="font-size:1.1rem;line-height:2">
+<li><strong>Upload</strong> the Assessor Guide (.docx) containing quiz questions</li>
+<li><strong>Review</strong> the automatically extracted questions, answers, and correct responses</li>
+<li><strong>Edit</strong> any questions, options, or correct answers as needed</li>
+<li><strong>Generate</strong> QTI 1.2 XML ready for Canvas import</li>
+<li><strong>Download</strong> the .xml file</li>
+<li><strong>Zip</strong> the .xml file using the <strong>Flat Zipper</strong> tool</li>
+<li><strong>Import</strong> into Canvas: Settings &rarr; Import Course Content &rarr; QTI .zip File</li>
+</ol>
+<div class="alert alert-info" style="margin-top:30px"><div class="alert-icon">&#128161;</div><div><strong>12 Question Types Supported:</strong> Multiple Choice, Multiple Answer, True/False, Matching, Fill in the Blank, Fill in Multiple Blanks, Multiple Dropdowns, Numerical Answer, Calculated/Formula, Essay, File Upload, and Text Only.</div></div>
+<div class="alert alert-warning" style="margin-top:15px"><div class="alert-icon">&#9888;&#65039;</div><div><strong>Important:</strong> This tool reads from the <em>Assessor Guide</em> version, which contains correct answers. You can also manually add any question type using the + Add Question button.</div></div>
+</div>
+<div class="edit-form" id="editForm">
+<h2 style="color:#000054;margin-bottom:25px">Review &amp; Edit Extracted Questions</h2>
+<div class="alert alert-info" style="margin-bottom:20px"><div class="alert-icon">&#8505;&#65039;</div><div>Questions extracted from the Marking Guide. Review all fields, edit questions and change question types as needed.</div></div>
+<div class="form-section"><h3>&#128203; Quiz Settings</h3>
+<div class="form-row">
+<div class="form-group"><label>Assessment Identifier</label><input type="text" id="assessmentIdent" value="quiz_1"><p class="help-text">Used as the QTI assessment ident</p></div>
+<div class="form-group"><label>Quiz Title</label><input type="text" id="quizTitle" value=""><p class="help-text">Display name in Canvas</p></div>
+</div></div>
+<div class="form-section"><h3>&#10067; Questions (<span id="questionCount">0</span>)</h3>
+<div id="questionsContainer"></div>
+<div class="add-question-bar">
+<select id="addQuestionType"><option value="mc">Multiple Choice</option><option value="ma">Multiple Answer</option><option value="tf">True / False</option><option value="matching">Matching</option><option value="short_answer">Fill in the Blank</option><option value="fill_blanks">Fill in Multiple Blanks</option><option value="multi_dropdown">Multiple Dropdowns</option><option value="numerical">Numerical Answer</option><option value="calculated">Calculated / Formula</option><option value="essay">Essay</option><option value="file_upload">File Upload</option><option value="text_only">Text Only (No Question)</option></select>
+<button class="btn btn-outline" id="addQBtn">+ Add Question</button>
+</div></div>
+<div class="button-group"><button type="button" class="btn btn-primary" id="generateBtn">Generate QTI XML</button><button type="button" class="btn btn-secondary" id="resetBtn1">Start Over</button></div>
+</div>
+<div class="output-section" id="outputSection">
+<h2 style="color:#000054;margin-bottom:25px">Generated QTI 1.2 XML</h2>
+<div class="alert alert-success" style="margin-bottom:20px"><div class="alert-icon">&#9989;</div><div><strong>QTI XML generated successfully.</strong> Download the .xml file, then use the <strong>Flat Zipper</strong> tool to create the .zip file for Canvas import via Settings &rarr; Import Course Content &rarr; QTI .zip File.</div></div>
+<div class="output-container"><div class="output-header"><span>QTI 1.2 XML Code</span><div class="output-actions"><button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem" id="copyBtn">Copy XML</button><button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem;background:#28a745" id="downloadBtn">Download .xml</button></div></div><div class="output-content" id="outputContent"></div></div>
+<div class="preview-container"><h3>Question Preview</h3><div id="previewContent"></div></div>
+<div class="button-group"><button type="button" class="btn btn-secondary" id="backBtn">Back to Edit</button><button type="button" class="btn btn-primary" id="resetBtn2">New Document</button></div>
+</div>
+</div></div></div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team - RMIT College of Vocational Education</p></footer>
+<script>
+(function(){
+"use strict";
+
+/* ===== CONSTANTS ===== */
+var TL={mc:"Multiple Choice",ma:"Multiple Answer",tf:"True/False",matching:"Matching",short_answer:"Fill in the Blank",fill_blanks:"Fill in Multiple Blanks",multi_dropdown:"Multiple Dropdowns",numerical:"Numerical Answer",calculated:"Calculated/Formula",essay:"Essay",file_upload:"File Upload",text_only:"Text Only"};
+var QT={mc:"multiple_choice_question",ma:"multiple_answers_question",tf:"true_false_question",matching:"matching_question",short_answer:"short_answer_question",fill_blanks:"fill_in_multiple_blanks_question",multi_dropdown:"multiple_dropdowns_question",numerical:"numerical_question",calculated:"calculated_question",essay:"essay_question",file_upload:"file_upload_question",text_only:"text_only_question"};
+
+/* ===== STATE ===== */
+var questions=[];
+var generatedXML="";
+var gHtmlMarkup=""; /* raw HTML markup for italic/bold detection */
+
+/* ===== DOM REFS ===== */
+var uploadArea=document.getElementById("uploadArea");
+var fileInput=document.getElementById("fileInput");
+var loader=document.getElementById("loader");
+
+/* ===== EVENT LISTENERS ===== */
+uploadArea.addEventListener("click",function(){fileInput.click();});
+fileInput.addEventListener("change",function(e){if(e.target.files[0])handleFile(e.target.files[0]);});
+uploadArea.addEventListener("dragover",function(e){e.preventDefault();uploadArea.classList.add("dragover");});
+uploadArea.addEventListener("dragleave",function(){uploadArea.classList.remove("dragover");});
+uploadArea.addEventListener("drop",function(e){e.preventDefault();uploadArea.classList.remove("dragover");if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
+document.getElementById("addQBtn").addEventListener("click",addQuestion);
+document.getElementById("generateBtn").addEventListener("click",generateQTI);
+document.getElementById("resetBtn1").addEventListener("click",resetForm);
+document.getElementById("resetBtn2").addEventListener("click",resetForm);
+document.getElementById("copyBtn").addEventListener("click",copyXML);
+document.getElementById("downloadBtn").addEventListener("click",downloadXML);
+document.getElementById("backBtn").addEventListener("click",backToEdit);
+
+/* ===== HELPERS ===== */
+function esc(s){return s?s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"):""}
+function escA(s){return s?s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;"):""}
+function eX(s){return s?s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;"):""}
+function escReg(s){return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
+
+function cleanQText(t){
+  return t.replace(/\*{1,3}/g,"").replace(/\{\.mark\}/g,"").replace(/\{\.underline\}/g,"")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g,"[See image]").replace(/\{width="[^"]*"[^}]*\}/g,"")
+    .replace(/Correct\s+answers?\s+shown\s+in\s+RED\s+below\.?\s*/gi,"")
+    .replace(/Answer\s+shown\s+in\s+RED\s+below[.:]*\s*/gi,"")
+    .replace(/\(\s*(?:Multiple\s*choice|Drop\s*(?:and|&)\s*drag|Matching|Drop\s*down)\s*\)\s*/gi,"")
+    .replace(/(?:^|\s)(?:Multiple\s*choice|Drop\s*(?:and|&)\s*drag|Matching|Drop\s*down)\s*$/gi,"")
+    .replace(/\s{2,}/g," ").trim();
+}
+
+function isEmphInMarkup(text){
+  if(!gHtmlMarkup||!text||text.length<4) return false;
+  try{
+    var snip=escReg(text.substring(0,20));
+    var re1=new RegExp("<em[^>]*>[^<]*?"+snip,"i");
+    var re2=new RegExp("<strong[^>]*>[^<]*?"+snip,"i");
+    return re1.test(gHtmlMarkup)||re2.test(gHtmlMarkup);
+  }catch(e){return false;}
+}
+
+/* ===== HTML TO TEXT WITH LIST MARKERS ===== */
+function convertHtmlPreservingLists(html){
+  var div=document.createElement("div");
+  div.innerHTML=html;
+  var ols=div.getElementsByTagName("ol");
+  for(var oi=0;oi<ols.length;oi++){
+    var ch=ols[oi].children;var idx=0;
+    for(var ci=0;ci<ch.length;ci++){
+      if(ch[ci].tagName==="LI"){
+        var ltr=String.fromCharCode(97+idx);
+        ch[ci].insertBefore(document.createTextNode(ltr+") "),ch[ci].firstChild);
+        ch[ci].appendChild(document.createTextNode("\n"));
+        idx++;
+      }
+    }
+  }
+  var tags=["p","td","th","div","h1","h2","h3","h4","h5","h6","tr","li"];
+  for(var ti=0;ti<tags.length;ti++){
+    var els=div.getElementsByTagName(tags[ti]);
+    for(var ei=0;ei<els.length;ei++) els[ei].appendChild(document.createTextNode("\n"));
+  }
+  return div.textContent||div.innerText||"";
+}
+
+/* ===== FILE HANDLING ===== */
+function handleFile(file){
+  if(!file||!file.name.endsWith(".docx")){alert("Please upload a .docx file");return;}
+  loader.style.display="block";
+  updateStep(1,"active");
+  file.arrayBuffer().then(function(ab){
+    return Promise.all([mammoth.extractRawText({arrayBuffer:ab}),mammoth.convertToHtml({arrayBuffer:ab})]);
+  }).then(function(results){
+    var rawText=results[0].value;
+    var htmlMarkup=results[1].value;
+    gHtmlMarkup=htmlMarkup;
+    var htmlText=convertHtmlPreservingLists(htmlMarkup);
+    questions=extractQuestions(rawText,htmlText);
+    if(!questions.length){alert("No questions extracted from this document.");loader.style.display="none";return;}
+    var combined=rawText+"\n"+htmlText;
+    var tm=combined.match(/Task\s*Name[\s:]*([^\n\r]+)/i);
+    var um=combined.match(/National\s*unit[\/\s]*(?:code|s\s*code)[\s:]*([A-Z]{2,}[0-9]{3,}[A-Z0-9]*)/i);
+    var title="";
+    if(um) title=um[1].toUpperCase()+" - ";
+    if(tm) title+=tm[1].trim();
+    if(title) document.getElementById("quizTitle").value=title;
+    showStatus();renderQuestions();showEditForm();
+  }).catch(function(e){alert("Error: "+e.message);}).finally(function(){loader.style.display="none";});
+}
+
+/* ===== EXTRACTION ENGINE ===== */
+function extractQuestions(rawText,htmlText){
+  var norm=rawText.replace(/\r\n/g,"\n").replace(/[\u201C\u201D]/g,'"').replace(/[\u2018\u2019]/g,"'");
+  var htmlNorm=htmlText.replace(/\r\n/g,"\n").replace(/[\u201C\u201D]/g,'"').replace(/[\u2018\u2019]/g,"'");
+  var qt=norm,htmlQt=htmlNorm;
+  var sp=[/Section\s*B\s*[-\u2013\u2014]\s*Marking\s*Guide/i,/Marking\s*Guide\s*\(Student/i,/Marking\s*Guide/i];
+  for(var si=0;si<sp.length;si++){var sx=norm.search(sp[si]);if(sx!==-1){qt=norm.substring(sx);break;}}
+  for(var si2=0;si2<sp.length;si2++){var sx2=htmlNorm.search(sp[si2]);if(sx2!==-1){htmlQt=htmlNorm.substring(sx2);break;}}
+
+  var rawCands=findQCandidates(qt);
+  var htmlCands=findQCandidates(htmlQt);
+  var rawNums={};for(var ri=0;ri<rawCands.length;ri++) rawNums[rawCands[ri].num]=true;
+  var maxQ=0;
+  for(ri=0;ri<rawCands.length;ri++){if(rawCands[ri].num>maxQ)maxQ=rawCands[ri].num;}
+  for(var hi=0;hi<htmlCands.length;hi++){if(htmlCands[hi].num>maxQ)maxQ=htmlCands[hi].num;}
+
+  /* Recover missing Qs from HTML */
+  var htmlNumMap={};for(hi=0;hi<htmlCands.length;hi++) htmlNumMap[htmlCands[hi].num]=htmlCands[hi];
+  for(var mn=1;mn<=maxQ;mn++){
+    if(rawNums[mn]||!htmlNumMap[mn]) continue;
+    var hC=htmlNumMap[mn],hBE=htmlQt.length;
+    for(var hci=0;hci<htmlCands.length;hci++){if(htmlCands[hci].index>hC.index){hBE=htmlCands[hci].index;break;}}
+    var snip=getSnippet(htmlQt.substring(hC.end,hBE));
+    if(!snip||snip.length<15) continue;
+    var fi=qt.toLowerCase().indexOf(snip.toLowerCase());
+    if(fi===-1){var ss=snip.substring(0,40);fi=qt.toLowerCase().indexOf(ss.toLowerCase());}
+    if(fi===-1){var ws=snip.split(/\s+/).filter(function(w){return w.length>3;});if(ws.length>=3){try{var fr=new RegExp(ws.slice(0,3).map(escReg).join("\\s+"),"i");var fm=fr.exec(qt);if(fm)fi=fm.index;}catch(e){}}}
+    if(fi>=0){var bd=fi;while(bd>0&&qt[bd-1]!=="\n")bd--;rawCands.push({index:bd,num:mn,end:bd,conf:1.5});rawNums[mn]=true;}
+  }
+
+  var best={};for(var ci=0;ci<rawCands.length;ci++){var c=rawCands[ci];if(!best[c.num]||c.conf>best[c.num].conf)best[c.num]=c;}
+  var unique=[];for(var k in best){if(best.hasOwnProperty(k))unique.push(best[k]);}
+  unique.sort(function(a,b){return a.index-b.index;});
+
+  var htmlQMap={};for(var hqi=0;hqi<htmlCands.length;hqi++) htmlQMap[htmlCands[hqi].num]=htmlCands[hqi];
+
+  var extracted=[];
+  for(var i=0;i<unique.length;i++){
+    var start=unique[i].end;
+    var end=(i+1<unique.length)?unique[i+1].index:qt.length;
+    var block=qt.substring(start,end).trim();
+    if(block.length<10) continue;
+    var bClean=block.replace(/\*{1,3}/g,"").replace(/\s+/g," ").trim();
+    var hasOpts=!!bClean.match(/(?:^|\s)[Aa][.)]\s/)&&!!bClean.match(/(?:^|\s)[Bb][.)]\s/);
+    var parseBlock=block;
+    if(!hasOpts&&htmlQMap[unique[i].num]){
+      var hq=htmlQMap[unique[i].num],hEnd=htmlQt.length;
+      for(var hni=0;hni<htmlCands.length;hni++){if(htmlCands[hni].index>hq.index){hEnd=htmlCands[hni].index;break;}}
+      var hBlock=htmlQt.substring(hq.end,hEnd).trim();
+      var hClean=hBlock.replace(/\*{1,3}/g,"").replace(/\s+/g," ").trim();
+      if(!!hClean.match(/(?:^|\s)[Aa][.)]\s/)&&!!hClean.match(/(?:^|\s)[Bb][.)]\s/)) parseBlock=hBlock;
+    }
+    var parsed=parseBlock_main(parseBlock,unique[i].num);
+    if(parsed) extracted.push(parsed);
+  }
+  return extracted;
+}
+
+function findQCandidates(text){
+  var cands=[],m,num;
+  var re1=/Q\.?(\d{1,3})[.):\s]/gi;
+  while((m=re1.exec(text))!==null) cands.push({index:m.index,num:parseInt(m[1]),end:m.index+m[0].length,conf:3});
+  var re1b=/\*{1,3}Q\.?(\d{1,3})[.):\s*]/gi;
+  while((m=re1b.exec(text))!==null) cands.push({index:m.index,num:parseInt(m[1]),end:m.index+m[0].length,conf:3});
+  var re2=/(?:^|\n)\s*(\d{1,3})\.\s/gm;
+  while((m=re2.exec(text))!==null){num=parseInt(m[1]);if(num>=1&&num<=100) cands.push({index:m.index,num:num,end:m.index+m[0].length,conf:2});}
+  var re3=/(?:\s{2,}|\t)(\d{1,3})\.\s+[A-Z]/g;
+  while((m=re3.exec(text))!==null){num=parseInt(m[1]);if(num>=1&&num<=100) cands.push({index:m.index,num:num,end:m.index+m[0].length-1,conf:1});}
+  var re4=/(\d{1,3})\.\s+(?:Here|The|A |An |When|Select|Match|What|Which|Identify|Correct|Faults|Air |Noise|Using|After|Operating)/g;
+  while((m=re4.exec(text))!==null){num=parseInt(m[1]);if(num>=1&&num<=100){var before=m.index>0?text[m.index-1]:"";if(before>="0"&&before<="9")continue;var prev=text.substring(Math.max(0,m.index-10),m.index);if(prev.match(/AS\s*[\/]?\s*$/i)||prev.match(/NZS\s*$/i))continue;cands.push({index:m.index,num:num,end:m.index+m[0].length,conf:0.8});}}
+  var best={};for(var ci=0;ci<cands.length;ci++){var c=cands[ci];if(!best[c.num]||c.conf>best[c.num].conf)best[c.num]=c;}
+  var result=[];for(var k in best){if(best.hasOwnProperty(k))result.push(best[k]);}
+  result.sort(function(a,b){return a.index-b.index;});
+  return result;
+}
+
+function getSnippet(block){
+  var c=block.replace(/\*{1,3}/g,"").replace(/!\[[^\]]*\]\([^)]+\)/g,"").replace(/\{[^}]*\}/g,"").replace(/\s+/g," ").trim();
+  c=c.replace(/^(?:Multiple\s*choice|Mix\s*and\s*match|True\s*or\s*false)[.\s]*/i,"").trim();
+  var se=c.search(/[.?]\s/);
+  if(se>15&&se<120) return c.substring(0,se+1);
+  return c.substring(0,Math.min(80,c.length));
+}
+
+/* ===== QUESTION PARSING ===== */
+function parseBlock_main(block,num){
+  var raw=block;
+  var clean=block.replace(/\*{1,3}/g,"").replace(/\s+/g," ").trim();
+  var rawClean=block.replace(/\*{1,3}/g,"").trim();
+  /* Fill blanks */
+  var blankRe=/_{2,}\s*([A-Z][A-Z0-9\s]{0,30}?)\s*_{2,}/g;
+  var blanks=[],bm;
+  while((bm=blankRe.exec(raw))!==null) blanks.push(bm[1].trim());
+  if(blanks.length>0) return parseFillBlanks(raw,clean,num,blanks);
+  /* Matching */
+  if(hasMatchingTable(clean)||hasMatchingTable(rawClean)) return parseMatching(raw,clean,num);
+  /* Multiple answer (bold X markers) */
+  if(hasMultipleAnswer(raw)) return parseMultipleAnswer(raw,clean,num);
+  /* MC / MA with letter options */
+  if(hasMCOptions(clean)) return parseMC(raw,clean,num);
+  /* Loose matching */
+  if(hasLooseMatching(raw)) return parseMatching(raw,clean,num);
+  /* Fallback essay */
+  if(clean.length>20) return{num:num,type:"essay",text:cleanQText(clean)};
+  return null;
+}
+
+function parseFillBlanks(raw,clean,num,answers){
+  var qText=clean;var blankNames={};
+  for(var i=0;i<answers.length;i++){
+    var bName="blank"+(i+1);
+    var pat=new RegExp("[_]{2,}\\s*\\*{0,3}"+escReg(answers[i])+"\\*{0,3}\\s*[_]{2,}","gi");
+    qText=qText.replace(pat,"["+bName+"]");
+    blankNames[bName]=[answers[i]];
+  }
+  qText=qText.replace(/Use\s+(?:some\s+of\s+)?the\s+following\s+words[^.]*\./gi,"").trim();
+  qText=qText.replace(/\b([A-Z]{3,}\s+){2,}[A-Z]{3,}\s*$/,"").trim();
+  if(Object.keys(blankNames).length===1) return{num:num,type:"short_answer",text:cleanQText(qText),answers:answers};
+  return{num:num,type:"fill_blanks",text:cleanQText(qText),blanks:blankNames};
+}
+
+function hasMatchingTable(clean){
+  if(clean.match(/\bAnswer\b.*\bName\b/i)&&clean.match(/\bAnswer\b.*\b(Purpose|Application|Description|Full\s*Name|Termination|Symptom|Repair|Effect|Reason|Design\s*Velocity|Balancing)\b/i)) return true;
+  var lp=(clean.match(/\*{2,3}[A-H]\*{2,3}\s+\w+.*?\*{2,3}[A-H]\*{2,3}\s+\w+/g)||[]).length;
+  return lp>=3;
+}
+function hasLooseMatching(raw){
+  return(raw.match(/\*{2,3}[A-H]\*{2,3}[^*\n]+\*{2,3}[A-H]\*{2,3}/g)||[]).length>=3;
+}
+
+function parseMatching(raw,clean,num){
+  var qMatch=clean.match(/^([\s\S]*?)(?:Answer\s+Name|Answer\s+\w+\s+Answer)/i);
+  var qText=qMatch?qMatch[1].trim():clean.substring(0,500);
+  qText=cleanQText(qText);
+  var pairs=[],nameMap={},matchMap={};
+  var dualRe=/\*{0,3}([A-H])\*{0,3}\s+([^\n*]+?)\s+\*{0,3}([A-H])\*{0,3}\s+([^\n*]+)/g;
+  var dm;
+  while((dm=dualRe.exec(raw))!==null){
+    var nk=dm[1].toUpperCase(),nv=dm[2].trim().replace(/\*+/g,"").trim();
+    var mk=dm[3].toUpperCase(),mv=dm[4].trim().replace(/\*+/g,"").replace(/\s+/g," ").trim();
+    if(nv.length>1&&nv.length<200) nameMap[nk]=nv;
+    if(mv.length>1&&mv.length<300) matchMap[mk]=mv;
+  }
+  if(Object.keys(nameMap).length>0&&Object.keys(matchMap).length>0){
+    for(var lt in nameMap){if(nameMap.hasOwnProperty(lt)&&matchMap[lt]) pairs.push({item:nameMap[lt],match:matchMap[lt]});}
+  }
+  if(pairs.length>=2) return{num:num,type:"matching",text:qText,pairs:pairs};
+  var sp=parseSimpleMatching(raw,num);
+  if(sp) return sp;
+  return{num:num,type:"matching",text:qText,pairs:[{item:"Item 1",match:"Description 1"},{item:"Item 2",match:"Description 2"}]};
+}
+
+function parseSimpleMatching(raw,num){
+  var pairRe=/([a-z])\)?\s+([\s\S]*?)\s*=\s*\*{0,3}(\d+)\*{0,3}/gi;
+  var items=[],pm;
+  while((pm=pairRe.exec(raw))!==null) items.push({item:pm[2].trim().replace(/\*+/g,""),matchNum:parseInt(pm[3])});
+  var descs=[],dsIdx=raw.search(/Descriptions?\s*:/i),dBlock=dsIdx!==-1?raw.substring(dsIdx):raw;
+  var dRe=/(\d+)\)?\s+([\s\S]*?)(?=\d+\)?\s|$)/g,ddm;
+  while((ddm=dRe.exec(dBlock))!==null){if(ddm[2].trim().length>5) descs.push({num:parseInt(ddm[1]),text:ddm[2].trim().replace(/\*+/g,"")});}
+  if(items.length>=2&&descs.length>=2){
+    var pairs=[];for(var pi=0;pi<items.length;pi++){var d=null;for(var di=0;di<descs.length;di++){if(descs[di].num===items[pi].matchNum){d=descs[di];break;}}pairs.push({item:items[pi].item,match:d?d.text:"Desc "+items[pi].matchNum});}
+    var qm=raw.match(/^[^a-z]*/i);
+    return{num:num,type:"matching",text:cleanQText((qm?qm[0]:"Match items").replace(/\*+/g,"")),pairs:pairs};
+  }
+  return null;
+}
+
+function hasMultipleAnswer(raw){
+  var xc=(raw.match(/\*{2,3}X\*{2,3}/gi)||[]).length;
+  if(xc>=2) return true;
+  return(raw.match(/\*\*X\*\*/g)||[]).length>=2;
+}
+
+function parseMultipleAnswer(raw,clean,num){
+  var qText=clean;
+  var ts=clean.search(/Answer\s*\((?:TRUE|X|Correct)\)/i);
+  if(ts>0) qText=clean.substring(0,ts);
+  qText=cleanQText(qText);
+  var stmts=[],lines=raw.split("\n"),cur="",curC=false;
+  for(var li=0;li<lines.length;li++){
+    var ln=lines[li].trim();if(!ln)continue;
+    var hx=!!(ln.match(/\*{2,3}X\*{2,3}/i)||ln.match(/\*\*X\*\*/));
+    var st=ln.replace(/\*{1,3}X\*{1,3}/gi,"").replace(/\*{1,3}/g,"").replace(/^\s*\|\s*/,"").replace(/\s*\|\s*$/,"").trim();
+    if(st.match(/^(Answer|TRUE|FALSE|Y |N |Satisfactory|Operation|Questions|Noise|Cable|Technique|Sequence)/i))continue;
+    if(st.length<15)continue;
+    if(cur) stmts.push({text:cur,correct:curC});
+    cur=st;curC=hx;
+  }
+  if(cur&&cur.length>15) stmts.push({text:cur,correct:curC});
+  var flt=[];for(var fi=0;fi<stmts.length;fi++){if(stmts[fi].text.length>20)flt.push(stmts[fi]);}
+  if(flt.length>=2){var opts=[];for(var oi=0;oi<flt.length;oi++) opts.push({letter:String.fromCharCode(97+oi),text:flt[oi].text,correct:flt[oi].correct});return{num:num,type:"ma",text:qText,options:opts};}
+  return{num:num,type:"essay",text:qText};
+}
+
+function hasMCOptions(clean){
+  return!!clean.match(/(?:^|\s)[Aa][.)]\s/)&&!!clean.match(/(?:^|\s)[Bb][.)]\s/);
+}
+
+function parseMC(raw,clean,num){
+  var optStart=clean.search(/(?:^|\s)[Aa][.)]\s/);
+  var qText=optStart>0?clean.substring(0,optStart).trim():clean.substring(0,500);
+  qText=qText.replace(/Select\s+\d+\s+correct\s+options?\.\s*$/i,"").trim();
+  qText=cleanQText(qText);
+
+  var options=[],optPos=[];
+  var opr=/(?:^|\s)([A-Ia-i])[.)]\s/g,om;
+  while((om=opr.exec(clean))!==null){
+    var lt=om[1].toLowerCase();
+    if(!optPos.length&&lt==="a") optPos.push({letter:lt,index:om.index});
+    else if(optPos.length){var exp=String.fromCharCode(optPos[optPos.length-1].letter.charCodeAt(0)+1);if(lt===exp) optPos.push({letter:lt,index:om.index});}
+  }
+
+  var ansBound=clean.search(/\*{0,3}Answer\s*:/i);
+  var corrBound=clean.search(/Correct\s*answer/i);
+  var endB=ansBound>0?ansBound:(corrBound>0?corrBound:clean.length);
+
+  for(var i=0;i<optPos.length;i++){
+    var s=optPos[i].index;
+    var e=(i+1<optPos.length)?optPos[i+1].index:endB;
+    var oTxt=clean.substring(s,e).trim().replace(/^[A-Ia-i][.)]\s*/,"").trim();
+    oTxt=oTxt.replace(/\s*\*{0,3}Answer\s*:.*$/i,"").trim();
+    oTxt=cleanQText(oTxt);
+    if(!oTxt||oTxt.length<2) continue;
+    /* Skip garbage blobs with multiple embedded letter prefixes */
+    if((oTxt.match(/[a-i]\)\s/g)||[]).length>=2) continue;
+
+    var isBold=false,rawSec=raw.substring(Math.max(0,s-50),Math.min(raw.length,e+100));
+    if(rawSec.match(/\*{3}[^*]+\*{3}/)||rawSec.match(/\{\.mark\}/)) isBold=true;
+    var isEmph=isEmphInMarkup(oTxt);
+
+    options.push({letter:optPos[i].letter,text:oTxt,correct:isBold||isEmph});
+  }
+
+  /* Parse Answer: line */
+  var ansLine=raw.match(/\*{0,3}Answer\s*:\s*([a-i](?:\s*[,&\s]+\s*[a-i])*)\s*\*{0,3}/i);
+  if(ansLine){
+    var corrLtrs=ansLine[1].toLowerCase().replace(/[,&\s]+/g,"").split("");
+    for(var mi=0;mi<options.length;mi++) options[mi].correct=(corrLtrs.indexOf(options[mi].letter)!==-1);
+    if(corrLtrs.length>1&&options.length>=2) return{num:num,type:"ma",text:qText,options:options};
+  }
+
+  if(!ansLine){
+    var cm=raw.match(/Correct\s*answer\s*:\s*([a-d])/i);
+    if(cm){for(var ci3=0;ci3<options.length;ci3++) options[ci3].correct=(options[ci3].letter===cm[1].toLowerCase());}
+    var rawLines=raw.split("\n");
+    for(var rl=0;rl<rawLines.length;rl++){
+      if(rawLines[rl].match(/\{\.mark\}/)){var lm=rawLines[rl].match(/([A-D])\)/i);if(lm){var cl=lm[1].toLowerCase();for(var xi=0;xi<options.length;xi++) options[xi].correct=(options[xi].letter===cl);}}
+    }
+    for(var bi=0;bi<options.length;bi++){
+      var ts2=options[bi].text.substring(0,20);
+      if(ts2.length>3){try{var bp=new RegExp("\\*{3}"+escReg(ts2),"i");if(raw.match(bp)){for(var bj=0;bj<options.length;bj++) options[bj].correct=false;options[bi].correct=true;}}catch(e){}}
+    }
+  }
+
+  if(options.length>=2){
+    var hasCor=false;for(var hc=0;hc<options.length;hc++){if(options[hc].correct) hasCor=true;}
+    if(!hasCor) options[0].correct=true;
+    /* Check question text for multi-select hints */
+    var mh=qText.match(/(?:choose|select|identify)\s+(?:the\s+correct\s+)?(?:any\s+)?(\d+|two|three|four|five|six|seven|eight)/i);
+    if(mh){var hw={two:2,three:3,four:4,five:5,six:6,seven:7,eight:8};var hn=hw[mh[1].toLowerCase()]||parseInt(mh[1]);if(hn>1) return{num:num,type:"ma",text:qText,options:options};}
+    var cc=0;for(var cq=0;cq<options.length;cq++){if(options[cq].correct) cc++;}
+    if(cc>1) return{num:num,type:"ma",text:qText,options:options};
+    return{num:num,type:"mc",text:qText,options:options};
+  }
+  return{num:num,type:"essay",text:qText};
+}
+
+/* ===== NEW QUESTION TEMPLATE ===== */
+function newQ(type,num){
+  var base={num:num,type:type,text:""};
+  if(type==="mc") return{num:num,type:"mc",text:"New question",options:[{letter:"a",text:"Option A",correct:true},{letter:"b",text:"Option B",correct:false},{letter:"c",text:"Option C",correct:false},{letter:"d",text:"Option D",correct:false}]};
+  if(type==="ma") return{num:num,type:"ma",text:"Select all that apply",options:[{letter:"a",text:"Option A",correct:true},{letter:"b",text:"Option B",correct:true},{letter:"c",text:"Option C",correct:false},{letter:"d",text:"Option D",correct:false}]};
+  if(type==="tf") return{num:num,type:"tf",text:"True or false statement",correctAnswer:"true"};
+  if(type==="matching") return{num:num,type:"matching",text:"Match each item.",pairs:[{item:"Item 1",match:"Description 1"},{item:"Item 2",match:"Description 2"}]};
+  if(type==="short_answer") return{num:num,type:"short_answer",text:"Fill in the blank",answers:["Answer 1"]};
+  if(type==="fill_blanks") return{num:num,type:"fill_blanks",text:"The [blank1] is the answer.",blanks:{blank1:["Answer1"]}};
+  if(type==="multi_dropdown") return{num:num,type:"multi_dropdown",text:"Select the correct [dropdown1].",dropdowns:{dropdown1:[{text:"Option A",correct:true},{text:"Option B",correct:false}]}};
+  if(type==="numerical") return{num:num,type:"numerical",text:"What is the numerical answer?",exact:0,margin:0};
+  if(type==="calculated") return{num:num,type:"calculated",text:"What is [x] + [y]?",formula:"x+y",variables:{x:{min:1,max:10},y:{min:1,max:10}},tolerance:0};
+  if(type==="essay") return{num:num,type:"essay",text:"Write your response below."};
+  if(type==="file_upload") return{num:num,type:"file_upload",text:"Upload your completed file."};
+  if(type==="text_only") return{num:num,type:"text_only",text:"Informational text goes here."};
+  return base;
+}
+
+/* ===== RENDER ===== */
+function renderQuestions(){
+  var c=document.getElementById("questionsContainer");c.innerHTML="";
+  document.getElementById("questionCount").textContent=questions.length;
+  for(var idx=0;idx<questions.length;idx++){
+    var q=questions[idx],card=document.createElement("div");
+    card.className="question-card "+q.type;
+    var h='<div class="question-header"><span class="question-number">Q'+q.num+'</span><select class="type-select" data-idx="'+idx+'" data-action="changetype">';
+    for(var tk in TL){if(TL.hasOwnProperty(tk)) h+='<option value="'+tk+'"'+(tk===q.type?' selected':'')+'>'+TL[tk]+'</option>';}
+    h+='</select><button class="delete-q-btn" data-idx="'+idx+'" title="Remove">&#10005;</button></div>';
+    h+='<div class="question-text"><textarea data-idx="'+idx+'" data-field="text">'+esc(q.text)+'</textarea></div>';
+
+    if(q.type==="mc"||q.type==="ma"){
+      h+='<ul class="options-list">';
+      for(var oi=0;oi<q.options.length;oi++){var o=q.options[oi];h+='<li class="'+(o.correct?"correct":"incorrect")+'"><span class="option-letter">'+o.letter.toUpperCase()+'</span><input class="opt-input" data-idx="'+idx+'" data-oi="'+oi+'" value="'+escA(o.text)+'">'+(o.correct?'<span class="correct-label">&#10003; CORRECT</span>':'')+'<button class="del-opt-btn" data-idx="'+idx+'" data-oi="'+oi+'" title="Remove option">&#10005;</button></li>';}
+      h+='</ul>';
+      if(q.type==="mc"||q.type==="ma") h+='<button class="add-btn-sm" data-idx="'+idx+'" data-action="addopt">+ Add Option</button>';
+      if(q.type==="mc"){h+='<div class="correct-select"><label>Correct:</label><select data-idx="'+idx+'" data-action="setmc">';for(var si2=0;si2<q.options.length;si2++) h+='<option value="'+q.options[si2].letter+'"'+(q.options[si2].correct?" selected":"")+'>'+q.options[si2].letter.toUpperCase()+'</option>';h+='</select></div>';}
+      else{h+='<div class="correct-select"><label>Correct (tick all):</label><div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">';for(var mi=0;mi<q.options.length;mi++) h+='<label style="font-weight:400;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" data-idx="'+idx+'" data-oi="'+mi+'" data-action="togglema"'+(q.options[mi].correct?" checked":"")+"> "+q.options[mi].letter.toUpperCase()+"</label>";h+="</div></div>";}
+    }else if(q.type==="tf"){
+      h+='<div class="correct-select"><label>Correct:</label><select data-idx="'+idx+'" data-action="settf"><option value="true"'+(q.correctAnswer==="true"?" selected":"")+'>True</option><option value="false"'+(q.correctAnswer==="false"?" selected":"")+">False</option></select></div>";
+    }else if(q.type==="matching"){
+      h+='<div class="matching-pairs">';var pairs=q.pairs||[];
+      for(var pi=0;pi<pairs.length;pi++) h+='<div class="matching-pair"><input data-idx="'+idx+'" data-pi="'+pi+'" data-pf="item" value="'+escA(pairs[pi].item)+'"><span class="matching-arrow">&rarr;</span><input data-idx="'+idx+'" data-pi="'+pi+'" data-pf="match" value="'+escA(pairs[pi].match)+'"></div>';
+      h+='</div><button class="add-btn-sm" data-idx="'+idx+'" data-action="addpair">+ Add Pair</button>';
+    }else if(q.type==="short_answer"){
+      h+='<div class="sub-field"><label>Acceptable Answers (one per line)</label><textarea data-idx="'+idx+'" data-field="answers">'+(q.answers||[]).join("\n")+'</textarea></div>';
+    }else if(q.type==="fill_blanks"){
+      h+='<p class="help-text" style="margin-bottom:8px">Use [blank_name] in question text.</p>';
+      var bks=q.blanks||{};for(var bk in bks){if(bks.hasOwnProperty(bk)) h+='<div class="sub-field"><label>Answers for ['+esc(bk)+']</label><textarea data-idx="'+idx+'" data-blank="'+escA(bk)+'">'+(bks[bk]||[]).join("\n")+"</textarea></div>";}
+      h+='<button class="add-btn-sm" data-idx="'+idx+'" data-action="addblank">+ Add Blank</button>';
+    }else if(q.type==="multi_dropdown"){
+      h+='<p class="help-text" style="margin-bottom:8px">Use [dropdown_name] in question text.</p>';
+      var dds=q.dropdowns||{};for(var dk in dds){if(dds.hasOwnProperty(dk)){h+='<div class="sub-field"><label>Options for ['+esc(dk)+"]</label>";for(var doi=0;doi<dds[dk].length;doi++) h+='<div style="display:flex;gap:8px;align-items:center;margin:4px 0"><input style="flex:1;padding:4px 8px;border:1px solid #e3e5e0;border-radius:3px" data-idx="'+idx+'" data-dk="'+escA(dk)+'" data-doi="'+doi+'" value="'+escA(dds[dk][doi].text)+'"><label style="font-weight:400;font-size:.85rem;display:flex;align-items:center;gap:4px"><input type="radio" name="dd_'+idx+"_"+dk+'" data-idx="'+idx+'" data-dk="'+escA(dk)+'" data-doi="'+doi+'" data-action="ddcorrect"'+(dds[dk][doi].correct?" checked":"")+"> Correct</label></div>";h+="</div>";}}
+    }else if(q.type==="numerical"){
+      h+='<div class="sub-field"><div class="inline-row"><label>Exact:</label><input type="number" step="any" data-idx="'+idx+'" data-field="exact" value="'+(q.exact||0)+'"></div><div class="inline-row"><label>Margin (&plusmn;):</label><input type="number" step="any" data-idx="'+idx+'" data-field="margin" value="'+(q.margin||0)+'"></div></div>';
+    }else if(q.type==="calculated"){
+      h+='<div class="sub-field"><div class="inline-row"><label>Formula:</label><input data-idx="'+idx+'" data-field="formula" value="'+escA(q.formula||"")+'"></div><div class="inline-row"><label>Tolerance:</label><input type="number" step="any" data-idx="'+idx+'" data-field="tolerance" value="'+(q.tolerance||0)+'"></div></div>';
+    }else if(q.type==="essay"||q.type==="file_upload"){
+      h+='<p class="help-text">Manual grading required in Canvas.</p>';
+    }else if(q.type==="text_only"){
+      h+='<p class="help-text">No student response required.</p>';
+    }
+    card.innerHTML=h;c.appendChild(card);
+  }
+  c.addEventListener("change",handleFormChange);
+  c.addEventListener("click",handleFormClick);
+}
+
+/* ===== FORM HANDLERS ===== */
+function handleFormChange(e){
+  var t=e.target,idx=parseInt(t.getAttribute("data-idx"));if(isNaN(idx))return;
+  var q=questions[idx],field=t.getAttribute("data-field"),action=t.getAttribute("data-action");
+  if(field==="text"){q.text=t.value;return;}
+  if(field==="answers"){q.answers=t.value.split("\n").filter(function(x){return x.trim();});return;}
+  if(field==="exact"){q.exact=parseFloat(t.value);return;}
+  if(field==="margin"){q.margin=parseFloat(t.value);return;}
+  if(field==="formula"){q.formula=t.value;return;}
+  if(field==="tolerance"){q.tolerance=parseFloat(t.value);return;}
+  var oi=t.getAttribute("data-oi");
+  if(oi!==null&&!action){q.options[parseInt(oi)].text=t.value;return;}
+  if(action==="setmc"){for(var i=0;i<q.options.length;i++) q.options[i].correct=(q.options[i].letter===t.value);renderQuestions();return;}
+  if(action==="changetype"){
+    var nType=t.value,oldText=q.text,conv=newQ(nType,q.num);conv.text=oldText;
+    if((q.type==="mc"||q.type==="ma")&&(nType==="mc"||nType==="ma")) conv.options=q.options;
+    questions[idx]=conv;renderQuestions();showStatus();return;
+  }
+  if(action==="settf"){q.correctAnswer=t.value;return;}
+  if(action==="togglema"){q.options[parseInt(t.getAttribute("data-oi"))].correct=t.checked;renderQuestions();return;}
+  if(action==="ddcorrect"){var dk=t.getAttribute("data-dk"),doi=parseInt(t.getAttribute("data-doi"));for(var j=0;j<q.dropdowns[dk].length;j++) q.dropdowns[dk][j].correct=(j===doi);renderQuestions();return;}
+  var pi=t.getAttribute("data-pi");
+  if(pi!==null){q.pairs[parseInt(pi)][t.getAttribute("data-pf")]=t.value;return;}
+  var blank=t.getAttribute("data-blank");
+  if(blank){q.blanks[blank]=t.value.split("\n").filter(function(x){return x.trim();});return;}
+  var dkk=t.getAttribute("data-dk"),doii=t.getAttribute("data-doi");
+  if(dkk!==null&&doii!==null&&!action){q.dropdowns[dkk][parseInt(doii)].text=t.value;return;}
+}
+
+function handleFormClick(e){
+  var t=e.target;
+  if(t.classList.contains("delete-q-btn")){var idx=parseInt(t.getAttribute("data-idx"));if(confirm("Remove Q"+questions[idx].num+"?")){questions.splice(idx,1);for(var j=0;j<questions.length;j++) questions[j].num=j+1;renderQuestions();showStatus();}return;}
+  if(t.classList.contains("del-opt-btn")){var oidx=parseInt(t.getAttribute("data-idx")),ooi=parseInt(t.getAttribute("data-oi")),qq=questions[oidx];if(qq.options&&qq.options.length>2){qq.options.splice(ooi,1);for(var ri=0;ri<qq.options.length;ri++) qq.options[ri].letter=String.fromCharCode(97+ri);renderQuestions();}else{alert("Minimum 2 options required.");}return;}
+  var action=t.getAttribute("data-action"),idx2=parseInt(t.getAttribute("data-idx"));
+  if(action==="addpair"){questions[idx2].pairs.push({item:"New Item",match:"New Description"});renderQuestions();return;}
+  if(action==="addopt"){var aq=questions[idx2];if(aq.options){var nl=String.fromCharCode(97+aq.options.length);aq.options.push({letter:nl,text:"New option",correct:false});renderQuestions();}return;}
+  if(action==="addblank"){var n=prompt("Blank name:");if(n){questions[idx2].blanks[n.trim()]=[];renderQuestions();}return;}
+}
+
+function addQuestion(){var t=document.getElementById("addQuestionType").value;questions.push(newQ(t,questions.length+1));renderQuestions();showStatus();}
+
+/* ===== STATUS ===== */
+function showStatus(){
+  var counts={};for(var i=0;i<questions.length;i++) counts[questions[i].type]=(counts[questions[i].type]||0)+1;
+  var items=["Total questions: "+questions.length];
+  for(var t in counts){if(counts.hasOwnProperty(t)) items.push((TL[t]||t)+": "+counts[t]);}
+  var html="";for(var si=0;si<items.length;si++) html+='<div class="status-item"><div class="status-icon found">&#10003;</div><span>'+items[si]+"</span></div>";
+  document.getElementById("statusList").innerHTML=html;
+  document.getElementById("extractionStatus").style.display="block";
+}
+
+/* ===== QTI GENERATION ===== */
+function generateQTI(){
+  if(!questions.length){alert("No questions.");return;}
+  var ident=document.getElementById("assessmentIdent").value||"quiz_1";
+  var title=document.getElementById("quizTitle").value||"Quiz";
+  var x='<?xml version="1.0" encoding="UTF-8"?>\n<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.imsglobal.org/xsd/ims_qtiasiv1p2 http://www.imsglobal.org/xsd/ims_qtiasiv1p2p1.xsd">\n';
+  x+='  <assessment ident="'+eX(ident)+'" title="'+eX(title)+'">\n    <qtimetadata>\n      <qtimetadatafield>\n        <fieldlabel>cc_maxattempts</fieldlabel>\n        <fieldentry>1</fieldentry>\n      </qtimetadatafield>\n    </qtimetadata>\n    <section ident="root_section">\n';
+  for(var i=0;i<questions.length;i++) x+=genItem(questions[i]);
+  x+="    </section>\n  </assessment>\n</questestinterop>";
+  generatedXML=x;
+  document.getElementById("outputContent").textContent=x;
+  renderPreview();
+  updateStep(2,"completed");updateStep(3,"active");
+  document.getElementById("editForm").style.display="none";
+  document.getElementById("outputSection").style.display="block";
+  window.scrollTo(0,0);
+}
+
+function genItem(q){
+  var qid="q"+q.num+"_"+q.type,qt=QT[q.type]||"multiple_choice_question";
+  var x='      <item ident="'+qid+'" title="Question '+q.num+'">\n        <itemmetadata>\n          <qtimetadata>\n            <qtimetadatafield>\n              <fieldlabel>question_type</fieldlabel>\n              <fieldentry>'+qt+'</fieldentry>\n            </qtimetadatafield>\n            <qtimetadatafield>\n              <fieldlabel>points_possible</fieldlabel>\n              <fieldentry>1</fieldentry>\n            </qtimetadatafield>\n          </qtimetadata>\n        </itemmetadata>\n';
+  var i,j,corr,bk,dk,ci;
+  if(q.type==="mc"||q.type==="ma"){
+    var card=q.type==="ma"?"Multiple":"Single";
+    x+='        <presentation>\n          <material><mattext texttype="text/html"><![CDATA['+q.text+']]></mattext></material>\n          <response_lid ident="response1" rcardinality="'+card+'">\n            <render_choice>\n';
+    for(i=0;i<q.options.length;i++) x+='              <response_label ident="'+q.options[i].letter+'"><material><mattext texttype="text/plain">'+eX(q.options[i].text)+'</mattext></material></response_label>\n';
+    x+='            </render_choice>\n          </response_lid>\n        </presentation>\n';
+    corr=[];for(i=0;i<q.options.length;i++){if(q.options[i].correct) corr.push(q.options[i].letter);}
+    x+='        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n          <respcondition continue="No">\n            <conditionvar>\n';
+    if(q.type==="ma"){x+='              <and>\n';for(i=0;i<corr.length;i++) x+='                <varequal respident="response1">'+corr[i]+'</varequal>\n';x+='              </and>\n';}
+    else x+='              <varequal respident="response1">'+(corr[0]||"a")+'</varequal>\n';
+    x+='            </conditionvar>\n            <setvar action="Set" varname="SCORE">100</setvar>\n          </respcondition>\n        </resprocessing>\n';
+  }else if(q.type==="tf"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html"><![CDATA['+q.text+']]></mattext></material>\n          <response_lid ident="response1" rcardinality="Single">\n            <render_choice>\n              <response_label ident="true"><material><mattext texttype="text/plain">True</mattext></material></response_label>\n              <response_label ident="false"><material><mattext texttype="text/plain">False</mattext></material></response_label>\n            </render_choice>\n          </response_lid>\n        </presentation>\n';
+    x+='        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n          <respcondition continue="No">\n            <conditionvar><varequal respident="response1">'+q.correctAnswer+'</varequal></conditionvar>\n            <setvar action="Set" varname="SCORE">100</setvar>\n          </respcondition>\n        </resprocessing>\n';
+  }else if(q.type==="matching"){
+    var pairs=q.pairs||[];
+    x+='        <presentation>\n          <material><mattext texttype="text/html"><![CDATA['+q.text+']]></mattext></material>\n';
+    for(i=0;i<pairs.length;i++){x+='          <response_lid ident="response_'+(i+1)+'">\n            <material><mattext texttype="text/html"><![CDATA['+eX(pairs[i].item)+']]></mattext></material>\n            <render_choice>\n';for(j=0;j<pairs.length;j++) x+='              <response_label ident="match_'+(j+1)+'"><material><mattext texttype="text/plain">'+eX(pairs[j].match)+'</mattext></material></response_label>\n';x+='            </render_choice>\n          </response_lid>\n';}
+    x+='        </presentation>\n        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n          <respcondition continue="No">\n            <conditionvar>\n';
+    for(i=0;i<pairs.length;i++) x+='              <varequal respident="response_'+(i+1)+'">match_'+(i+1)+'</varequal>\n';
+    x+='            </conditionvar>\n            <setvar action="Set" varname="SCORE">100</setvar>\n          </respcondition>\n        </resprocessing>\n';
+  }else if(q.type==="short_answer"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html"><![CDATA['+q.text+']]></mattext></material>\n          <response_str ident="response1" rcardinality="Single">\n            <render_fib><response_label ident="answer1" rshuffle="No"/></render_fib>\n          </response_str>\n        </presentation>\n';
+    x+='        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n';
+    var ans=q.answers||[];for(i=0;i<ans.length;i++) x+='          <respcondition continue="No">\n            <conditionvar><varequal respident="response1">'+eX(ans[i])+'</varequal></conditionvar>\n            <setvar action="Set" varname="SCORE">100</setvar>\n          </respcondition>\n';
+    x+='        </resprocessing>\n';
+  }else if(q.type==="fill_blanks"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html"><![CDATA['+q.text+']]></mattext></material>\n';
+    var blanks=q.blanks||{};for(bk in blanks){if(blanks.hasOwnProperty(bk)) x+='          <response_str ident="response_'+eX(bk)+'" rcardinality="Single">\n            <render_fib><response_label ident="answer_'+eX(bk)+'" rshuffle="No"/></render_fib>\n          </response_str>\n';}
+    x+='        </presentation>\n        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n';
+    for(bk in blanks){if(blanks.hasOwnProperty(bk)){for(i=0;i<blanks[bk].length;i++) x+='          <respcondition continue="No">\n            <conditionvar><varequal respident="response_'+eX(bk)+'">'+eX(blanks[bk][i])+'</varequal></conditionvar>\n            <setvar action="Set" varname="SCORE">100</setvar>\n          </respcondition>\n';}}
+    x+='        </resprocessing>\n';
+  }else if(q.type==="multi_dropdown"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html"><![CDATA['+q.text+']]></mattext></material>\n';
+    var dds=q.dropdowns||{};for(dk in dds){if(dds.hasOwnProperty(dk)){x+='          <response_lid ident="response_'+eX(dk)+'" rcardinality="Single">\n            <render_choice>\n';for(i=0;i<dds[dk].length;i++) x+='              <response_label ident="'+eX(dk)+'_'+i+'"><material><mattext texttype="text/plain">'+eX(dds[dk][i].text)+'</mattext></material></response_label>\n';x+='            </render_choice>\n          </response_lid>\n';}}
+    x+='        </presentation>\n        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n';
+    for(dk in dds){if(dds.hasOwnProperty(dk)){ci=-1;for(i=0;i<dds[dk].length;i++){if(dds[dk][i].correct){ci=i;break;}}x+='          <respcondition continue="No">\n            <conditionvar><varequal respident="response_'+eX(dk)+'">'+eX(dk)+'_'+(ci>=0?ci:0)+'</varequal></conditionvar>\n            <setvar action="Set" varname="SCORE">100</setvar>\n          </respcondition>\n';}}
+    x+='        </resprocessing>\n';
+  }else if(q.type==="numerical"){
+    var exact=q.exact||0,margin=q.margin||0;
+    x+='        <presentation>\n          <material><mattext texttype="text/html"><![CDATA['+q.text+']]></mattext></material>\n          <response_str ident="response1" rcardinality="Single">\n            <render_fib fibtype="Decimal"><response_label ident="answer1" rshuffle="No"/></render_fib>\n          </response_str>\n        </presentation>\n';
+    x+='        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n          <respcondition continue="No">\n            <conditionvar>\n              <or>\n                <varequal respident="response1">'+exact+'</varequal>\n                <and>\n                  <vargte respident="response1">'+(exact-margin)+'</vargte>\n                  <varlte respident="response1">'+(exact+margin)+'</varlte>\n                </and>\n              </or>\n            </conditionvar>\n            <setvar action="Set" varname="SCORE">100</setvar>\n          </respcondition>\n        </resprocessing>\n';
+  }else if(q.type==="calculated"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html"><![CDATA['+q.text+']]></mattext></material>\n          <response_str ident="response1" rcardinality="Single">\n            <render_fib fibtype="Decimal"><response_label ident="answer1" rshuffle="No"/></render_fib>\n          </response_str>\n        </presentation>\n';
+    x+='        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n          <respcondition continue="No">\n            <conditionvar><other/></conditionvar>\n            <setvar action="Set" varname="SCORE">0</setvar>\n          </respcondition>\n        </resprocessing>\n';
+    x+='        <itemproc_extension>\n          <calculated>\n            <formulas decimal_places="2"><formula>'+eX(q.formula||'')+'</formula></formulas>\n            <vars>\n';
+    var vars=q.variables||{};for(var v in vars){if(vars.hasOwnProperty(v)) x+='              <var name="'+eX(v)+'" scale="2"><min>'+(vars[v].min||0)+'</min><max>'+(vars[v].max||10)+'</max></var>\n';}
+    x+='            </vars>\n            <answer_tolerance>'+(q.tolerance||0)+'</answer_tolerance>\n          </calculated>\n        </itemproc_extension>\n';
+  }else if(q.type==="essay"||q.type==="file_upload"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html"><![CDATA['+q.text+']]></mattext></material>\n        </presentation>\n        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n        </resprocessing>\n';
+  }else if(q.type==="text_only"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html"><![CDATA['+q.text+']]></mattext></material>\n        </presentation>\n';
+  }
+  x+='      </item>\n';return x;
+}
+
+/* ===== PREVIEW ===== */
+function renderPreview(){
+  var c=document.getElementById("previewContent"),h="";
+  for(var i=0;i<questions.length;i++){
+    var q=questions[i];
+    h+='<div class="preview-q"><h4>Q'+q.num+'.</h4><div class="pq-type">'+(TL[q.type]||q.type)+' &mdash; 1 point</div><p>'+esc(q.text)+'</p>';
+    if(q.type==="mc"||q.type==="ma"){h+="<ul>";for(var j=0;j<q.options.length;j++){var o=q.options[j];h+='<li class="'+(o.correct?"ca":"")+'">'+o.letter.toUpperCase()+") "+esc(o.text)+(o.correct?" &#10003;":"")+"</li>";}h+="</ul>";}
+    else if(q.type==="tf") h+="<p>Correct: <strong>"+(q.correctAnswer==="true"?"True":"False")+"</strong></p>";
+    else if(q.type==="matching"){h+="<ul>";var pp=q.pairs||[];for(var pi=0;pi<pp.length;pi++) h+="<li><strong>"+esc(pp[pi].item)+"</strong> &rarr; "+esc(pp[pi].match)+"</li>";h+="</ul>";}
+    else if(q.type==="short_answer") h+="<p>Accepted: "+(q.answers||[]).map(function(a){return "<strong>"+esc(a)+"</strong>";}).join(", ")+"</p>";
+    else if(q.type==="fill_blanks"){var fbs=q.blanks||{};for(var fbk in fbs){if(fbs.hasOwnProperty(fbk)) h+="<p>["+esc(fbk)+"]: "+fbs[fbk].map(function(a){return "<strong>"+esc(a)+"</strong>";}).join(", ")+"</p>";}}
+    else if(q.type==="numerical") h+="<p>Answer: <strong>"+q.exact+"</strong> &plusmn; "+q.margin+"</p>";
+    else if(q.type==="essay"||q.type==="file_upload") h+="<p><em>Manual grading</em></p>";
+    h+="</div>";
+  }
+  c.innerHTML=h;
+}
+
+/* ===== ACTIONS ===== */
+function copyXML(){
+  if(navigator.clipboard){navigator.clipboard.writeText(generatedXML).then(function(){var b=document.getElementById("copyBtn");b.textContent="Copied!";b.style.background="#28a745";setTimeout(function(){b.textContent="Copy XML";b.style.background="";},2000);});}
+  else{var ta=document.createElement("textarea");ta.value=generatedXML;ta.style.position="fixed";ta.style.left="-9999px";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);}
+}
+function downloadXML(){
+  var blob=new Blob([generatedXML],{type:"application/xml"}),url=URL.createObjectURL(blob);
+  var a=document.createElement("a");a.href=url;a.download=(document.getElementById("quizTitle").value||"quiz").replace(/[^a-zA-Z0-9_-]/g,"_")+".xml";
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+function backToEdit(){updateStep(3,"");updateStep(2,"active");document.getElementById("editForm").style.display="block";document.getElementById("outputSection").style.display="none";}
+function resetForm(){if(confirm("Start over?"))location.reload();}
+function showEditForm(){updateStep(1,"completed");updateStep(2,"active");document.getElementById("initialInstructions").style.display="none";document.getElementById("editForm").style.display="block";document.getElementById("outputSection").style.display="none";}
+function updateStep(n,s){var el=document.getElementById("step"+n);el.classList.remove("active","completed");if(s) el.classList.add(s);}
+
+})();
+</script>
+</body>
+</html>
