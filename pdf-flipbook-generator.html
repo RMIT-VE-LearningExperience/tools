@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PDF Flipbook Generator — RMIT CoVE</title>
+<title>PDF Flipbook Generator â RMIT CoVE</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -37,8 +37,6 @@
     border-radius: 3px;
     font-weight: 600;
   }
-
-  /* ── Steps ── */
   .steps {
     display: flex;
     justify-content: center;
@@ -57,25 +55,11 @@
     border-bottom: 3px solid var(--grey);
     transition: all 0.2s;
   }
-  .step-item.active {
-    color: var(--blue);
-    border-bottom-color: var(--red);
-  }
-  .step-item.done {
-    color: var(--blue);
-    border-bottom-color: var(--blue);
-  }
-
-  .container {
-    max-width: 700px;
-    margin: 0 auto;
-    padding: 24px;
-  }
-
-  /* ── Step 1: Upload ── */
+  .step-item.active { color: var(--blue); border-bottom-color: var(--red); }
+  .step-item.done { color: var(--blue); border-bottom-color: var(--blue); }
+  .container { max-width: 700px; margin: 0 auto; padding: 24px; }
   .step-panel { display: none; }
   .step-panel.active { display: block; }
-
   .card {
     background: var(--white);
     border-radius: 10px;
@@ -83,17 +67,8 @@
     box-shadow: 0 1px 8px rgba(0,0,0,0.06);
     margin-bottom: 16px;
   }
-  .card h2 {
-    font-size: 18px;
-    color: var(--blue);
-    margin-bottom: 6px;
-  }
-  .card p.sub {
-    font-size: 13px;
-    color: #777;
-    margin-bottom: 20px;
-  }
-
+  .card h2 { font-size: 18px; color: var(--blue); margin-bottom: 6px; }
+  .card p.sub { font-size: 13px; color: #777; margin-bottom: 20px; }
   .drop-zone {
     border: 2px dashed var(--grey);
     border-radius: 10px;
@@ -103,14 +78,10 @@
     transition: all 0.2s;
     background: var(--emble-grey);
   }
-  .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--red);
-    background: #fff5f5;
-  }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--red); background: #fff5f5; }
   .drop-zone .icon { font-size: 38px; margin-bottom: 8px; }
   .drop-zone .label { font-size: 15px; font-weight: 600; color: var(--blue); }
   .drop-zone .hint { font-size: 12px; color: #999; margin-top: 4px; }
-
   .file-info {
     display: none;
     align-items: center;
@@ -126,103 +97,32 @@
   .file-info .fi-name { font-size: 14px; font-weight: 600; color: var(--blue); }
   .file-info .fi-size { font-size: 12px; color: #888; }
   .file-info .fi-remove {
-    background: none;
-    border: none;
-    color: var(--red);
-    cursor: pointer;
-    font-size: 18px;
-    padding: 4px 8px;
+    background: none; border: none; color: var(--red); cursor: pointer; font-size: 18px; padding: 4px 8px;
   }
-
-  /* ── Step 2: Settings ── */
-  .field-group {
-    margin-bottom: 18px;
-  }
-  .field-group label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--blue);
-    margin-bottom: 6px;
-  }
+  .field-group { margin-bottom: 18px; }
+  .field-group label { display: block; font-size: 13px; font-weight: 600; color: var(--blue); margin-bottom: 6px; }
   .field-group input[type="text"] {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1px solid var(--grey);
-    border-radius: 6px;
-    font-size: 14px;
+    width: 100%; padding: 9px 12px; border: 1px solid var(--grey); border-radius: 6px; font-size: 14px;
   }
-  .field-group input[type="text"]:focus {
-    outline: none;
-    border-color: var(--blue);
-  }
-  .check-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    font-size: 14px;
-  }
-  .check-row input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--red);
-  }
-
-  /* ── Step 3: Generate ── */
+  .field-group input[type="text"]:focus { outline: none; border-color: var(--blue); }
+  .check-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 14px; }
+  .check-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--red); }
   .output-area {
     min-height: 120px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
   }
-  .output-area .status {
-    font-size: 15px;
-    color: var(--blue);
-    font-weight: 600;
-  }
-  .progress-bar {
-    width: 100%;
-    height: 8px;
-    background: var(--grey);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .progress-bar .fill {
-    height: 100%;
-    background: var(--red);
-    border-radius: 4px;
-    width: 0%;
-    transition: width 0.3s;
-  }
-  .size-note {
-    font-size: 12px;
-    color: #888;
-  }
-
-  /* ── Buttons ── */
-  .btn-row {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    margin-top: 20px;
-  }
+  .output-area .status { font-size: 15px; color: var(--blue); font-weight: 600; }
+  .progress-bar { width: 100%; height: 8px; background: var(--grey); border-radius: 4px; overflow: hidden; }
+  .progress-bar .fill { height: 100%; background: var(--red); border-radius: 4px; width: 0%; transition: width 0.3s; }
+  .size-note { font-size: 12px; color: #888; }
+  .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
   .btn {
-    padding: 10px 22px;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
+    padding: 10px 22px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
   }
   .btn:disabled { opacity: 0.4; cursor: default; }
   .btn-primary { background: var(--red); color: var(--white); }
   .btn-primary:hover:not(:disabled) { background: #c9171f; }
-  .btn-secondary { background: var(--blue); color: var(--white); }
-  .btn-secondary:hover:not(:disabled) { opacity: 0.9; }
   .btn-ghost { background: transparent; color: var(--blue); border: 1px solid var(--grey); }
   .btn-ghost:hover { background: var(--emble-grey); }
   .btn-success { background: #1a8a3f; color: var(--white); }
@@ -250,22 +150,22 @@
       <h2>Upload your PDF</h2>
       <p class="sub">The PDF will be embedded directly into a self-contained HTML flipbook file, ready for the SCORM pipeline.</p>
       <div class="drop-zone" id="dropZone">
-        <div class="icon">📄</div>
+        <div class="icon">ð</div>
         <div class="label">Drop PDF here or click to browse</div>
         <div class="hint">Supports .pdf files</div>
       </div>
       <input type="file" id="fileInput" accept=".pdf" hidden>
       <div class="file-info" id="fileInfo">
-        <span class="fi-icon">📄</span>
+        <span class="fi-icon">ð</span>
         <div class="fi-details">
           <div class="fi-name" id="fileName"></div>
           <div class="fi-size" id="fileSize"></div>
         </div>
-        <button class="fi-remove" id="removeFile" title="Remove">✕</button>
+        <button class="fi-remove" id="removeFile" title="Remove">â</button>
       </div>
     </div>
     <div class="btn-row">
-      <button class="btn btn-primary" id="toStep2" disabled>Next: Settings →</button>
+      <button class="btn btn-primary" id="toStep2" disabled>Next: Settings â</button>
     </div>
   </div>
 
@@ -276,7 +176,7 @@
       <p class="sub">Configure how the generated flipbook will look and behave for students.</p>
       <div class="field-group">
         <label>Document Title</label>
-        <input type="text" id="docTitle" placeholder="e.g. Unit Guide — BSBTEC301">
+        <input type="text" id="docTitle" placeholder="e.g. Unit Guide â BSBTEC301">
       </div>
       <div class="field-group">
         <label>Features</label>
@@ -291,25 +191,25 @@
       </div>
     </div>
     <div class="btn-row">
-      <button class="btn btn-ghost" id="backToStep1">← Back</button>
-      <button class="btn btn-primary" id="toStep3">Generate Flipbook →</button>
+      <button class="btn btn-ghost" id="backToStep1">â Back</button>
+      <button class="btn btn-primary" id="toStep3">Generate Flipbook â</button>
     </div>
   </div>
 
   <!-- Step 3 -->
   <div class="step-panel" id="step3">
     <div class="card">
-      <h2>Generate & Download</h2>
+      <h2>Generate &amp; Download</h2>
       <p class="sub">Your self-contained HTML flipbook is being built. Run it through the SCORM converter to deploy to Canvas.</p>
       <div class="output-area" id="outputArea">
         <div class="progress-bar" id="progressBar"><div class="fill" id="progressFill"></div></div>
-        <div class="status" id="genStatus">Preparing…</div>
+        <div class="status" id="genStatus">Preparingâ¦</div>
         <div class="size-note" id="sizeNote"></div>
       </div>
     </div>
     <div class="btn-row" id="step3Btns" style="display:none;">
-      <button class="btn btn-ghost" id="startOver">← Start Over</button>
-      <button class="btn btn-success" id="downloadBtn">⬇ Download HTML</button>
+      <button class="btn btn-ghost" id="startOver">â Start Over</button>
+      <button class="btn btn-success" id="downloadBtn">â¬ Download HTML</button>
     </div>
   </div>
 
@@ -317,12 +217,8 @@
 
 <script>
 const $ = id => document.getElementById(id);
+let pdfFile = null, pdfBase64 = '', generatedHtml = '';
 
-let pdfFile = null;
-let pdfBase64 = '';
-let generatedHtml = '';
-
-/* ── Step Navigation ── */
 function goStep(n) {
   document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
   $('step' + n).classList.add('active');
@@ -334,16 +230,13 @@ function goStep(n) {
   });
 }
 
-/* ── Step 1: Upload ── */
-const dropZone = $('dropZone');
-const fileInput = $('fileInput');
-
+/* ââ Step 1 ââ */
+const dropZone = $('dropZone'), fileInput = $('fileInput');
 dropZone.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
 dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
+  e.preventDefault(); dropZone.classList.remove('drag-over');
   if (e.dataTransfer.files[0]?.type === 'application/pdf') setPdfFile(e.dataTransfer.files[0]);
 });
 fileInput.addEventListener('change', () => { if (fileInput.files[0]) setPdfFile(fileInput.files[0]); });
@@ -357,38 +250,31 @@ function setPdfFile(file) {
   $('docTitle').value = file.name.replace(/\.pdf$/i, '');
 }
 $('removeFile').addEventListener('click', () => {
-  pdfFile = null;
-  pdfBase64 = '';
-  fileInput.value = '';
-  $('fileInfo').classList.remove('show');
-  $('toStep2').disabled = true;
+  pdfFile = null; pdfBase64 = ''; fileInput.value = '';
+  $('fileInfo').classList.remove('show'); $('toStep2').disabled = true;
 });
-
 function formatSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
   return (bytes / 1048576).toFixed(1) + ' MB';
 }
-
 $('toStep2').addEventListener('click', () => goStep(2));
 $('backToStep1').addEventListener('click', () => goStep(1));
 
-/* ── Step 3: Generate ── */
+/* ââ Step 3 ââ */
 $('toStep3').addEventListener('click', async () => {
   goStep(3);
   $('step3Btns').style.display = 'none';
   $('progressFill').style.width = '0%';
-  $('genStatus').textContent = 'Reading PDF…';
+  $('genStatus').textContent = 'Reading PDFâ¦';
   $('sizeNote').textContent = '';
 
-  // Read to base64
   $('progressFill').style.width = '20%';
   pdfBase64 = await fileToBase64(pdfFile);
 
-  $('genStatus').textContent = 'Building flipbook HTML…';
+  $('genStatus').textContent = 'Building flipbook HTMLâ¦';
   $('progressFill').style.width = '50%';
-
-  await new Promise(r => setTimeout(r, 100)); // yield for UI
+  await new Promise(r => setTimeout(r, 100));
 
   const opts = {
     title: $('docTitle').value || 'Document',
@@ -399,9 +285,8 @@ $('toStep3').addEventListener('click', async () => {
   };
 
   generatedHtml = buildFlipbookHtml(pdfBase64, opts);
-
   $('progressFill').style.width = '100%';
-  $('genStatus').textContent = '✅ Flipbook ready!';
+  $('genStatus').textContent = 'â Flipbook ready!';
   const htmlSize = new Blob([generatedHtml]).size;
   $('sizeNote').textContent = `Output file: ${formatSize(htmlSize)} (PDF was ${formatSize(pdfFile.size)})`;
   $('step3Btns').style.display = 'flex';
@@ -414,16 +299,12 @@ $('downloadBtn').addEventListener('click', () => {
   a.href = url;
   a.download = ($('docTitle').value || 'flipbook').replace(/[^a-zA-Z0-9_\- ]/g, '') + '_flipbook.html';
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 });
 
 $('startOver').addEventListener('click', () => {
-  pdfFile = null;
-  pdfBase64 = '';
-  generatedHtml = '';
-  fileInput.value = '';
-  $('fileInfo').classList.remove('show');
-  $('toStep2').disabled = true;
+  pdfFile = null; pdfBase64 = ''; generatedHtml = ''; fileInput.value = '';
+  $('fileInfo').classList.remove('show'); $('toStep2').disabled = true;
   goStep(1);
 });
 
@@ -436,10 +317,14 @@ function fileToBase64(file) {
   });
 }
 
-/* ── Build the output HTML ── */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââ
+   Build self-contained flipbook HTML
+   ââââââââââââââââââââââââââââââââââââââââââââââââââ */
 function buildFlipbookHtml(b64, opts) {
   const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const escJs = s => s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   const titleEsc = esc(opts.title);
+  const titleJs = escJs(opts.title);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -452,106 +337,112 @@ function buildFlipbookHtml(b64, opts) {
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--red:#e61e2a;--blue:#000054;--black:#000;--white:#fff;--grey:#e3e5e0;--yellow:#fac800;--emble-grey:#f2f2f2}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--emble-grey);color:var(--black);height:100vh;display:flex;flex-direction:column;overflow:hidden}
-.header{background:var(--blue);color:var(--white);padding:10px 20px;font-size:16px;font-weight:600;flex-shrink:0;display:flex;align-items:center;gap:10px}
-.viewer-body{flex:1;display:flex;overflow:hidden;position:relative}
-.thumb-panel{width:0;overflow:hidden;background:var(--white);border-right:1px solid var(--grey);transition:width .3s;flex-shrink:0}
-.thumb-panel.open{width:150px}
-.thumb-inner{width:150px;height:100%;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
-.thumb-item{cursor:pointer;border:2px solid transparent;border-radius:4px;padding:2px;transition:border-color .15s;position:relative;flex-shrink:0}
-.thumb-item:hover{border-color:var(--grey)}
-.thumb-item.active{border-color:var(--red)}
-.thumb-item canvas{width:100%;display:block;border-radius:2px}
-.thumb-num{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);background:rgba(0,0,84,.8);color:var(--white);font-size:10px;padding:1px 5px;border-radius:3px}
-.book-stage{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;perspective:1800px;overflow:auto;background:var(--emble-grey)}
-.book{position:relative;display:flex;transform-style:preserve-3d}
-.page-slot{position:relative;background:var(--white);box-shadow:0 2px 14px rgba(0,0,0,.1);overflow:hidden;display:flex;align-items:center;justify-content:center}
-.page-slot canvas{max-width:100%;max-height:100%;display:block}
-.page-slot.left{border-radius:4px 0 0 4px;border-right:1px solid #ddd}
-.page-slot.right{border-radius:0 4px 4px 0}
-.page-slot .blank-page{color:#ccc;font-size:13px}
-.flip-container{position:absolute;top:0;transform-style:preserve-3d;z-index:10;pointer-events:none}
-.flip-container.flip-right{right:50%;transform-origin:right center;animation:flipR .5s ease-in-out forwards}
-.flip-container.flip-left{left:50%;transform-origin:left center;animation:flipL .5s ease-in-out forwards}
-.flip-front,.flip-back{position:absolute;top:0;left:0;width:100%;height:100%;backface-visibility:hidden;background:var(--white);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 2px 14px rgba(0,0,0,.12)}
-.flip-front canvas,.flip-back canvas{max-width:100%;max-height:100%}
-.flip-back{transform:rotateY(180deg)}
-@keyframes flipR{0%{transform:rotateY(0)}100%{transform:rotateY(-180deg)}}
-@keyframes flipL{0%{transform:rotateY(0)}100%{transform:rotateY(180deg)}}
-.nav-arrow{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:58px;background:rgba(0,0,84,.65);color:var(--white);border:none;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;z-index:20;border-radius:4px;transition:background .15s}
-.nav-arrow:hover{background:rgba(0,0,84,.9)}
-.nav-arrow:disabled{opacity:.25;cursor:default}
-.nav-arrow.prev{left:10px}
-.nav-arrow.next{right:10px}
-.controls{background:var(--white);border-top:1px solid var(--grey);padding:7px 14px;display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:center}
-.controls .sep{width:1px;height:22px;background:var(--grey);margin:0 3px}
-.page-info{font-size:12px;color:#555;min-width:80px;text-align:center}
-.page-input{width:44px;text-align:center;padding:3px;border:1px solid var(--grey);border-radius:4px;font-size:12px}
+.hdr{background:var(--blue);color:var(--white);padding:10px 20px;font-size:16px;font-weight:600;flex-shrink:0}
+.vb{flex:1;display:flex;overflow:hidden;position:relative}
+.tp{width:0;overflow:hidden;background:var(--white);border-right:1px solid var(--grey);transition:width .3s;flex-shrink:0}
+.tp.open{width:150px}
+.ti{width:150px;height:100%;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
+.thi{cursor:pointer;border:2px solid transparent;border-radius:4px;padding:2px;transition:border-color .15s;position:relative;flex-shrink:0}
+.thi:hover{border-color:var(--grey)}
+.thi.active{border-color:var(--red)}
+.thi canvas{width:100%;display:block;border-radius:2px}
+.thn{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);background:rgba(0,0,84,.8);color:var(--white);font-size:10px;padding:1px 5px;border-radius:3px}
+.bs{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;perspective:1800px;overflow:auto;background:var(--emble-grey)}
+.bk{position:relative;display:flex;transform-style:preserve-3d;flex-shrink:0}
+.ps{position:relative;background:var(--white);box-shadow:0 2px 14px rgba(0,0,0,.1);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.ps canvas{max-width:100%;max-height:100%;display:block}
+.ps.lt{border-radius:4px 0 0 4px;border-right:1px solid #ddd}
+.ps.rt{border-radius:0 4px 4px 0}
+.ps .bp{color:#ccc;font-size:13px}
+.fc{position:absolute;top:0;transform-style:preserve-3d;z-index:10;pointer-events:none}
+.fc.fr{right:50%;transform-origin:right center;animation:fR .5s ease-in-out forwards}
+.fc.fl{left:50%;transform-origin:left center;animation:fL .5s ease-in-out forwards}
+.ff,.fb{position:absolute;top:0;left:0;width:100%;height:100%;backface-visibility:hidden;background:var(--white);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+.ff canvas,.fb canvas{max-width:100%;max-height:100%}
+.fb{transform:rotateY(180deg)}
+@keyframes fR{0%{transform:rotateY(0)}100%{transform:rotateY(-180deg)}}
+@keyframes fL{0%{transform:rotateY(0)}100%{transform:rotateY(180deg)}}
+.na{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:58px;background:rgba(0,0,84,.65);color:var(--white);border:none;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;z-index:20;border-radius:4px;transition:background .15s}
+.na:hover{background:rgba(0,0,84,.9)}
+.na:disabled{opacity:.25;cursor:default}
+.na.pv{left:10px}
+.na.nx{right:10px}
+.ct{background:var(--white);border-top:1px solid var(--grey);padding:7px 14px;display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:center}
+.ct .sp{width:1px;height:22px;background:var(--grey);margin:0 3px}
+.pi-lbl{font-size:12px;color:#555;min-width:70px;text-align:center}
+.pi-in{width:44px;text-align:center;padding:3px;border:1px solid var(--grey);border-radius:4px;font-size:12px}
+.zm-lbl{font-size:12px;color:#555;min-width:40px;text-align:center;font-weight:600}
 .cb{width:32px;height:32px;border:1px solid var(--grey);background:var(--white);border-radius:5px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s;color:var(--blue)}
 .cb:hover{background:var(--emble-grey)}
 .cb.active{background:var(--blue);color:var(--white);border-color:var(--blue)}
 .cb:disabled{opacity:.25;cursor:default}
-.zoom-label{font-size:12px;color:#555;min-width:38px;text-align:center;user-select:none}
-.book.single-mode .page-slot.left{display:none}
-.book.single-mode .page-slot.right{border-radius:4px}
-.loading-overlay{position:fixed;inset:0;background:rgba(0,0,84,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;color:var(--white)}
-.spinner{width:44px;height:44px;border:4px solid rgba(255,255,255,.2);border-top-color:var(--yellow);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:14px}
+.bk.sm .ps.lt{display:none}
+.bk.sm .ps.rt{border-radius:4px}
+.lo{position:fixed;inset:0;background:rgba(0,0,84,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;color:var(--white)}
+.spn{width:44px;height:44px;border:4px solid rgba(255,255,255,.2);border-top-color:var(--yellow);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:14px}
 @keyframes spin{to{transform:rotate(360deg)}}
-${!opts.thumbs ? '.thumb-panel,.cb[data-act="thumb"]{display:none!important}' : ''}
-${!opts.download ? '.cb[data-act="dl"]{display:none!important}' : ''}
+${!opts.thumbs ? '.tp,.cb[data-a="th"]{display:none!important}' : ''}
+${!opts.download ? '.cb[data-a="dl"]{display:none!important}' : ''}
 </style>
 </head>
 <body>
-<div class="header">📖 ${titleEsc}</div>
-<div class="loading-overlay" id="lo"><div class="spinner"></div><div id="lm">Loading…</div></div>
-<div class="viewer-body">
-<div class="thumb-panel" id="tp"><div class="thumb-inner" id="ti"></div></div>
-<div class="book-stage" id="bs">
-<button class="nav-arrow prev" id="pb">◀</button>
-<div class="book${opts.singleDefault ? ' single-mode' : ''}" id="bk">
-<div class="page-slot left" id="pl"><span class="blank-page"></span></div>
-<div class="page-slot right" id="pr"><span class="blank-page"></span></div>
+<div class="hdr">${titleEsc}</div>
+<div class="lo" id="lo"><div class="spn"></div><div id="lm">Loadingâ¦</div></div>
+<div class="vb">
+<div class="tp" id="tp"><div class="ti" id="ti"></div></div>
+<div class="bs" id="bs">
+<button class="na pv" id="pb">&#9664;</button>
+<div class="bk${opts.singleDefault ? ' sm' : ''}" id="bk">
+<div class="ps lt" id="pl"><span class="bp"></span></div>
+<div class="ps rt" id="pr"><span class="bp"></span></div>
 </div>
-<button class="nav-arrow next" id="nb">▶</button>
+<button class="na nx" id="nb">&#9654;</button>
 </div>
 </div>
-<div class="controls">
-<button class="cb" data-act="thumb" id="tt">☰</button>
-<div class="sep"></div>
-<button class="cb" id="fb">⏮</button>
-<button class="cb" id="pb2">◀</button>
-<input class="page-input" id="pi" type="text">
-<span class="page-info" id="pf">/ 0</span>
-<button class="cb" id="nb2">▶</button>
-<button class="cb" id="lb">⏭</button>
-<div class="sep"></div>
-<button class="cb" id="zob">−</button>
-<span class="zoom-label" id="zl">100%</span>
-<button class="cb" id="zib">+</button>
-<div class="sep"></div>
-<button class="cb" id="vt">📖</button>
-<button class="cb" data-act="dl" id="dlb">⬇</button>
+<div class="ct">
+<button class="cb" data-a="th" id="tt">&#9776;</button>
+<div class="sp"></div>
+<button class="cb" id="fb2">&#9198;</button>
+<button class="cb" id="pb2">&#9664;</button>
+<input class="pi-in" id="pi" type="text">
+<span class="pi-lbl" id="pf">/ 0</span>
+<button class="cb" id="nb2">&#9654;</button>
+<button class="cb" id="lb2">&#9197;</button>
+<div class="sp"></div>
+<button class="cb" id="zo" title="Zoom out">&#8722;</button>
+<span class="zm-lbl" id="zl">100%</span>
+<button class="cb" id="zi" title="Zoom in">&#43;</button>
+<button class="cb" id="zr" title="Reset zoom">&#8634;</button>
+<div class="sp"></div>
+<button class="cb" id="vt">&#128214;</button>
+<button class="cb" data-a="dl" id="dlb">&#11015;</button>
 </div>
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-const $=id=>document.getElementById(id);
-const S={pdf:null,pages:[],thumbs:[],total:0,spread:0,page:1,single:${opts.singleDefault},flipping:false,zoom:1};
-const PDF_DATA=atob('${b64}');
-const bytes=new Uint8Array(PDF_DATA.length);
-for(let i=0;i<PDF_DATA.length;i++)bytes[i]=PDF_DATA.charCodeAt(i);
+var $=function(id){return document.getElementById(id);};
+var S={pdf:null,pages:[],thumbs:[],total:0,spread:0,page:1,single:${opts.singleDefault},flipping:false,zoom:1.0};
 
-(async()=>{
+/* Decode base64 PDF â keep TWO copies: one for PDF.js, one for download */
+var b64='${b64}';
+var raw=atob(b64);
+var renderBytes=new Uint8Array(raw.length);
+var dlBytes=new Uint8Array(raw.length);
+for(var i=0;i<raw.length;i++){var code=raw.charCodeAt(i);renderBytes[i]=code;dlBytes[i]=code;}
+b64=null;raw=null; /* free memory */
+
+(async function(){
   try{
-    const pdf=await pdfjsLib.getDocument({data:bytes}).promise;
+    var pdf=await pdfjsLib.getDocument({data:renderBytes}).promise;
     S.pdf=pdf;S.total=pdf.numPages;
-    for(let i=1;i<=pdf.numPages;i++){
-      $('lm').textContent='Rendering page '+i+' of '+pdf.numPages+'…';
-      const pg=await pdf.getPage(i);
-      const vp=pg.getViewport({scale:1.5});
-      const c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
+    for(var i=1;i<=pdf.numPages;i++){
+      $('lm').textContent='Rendering page '+i+' of '+pdf.numPages+'â¦';
+      var pg=await pdf.getPage(i);
+      var vp=pg.getViewport({scale:1.5});
+      var c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
       await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
       S.pages[i-1]=c;
-      const tvp=pg.getViewport({scale:0.25});
-      const tc=document.createElement('canvas');tc.width=tvp.width;tc.height=tvp.height;
+      var tvp=pg.getViewport({scale:0.25});
+      var tc=document.createElement('canvas');tc.width=tvp.width;tc.height=tvp.height;
       await pg.render({canvasContext:tc.getContext('2d'),viewport:tvp}).promise;
       S.thumbs[i-1]=tc;
     }
@@ -563,89 +454,94 @@ for(let i=0;i<PDF_DATA.length;i++)bytes[i]=PDF_DATA.charCodeAt(i);
 })();
 
 function buildThumbs(){
-  const inner=$('ti');inner.innerHTML='';
-  S.thumbs.forEach((tc,i)=>{
-    const d=document.createElement('div');d.className='thumb-item';
+  var inner=$('ti');inner.innerHTML='';
+  S.thumbs.forEach(function(tc,i){
+    var d=document.createElement('div');d.className='thi';
     d.appendChild(tc);
-    const n=document.createElement('span');n.className='thumb-num';n.textContent=i+1;
+    var n=document.createElement('span');n.className='thn';n.textContent=i+1;
     d.appendChild(n);
-    d.addEventListener('click',()=>goTo(i+1));
+    d.addEventListener('click',function(){goTo(i+1);});
     inner.appendChild(d);
   });
 }
 function hlThumbs(){
-  const items=$('ti').querySelectorAll('.thumb-item');
-  items.forEach((el,i)=>{
+  var items=$('ti').querySelectorAll('.thi');
+  items.forEach(function(el,i){
     if(S.single)el.classList.toggle('active',i===S.page-1);
-    else{const sp=spreadPg(S.spread);el.classList.toggle('active',sp.includes(i+1));}
+    else{var sp=spPg(S.spread);el.classList.toggle('active',sp.indexOf(i+1)!==-1);}
   });
 }
-function maxSpread(){return Math.ceil(S.total/2);}
-function spreadPg(s){
+function maxSp(){return Math.ceil(S.total/2);}
+function spPg(s){
   if(s===0)return[null,1];
-  const l=s*2,r=s*2+1;
+  var l=s*2,r=s*2+1;
   return[l<=S.total?l:null,r<=S.total?r:null];
 }
-function cc(src){const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);return c;}
+function cc(src){var c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);return c;}
+
 function render(){
-  const bk=$('bk'),stg=$('bs');
-  const stW=stg.clientWidth-100,stH=stg.clientHeight-32;
+  var bk=$('bk'),stg=$('bs');
+  var stW=stg.clientWidth-100,stH=stg.clientHeight-32;
+  var z=S.zoom;
+
   if(S.single){
-    bk.classList.add('single-mode');
-    const pg=S.pages[S.page-1];if(!pg)return;
-    const r=pg.width/pg.height;let w=Math.min(stW,stH*r),h=w/r;
+    bk.classList.add('sm');
+    var pg=S.pages[S.page-1];if(!pg)return;
+    var r=pg.width/pg.height;
+    var w=Math.min(stW,stH*r,pg.width);var h=w/r;
     if(h>stH){h=stH;w=h*r;}
-    w=Math.round(w*S.zoom);h=Math.round(h*S.zoom);
+    w*=z;h*=z;
     $('pl').innerHTML='';$('pr').innerHTML='';
     $('pr').appendChild(cc(pg));
     $('pr').style.width=w+'px';$('pr').style.height=h+'px';
     bk.style.width=w+'px';bk.style.height=h+'px';
   }else{
-    bk.classList.remove('single-mode');
-    const[lp,rp]=spreadPg(S.spread);
-    const ref=S.pages[0],r=ref.width/ref.height;
-    const hw=Math.min(stW/2,stH*r),bh=Math.min(hw/r,stH),bw=bh*r;
-    const w=Math.round(bw*S.zoom),h=Math.round(bh*S.zoom);
+    bk.classList.remove('sm');
+    var sp=spPg(S.spread),lp=sp[0],rp=sp[1];
+    var ref=S.pages[0],r=ref.width/ref.height;
+    var hw=Math.min(stW/2,stH*r,ref.width),h=Math.min(hw/r,stH),w=h*r;
+    w*=z;h*=z;
     $('pl').style.width=w+'px';$('pl').style.height=h+'px';
     $('pr').style.width=w+'px';$('pr').style.height=h+'px';
     bk.style.width=(w*2)+'px';bk.style.height=h+'px';
     $('pl').innerHTML='';$('pr').innerHTML='';
     if(lp&&S.pages[lp-1])$('pl').appendChild(cc(S.pages[lp-1]));
-    else $('pl').innerHTML='<span class="blank-page"></span>';
+    else $('pl').innerHTML='<span class="bp"></span>';
     if(rp&&S.pages[rp-1])$('pr').appendChild(cc(S.pages[rp-1]));
-    else $('pr').innerHTML='<span class="blank-page"></span>';
+    else $('pr').innerHTML='<span class="bp"></span>';
   }
   updCtrl();hlThumbs();
 }
+
 function flipNext(){
   if(S.flipping)return;
-  if(S.single){if(S.page>=S.total)return;doFlip('next',()=>{S.page++;render();});}
-  else{if(S.spread>=maxSpread())return;doFlip('next',()=>{S.spread++;render();});}
+  if(S.single){if(S.page>=S.total)return;doFlip('next',function(){S.page++;render();});}
+  else{if(S.spread>=maxSp())return;doFlip('next',function(){S.spread++;render();});}
 }
 function flipPrev(){
   if(S.flipping)return;
-  if(S.single){if(S.page<=1)return;doFlip('prev',()=>{S.page--;render();});}
-  else{if(S.spread<=0)return;doFlip('prev',()=>{S.spread--;render();});}
+  if(S.single){if(S.page<=1)return;doFlip('prev',function(){S.page--;render();});}
+  else{if(S.spread<=0)return;doFlip('prev',function(){S.spread--;render();});}
 }
 function doFlip(dir,cb){
   S.flipping=true;
-  const bk=$('bk'),slot=dir==='next'?$('pr'):$('pl');
-  const fc=document.createElement('div');
-  fc.className='flip-container '+(dir==='next'?'flip-right':'flip-left');
-  const rect=slot.getBoundingClientRect(),bkRect=bk.getBoundingClientRect();
+  var bk=$('bk'),slot=dir==='next'?$('pr'):$('pl');
+  var fc=document.createElement('div');
+  fc.className='fc '+(dir==='next'?'fr':'fl');
+  var rect=slot.getBoundingClientRect();
   fc.style.width=rect.width+'px';fc.style.height=rect.height+'px';fc.style.top='0px';
   if(dir==='next'){fc.style.right='0px';fc.style.left='auto';}
   else{fc.style.left='0px';fc.style.right='auto';}
-  const fr=document.createElement('div');fr.className='flip-front';
-  const cv=slot.querySelector('canvas');if(cv)fr.appendChild(cc(cv));
-  const bck=document.createElement('div');bck.className='flip-back';
-  let ni;
+  var fr=document.createElement('div');fr.className='ff';
+  var cv=slot.querySelector('canvas');if(cv)fr.appendChild(cc(cv));
+  var bck=document.createElement('div');bck.className='fb';
+  var ni;
   if(S.single)ni=dir==='next'?S.page:S.page-2;
-  else if(dir==='next'){const np=spreadPg(S.spread+1);ni=np[0]?np[0]-1:null;}
-  else{const pp=spreadPg(S.spread-1);ni=pp[1]?pp[1]-1:null;}
+  else if(dir==='next'){var np=spPg(S.spread+1);ni=np[0]?np[0]-1:null;}
+  else{var pp=spPg(S.spread-1);ni=pp[1]?pp[1]-1:null;}
   if(ni!=null&&ni>=0&&S.pages[ni])bck.appendChild(cc(S.pages[ni]));
   fc.appendChild(fr);fc.appendChild(bck);bk.style.position='relative';bk.appendChild(fc);
-  fc.addEventListener('animationend',()=>{fc.remove();S.flipping=false;cb();});
+  fc.addEventListener('animationend',function(){fc.remove();S.flipping=false;cb();});
 }
 function goTo(p){
   p=Math.max(1,Math.min(S.total,p));
@@ -654,40 +550,67 @@ function goTo(p){
   render();
 }
 function updCtrl(){
-  let c;
+  var c;
   if(S.single){
     c=S.page;
-    $('pb').disabled=$('pb2').disabled=$('fb').disabled=c<=1;
-    $('nb').disabled=$('nb2').disabled=$('lb').disabled=c>=S.total;
+    $('pb').disabled=$('pb2').disabled=$('fb2').disabled=c<=1;
+    $('nb').disabled=$('nb2').disabled=$('lb2').disabled=c>=S.total;
   }else{
-    const sp=spreadPg(S.spread);c=(sp.filter(Boolean))[0]||1;
-    $('pb').disabled=$('pb2').disabled=$('fb').disabled=S.spread<=0;
-    $('nb').disabled=$('nb2').disabled=$('lb').disabled=S.spread>=maxSpread();
+    var sp=spPg(S.spread);c=(sp.filter(Boolean))[0]||1;
+    $('pb').disabled=$('pb2').disabled=$('fb2').disabled=S.spread<=0;
+    $('nb').disabled=$('nb2').disabled=$('lb2').disabled=S.spread>=maxSp();
   }
   $('pi').value=c;$('pf').textContent='/ '+S.total;
   $('zl').textContent=Math.round(S.zoom*100)+'%';
-  $('zob').disabled=S.zoom<=0.25;
-  $('zib').disabled=S.zoom>=3;
 }
+
+/* Nav */
 $('pb').onclick=$('pb2').onclick=flipPrev;
 $('nb').onclick=$('nb2').onclick=flipNext;
-$('fb').onclick=()=>goTo(1);
-$('lb').onclick=()=>goTo(S.total);
-$('pi').addEventListener('keydown',e=>{if(e.key==='Enter'){const v=parseInt($('pi').value);if(!isNaN(v))goTo(v);}});
-const ZOOMS=[0.25,0.5,0.75,1,1.25,1.5,2,3];
-$('zib').onclick=()=>{const i=ZOOMS.findIndex(z=>z>S.zoom);if(i>=0){S.zoom=ZOOMS[i];render();}};
-$('zob').onclick=()=>{const arr=[...ZOOMS].reverse();const i=arr.findIndex(z=>z<S.zoom);if(i>=0){S.zoom=arr[i];render();}};
-let tOpen=false;
-$('tt').onclick=()=>{tOpen=!tOpen;$('tp').classList.toggle('open',tOpen);$('tt').classList.toggle('active',tOpen);setTimeout(render,310);};
-$('vt').onclick=()=>{
-  let vis;if(S.single)vis=S.page;else{const sp=spreadPg(S.spread);vis=(sp.filter(Boolean))[0]||1;}
+$('fb2').onclick=function(){goTo(1);};
+$('lb2').onclick=function(){goTo(S.total);};
+$('pi').addEventListener('keydown',function(e){if(e.key==='Enter'){var v=parseInt($('pi').value);if(!isNaN(v))goTo(v);}});
+
+/* Zoom */
+$('zi').onclick=function(){S.zoom=Math.min(3,S.zoom+0.15);render();};
+$('zo').onclick=function(){S.zoom=Math.max(0.25,S.zoom-0.15);render();};
+$('zr').onclick=function(){S.zoom=1.0;render();};
+
+/* Thumbs */
+var tOpen=false;
+$('tt').onclick=function(){tOpen=!tOpen;$('tp').classList.toggle('open',tOpen);$('tt').classList.toggle('active',tOpen);setTimeout(render,310);};
+
+/* View toggle */
+$('vt').onclick=function(){
+  var vis;if(S.single)vis=S.page;else{var sp=spPg(S.spread);vis=(sp.filter(Boolean))[0]||1;}
   S.single=!S.single;$('vt').classList.toggle('active',S.single);
   if(S.single)S.page=vis;else{if(vis===1)S.spread=0;else S.spread=Math.ceil(vis/2);}
   render();
 };
-${opts.download ? `$('dlb').onclick=()=>{const b=new Blob([bytes],{type:'application/pdf'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='${esc(opts.title)}.pdf';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(u),10000);};` : ''}
-${opts.keyboard ? `document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowRight'||e.key==='ArrowDown')flipNext();else if(e.key==='ArrowLeft'||e.key==='ArrowUp')flipPrev();else if(e.key==='Home')goTo(1);else if(e.key==='End')goTo(S.total);});` : ''}
-window.addEventListener('resize',()=>{if(S.pdf)render();});
+
+${opts.download ? `/* Download */
+$('dlb').onclick=function(){
+  var b=new Blob([dlBytes],{type:'application/pdf'});
+  var u=URL.createObjectURL(b);
+  var a=document.createElement('a');
+  a.href=u;a.download='${titleJs}.pdf';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(u);},5000);
+};` : ''}
+
+${opts.keyboard ? `/* Keyboard */
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT')return;
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')flipNext();
+  else if(e.key==='ArrowLeft'||e.key==='ArrowUp')flipPrev();
+  else if(e.key==='Home')goTo(1);
+  else if(e.key==='End')goTo(S.total);
+  else if(e.key==='+'||e.key==='=')$('zi').click();
+  else if(e.key==='-')$('zo').click();
+  else if(e.key==='0')$('zr').click();
+});` : ''}
+
+window.addEventListener('resize',function(){if(S.pdf)render();});
 <\/script>
 </body>
 </html>`;
