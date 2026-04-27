@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI to Canvas for Projects — Introduction Page</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+.main-wrapper{flex:1;padding:20px}
+.container{max-width:1600px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+.header{background:#000054;color:#fff;padding:30px;text-align:center}
+.header h1{font-size:2rem;margin-bottom:10px;font-weight:700}
+.header p{font-size:1.05rem;opacity:.9}
+.workflow-steps{display:flex;justify-content:center;padding:20px 30px;background:#f2f2f2;border-bottom:3px solid #fac800;flex-wrap:wrap;gap:10px}
+.step{display:flex;align-items:center;margin:0 15px;font-weight:600;color:#000054;font-size:.95rem}
+.step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+.step.active .step-number{background:#e61e2a}
+.step.completed .step-number{background:#28a745}
+.main-layout{display:grid;grid-template-columns:420px 1fr;min-height:70vh}
+.sidebar{background:#f2f2f2;padding:25px;border-right:1px solid #e3e5e0;display:flex;flex-direction:column}
+.content-area{padding:30px;overflow-y:auto}
+.custom-panel{background:#fff;border:2px solid #000054;border-radius:6px;margin-bottom:20px;overflow:hidden}
+.custom-header{padding:10px 14px;background:#000054;color:#fff;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:.95rem}
+.custom-header .chev{transition:transform .2s}
+.custom-panel.collapsed .custom-header .chev{transform:rotate(-90deg)}
+.custom-body{padding:14px;border-top:3px solid #fac800}
+.custom-panel.collapsed .custom-body{display:none}
+.custom-group{margin-bottom:14px}
+.custom-group:last-child{margin-bottom:0}
+.custom-group > label{display:block;font-weight:600;color:#000054;margin-bottom:6px;font-size:.8rem;text-transform:uppercase;letter-spacing:.5px}
+.mode-toggle{display:flex;gap:8px}
+.mode-toggle label{flex:1;display:flex;align-items:center;gap:6px;padding:8px 10px;background:#f2f2f2;border:2px solid transparent;border-radius:4px;cursor:pointer;font-size:.85rem;font-weight:600}
+.mode-toggle label:has(input:checked){background:#fff9e6;border-color:#fac800}
+.mode-toggle input[type="radio"]{cursor:pointer}
+.preset-btns{display:flex;gap:6px;margin-bottom:10px}
+.preset-btns button{flex:1;padding:6px 10px;font-size:.8rem;border:1px solid #000054;background:#fff;color:#000054;border-radius:3px;cursor:pointer;font-weight:600}
+.preset-btns button:hover{background:#000054;color:#fff}
+.colour-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.colour-grid > div{display:flex;align-items:center;gap:6px;background:#f8f9fa;padding:5px 8px;border-radius:4px}
+.colour-grid label{margin:0;flex:1;font-size:.78rem;font-weight:600;color:#000054}
+.colour-grid input[type="color"]{width:36px;height:26px;border:1px solid #ddd;border-radius:3px;cursor:pointer;padding:1px;background:#fff}
+.custom-group select{width:100%;padding:7px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.85rem;background:#fff}
+.icon-upload-grid{display:flex;flex-direction:column;gap:6px}
+.icon-upload-row{display:flex;align-items:center;gap:8px;background:#f8f9fa;padding:6px 8px;border-radius:4px;flex-wrap:wrap}
+.icon-upload-row > label{flex:1 0 120px;font-size:.78rem;font-weight:600;color:#000054;margin:0}
+.icon-preview{width:32px;height:32px;border:1px solid #ddd;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;background:#fff;flex-shrink:0;overflow:hidden}
+.icon-preview img{max-width:100%;max-height:100%;object-fit:contain}
+.icon-url-input{flex:1 0 100%;padding:5px 8px;font-size:.72rem;border:1px solid #ddd;border-radius:3px;font-family:monospace;margin-top:4px}
+.icon-url-input.invalid{border-color:#e61e2a;background:#fff5f5}
+.icon-clear-btn{padding:4px 6px;font-size:.7rem;border:1px solid #e61e2a;background:#fff;color:#e61e2a;border-radius:3px;cursor:pointer}
+.icon-status{font-size:.7rem;color:#666;flex:1 0 100%;margin-top:2px;min-height:14px}
+.icon-status.ok{color:#28a745;font-weight:600}
+.icon-status.err{color:#e61e2a;font-weight:600}
+.flex-only{display:none}
+body.mode-flex .flex-only{display:block}
+.custom-note{font-size:.72rem;color:#666;margin-top:4px;line-height:1.4;font-style:italic}
+.paste-area{border:3px dashed #000054;border-radius:8px;padding:18px;text-align:center;transition:all .3s;cursor:pointer;background:#fff;margin-bottom:15px}
+.paste-area:hover{border-color:#e61e2a}
+.paste-icon{font-size:2rem;color:#000054;margin-bottom:8px}
+.paste-text{font-size:1rem;color:#000054;margin-bottom:6px;font-weight:600}
+.paste-subtext{font-size:.82rem;color:#666}
+textarea#copilotInput{width:100%;min-height:260px;padding:12px;border:2px solid #e3e5e0;border-radius:6px;font-size:.85rem;font-family:monospace;resize:vertical;background:#fff;line-height:1.5;display:none}
+.week-input-area{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:12px;margin-bottom:15px}
+.week-input-area label{display:block;font-weight:600;color:#000054;margin-bottom:6px;font-size:.85rem}
+.week-input-area input{width:100%;padding:8px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit}
+.week-input-area input:focus{outline:none;border-color:#000054}
+.extraction-status{display:none;background:#fff;border:2px solid #fac800;border-radius:6px;padding:16px;margin-top:12px}
+.extraction-status h3{color:#000054;margin-bottom:10px;font-size:1rem}
+.status-item{display:flex;align-items:center;margin-bottom:6px;font-size:.85rem}
+.status-icon{width:18px;height:18px;border-radius:50%;margin-right:8px;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#fff;font-weight:700;flex-shrink:0}
+.status-icon.found{background:#28a745}.status-icon.missing{background:#e61e2a}
+.btn{padding:11px 24px;border:none;border-radius:4px;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .3s}
+.btn-primary{background:#e61e2a;color:#fff}.btn-primary:hover{background:#c51923}
+.btn-secondary{background:#000054;color:#fff}.btn-secondary:hover{background:#000043}
+.btn-outline{background:#fff;color:#000054;border:2px solid #000054}.btn-outline:hover{background:#f2f2f2}
+.btn:disabled{background:#999;cursor:not-allowed}
+.button-group{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap}
+.edit-form{display:none}
+.form-section{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:22px;margin-bottom:22px}
+.form-section h3{color:#000054;margin-bottom:16px;font-size:1.15rem;border-bottom:2px solid #fac800;padding-bottom:8px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-weight:600;color:#000054;margin-bottom:6px;font-size:.9rem}
+.form-group input[type="text"],.form-group textarea{width:100%;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit;background:#fafbfc}
+.form-group textarea{min-height:100px;resize:vertical}
+.help-text{font-size:.8rem;color:#666;margin-top:4px}
+.list-editor{margin-top:8px}
+.list-item{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.list-item input{flex:1;padding:8px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit}
+.list-item button{background:none;border:none;color:#e61e2a;cursor:pointer;font-size:1.1rem;padding:4px}
+.add-remove-btns{display:flex;gap:8px;margin-top:8px}
+.add-remove-btns button{padding:4px 12px;font-size:.8rem;border-radius:3px;border:1px solid #ddd;cursor:pointer;background:#fff}
+.output-section{display:none}
+.output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+.output-header{background:#000054;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+.output-header .mode-badge{background:#fac800;color:#000054;padding:3px 10px;border-radius:3px;font-size:.78rem;font-weight:700}
+.output-content{padding:20px;font-family:monospace;font-size:.78rem;line-height:1.5;max-height:500px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
+.preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:30px;margin-top:20px}
+.alert{padding:15px;border-radius:4px;margin-bottom:20px;display:flex}
+.alert-info{background:#e6f3ff;border:1px solid #0066cc;color:#004085}
+.alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
+.footer{background:#000054;color:#fff;text-align:center;padding:20px;font-size:.9rem}
+@media(max-width:1200px){.main-layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body class="mode-emble">
+<div class="main-wrapper">
+<div class="container">
+<div class="header">
+<h1>AI to Canvas for Projects — Introduction Page</h1>
+<p>Customisable Edition · Emble Mode (in-house) or Flex Mode (export)</p>
+</div>
+<div class="workflow-steps">
+<div class="step active" id="step1"><div class="step-number">1</div><span>Paste Copilot Output</span></div>
+<div class="step" id="step2"><div class="step-number">2</div><span>Review &amp; Edit</span></div>
+<div class="step" id="step3"><div class="step-number">3</div><span>Generate HTML</span></div>
+</div>
+<div class="main-layout">
+<div class="sidebar">
+<div class="custom-panel" id="customPanel">
+<div class="custom-header" onclick="toggleCustomPanel()"><span>⚙ Output Customisation</span><span class="chev">▼</span></div>
+<div class="custom-body">
+<div class="custom-group">
+<label>Output Mode</label>
+<div class="mode-toggle">
+<label><input type="radio" name="outputMode" value="emble" checked onchange="onModeChange()"> Emble</label>
+<label><input type="radio" name="outputMode" value="flex" onchange="onModeChange()"> Flex</label>
+</div>
+</div>
+<div class="custom-group">
+<label>Palette Preset</label>
+<div class="preset-btns">
+<button type="button" onclick="loadRmitPalette()">RMIT Default</button>
+<button type="button" onclick="loadBlankPalette()">Blank Slate</button>
+</div>
+<div class="colour-grid">
+<div><label>Primary</label><input type="color" id="colPrimary" value="#000054"></div>
+<div><label>Accent</label><input type="color" id="colAccent" value="#fac800"></div>
+<div><label>Card BG</label><input type="color" id="colCardBg" value="#f2f2f2"></div>
+<div><label>Accent Text</label><input type="color" id="colAccentText" value="#000054"></div>
+</div>
+</div>
+<div class="custom-group">
+<label>Corner Radius</label>
+<select id="selRadius">
+<option value="0">0px (sharp — RMIT default)</option>
+<option value="4">4px</option>
+<option value="8">8px</option>
+<option value="12">12px</option>
+<option value="20">20px</option>
+</select>
+</div>
+<div class="custom-group flex-only">
+<label>Section Icons (Canvas File URLs)</label>
+<div class="icon-upload-grid" id="iconUploadGrid"></div>
+<div class="custom-note">Paste the Canvas file URL for each section.</div>
+</div>
+<div class="custom-group" style="border-top:1px solid #e3e5e0;padding-top:12px;">
+<label>🔒 Project Lock</label>
+<input type="text" id="projectName" placeholder="Project / team name" style="width:100%;padding:7px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.85rem;margin-bottom:8px;">
+<div class="preset-btns">
+<button type="button" onclick="exportProject()">💾 Export</button>
+<button type="button" onclick="loadProjectFromFile()">📂 Import</button>
+<button type="button" onclick="resetProject()">↺ Reset</button>
+</div>
+<input type="file" id="projectFile" accept="application/json" style="display:none;" onchange="handleProjectFile(this)">
+<div id="projectStatus" class="custom-note" style="margin-top:6px;"></div>
+</div>
+</div>
+</div>
+<div class="paste-area" id="pasteArea" onclick="showTextarea()">
+<div class="paste-icon">📋</div>
+<div class="paste-text">Paste Copilot Output</div>
+<div class="paste-subtext">Click here, then paste</div>
+</div>
+<textarea id="copilotInput" placeholder="Paste your Copilot output here..."></textarea>
+<div class="week-input-area">
+<label>Week Number</label>
+<input type="text" id="weekNumber" placeholder="e.g. 1, 2, 3...">
+<div class="custom-note">Used in the page heading: "Week X: Introduction"</div>
+</div>
+<div class="button-group">
+<button class="btn btn-primary" id="parseBtn" onclick="parseInput()" disabled>Parse Content</button>
+<button class="btn btn-outline" onclick="loadSample()">Load Sample</button>
+</div>
+<div class="extraction-status" id="extractionStatus"><h3>📊 Parsed Sections</h3><div id="statusList"></div></div>
+</div>
+<div class="content-area">
+<div id="initialInstructions">
+<h2 style="color:#000054;margin-bottom:20px;">How to Use This Tool</h2>
+<ol style="font-size:1.05rem;line-height:2;">
+<li><strong>Configure</strong> output mode, palette, corner radius, and icons (Flex only)</li>
+<li><strong>Paste</strong> your Copilot-generated introduction page into the sidebar</li>
+<li><strong>Enter</strong> the week number</li>
+<li><strong>Review</strong> the automatically parsed sections and edit as needed</li>
+<li><strong>Generate</strong> Canvas-ready HTML</li>
+</ol>
+<div class="alert alert-info" style="margin-top:25px;"><div style="margin-right:12px;font-size:1.4rem;">ℹ️</div><div><strong>Emble Mode</strong> preserves the Emble component structure for in-house Canvas pages.<br><strong>Flex Mode</strong> outputs pure inline-styled HTML for export to SCORM or other platforms.</div></div>
+<div class="alert alert-warning" style="margin-top:15px;"><div style="margin-right:12px;font-size:1.4rem;">💡</div><div><strong>Tip:</strong> Use the strict Copilot prompt template with delimiters (<code>──── Topic Overview ────</code>, etc.) for reliable parsing. Click "Load Sample" to test.</div></div>
+</div>
+<div class="edit-form" id="editForm">
+<h2 style="color:#000054;margin-bottom:20px;">Review &amp; Edit Parsed Content</h2>
+<div class="form-section">
+<h3>📄 Topic Overview</h3>
+<div class="form-group">
+<label>Overview Paragraph</label>
+<textarea id="fOverview" rows="4" placeholder="Brief summary of module content (50-75 words)"></textarea>
+<p class="help-text">2–3 sentences: module summary, career relevance, course progression</p>
+</div>
+</div>
+<div class="form-section">
+<h3>🎯 This Week You Will</h3>
+<p class="help-text" style="margin-bottom:12px;">Maximum 5 activity points. Keep each to one line (10–15 words).</p>
+<div id="weekWillItems" class="list-editor"></div>
+<div class="add-remove-btns">
+<button onclick="addWeekWillItem()">+ Add Item</button>
+<button onclick="removeWeekWillItem()">− Remove Last</button>
+</div>
+</div>
+<div class="form-section">
+<h3>📐 Learning Objectives</h3>
+<p class="help-text" style="margin-bottom:12px;">Maximum 6 objectives. Use Bloom's verbs (demonstrate, create, analyse, apply, evaluate, implement).</p>
+<div id="objectiveItems" class="list-editor"></div>
+<div class="add-remove-btns">
+<button onclick="addObjectiveItem()">+ Add Objective</button>
+<button onclick="removeObjectiveItem()">− Remove Last</button>
+</div>
+</div>
+<div class="button-group" style="padding-top:20px;border-top:2px solid #e3e5e0;">
+<button class="btn btn-primary" onclick="generateHTML()">Generate HTML</button>
+<button class="btn btn-secondary" onclick="resetAll()">Start Over</button>
+</div>
+</div>
+<div class="output-section" id="outputSection">
+<h2 style="color:#000054;margin-bottom:20px;">Generated HTML</h2>
+<div class="output-container"><div class="output-header"><span>HTML Code <span class="mode-badge" id="modeBadge">EMBLE</span></span><button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem;" onclick="copyHTML()">Copy HTML</button></div><div class="output-content" id="outputContent"></div></div>
+<div class="preview-container"><h3 style="color:#000054;margin-bottom:20px;">Preview</h3><div id="previewContent"></div></div>
+<div class="button-group"><button class="btn btn-secondary" onclick="backToEdit()">Back to Edit</button><button class="btn btn-primary" onclick="resetAll()">New Content</button></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team — RMIT College of Vocational Education</p></footer>
+
+<script>
+// ========== CONSTANTS & STATE ==========
+var ICON_SLOTS = [
+    {key:'overview', label:'Topic Overview', emoji:'ℹ️', embleClass:'icon-info'},
+    {key:'thisweek', label:'This Week You Will', emoji:'🎯', embleClass:'icon-target'},
+    {key:'objectives', label:'Learning Objectives', emoji:'📐', embleClass:'icon-outcomes'}
+];
+var iconRefs = {overview:null, thisweek:null, objectives:null};
+var weekWillCount = 0, objectiveCount = 0;
+var LS_KEY = 'cove-intro-page-converter-project-v1';
+
+// ========== HELPERS ==========
+function esc(s) { if (s === null || s === undefined) return ''; var d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+function escH(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function genId() { return 'emble-customise-' + Math.random().toString(16).slice(2,10); }
+function updateStep(n, s) { var e = document.getElementById('step'+n); e.classList.remove('active','completed'); if (s) e.classList.add(s); }
+function showTextarea() { document.getElementById('copilotInput').style.display='block'; document.getElementById('pasteArea').style.display='none'; document.getElementById('copilotInput').focus(); document.getElementById('parseBtn').disabled=false; }
+
+// ========== CANVAS FILE URL PARSER ==========
+function parseCanvasFileURL(url) {
+    if (!url || typeof url !== 'string') return null;
+    url = url.trim(); if (!url) return null;
+    var courseMatch = url.match(/\/courses\/(\d+)/);
+    if (!courseMatch) return null;
+    var courseId = courseMatch[1];
+    var pathFileMatch = url.match(/\/files\/(\d+)(?:\/|\?|$)/);
+    if (pathFileMatch) return {courseId: courseId, fileId: pathFileMatch[1], rawUrl: url};
+    var qFileMatch = url.match(/[?&]preview=(\d+)/);
+    if (qFileMatch) return {courseId: courseId, fileId: qFileMatch[1], rawUrl: url};
+    return null;
+}
+
+// Build the <img> tag for a Flex Mode icon. Returns emoji fallback if no valid ref.
+function buildIconImgTag(slot) {
+    var ref = iconRefs[slot];
+    var fallback = ICON_SLOTS.find(function(s){return s.key === slot;}).emoji;
+    if (!ref || typeof ref !== 'object') return fallback;
+    var cid = ref.courseId, fid = ref.fileId;
+    if (!cid || !fid) return fallback;
+    var cidStr = String(cid), fidStr = String(fid);
+    if (cidStr === '[object Object]' || fidStr === '[object Object]') return fallback;
+    var src = 'https://rmit.instructure.com/courses/' + cidStr + '/files/' + fidStr + '/preview';
+    var api = 'https://rmit.instructure.com/api/v1/courses/' + cidStr + '/files/' + fidStr;
+    return '<img id="' + fidStr + '" src="' + src + '" alt="' + slot + ' icon" style="max-width:65%;max-height:65%;object-fit:contain;" data-api-endpoint="' + api + '" data-api-returntype="File" />';
+}
+
+// ========== CUSTOMISATION UI ==========
+function toggleCustomPanel() { document.getElementById('customPanel').classList.toggle('collapsed'); }
+function onModeChange() {
+    var mode = document.querySelector('input[name="outputMode"]:checked').value;
+    document.body.classList.remove('mode-emble','mode-flex');
+    document.body.classList.add('mode-'+mode);
+    saveProjectToStorage();
+}
+function loadRmitPalette() {
+    document.getElementById('colPrimary').value='#000054';
+    document.getElementById('colAccent').value='#fac800';
+    document.getElementById('colCardBg').value='#f2f2f2';
+    document.getElementById('colAccentText').value='#000054';
+    document.getElementById('selRadius').value='0';
+}
+function loadBlankPalette() {
+    document.getElementById('colPrimary').value='#333333';
+    document.getElementById('colAccent').value='#0066cc';
+    document.getElementById('colCardBg').value='#f5f5f5';
+    document.getElementById('colAccentText').value='#ffffff';
+    document.getElementById('selRadius').value='8';
+}
+
+function buildIconUploadUI() {
+    var grid = document.getElementById('iconUploadGrid');
+    grid.innerHTML = ICON_SLOTS.map(function(s){
+        return '<div class="icon-upload-row">' +
+            '<div class="icon-preview" id="iconPreview_'+s.key+'">'+s.emoji+'</div>' +
+            '<label>'+s.label+'</label>' +
+            '<button class="icon-clear-btn" type="button" onclick="clearIcon(\''+s.key+'\')">✕</button>' +
+            '<input type="text" class="icon-url-input" id="iconUrl_'+s.key+'" placeholder="Paste Canvas file URL..." oninput="handleIconUrlChange(\''+s.key+'\', this)">' +
+            '<div class="icon-status" id="iconStatus_'+s.key+'"></div>' +
+        '</div>';
+    }).join('');
+}
+
+function handleIconUrlChange(slot, input) {
+    var url = input.value.trim();
+    var statusEl = document.getElementById('iconStatus_'+slot);
+    var previewEl = document.getElementById('iconPreview_'+slot);
+    var emoji = ICON_SLOTS.find(function(s){return s.key===slot;}).emoji;
+    if (!url) {
+        iconRefs[slot] = null;
+        input.classList.remove('invalid');
+        statusEl.textContent = ''; statusEl.className = 'icon-status';
+        previewEl.innerHTML = emoji;
+        saveProjectToStorage(); return;
+    }
+    var ref = parseCanvasFileURL(url);
+    if (ref) {
+        iconRefs[slot] = ref;
+        input.classList.remove('invalid');
+        statusEl.textContent = '✔ Course ' + ref.courseId + ' · File ' + ref.fileId;
+        statusEl.className = 'icon-status ok';
+        var absUrl = 'https://rmit.instructure.com/courses/' + ref.courseId + '/files/' + ref.fileId + '/preview';
+        previewEl.innerHTML = '<img src="' + absUrl + '" alt="' + slot + '" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\''+emoji+'\';">';
+    } else {
+        iconRefs[slot] = null;
+        input.classList.add('invalid');
+        statusEl.textContent = '✗ Could not extract IDs';
+        statusEl.className = 'icon-status err';
+        previewEl.innerHTML = emoji;
+    }
+    saveProjectToStorage();
+}
+
+function clearIcon(slot) {
+    iconRefs[slot] = null;
+    var emoji = ICON_SLOTS.find(function(s){return s.key===slot;}).emoji;
+    document.getElementById('iconPreview_'+slot).innerHTML = emoji;
+    var urlInput = document.getElementById('iconUrl_'+slot);
+    if (urlInput) { urlInput.value=''; urlInput.classList.remove('invalid'); }
+    var statusEl = document.getElementById('iconStatus_'+slot);
+    if (statusEl) { statusEl.textContent=''; statusEl.className='icon-status'; }
+    saveProjectToStorage();
+}
+
+// ========== PROJECT PERSISTENCE ==========
+function getProjectConfig() {
+    return {
+        name: document.getElementById('projectName').value || '',
+        mode: document.querySelector('input[name="outputMode"]:checked').value,
+        colPrimary: document.getElementById('colPrimary').value,
+        colAccent: document.getElementById('colAccent').value,
+        colCardBg: document.getElementById('colCardBg').value,
+        colAccentText: document.getElementById('colAccentText').value,
+        radius: document.getElementById('selRadius').value,
+        icons: JSON.parse(JSON.stringify(iconRefs))
+    };
+}
+function saveProjectToStorage() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(getProjectConfig())); updateProjectStatus(); }
+    catch(e) {}
+}
+function loadProjectFromStorage() {
+    try {
+        var raw = localStorage.getItem(LS_KEY);
+        if (!raw) return;
+        var p = JSON.parse(raw);
+        if (p.name) document.getElementById('projectName').value = p.name;
+        if (p.mode) { var r = document.querySelector('input[name="outputMode"][value="'+p.mode+'"]'); if (r) { r.checked=true; onModeChange(); } }
+        if (p.colPrimary) document.getElementById('colPrimary').value = p.colPrimary;
+        if (p.colAccent) document.getElementById('colAccent').value = p.colAccent;
+        if (p.colCardBg) document.getElementById('colCardBg').value = p.colCardBg;
+        if (p.colAccentText) document.getElementById('colAccentText').value = p.colAccentText;
+        if (p.radius != null) document.getElementById('selRadius').value = p.radius;
+        if (p.icons) {
+            Object.keys(p.icons).forEach(function(k){
+                var ref = p.icons[k];
+                if (ref && ref.courseId && ref.fileId) {
+                    iconRefs[k] = {courseId: String(ref.courseId), fileId: String(ref.fileId), rawUrl: ref.rawUrl || ''};
+                    var urlInput = document.getElementById('iconUrl_'+k);
+                    if (urlInput) urlInput.value = iconRefs[k].rawUrl || ('https://rmit.instructure.com/courses/'+iconRefs[k].courseId+'/files/'+iconRefs[k].fileId+'/preview');
+                    var statusEl = document.getElementById('iconStatus_'+k);
+                    if (statusEl) { statusEl.textContent = '✔ Course '+iconRefs[k].courseId+' · File '+iconRefs[k].fileId; statusEl.className = 'icon-status ok'; }
+                    var previewEl = document.getElementById('iconPreview_'+k);
+                    if (previewEl) {
+                        var slotDef = ICON_SLOTS.find(function(s){return s.key===k;});
+                        var emoji = slotDef ? slotDef.emoji : '';
+                        var absUrl = 'https://rmit.instructure.com/courses/'+iconRefs[k].courseId+'/files/'+iconRefs[k].fileId+'/preview';
+                        previewEl.innerHTML = '<img src="'+absUrl+'" alt="'+k+'" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\''+emoji+'\';">';
+                    }
+                }
+            });
+        }
+        updateProjectStatus();
+    } catch(e) {}
+}
+function updateProjectStatus() {
+    var el = document.getElementById('projectStatus');
+    if (!el) return;
+    var name = document.getElementById('projectName').value;
+    el.innerHTML = name ? '🔒 Locked: <strong>'+esc(name)+'</strong>' : '🔒 Auto-saved';
+}
+function exportProject() {
+    var p = getProjectConfig();
+    var blob = new Blob([JSON.stringify(p, null, 2)], {type:'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = ((p.name || 'intro-project').replace(/[^\w\-]+/g, '-').toLowerCase() || 'intro-project') + '-config.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href);}, 200);
+}
+function loadProjectFromFile() { document.getElementById('projectFile').click(); }
+function handleProjectFile(input) {
+    var f = input.files && input.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function(e) {
+        try { var p = JSON.parse(e.target.result); localStorage.setItem(LS_KEY, JSON.stringify(p)); loadProjectFromStorage(); alert('Imported.'); }
+        catch(err) { alert('Failed to load: '+err.message); }
+    };
+    r.readAsText(f); input.value = '';
+}
+function resetProject() {
+    if (!confirm('Reset all customisation?')) return;
+    try { localStorage.removeItem(LS_KEY); } catch(e) {}
+    loadRmitPalette();
+    document.getElementById('projectName').value = '';
+    ICON_SLOTS.forEach(function(s){clearIcon(s.key);});
+    var emble = document.querySelector('input[name="outputMode"][value="emble"]');
+    if (emble) { emble.checked=true; onModeChange(); }
+    document.getElementById('projectStatus').innerHTML = '';
+}
+
+// ========== LIST EDITORS ==========
+function addWeekWillItem(val) {
+    val = val || '';
+    if (weekWillCount >= 5) return;
+    weekWillCount++;
+    var n = weekWillCount;
+    var d = document.createElement('div');
+    d.className = 'list-item'; d.id = 'wwItem'+n;
+    d.innerHTML = '<span style="font-weight:600;color:#000054;min-width:20px;">'+n+'.</span>' +
+        '<input type="text" id="wwText'+n+'" value="'+escH(val)+'" placeholder="Activity point (10-15 words)">' +
+        '<button onclick="this.closest(\'.list-item\').remove();renumberList(\'weekWillItems\',\'ww\')">✕</button>';
+    document.getElementById('weekWillItems').appendChild(d);
+}
+function removeWeekWillItem() { if (weekWillCount > 0) { var e = document.getElementById('wwItem'+weekWillCount); if (e) e.remove(); weekWillCount--; } }
+
+function addObjectiveItem(val) {
+    val = val || '';
+    if (objectiveCount >= 6) return;
+    objectiveCount++;
+    var n = objectiveCount;
+    var d = document.createElement('div');
+    d.className = 'list-item'; d.id = 'objItem'+n;
+    d.innerHTML = '<span style="font-weight:600;color:#000054;min-width:20px;">'+n+'.</span>' +
+        '<input type="text" id="objText'+n+'" value="'+escH(val)+'" placeholder="Learning objective using Bloom\'s verb">' +
+        '<button onclick="this.closest(\'.list-item\').remove();renumberList(\'objectiveItems\',\'obj\')">✕</button>';
+    document.getElementById('objectiveItems').appendChild(d);
+}
+function removeObjectiveItem() { if (objectiveCount > 0) { var e = document.getElementById('objItem'+objectiveCount); if (e) e.remove(); objectiveCount--; } }
+
+function renumberList(containerId, prefix) {
+    var items = document.getElementById(containerId).querySelectorAll('.list-item');
+    if (prefix === 'ww') weekWillCount = items.length;
+    else objectiveCount = items.length;
+    items.forEach(function(item, i){
+        var n = i + 1;
+        item.id = (prefix === 'ww' ? 'wwItem' : 'objItem') + n;
+        item.querySelector('span').textContent = n + '.';
+        item.querySelector('input').id = (prefix === 'ww' ? 'wwText' : 'objText') + n;
+    });
+}
+
+// ========== PARSER ==========
+function parseInput() {
+    var raw = document.getElementById('copilotInput').value.trim();
+    if (!raw) return alert('Paste Copilot output first.');
+
+    var lines = raw.split('\n');
+    var sections = {};
+    var currentKey = null;
+
+    for (var i = 0; i < lines.length; i++) {
+        var t = lines[i].trim();
+        // Match delimited section headers (──── Section Name ────)
+        var m = t.match(/^[─━]{2,}\s*(.+?)\s*[─━]{2,}/);
+        if (m) {
+            currentKey = m[1].trim().toLowerCase().replace(/\s+/g,'_');
+            sections[currentKey] = [];
+        } else if (currentKey && t) {
+            sections[currentKey].push(t);
+        }
+    }
+
+    // Extract overview
+    var overviewKey = Object.keys(sections).find(function(k){return k.indexOf('topic_overview')>-1 || k.indexOf('overview')>-1;});
+    var overview = overviewKey ? sections[overviewKey].join(' ') : '';
+
+    // Extract "this week we will" / "this week you will"
+    var weekKey = Object.keys(sections).find(function(k){return k.indexOf('this_week')>-1 || k.indexOf('week_we_will')>-1 || k.indexOf('week_you_will')>-1;});
+    var weekItems = [];
+    if (weekKey) {
+        sections[weekKey].forEach(function(line){
+            var clean = line.replace(/^\d+[.)]\s*/,'').replace(/^[*•\-–]\s*/,'').trim();
+            if (clean) weekItems.push(clean);
+        });
+    }
+
+    // Extract learning objectives
+    var objKey = Object.keys(sections).find(function(k){return k.indexOf('learning_objective')>-1 || k.indexOf('objective')>-1;});
+    var objItems = [];
+    if (objKey) {
+        sections[objKey].forEach(function(line){
+            var clean = line.replace(/^\d+[.)]\s*/,'').replace(/^[*•\-–]\s*/,'').trim();
+            if (clean) objItems.push(clean);
+        });
+    }
+
+    // Populate form
+    document.getElementById('fOverview').value = overview;
+
+    document.getElementById('weekWillItems').innerHTML = ''; weekWillCount = 0;
+    if (weekItems.length) weekItems.slice(0,5).forEach(function(i){addWeekWillItem(i);});
+    else { addWeekWillItem(); addWeekWillItem(); addWeekWillItem(); }
+
+    document.getElementById('objectiveItems').innerHTML = ''; objectiveCount = 0;
+    if (objItems.length) objItems.slice(0,6).forEach(function(i){addObjectiveItem(i);});
+    else { addObjectiveItem(); addObjectiveItem(); addObjectiveItem(); }
+
+    showExtractionStatus(overview, weekItems, objItems);
+    showEditForm();
+}
+
+function showExtractionStatus(overview, weekItems, objItems) {
+    var items = [
+        {f: !!overview, t: 'Topic Overview' + (overview ? ' (' + overview.split(' ').length + ' words)' : '')},
+        {f: weekItems.length > 0, t: 'This Week You Will (' + weekItems.length + ' items)'},
+        {f: objItems.length > 0, t: 'Learning Objectives (' + objItems.length + ' objectives)'}
+    ];
+    document.getElementById('statusList').innerHTML = items.map(function(i){
+        return '<div class="status-item"><div class="status-icon '+(i.f?'found':'missing')+'">'+(i.f?'✔':'✗')+'</div><span>'+i.t+'</span></div>';
+    }).join('');
+    document.getElementById('extractionStatus').style.display = 'block';
+}
+
+function showEditForm() {
+    updateStep(1,'completed'); updateStep(2,'active');
+    document.getElementById('initialInstructions').style.display = 'none';
+    document.getElementById('editForm').style.display = 'block';
+    document.getElementById('outputSection').style.display = 'none';
+}
+
+// ========== COLLECTORS ==========
+function collectWeekWill() {
+    var items = [];
+    document.querySelectorAll('#weekWillItems .list-item input').forEach(function(inp){
+        if (inp.value.trim()) items.push(inp.value.trim());
+    });
+    return items;
+}
+function collectObjectives() {
+    var items = [];
+    document.querySelectorAll('#objectiveItems .list-item input').forEach(function(inp){
+        if (inp.value.trim()) items.push(inp.value.trim());
+    });
+    return items;
+}
+
+// ========== HTML GENERATOR ==========
+function generateHTML() {
+    var cfg = {
+        mode: document.querySelector('input[name="outputMode"]:checked').value,
+        P: document.getElementById('colPrimary').value,
+        A: document.getElementById('colAccent').value,
+        CB: document.getElementById('colCardBg').value,
+        AT: document.getElementById('colAccentText').value,
+        R: parseInt(document.getElementById('selRadius').value) || 0
+    };
+    var h = cfg.mode === 'flex' ? generateFlex(cfg) : generateEmble(cfg);
+    document.getElementById('outputContent').textContent = h;
+    document.getElementById('previewContent').innerHTML = h;
+    document.getElementById('modeBadge').textContent = cfg.mode.toUpperCase();
+    updateStep(2,'completed'); updateStep(3,'active');
+    document.getElementById('editForm').style.display = 'none';
+    document.getElementById('outputSection').style.display = 'block';
+    window.scrollTo(0,0);
+}
+
+// ========== EMBLE MODE GENERATOR ==========
+function generateEmble(cfg) {
+    var P = cfg.P, A = cfg.A, CB = cfg.CB, AT = cfg.AT, R = cfg.R;
+    var week = document.getElementById('weekNumber').value || 'X';
+    var overview = document.getElementById('fOverview').value.trim();
+    var wwItems = collectWeekWill();
+    var objItems = collectObjectives();
+
+    // Style block: palette overrides for Emble's default rules
+    var h = '<style>\n';
+    h += '/* CoVE palette overrides */\n';
+    h += '.emble.heading-rule.rmit-blue{border-color:'+P+' !important;}\n';
+    h += '/* Title-with-icon banner — parent .emble-icon carries accent; <i> transparent so parent shows through */\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette]{background-color:'+CB+' !important;border-radius:'+R+'px !important;}\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] .emble-icon,\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] div.emble-icon.small.wrap.yellow.square{background-color:'+A+' !important;border-radius:'+R+'px !important;color:'+AT+' !important;}\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] .emble-icon i,\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] .emble-icon.yellow i{background-color:transparent !important;background:none !important;color:'+AT+' !important;}\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] .title-with-icon-title h3{color:'+P+' !important;}\n';
+    h += '</style>\n\n';
+
+    // Page heading
+    h += '<h2 style="text-align:left;color:'+P+';">Week ' + esc(week) + ': Introduction</h2>\n\n';
+    h += '<hr class="emble heading-rule rmit-blue border-medium width-full" style="border-color:'+P+';" data-context-menu="customise delete" data-customise="hr-border-style hr-line-width hr-line-color" data-emble-name="Horizontal Line" data-emble-version="2.0" />\n\n';
+    h += '<p class="narrow-p">&nbsp;</p>\n\n';
+
+    // Two-column layout: Topic Overview + This Week You Will
+    h += '<div id="'+genId()+'" class="customise emble-columns-container emble-columns-controller-2 emble-columns-stretch-child-height" data-context-menu="customise delete" data-customise="new-columns-arrangement new-columns-border new-columns-padding columns-stretch-children" data-emble-name="Columns" data-emble-version="2.0">\n';
+
+    // Column 1: Topic Overview
+    h += '<div class="emble-columns-child emble-prevent-delete">\n';
+    h += embleBanner('overview', 'Topic Overview', cfg);
+    if (overview) h += '<p>' + esc(overview) + '</p>\n';
+    else h += '<p>&nbsp;</p>\n';
+    h += '<p class="narrow-p">&nbsp;</p>\n';
+    h += '</div>\n';
+
+    // Column 2: This Week You Will
+    h += '<div class="emble-columns-child emble-prevent-delete">\n';
+    h += embleBanner('thisweek', 'This Week You Will', cfg);
+    if (wwItems.length) {
+        h += '<ul>\n';
+        wwItems.forEach(function(item){h += '<li>' + esc(item) + '</li>\n';});
+        h += '</ul>\n';
+    } else h += '<p>&nbsp;</p>\n';
+    h += '<p class="narrow-p">&nbsp;</p>\n';
+    h += '</div>\n';
+    h += '</div>\n\n';
+
+    h += '<p class="narrow-p">&nbsp;</p>\n\n';
+
+    // Learning Objectives
+    h += embleBanner('objectives', 'Learning Objectives', cfg);
+    if (objItems.length) {
+        h += '<ul>\n';
+        objItems.forEach(function(item){h += '<li>' + esc(item) + '</li>\n';});
+        h += '</ul>\n';
+    } else h += '<p>&nbsp;</p>\n';
+
+    h += '<p>&nbsp;</p>\n';
+    return h;
+}
+
+function embleBanner(slot, titleHTML, cfg) {
+    var A = cfg.A, AT = cfg.AT, P = cfg.P, CB = cfg.CB, R = cfg.R;
+    var slotDef = ICON_SLOTS.find(function(s){return s.key === slot;});
+    var iconClass = slotDef ? slotDef.embleClass : 'icon-info';
+    return '<div id="'+genId()+'" class="emble customise title-with-icon" data-cove-palette="1" data-customise="icon icon-colour-options" data-context-menu="customise delete" style="background-color:'+CB+' !important;border-radius:'+R+'px !important;">\n'+
+        '<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-cove-palette="1" style="background-color:'+A+' !important;color:'+AT+' !important;border-radius:'+R+'px !important;" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag icon-check icon-question icon-info icon-target icon-outcomes" data-emble-version="2.0"><i class="'+iconClass+'" style="background-color:transparent !important;background:none !important;color:'+AT+' !important;">&nbsp;</i></div>\n'+
+        '<div class="title-with-icon-title">\n<h3 style="color:'+P+' !important;margin:0;">'+titleHTML+'</h3>\n</div>\n'+
+        '</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+}
+
+// ========== FLEX MODE GENERATOR ==========
+function generateFlex(cfg) {
+    var P = cfg.P, A = cfg.A, CB = cfg.CB, AT = cfg.AT, R = cfg.R;
+    var week = document.getElementById('weekNumber').value || 'X';
+    var overview = document.getElementById('fOverview').value.trim();
+    var wwItems = collectWeekWill();
+    var objItems = collectObjectives();
+
+    var sCard = 'background-color:'+CB+';padding:18px 22px;border-radius:'+R+'px;margin:12px 0;';
+    var sH2 = 'color:'+P+';font-size:1.75rem;margin:0 0 12px;';
+    var sRule = 'border:0;border-top:3px solid '+P+';margin:16px 0 24px;';
+    var sPage = 'font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#222;line-height:1.6;';
+
+    var h = '<div style="'+sPage+'">\n';
+    h += '<h2 style="'+sH2+'">Week ' + esc(week) + ': Introduction</h2>\n';
+    h += '<hr style="'+sRule+'" />\n';
+
+    // Two-column flex layout for Topic Overview + This Week You Will
+    h += '<div style="display:flex;flex-wrap:wrap;gap:14px;margin:12px 0;align-items:stretch;">\n';
+
+    // Column 1: Topic Overview
+    h += '<div style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;">\n';
+    h += flexBanner('overview', 'Topic Overview', cfg);
+    h += '<div style="'+sCard+';margin-top:8px;flex:1;display:flex;flex-direction:column;">\n';
+    if (overview) h += '<p style="margin:0;">' + esc(overview) + '</p>\n';
+    else h += '<p style="margin:0;">&nbsp;</p>\n';
+    h += '</div>\n';
+    h += '</div>\n';
+
+    // Column 2: This Week You Will
+    h += '<div style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;">\n';
+    h += flexBanner('thisweek', 'This Week You Will', cfg);
+    h += '<div style="'+sCard+';margin-top:8px;flex:1;display:flex;flex-direction:column;">\n';
+    if (wwItems.length) {
+        h += '<ul style="margin:0 0 0 20px;padding:0;">\n';
+        wwItems.forEach(function(item){h += '<li style="margin-bottom:6px;">' + esc(item) + '</li>\n';});
+        h += '</ul>\n';
+    } else h += '<p style="margin:0;">&nbsp;</p>\n';
+    h += '</div>\n';
+    h += '</div>\n';
+    h += '</div>\n';
+
+    h += '<p>&nbsp;</p>\n';
+
+    // Learning Objectives — full width
+    h += flexBanner('objectives', 'Learning Objectives', cfg);
+    h += '<div style="'+sCard+'">\n';
+    if (objItems.length) {
+        h += '<ol style="margin:0 0 0 20px;padding:0;">\n';
+        objItems.forEach(function(item){h += '<li style="margin-bottom:6px;">' + esc(item) + '</li>\n';});
+        h += '</ol>\n';
+    } else h += '<p style="margin:0;">&nbsp;</p>\n';
+    h += '</div>\n';
+
+    h += '</div>\n<p>&nbsp;</p>\n';
+    return h;
+}
+
+function flexBanner(slot, titleHTML, cfg) {
+    var P = cfg.P, A = cfg.A, CB = cfg.CB, AT = cfg.AT, R = cfg.R;
+    var iconContent = buildIconImgTag(slot);
+    return '<div style="display:flex;align-items:stretch;background-color:'+CB+';border-radius:'+R+'px;overflow:hidden;margin:12px 0;min-height:80px;width:100%;">\n' +
+        '<div style="width:80px;background-color:'+A+';color:'+AT+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.75rem;align-self:stretch;">' + iconContent + '</div>\n' +
+        '<div style="flex:1;display:flex;align-items:center;padding:0 22px;"><h3 style="margin:0;color:'+P+';font-size:1.25rem;line-height:1.2;">'+titleHTML+'</h3></div>\n' +
+        '</div>\n';
+}
+
+// ========== ACTIONS ==========
+function copyHTML() {
+    var c = document.getElementById('outputContent').textContent;
+    var ta = document.createElement('textarea'); ta.value = c; ta.style.position='fixed'; ta.style.left='-9999px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); var b = event.target, o = b.textContent; b.textContent='Copied!'; b.style.background='#28a745'; setTimeout(function(){b.textContent=o;b.style.background='';},2000); }
+    catch(e) { alert('Copy manually'); }
+    document.body.removeChild(ta);
+}
+function backToEdit() { updateStep(3,''); updateStep(2,'active'); document.getElementById('editForm').style.display='block'; document.getElementById('outputSection').style.display='none'; }
+function resetAll() { if (confirm('Start over?')) location.reload(); }
+
+function loadSample() {
+    document.getElementById('weekNumber').value = '3';
+    document.getElementById('copilotInput').value = '──── Topic Overview ────────────────────────────────────\n\nThis week explores workplace communication strategies essential for effective team collaboration in Australian organisations. You will develop skills in professional written and verbal communication that directly support your qualification requirements. Building on the foundational concepts from Weeks 1–2, this module prepares you for the practical communication scenarios you will encounter in assessment tasks.\n\n──── This Week You Will ────────────────────────────────\n\n1. Examine professional email and workplace messaging conventions used across Australian industries\n2. Practise active listening techniques through structured role-play scenarios\n3. Analyse common communication barriers and develop strategies to overcome them\n4. Create professional documentation using industry-standard templates\n5. Apply feedback techniques in collaborative peer review activities\n\n──── Learning Objectives ───────────────────────────────\n\n1. Demonstrate professional written communication skills appropriate to Australian workplace contexts\n2. Apply active listening techniques when responding to colleague and client enquiries\n3. Analyse common communication barriers and identify practical strategies to address them\n4. Create professional workplace documents following organisational templates and standards\n5. Evaluate the effectiveness of different communication approaches in team scenarios\n6. Implement constructive feedback techniques during peer collaboration activities';
+    showTextarea();
+}
+
+// ========== INIT ==========
+buildIconUploadUI();
+loadProjectFromStorage();
+document.getElementById('copilotInput').addEventListener('input', function(){ document.getElementById('parseBtn').disabled = !this.value.trim(); });
+['projectName','colPrimary','colAccent','colCardBg','colAccentText','selRadius'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener('change', saveProjectToStorage); el.addEventListener('input', saveProjectToStorage); }
+});
+document.querySelectorAll('input[name="outputMode"]').forEach(function(el){el.addEventListener('change', saveProjectToStorage);});
+</script>
+</body>
+</html>
