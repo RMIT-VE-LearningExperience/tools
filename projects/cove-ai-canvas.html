@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI to Canvas for Projects</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+.main-wrapper{flex:1;padding:20px}
+.container{max-width:1600px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+.header{background:#000054;color:#fff;padding:30px;text-align:center}
+.header h1{font-size:2rem;margin-bottom:10px;font-weight:700}
+.header p{font-size:1.05rem;opacity:.9}
+.version-tag{display:none}
+.workflow-steps{display:flex;justify-content:center;padding:20px 30px;background:#f2f2f2;border-bottom:3px solid #fac800;flex-wrap:wrap;gap:10px}
+.step{display:flex;align-items:center;margin:0 15px;font-weight:600;color:#000054;font-size:.95rem}
+.step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+.step.active .step-number{background:#e61e2a}
+.step.completed .step-number{background:#28a745}
+.main-layout{display:grid;grid-template-columns:420px 1fr;min-height:70vh}
+.sidebar{background:#f2f2f2;padding:25px;border-right:1px solid #e3e5e0;display:flex;flex-direction:column}
+.content-area{padding:30px;overflow-y:auto}
+.custom-panel{background:#fff;border:2px solid #000054;border-radius:6px;margin-bottom:20px;overflow:hidden}
+.custom-header{padding:10px 14px;background:#000054;color:#fff;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:.95rem}
+.custom-header .chev{transition:transform .2s}
+.custom-panel.collapsed .custom-header .chev{transform:rotate(-90deg)}
+.custom-body{padding:14px;border-top:3px solid #fac800}
+.custom-panel.collapsed .custom-body{display:none}
+.custom-group{margin-bottom:14px}
+.custom-group:last-child{margin-bottom:0}
+.custom-group > label{display:block;font-weight:600;color:#000054;margin-bottom:6px;font-size:.8rem;text-transform:uppercase;letter-spacing:.5px}
+.mode-toggle{display:flex;gap:8px}
+.mode-toggle label{flex:1;display:flex;align-items:center;gap:6px;padding:8px 10px;background:#f2f2f2;border:2px solid transparent;border-radius:4px;cursor:pointer;font-size:.85rem;font-weight:600}
+.mode-toggle label:has(input:checked){background:#fff9e6;border-color:#fac800}
+.mode-toggle input[type="radio"]{cursor:pointer}
+.preset-btns{display:flex;gap:6px;margin-bottom:10px}
+.preset-btns button{flex:1;padding:6px 10px;font-size:.8rem;border:1px solid #000054;background:#fff;color:#000054;border-radius:3px;cursor:pointer;font-weight:600}
+.preset-btns button:hover{background:#000054;color:#fff}
+.colour-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.colour-grid > div{display:flex;align-items:center;gap:6px;background:#f8f9fa;padding:5px 8px;border-radius:4px}
+.colour-grid label{margin:0;flex:1;font-size:.78rem;font-weight:600;color:#000054}
+.colour-grid input[type="color"]{width:36px;height:26px;border:1px solid #ddd;border-radius:3px;cursor:pointer;padding:1px;background:#fff}
+.custom-group select{width:100%;padding:7px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.85rem;background:#fff}
+.icon-upload-grid{display:flex;flex-direction:column;gap:6px}
+.icon-upload-row{display:flex;align-items:center;gap:8px;background:#f8f9fa;padding:6px 8px;border-radius:4px;flex-wrap:wrap}
+.icon-upload-row > label{flex:1 0 120px;font-size:.78rem;font-weight:600;color:#000054;margin:0}
+.icon-preview{width:32px;height:32px;border:1px solid #ddd;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;background:#fff;flex-shrink:0;overflow:hidden}
+.icon-preview img{max-width:100%;max-height:100%;object-fit:contain}
+.icon-url-input{flex:1 0 100%;padding:5px 8px;font-size:.72rem;border:1px solid #ddd;border-radius:3px;font-family:monospace;margin-top:4px}
+.icon-url-input.invalid{border-color:#e61e2a;background:#fff5f5}
+.icon-clear-btn{padding:4px 6px;font-size:.7rem;border:1px solid #e61e2a;background:#fff;color:#e61e2a;border-radius:3px;cursor:pointer}
+.icon-status{font-size:.7rem;color:#666;flex:1 0 100%;margin-top:2px;min-height:14px}
+.icon-status.ok{color:#28a745;font-weight:600}
+.icon-status.err{color:#e61e2a;font-weight:600}
+.flex-only{display:none}
+body.mode-flex .flex-only{display:block}
+.custom-note{font-size:.72rem;color:#666;margin-top:4px;line-height:1.4;font-style:italic}
+.paste-area{border:3px dashed #000054;border-radius:8px;padding:18px;text-align:center;transition:all .3s;cursor:pointer;background:#fff;margin-bottom:15px}
+.paste-area:hover{border-color:#e61e2a}
+.paste-icon{font-size:2rem;color:#000054;margin-bottom:8px}
+.paste-text{font-size:1rem;color:#000054;margin-bottom:6px;font-weight:600}
+.paste-subtext{font-size:.82rem;color:#666}
+textarea#copilotInput{width:100%;min-height:260px;padding:12px;border:2px solid #e3e5e0;border-radius:6px;font-size:.85rem;font-family:monospace;resize:vertical;background:#fff;line-height:1.5;display:none}
+.btn{padding:11px 24px;border:none;border-radius:4px;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .3s}
+.btn-primary{background:#e61e2a;color:#fff}.btn-primary:hover{background:#c51923}
+.btn-secondary{background:#000054;color:#fff}.btn-secondary:hover{background:#000043}
+.btn-outline{background:#fff;color:#000054;border:2px solid #000054}.btn-outline:hover{background:#f2f2f2}
+.btn:disabled{background:#999;cursor:not-allowed}
+.button-group{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap}
+.edit-form{display:none}
+.form-section{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:22px;margin-bottom:22px}
+.form-section h3{color:#000054;margin-bottom:16px;font-size:1.15rem;border-bottom:2px solid #fac800;padding-bottom:8px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-weight:600;color:#000054;margin-bottom:6px;font-size:.9rem}
+.form-group input[type="text"],.form-group textarea,.form-group select{width:100%;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit;background:#fafbfc}
+.form-group textarea{min-height:100px;resize:vertical}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.help-text{font-size:.8rem;color:#666;margin-top:4px}
+.rich-editor{width:100%;min-height:120px;padding:12px;border:2px solid #e3e5e0;border-radius:0 0 4px 4px;font-size:.9rem;background:#fff;overflow-y:auto;max-height:350px}
+.editor-toolbar{display:flex;gap:4px;padding:5px 8px;background:#f8f9fa;border:2px solid #e3e5e0;border-bottom:none;border-radius:4px 4px 0 0}
+.editor-btn{padding:4px 10px;background:#fff;border:1px solid #ddd;border-radius:3px;cursor:pointer;font-size:13px}
+.insight-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px}
+.insight-card{background:#f2f2f2;border-radius:6px;padding:15px}
+.insight-card input{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:8px;font-size:.9rem}
+.insight-card textarea{width:100%;min-height:60px;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:.85rem}
+.quiz-question{background:#f8f9fa;border:1px solid #e3e5e0;border-radius:6px;padding:15px;margin-bottom:15px}
+.quiz-question h4{color:#000054;margin-bottom:10px;font-size:.95rem}
+.quiz-option{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.quiz-option input[type="text"]{flex:1;padding:6px 10px;font-size:.85rem}
+.tools-entry{background:#f2f2f2;border-radius:6px;padding:15px;margin-bottom:12px}
+.tools-entry input,.tools-entry textarea{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:.85rem;margin-bottom:8px}
+.output-section{display:none}
+.output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+.output-header{background:#000054;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+.output-header .mode-badge{background:#fac800;color:#000054;padding:3px 10px;border-radius:3px;font-size:.78rem;font-weight:700}
+.output-content{padding:20px;font-family:monospace;font-size:.78rem;line-height:1.5;max-height:500px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
+.preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:30px;margin-top:20px}
+.alert{padding:15px;border-radius:4px;margin-bottom:20px;display:flex}
+.alert-info{background:#e6f3ff;border:1px solid #0066cc;color:#004085}
+.alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
+.section-toggle label{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;color:#000054}
+.section-toggle input[type="checkbox"]{width:18px;height:18px}
+.add-remove-btns{display:flex;gap:8px;margin-top:8px}
+.add-remove-btns button{padding:4px 12px;font-size:.8rem;border-radius:3px;border:1px solid #ddd;cursor:pointer;background:#fff}
+.footer{background:#000054;color:#fff;text-align:center;padding:20px;font-size:.9rem}
+@media(max-width:1200px){.main-layout{grid-template-columns:1fr}.insight-cards{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body class="mode-emble">
+<div class="main-wrapper">
+<div class="container">
+<div class="header">
+<h1>AI to Canvas for Projects</h1>
+<p>Customisable Edition · Emble Mode (in-house) or Flex Mode (export)</p>
+</div>
+<div class="workflow-steps">
+<div class="step active" id="step1"><div class="step-number">1</div><span>Paste Copilot Output</span></div>
+<div class="step" id="step2"><div class="step-number">2</div><span>Review &amp; Edit</span></div>
+<div class="step" id="step3"><div class="step-number">3</div><span>Generate HTML</span></div>
+</div>
+<div class="main-layout">
+<div class="sidebar">
+<div class="custom-panel" id="customPanel">
+<div class="custom-header" onclick="toggleCustomPanel()"><span>⚙ Output Customisation</span><span class="chev">▼</span></div>
+<div class="custom-body">
+<div class="custom-group">
+<label>Output Mode</label>
+<div class="mode-toggle">
+<label><input type="radio" name="outputMode" value="emble" checked onchange="onModeChange()"> Emble</label>
+<label><input type="radio" name="outputMode" value="flex" onchange="onModeChange()"> Flex</label>
+</div>
+</div>
+<div class="custom-group">
+<label>Palette Preset</label>
+<div class="preset-btns">
+<button type="button" onclick="loadRmitPalette()">RMIT Default</button>
+<button type="button" onclick="loadBlankPalette()">Blank Slate</button>
+</div>
+<div class="colour-grid">
+<div><label>Primary</label><input type="color" id="colPrimary" value="#000054"></div>
+<div><label>Accent</label><input type="color" id="colAccent" value="#fac800"></div>
+<div><label>Card BG</label><input type="color" id="colCardBg" value="#f2f2f2"></div>
+<div><label>Accent Text</label><input type="color" id="colAccentText" value="#000054"></div>
+</div>
+</div>
+<div class="custom-group">
+<label>Corner Radius</label>
+<select id="selRadius">
+<option value="0">0px (sharp — RMIT default)</option>
+<option value="4">4px</option>
+<option value="8">8px</option>
+<option value="12">12px</option>
+<option value="20">20px</option>
+</select>
+</div>
+<div class="custom-group flex-only">
+<label>Section Icons (Canvas File URLs)</label>
+<div class="icon-upload-grid" id="iconUploadGrid"></div>
+<div class="custom-note">Paste the Canvas file URL for each section.</div>
+</div>
+<div class="custom-group" style="border-top:1px solid #e3e5e0;padding-top:12px;">
+<label>🔒 Project Lock</label>
+<input type="text" id="projectName" placeholder="Project / team name" style="width:100%;padding:7px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.85rem;margin-bottom:8px;">
+<div class="preset-btns">
+<button type="button" onclick="exportProject()">💾 Export</button>
+<button type="button" onclick="loadProjectFromFile()">📂 Import</button>
+<button type="button" onclick="resetProject()">↺ Reset</button>
+</div>
+<input type="file" id="projectFile" accept="application/json" style="display:none;" onchange="handleProjectFile(this)">
+<div id="projectStatus" class="custom-note" style="margin-top:6px;"></div>
+</div>
+</div>
+</div>
+<div class="paste-area" id="pasteArea" onclick="showTextarea()">
+<div class="paste-icon">📋</div>
+<div class="paste-text">Paste Copilot Output</div>
+<div class="paste-subtext">Click here, then paste</div>
+</div>
+<textarea id="copilotInput" placeholder="Paste your Copilot output here..."></textarea>
+<div class="button-group">
+<button class="btn btn-primary" id="parseBtn" onclick="parseCopilotOutput()" disabled>Parse Content</button>
+<button class="btn btn-outline" onclick="loadSample()">Load Sample</button>
+</div>
+</div>
+<div class="content-area">
+<div id="initialInstructions">
+<h2 style="color:#000054;margin-bottom:20px;">How to Use This Tool</h2>
+<ol style="font-size:1.05rem;line-height:2;">
+<li><strong>Configure</strong> output mode, palette, corner radius, and icons (Flex only)</li>
+<li><strong>Paste</strong> Copilot content into the sidebar</li>
+<li><strong>Review</strong> parsed sections and edit</li>
+<li><strong>Generate</strong> HTML</li>
+</ol>
+<div class="alert alert-info" style="margin-top:25px;"><div style="margin-right:12px;font-size:1.4rem;">ℹ️</div><div><strong>Emble Mode</strong> preserves the full Emble component structure for in-house Canvas pages.<br><strong>Flex Mode</strong> outputs pure inline-styled HTML for export to SCORM or other platforms.</div></div>
+</div>
+<div class="edit-form" id="editForm">
+<h2 style="color:#000054;margin-bottom:20px;">Review &amp; Edit Parsed Content</h2>
+<div class="form-section"><h3>📄 Page Header</h3>
+<div class="form-group"><label>Page Title</label><input type="text" id="fPageTitle"></div>
+<div class="form-group"><label>Photographic Element Description</label><input type="text" id="fPhotoDesc"></div>
+<div class="form-group"><label>Opening Paragraph</label><div class="editor-toolbar"><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','bold')">B</button><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','italic')">I</button></div><div id="fOpeningPara" class="rich-editor" contenteditable="true"></div></div>
+</div>
+<div class="form-section"><h3>📝 Main Content</h3><div id="mainContentBlocks"></div><div class="add-remove-btns"><button onclick="addContentBlock()">+ Add Content Block</button></div></div>
+<div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togVisual" checked> Include Visual Element</label></div><div id="visualSection"><div class="form-group"><label>Visual Element Description</label><textarea id="fVisualDesc"></textarea></div></div></div>
+<div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togInsights" checked> Include Key Insights</label></div><div id="insightsSection"><div class="insight-cards" id="insightCards"></div><div class="add-remove-btns"><button onclick="addInsight()">+ Add Insight</button><button onclick="removeInsight()">− Remove Last</button></div></div></div>
+<div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togTools" checked> Include Industry Tools &amp; Technology</label></div><div id="toolsSection"><div id="toolsEntries"></div><div class="add-remove-btns"><button onclick="addToolEntry()">+ Add Entry</button><button onclick="removeToolEntry()">− Remove Last</button></div></div></div>
+<div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togVideo" checked> Include Video</label></div><div id="videoSection"><div class="form-group"><label>Video Description</label><textarea id="fVideoDesc"></textarea></div><div class="form-group"><label>Video Search Suggestion</label><input type="text" id="fVideoSearch"></div></div></div>
+<div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togQuiz" checked> Include Knowledge Check</label></div><div id="quizSection"><div id="quizQuestions"></div><div class="add-remove-btns"><button onclick="addQuizQuestion()">+ Add Question</button><button onclick="removeQuizQuestion()">− Remove Last</button></div></div></div>
+<div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togReflection" checked> Include Reflection Questions</label></div><div id="reflectionSection"><div id="reflectionQuestions"></div><div class="add-remove-btns"><button onclick="addReflection()">+ Add Question</button><button onclick="removeReflection()">− Remove Last</button></div></div></div>
+<div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togActivity" checked> Include Activity</label></div><div id="activitySection">
+<div class="form-group"><label>Activity Title</label><input type="text" id="fActTitle"></div>
+<div class="form-row"><div class="form-group"><label>Duration</label><input type="text" id="fActDuration"></div><div class="form-group"><label>Format</label><input type="text" id="fActFormat"></div></div>
+<div class="form-group"><label>Purpose</label><textarea id="fActPurpose" rows="2"></textarea></div>
+<div class="form-group"><label>Instructions</label><div class="editor-toolbar"><button type="button" class="editor-btn" onclick="fmtEd('fActInstructions','bold')">B</button><button type="button" class="editor-btn" onclick="fmtEd('fActInstructions','italic')">I</button><button type="button" class="editor-btn" onclick="fmtEd('fActInstructions','insertOrderedList')">1.</button><button type="button" class="editor-btn" onclick="fmtEd('fActInstructions','insertUnorderedList')">•</button></div><div id="fActInstructions" class="rich-editor" contenteditable="true"></div></div>
+<div class="form-group"><label>Resources Needed</label><input type="text" id="fActResources"></div>
+</div></div>
+<div class="button-group" style="padding-top:20px;border-top:2px solid #e3e5e0;"><button class="btn btn-primary" onclick="generateHTML()">Generate HTML</button><button class="btn btn-secondary" onclick="resetAll()">Start Over</button></div>
+</div>
+<div class="output-section" id="outputSection">
+<h2 style="color:#000054;margin-bottom:20px;">Generated HTML</h2>
+<div class="output-container"><div class="output-header"><span>HTML Code <span class="mode-badge" id="modeBadge">EMBLE</span></span><button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem;" onclick="copyHTML()">Copy HTML</button></div><div class="output-content" id="outputContent"></div></div>
+<div class="preview-container"><h3 style="color:#000054;margin-bottom:20px;">Preview</h3><div id="previewContent"></div></div>
+<div class="button-group"><button class="btn btn-secondary" onclick="backToEdit()">Back to Edit</button><button class="btn btn-primary" onclick="resetAll()">New Content</button></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team — RMIT College of Vocational Education</p></footer>
+
+<script>
+// ========== CONSTANTS & STATE ==========
+var ICON_SLOTS = [
+    {key:'tools', label:'Industry Tools &amp; Tech', emoji:'🧰'},
+    {key:'video', label:'Video', emoji:'🎬'},
+    {key:'quiz', label:'Knowledge Check', emoji:'✅'},
+    {key:'reflection', label:'Reflection Questions', emoji:'💭'},
+    {key:'activity', label:'Activity', emoji:'✏️'}
+];
+var iconRefs = {tools:null, video:null, quiz:null, reflection:null, activity:null};
+var parsedData = {};
+var contentBlockCount = 0, insightCount = 0, quizCount = 0, reflectionCount = 0, toolEntryCount = 0;
+var LS_KEY = 'cove-copilot-converter-project-v2';
+
+// ========== HELPERS ==========
+function esc(s) {
+    if (s === null || s === undefined) return '';
+    var d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+}
+function escH(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function genId() { return 'emble-customise-' + Math.random().toString(16).slice(2,10); }
+function fmtEd(id, cmd) { document.getElementById(id).focus(); document.execCommand(cmd, false, null); }
+function updateStep(n, s) { var e = document.getElementById('step'+n); e.classList.remove('active','completed'); if (s) e.classList.add(s); }
+function showTextarea() { document.getElementById('copilotInput').style.display='block'; document.getElementById('pasteArea').style.display='none'; document.getElementById('copilotInput').focus(); document.getElementById('parseBtn').disabled=false; }
+
+// ========== CANVAS FILE URL PARSER ==========
+function parseCanvasFileURL(url) {
+    if (!url || typeof url !== 'string') return null;
+    url = url.trim();
+    if (!url) return null;
+    var courseMatch = url.match(/\/courses\/(\d+)/);
+    if (!courseMatch) return null;
+    var courseId = courseMatch[1];
+    var pathFileMatch = url.match(/\/files\/(\d+)(?:\/|\?|$)/);
+    if (pathFileMatch) return {courseId: courseId, fileId: pathFileMatch[1], rawUrl: url};
+    var qFileMatch = url.match(/[?&]preview=(\d+)/);
+    if (qFileMatch) return {courseId: courseId, fileId: qFileMatch[1], rawUrl: url};
+    return null;
+}
+
+// ========== ICON BUILDERS (the critical piece) ==========
+// Build the <img> tag for an icon slot. Returns emoji string if no valid ref.
+function buildIconImgTag(slot) {
+    var ref = iconRefs[slot];
+    var fallback = ICON_SLOTS.find(function(s){return s.key === slot;}).emoji;
+    if (!ref || typeof ref !== 'object') return fallback;
+    var cid = ref.courseId, fid = ref.fileId;
+    if (!cid || !fid) return fallback;
+    var cidStr = String(cid), fidStr = String(fid);
+    if (cidStr === '[object Object]' || fidStr === '[object Object]') return fallback;
+    var src = 'https://rmit.instructure.com/courses/' + cidStr + '/files/' + fidStr + '/preview';
+    var api = 'https://rmit.instructure.com/api/v1/courses/' + cidStr + '/files/' + fidStr;
+    return '<img id="' + fidStr + '" src="' + src + '" alt="' + slot + ' icon" style="max-width:65%;max-height:65%;object-fit:contain;" data-api-endpoint="' + api + '" data-api-returntype="File" />';
+}
+
+// ========== CUSTOMISATION UI ==========
+function toggleCustomPanel() { document.getElementById('customPanel').classList.toggle('collapsed'); }
+function onModeChange() {
+    var mode = document.querySelector('input[name="outputMode"]:checked').value;
+    document.body.classList.remove('mode-emble','mode-flex');
+    document.body.classList.add('mode-'+mode);
+    saveProjectToStorage();
+}
+function loadRmitPalette() {
+    document.getElementById('colPrimary').value='#000054';
+    document.getElementById('colAccent').value='#fac800';
+    document.getElementById('colCardBg').value='#f2f2f2';
+    document.getElementById('colAccentText').value='#000054';
+    document.getElementById('selRadius').value='0';
+}
+function loadBlankPalette() {
+    document.getElementById('colPrimary').value='#333333';
+    document.getElementById('colAccent').value='#0066cc';
+    document.getElementById('colCardBg').value='#f5f5f5';
+    document.getElementById('colAccentText').value='#ffffff';
+    document.getElementById('selRadius').value='8';
+}
+
+function buildIconUploadUI() {
+    var grid = document.getElementById('iconUploadGrid');
+    grid.innerHTML = ICON_SLOTS.map(function(s){
+        return '<div class="icon-upload-row">' +
+            '<div class="icon-preview" id="iconPreview_'+s.key+'">'+s.emoji+'</div>' +
+            '<label>'+s.label+'</label>' +
+            '<button class="icon-clear-btn" type="button" onclick="clearIcon(\''+s.key+'\')">✕</button>' +
+            '<input type="text" class="icon-url-input" id="iconUrl_'+s.key+'" placeholder="Paste Canvas file URL..." oninput="handleIconUrlChange(\''+s.key+'\', this)">' +
+            '<div class="icon-status" id="iconStatus_'+s.key+'"></div>' +
+        '</div>';
+    }).join('');
+}
+
+function handleIconUrlChange(slot, input) {
+    var url = input.value.trim();
+    var statusEl = document.getElementById('iconStatus_'+slot);
+    var previewEl = document.getElementById('iconPreview_'+slot);
+    var emoji = ICON_SLOTS.find(function(s){return s.key===slot;}).emoji;
+    if (!url) {
+        iconRefs[slot] = null;
+        input.classList.remove('invalid');
+        statusEl.textContent = ''; statusEl.className = 'icon-status';
+        previewEl.innerHTML = emoji;
+        saveProjectToStorage(); return;
+    }
+    var ref = parseCanvasFileURL(url);
+    if (ref) {
+        iconRefs[slot] = ref;
+        input.classList.remove('invalid');
+        statusEl.textContent = '✔ Course ' + ref.courseId + ' · File ' + ref.fileId;
+        statusEl.className = 'icon-status ok';
+        var absUrl = 'https://rmit.instructure.com/courses/' + ref.courseId + '/files/' + ref.fileId + '/preview';
+        previewEl.innerHTML = '<img src="' + absUrl + '" alt="' + slot + '" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\''+emoji+'\';">';
+    } else {
+        iconRefs[slot] = null;
+        input.classList.add('invalid');
+        statusEl.textContent = '✗ Could not extract IDs';
+        statusEl.className = 'icon-status err';
+        previewEl.innerHTML = emoji;
+    }
+    saveProjectToStorage();
+}
+
+function clearIcon(slot) {
+    iconRefs[slot] = null;
+    var emoji = ICON_SLOTS.find(function(s){return s.key===slot;}).emoji;
+    document.getElementById('iconPreview_'+slot).innerHTML = emoji;
+    var urlInput = document.getElementById('iconUrl_'+slot);
+    if (urlInput) { urlInput.value=''; urlInput.classList.remove('invalid'); }
+    var statusEl = document.getElementById('iconStatus_'+slot);
+    if (statusEl) { statusEl.textContent=''; statusEl.className='icon-status'; }
+    saveProjectToStorage();
+}
+
+function showIconDebug() {
+    var out = document.getElementById('iconDebugOutput');
+    var lines = ['── iconRefs ──'];
+    ICON_SLOTS.forEach(function(s){
+        var r = iconRefs[s.key];
+        lines.push(s.key + ':');
+        if (!r) { lines.push('  (empty)'); return; }
+        lines.push('  courseId: ' + JSON.stringify(r.courseId) + ' (' + typeof r.courseId + ')');
+        lines.push('  fileId:   ' + JSON.stringify(r.fileId) + ' (' + typeof r.fileId + ')');
+        lines.push('  TAG OUT:  ' + buildIconImgTag(s.key).substring(0,120));
+    });
+    out.textContent = lines.join('\n');
+    out.style.display = 'block';
+}
+
+// ========== PROJECT PERSISTENCE ==========
+function getProjectConfig() {
+    return {
+        name: document.getElementById('projectName').value || '',
+        mode: document.querySelector('input[name="outputMode"]:checked').value,
+        colPrimary: document.getElementById('colPrimary').value,
+        colAccent: document.getElementById('colAccent').value,
+        colCardBg: document.getElementById('colCardBg').value,
+        colAccentText: document.getElementById('colAccentText').value,
+        radius: document.getElementById('selRadius').value,
+        icons: JSON.parse(JSON.stringify(iconRefs))
+    };
+}
+function saveProjectToStorage() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(getProjectConfig())); updateProjectStatus(); }
+    catch(e) {}
+}
+function loadProjectFromStorage() {
+    try {
+        var raw = localStorage.getItem(LS_KEY);
+        if (!raw) return;
+        var p = JSON.parse(raw);
+        if (p.name) document.getElementById('projectName').value = p.name;
+        if (p.mode) { var r = document.querySelector('input[name="outputMode"][value="'+p.mode+'"]'); if (r) { r.checked=true; onModeChange(); } }
+        if (p.colPrimary) document.getElementById('colPrimary').value = p.colPrimary;
+        if (p.colAccent) document.getElementById('colAccent').value = p.colAccent;
+        if (p.colCardBg) document.getElementById('colCardBg').value = p.colCardBg;
+        if (p.colAccentText) document.getElementById('colAccentText').value = p.colAccentText;
+        if (p.radius != null) document.getElementById('selRadius').value = p.radius;
+        if (p.icons) {
+            Object.keys(p.icons).forEach(function(k){
+                var ref = p.icons[k];
+                if (ref && ref.courseId && ref.fileId) {
+                    iconRefs[k] = {courseId: String(ref.courseId), fileId: String(ref.fileId), rawUrl: ref.rawUrl || ''};
+                    var urlInput = document.getElementById('iconUrl_'+k);
+                    if (urlInput) urlInput.value = iconRefs[k].rawUrl || ('https://rmit.instructure.com/courses/'+iconRefs[k].courseId+'/files/'+iconRefs[k].fileId+'/preview');
+                    var statusEl = document.getElementById('iconStatus_'+k);
+                    if (statusEl) { statusEl.textContent = '✔ Course '+iconRefs[k].courseId+' · File '+iconRefs[k].fileId; statusEl.className = 'icon-status ok'; }
+                    var previewEl = document.getElementById('iconPreview_'+k);
+                    if (previewEl) {
+                        var emoji = ICON_SLOTS.find(function(s){return s.key===k;}).emoji;
+                        var absUrl = 'https://rmit.instructure.com/courses/'+iconRefs[k].courseId+'/files/'+iconRefs[k].fileId+'/preview';
+                        previewEl.innerHTML = '<img src="'+absUrl+'" alt="'+k+'" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\''+emoji+'\';">';
+                    }
+                }
+            });
+        }
+        updateProjectStatus();
+    } catch(e) {}
+}
+function updateProjectStatus() {
+    var el = document.getElementById('projectStatus');
+    if (!el) return;
+    var name = document.getElementById('projectName').value;
+    el.innerHTML = name ? '🔒 Locked: <strong>'+esc(name)+'</strong>' : '🔒 Auto-saved';
+}
+function exportProject() {
+    var p = getProjectConfig();
+    var blob = new Blob([JSON.stringify(p, null, 2)], {type:'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = ((p.name || 'project').replace(/[^\w\-]+/g, '-').toLowerCase() || 'project') + '-config.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href);}, 200);
+}
+function loadProjectFromFile() { document.getElementById('projectFile').click(); }
+function handleProjectFile(input) {
+    var f = input.files && input.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function(e) {
+        try { var p = JSON.parse(e.target.result); localStorage.setItem(LS_KEY, JSON.stringify(p)); loadProjectFromStorage(); alert('Imported.'); }
+        catch(err) { alert('Failed to load: '+err.message); }
+    };
+    r.readAsText(f); input.value = '';
+}
+function resetProject() {
+    if (!confirm('Reset all customisation?')) return;
+    try { localStorage.removeItem(LS_KEY); } catch(e) {}
+    loadRmitPalette();
+    document.getElementById('projectName').value = '';
+    ICON_SLOTS.forEach(function(s){clearIcon(s.key);});
+    var emble = document.querySelector('input[name="outputMode"][value="emble"]');
+    if (emble) { emble.checked=true; onModeChange(); }
+    document.getElementById('projectStatus').innerHTML = '';
+}
+
+// ========== FORM BUILDERS ==========
+function addContentBlock(h, b) {
+    h = h || ''; b = b || '';
+    contentBlockCount++;
+    var n = contentBlockCount;
+    var d = document.createElement('div');
+    d.className = 'form-group'; d.id = 'contentBlock'+n;
+    d.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><label style="margin:0;">Content Block '+n+'</label><button onclick="this.closest(\'.form-group\').remove()" style="background:none;border:none;color:#e61e2a;cursor:pointer;font-size:1.1rem;">✕</button></div><input type="text" id="cbHeading'+n+'" placeholder="Section heading" value="'+escH(h)+'" style="margin-bottom:8px;"><textarea id="cbBody'+n+'" rows="5" placeholder="Section content">'+escH(b)+'</textarea>';
+    document.getElementById('mainContentBlocks').appendChild(d);
+}
+function addInsight(t, x) {
+    t = t || ''; x = x || '';
+    insightCount++;
+    var n = insightCount;
+    var d = document.createElement('div');
+    d.className = 'insight-card'; d.id = 'insightCard'+n;
+    d.innerHTML = '<label>Insight '+n+' Title</label><input type="text" id="insTitle'+n+'" value="'+escH(t)+'"><label>Detail</label><textarea id="insText'+n+'">'+escH(x)+'</textarea>';
+    document.getElementById('insightCards').appendChild(d);
+}
+function removeInsight() { if (insightCount > 0) { var e = document.getElementById('insightCard'+insightCount); if (e) e.remove(); insightCount--; } }
+function addToolEntry(label, text) {
+    label = label || ''; text = text || '';
+    toolEntryCount++;
+    var n = toolEntryCount;
+    var d = document.createElement('div');
+    d.className = 'tools-entry'; d.id = 'toolEntry'+n;
+    d.innerHTML = '<label style="font-size:.85rem;font-weight:600;color:#000054;">Entry '+n+' Label</label><input type="text" id="toolLabel'+n+'" value="'+escH(label)+'"><label style="font-size:.85rem;font-weight:600;color:#000054;">Detail</label><textarea id="toolText'+n+'">'+escH(text)+'</textarea><button onclick="this.closest(\'.tools-entry\').remove()" style="background:none;border:none;color:#e61e2a;cursor:pointer;font-size:.85rem;">✕ Remove</button>';
+    document.getElementById('toolsEntries').appendChild(d);
+}
+function removeToolEntry() { if (toolEntryCount > 0) { var e = document.getElementById('toolEntry'+toolEntryCount); if (e) e.remove(); toolEntryCount--; } }
+function addQuizQuestion(q, opts, ci) {
+    q = q || ''; opts = opts || ['','','','']; ci = ci || 0;
+    if (opts.length < 2) opts = ['','','',''];
+    quizCount++;
+    var n = quizCount;
+    var d = document.createElement('div');
+    d.className = 'quiz-question'; d.id = 'quizQ'+n;
+    var optsHtml = opts.map(function(o,i){
+        return '<div class="quiz-option"><input type="radio" name="qqCorrect'+n+'" value="'+i+'" '+(i===ci?'checked':'')+'><input type="text" id="qqOpt'+n+'_'+i+'" value="'+escH(o)+'">'+(i===ci?'<span style="font-size:.8rem;color:#28a745;font-weight:600;">✔ Correct</span>':'')+'</div>';
+    }).join('');
+    d.innerHTML = '<h4>Question '+n+'</h4><div class="form-group"><input type="text" id="qqText'+n+'" value="'+escH(q)+'"></div>'+optsHtml;
+    document.getElementById('quizQuestions').appendChild(d);
+}
+function removeQuizQuestion() { if (quizCount > 0) { var e = document.getElementById('quizQ'+quizCount); if (e) e.remove(); quizCount--; } }
+function addReflection(t) {
+    t = t || '';
+    reflectionCount++;
+    var n = reflectionCount;
+    var d = document.createElement('div');
+    d.className = 'form-group'; d.id = 'reflQ'+n;
+    d.innerHTML = '<div style="display:flex;gap:8px;align-items:center;"><span style="font-weight:600;color:#000054;min-width:20px;">'+n+'.</span><input type="text" id="reflText'+n+'" value="'+escH(t)+'" style="flex:1;"><button onclick="this.closest(\'.form-group\').remove()" style="background:none;border:none;color:#e61e2a;cursor:pointer;">✕</button></div>';
+    document.getElementById('reflectionQuestions').appendChild(d);
+}
+function removeReflection() { if (reflectionCount > 0) { var e = document.getElementById('reflQ'+reflectionCount); if (e) e.remove(); reflectionCount--; } }
+
+// ========== COPILOT PARSER (delimited format) ==========
+function parseCopilotOutput() {
+    var raw = document.getElementById('copilotInput').value.trim();
+    if (!raw) return alert('Paste content first.');
+    parseDelimited(raw);
+    populateForm();
+    showEditForm();
+}
+
+function parseDelimited(raw) {
+    parsedData = {};
+    var lines = raw.split('\n');
+    var sections = []; var current = null;
+    for (var i = 0; i < lines.length; i++) {
+        var m = lines[i].match(/^─{2,}\s*(.+?)\s*(?:\([^)]*\))?\s*─*$/);
+        if (m) { current = {name: m[1].replace(/─/g,'').trim(), lines: []}; sections.push(current); }
+        else if (current) current.lines.push(lines[i]);
+    }
+    var map = {};
+    sections.forEach(function(s){
+        var key = classifySection(s.name);
+        if (key) { if (!map[key]) map[key] = []; map[key].push(s); }
+    });
+    parsedData.pageTitle = map.pageTitle ? (map.pageTitle[0].lines.filter(function(l){return l.trim();})[0] || '') : '';
+    parsedData.photoDesc = map.photo ? map.photo[0].lines.filter(function(l){return l.trim();}).join(' ') : '';
+    parsedData.openingPara = map.opening ? joinParas(map.opening[0].lines) : '';
+    parsedData.openingParas = parsedData.openingPara ? parsedData.openingPara.split('\n\n') : [];
+    parsedData.contentBlocks = [];
+    if (map.contentBlock) {
+        map.contentBlock.forEach(function(s){
+            var nonempty = s.lines.filter(function(l){return l.trim();});
+            var heading = '';
+            if (nonempty.length) {
+                var hm = nonempty[0].match(/^Heading:\s*(.+)/i);
+                if (hm) heading = hm[1].trim();
+                else if (nonempty[0].length < 80 && nonempty.length > 1) heading = nonempty[0];
+            }
+            var bodyLines = [];
+            var seen = false;
+            for (var j = 0; j < s.lines.length; j++) {
+                var t = s.lines[j].trim();
+                if (!seen) {
+                    if (t && (t.match(/^Heading:/i) || t === heading)) { seen = true; continue; }
+                    continue;
+                }
+                bodyLines.push(s.lines[j]);
+            }
+            parsedData.contentBlocks.push({heading: heading, body: joinParas(bodyLines)});
+        });
+    }
+    parsedData.visualDesc = map.visual ? map.visual[0].lines.filter(function(l){return l.trim();}).join('\n') : '';
+    parsedData.insights = [];
+    if (map.insights) {
+        map.insights[0].lines.filter(function(l){return l.trim();}).forEach(function(line){
+            var c = line.replace(/^\s*[*•\-—]\s+/,'').replace(/^\d+[.)]\s+/,'').trim();
+            if (!c) return;
+            var cm = c.match(/^(.+?):\s+(.+)$/);
+            if (cm && cm[1].length < 60) parsedData.insights.push({title: cm[1].trim(), text: cm[2].trim()});
+            else parsedData.insights.push({title: 'Insight '+(parsedData.insights.length+1), text: c});
+        });
+    }
+    parsedData.toolEntries = [];
+    if (map.tools) {
+        map.tools[0].lines.filter(function(l){return l.trim();}).forEach(function(line){
+            var cm = line.match(/^(.+?):\s+(.+)$/);
+            if (cm && cm[1].length < 60) parsedData.toolEntries.push({label: cm[1].trim(), text: cm[2].trim()});
+            else parsedData.toolEntries.push({label: 'Tool '+(parsedData.toolEntries.length+1), text: line.trim()});
+        });
+    }
+    parsedData.videoDesc = ''; parsedData.videoSearch = '';
+    if (map.video) {
+        var vt = map.video[0].lines.filter(function(l){return l.trim();}).join('\n');
+        var sm = vt.match(/Suggested\s+search:\s*"?([^"\n]+)"?/i);
+        if (sm) parsedData.videoSearch = sm[1].replace(/^"+|"+$/g,'').trim();
+        var dm = vt.match(/Description:\s*(.+)/i);
+        if (dm) parsedData.videoDesc = dm[1].trim();
+        var pm = vt.match(/Purpose:\s*(.+)/i);
+        if (pm) parsedData.videoDesc = (parsedData.videoDesc ? parsedData.videoDesc + ' ' : '') + pm[1].trim();
+    }
+    parsedData.quizQuestions = [];
+    if (map.quiz) parseQuizLines(map.quiz[0].lines.filter(function(l){return l.trim();}).filter(function(l){return !l.match(/^TEACHER/i);}));
+    parsedData.reflections = [];
+    if (map.reflection) {
+        map.reflection[0].lines.filter(function(l){return l.trim();}).forEach(function(line){
+            var t = line.trim();
+            var nm = t.match(/^\d+[.)]\s+(.+)/);
+            if (nm) { parsedData.reflections.push(nm[1].trim()); return; }
+            var bm = t.match(/^[*•\-—]\s+(.+)/);
+            if (bm) { parsedData.reflections.push(bm[1].trim()); return; }
+            if (t.length > 10) parsedData.reflections.push(t);
+        });
+    }
+    parsedData.actTitle=''; parsedData.actDuration=''; parsedData.actFormat=''; parsedData.actPurpose=''; parsedData.actResources=''; parsedData.actInstructions='';
+    if (map.activity) {
+        var aLines = map.activity[0].lines.filter(function(l){return l.trim();});
+        var at = aLines.join('\n');
+        var tm = at.match(/Title:\s*(.+)/i);
+        parsedData.actTitle = tm ? tm[1].trim() : (aLines[0] || '');
+        var dm2 = at.match(/Duration:\s*([^\n|]+)/i); if (dm2) parsedData.actDuration = dm2[1].trim();
+        var fm = at.match(/Format:\s*([^\n|]+)/i); if (fm) parsedData.actFormat = fm[1].trim();
+        var pm2 = at.match(/Purpose:\s*(.+)/i); if (pm2) parsedData.actPurpose = pm2[1].trim();
+        var rm = at.match(/Resources?(?:\s*needed)?:\s*(.+)/i); if (rm) parsedData.actResources = rm[1].trim();
+        var instrIdx = at.search(/Instructions:?\s*$/im);
+        if (instrIdx > -1) {
+            var iEnd = at.indexOf('\n', instrIdx); if (iEnd === -1) iEnd = at.length;
+            var iLines = [];
+            at.substring(iEnd+1).split('\n').forEach(function(l){
+                var t = l.trim();
+                if (t.match(/^(?:Title|Duration|Format|Purpose|Resources?):/i)) return;
+                if (t) iLines.push(t.replace(/^\d+[.)]\s*/,'').trim());
+            });
+            parsedData.actInstructions = iLines.filter(function(l){return l;}).join('\n');
+        }
+    }
+}
+function classifySection(name) {
+    var n = name.toLowerCase().replace(/[^a-z0-9\s&]/g,'');
+    if (/page\s*title|^page\s*\d/.test(n)) return 'pageTitle';
+    if (/photograph/.test(n)) return 'photo';
+    if (/opening\s*paragraph/.test(n)) return 'opening';
+    if (/content\s*block/.test(n)) return 'contentBlock';
+    if (/visual\s*element/.test(n)) return 'visual';
+    if (/key\s*insight/.test(n)) return 'insights';
+    if (/industry\s*tool|tools?\s*&?\s*tech/.test(n)) return 'tools';
+    if (/video/.test(n)) return 'video';
+    if (/knowledge\s*check|quiz/.test(n)) return 'quiz';
+    if (/reflection/.test(n)) return 'reflection';
+    if (/activity/.test(n)) return 'activity';
+    return null;
+}
+function joinParas(lines) {
+    var paras = []; var cur = [];
+    lines.forEach(function(l){
+        if (l.trim() === '') { if (cur.length) { paras.push(cur.join(' ')); cur = []; } }
+        else cur.push(l.trim());
+    });
+    if (cur.length) paras.push(cur.join(' '));
+    return paras.join('\n\n');
+}
+function parseQuizLines(ql) {
+    var i = 0;
+    while (i < ql.length) {
+        var line = ql[i];
+        var qm = line.match(/^(?:Q|Question)\s*(\d+):\s*(.+)/i);
+        if (qm) {
+            var qt = qm[2].trim();
+            if (qt.match(/True\s*\/?\s*False/i)) {
+                var clean = qt.replace(/✅/g,'').replace(/True\s*\/?\s*False/i,'').trim();
+                var trueCorrect = qt.indexOf('✅') < qt.search(/False/i);
+                parsedData.quizQuestions.push({text: clean, options: ['True','False'], correct: trueCorrect ? 0 : 1});
+                i++; continue;
+            }
+            var opts = []; var ci = 0;
+            i++;
+            while (i < ql.length) {
+                var om = ql[i].match(/^(?:[*•\-—]\s*)?([a-d])\)\s*(.+)/);
+                if (om) { var ot = om[2].replace(/✅/g,'').trim(); if (ql[i].indexOf('✅') > -1) ci = opts.length; opts.push(ot); i++; }
+                else break;
+            }
+            parsedData.quizQuestions.push({text: qt.replace(/✅/g,'').trim(), options: opts.length >= 2 ? opts : ['','','',''], correct: ci});
+            continue;
+        }
+        i++;
+    }
+}
+
+function populateForm() {
+    var d = parsedData;
+    document.getElementById('fPageTitle').value = d.pageTitle || '';
+    document.getElementById('fPhotoDesc').value = d.photoDesc || '';
+    if (d.openingParas && d.openingParas.length > 1) document.getElementById('fOpeningPara').innerHTML = d.openingParas.map(function(p){return '<p>'+escH(p)+'</p>';}).join('');
+    else document.getElementById('fOpeningPara').innerHTML = d.openingPara ? '<p>'+escH(d.openingPara)+'</p>' : '';
+    document.getElementById('mainContentBlocks').innerHTML = ''; contentBlockCount = 0;
+    if (d.contentBlocks && d.contentBlocks.length) d.contentBlocks.forEach(function(b){addContentBlock(b.heading, b.body);});
+    else addContentBlock();
+    document.getElementById('fVisualDesc').value = d.visualDesc || '';
+    document.getElementById('togVisual').checked = !!d.visualDesc;
+    document.getElementById('visualSection').style.display = d.visualDesc ? '' : 'none';
+    document.getElementById('insightCards').innerHTML = ''; insightCount = 0;
+    if (d.insights && d.insights.length) d.insights.forEach(function(i){addInsight(i.title, i.text);});
+    else { addInsight('Insight 1',''); addInsight('Insight 2',''); addInsight('Insight 3',''); }
+    document.getElementById('toolsEntries').innerHTML = ''; toolEntryCount = 0;
+    if (d.toolEntries && d.toolEntries.length) d.toolEntries.forEach(function(t){addToolEntry(t.label, t.text);});
+    document.getElementById('fVideoDesc').value = d.videoDesc || '';
+    document.getElementById('fVideoSearch').value = d.videoSearch || '';
+    document.getElementById('quizQuestions').innerHTML = ''; quizCount = 0;
+    if (d.quizQuestions && d.quizQuestions.length) d.quizQuestions.forEach(function(q){addQuizQuestion(q.text, q.options, q.correct);});
+    document.getElementById('reflectionQuestions').innerHTML = ''; reflectionCount = 0;
+    if (d.reflections && d.reflections.length) d.reflections.forEach(function(r){addReflection(r);});
+    document.getElementById('fActTitle').value = d.actTitle || '';
+    document.getElementById('fActDuration').value = d.actDuration || '';
+    document.getElementById('fActFormat').value = d.actFormat || '';
+    document.getElementById('fActPurpose').value = d.actPurpose || '';
+    document.getElementById('fActResources').value = d.actResources || '';
+    if (d.actInstructions) {
+        var items = d.actInstructions.split('\n').filter(function(l){return l.trim();});
+        document.getElementById('fActInstructions').innerHTML = '<ol>'+items.map(function(i){return '<li>'+escH(i)+'</li>';}).join('')+'</ol>';
+    }
+}
+function showEditForm() {
+    updateStep(1,'completed'); updateStep(2,'active');
+    document.getElementById('initialInstructions').style.display = 'none';
+    document.getElementById('editForm').style.display = 'block';
+    document.getElementById('outputSection').style.display = 'none';
+}
+
+// ========== COLLECTORS ==========
+function collectContentBlocks() {
+    var blocks = [];
+    document.querySelectorAll('#mainContentBlocks [id^="contentBlock"]').forEach(function(b){
+        var n = b.id.replace('contentBlock','');
+        var h = document.getElementById('cbHeading'+n); var bd = document.getElementById('cbBody'+n);
+        var heading = h ? h.value : ''; var body = bd ? bd.value : '';
+        if (heading || body) blocks.push({heading:heading, body:body});
+    });
+    return blocks;
+}
+function collectInsights() {
+    var items = [];
+    document.querySelectorAll('#insightCards .insight-card').forEach(function(c){
+        var n = c.id.replace('insightCard','');
+        items.push({title: (document.getElementById('insTitle'+n)||{}).value || 'Insight', text: (document.getElementById('insText'+n)||{}).value || ''});
+    });
+    return items;
+}
+function collectTools() {
+    var items = [];
+    document.querySelectorAll('#toolsEntries .tools-entry').forEach(function(e){
+        var n = e.id.replace('toolEntry','');
+        items.push({label: (document.getElementById('toolLabel'+n)||{}).value || '', text: (document.getElementById('toolText'+n)||{}).value || ''});
+    });
+    return items;
+}
+function collectQuiz() {
+    var items = [];
+    document.querySelectorAll('#quizQuestions .quiz-question').forEach(function(q){
+        var n = q.id.replace('quizQ','');
+        var qt = (document.getElementById('qqText'+n)||{}).value || '';
+        var cr = q.querySelector('input[type="radio"]:checked');
+        var ci = cr ? parseInt(cr.value) : 0;
+        var opts = [];
+        for (var i = 0; i < 4; i++) { var o = document.getElementById('qqOpt'+n+'_'+i); opts.push(o ? o.value : ''); }
+        items.push({text: qt, options: opts, correct: ci});
+    });
+    return items;
+}
+function collectReflections() {
+    var items = [];
+    document.querySelectorAll('#reflectionQuestions [id^="reflQ"]').forEach(function(r){
+        var n = r.id.replace('reflQ','');
+        var t = (document.getElementById('reflText'+n)||{}).value || '';
+        if (t) items.push(t);
+    });
+    return items;
+}
+function renderBody(body) {
+    if (!body) return '';
+    var lines = body.split('\n').filter(function(l){return l.trim();});
+    var out = ''; var inList = false;
+    lines.forEach(function(p){
+        var t = p.trim();
+        if (/^[*•\-—]\s/.test(t)) {
+            if (!inList) { out += '<ul>\n'; inList = true; }
+            out += '<li>'+esc(t.replace(/^[*•\-—]\s+/,''))+'</li>\n';
+        } else {
+            if (inList) { out += '</ul>\n'; inList = false; }
+            out += '<p>'+esc(t)+'</p>\n';
+        }
+    });
+    if (inList) out += '</ul>\n';
+    return out;
+}
+
+// ========== HTML GENERATOR (dispatcher) ==========
+function generateHTML() {
+    var cfg = {
+        mode: document.querySelector('input[name="outputMode"]:checked').value,
+        P: document.getElementById('colPrimary').value,
+        A: document.getElementById('colAccent').value,
+        CB: document.getElementById('colCardBg').value,
+        AT: document.getElementById('colAccentText').value,
+        R: parseInt(document.getElementById('selRadius').value) || 0
+    };
+    var h = cfg.mode === 'flex' ? generateFlex(cfg) : generateEmble(cfg);
+    document.getElementById('outputContent').textContent = h;
+    document.getElementById('previewContent').innerHTML = h;
+    document.getElementById('modeBadge').textContent = cfg.mode.toUpperCase();
+    updateStep(2,'completed'); updateStep(3,'active');
+    document.getElementById('editForm').style.display = 'none';
+    document.getElementById('outputSection').style.display = 'block';
+    window.scrollTo(0,0);
+}
+
+// ========== EMBLE MODE GENERATOR ==========
+function generateEmble(cfg) {
+    var P = cfg.P, A = cfg.A, CB = cfg.CB, AT = cfg.AT, R = cfg.R;
+    var title = document.getElementById('fPageTitle').value || 'Page Title';
+    var photoDesc = document.getElementById('fPhotoDesc').value;
+    var openingHtml = document.getElementById('fOpeningPara').innerHTML.trim();
+    var h = '<style>\n';
+    h += '/* CoVE palette overrides — highly specific selectors to beat Emble default CSS */\n';
+    h += '.emble.emble-cblock.grey{background-color:'+CB+' !important;border-radius:'+R+'px !important;}\n';
+    h += '.emble.emble-cblock.white{background-color:#ffffff !important;border-radius:'+R+'px !important;}\n';
+    h += '.emble.heading-rule.rmit-blue{border-color:'+P+' !important;}\n';
+    h += '.emble-columns-child{border-radius:'+R+'px !important;}\n';
+    h += '/* Title-with-icon banner — parent .emble-icon carries accent colour at full height; <i> is transparent so parent shows through */\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette]{background-color:'+CB+' !important;border-radius:'+R+'px !important;}\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] .emble-icon,\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] div.emble-icon.small.wrap.yellow.square{background-color:'+A+' !important;border-radius:'+R+'px !important;color:'+AT+' !important;}\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] .emble-icon i,\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] .emble-icon.yellow i{background-color:transparent !important;background:none !important;color:'+AT+' !important;}\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] .title-with-icon-title h3{color:'+P+' !important;}\n';
+    h += '</style>\n\n';
+    h += '<h2 style="color:'+P+';">'+esc(title)+'</h2>\n\n';
+    h += '<hr class="emble heading-rule rmit-blue border-medium width-full" style="border-color:'+P+';" data-context-menu="customise delete" data-customise="hr-border-style hr-line-width hr-line-color" data-emble-name="Horizontal Line" data-emble-version="2.0" />\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+    h += photoDesc ? '<p><span style="background-color:'+A+';color:'+AT+';">Add photograph here: '+esc(photoDesc)+'</span></p>\n\n' : '<p><span style="background-color:'+A+';color:'+AT+';">Add your photograph here</span></p>\n\n';
+    h += openingHtml ? openingHtml + '\n\n' : '<p><span style="background-color:'+A+';color:'+AT+';">Add opening paragraph</span></p>\n';
+    h += '<p class="narrow-p">&nbsp;</p>\n\n';
+    collectContentBlocks().forEach(function(b){
+        if (b.heading) h += '<h3 style="color:'+P+';">'+esc(b.heading)+'</h3>\n';
+        h += renderBody(b.body);
+        h += '<p class="narrow-p">&nbsp;</p>\n\n';
+    });
+    if (document.getElementById('togVisual').checked) {
+        var vd = document.getElementById('fVisualDesc').value;
+        h += '<div id="'+genId()+'" class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" style="border-radius:'+R+'px;" data-context-menu="customise delete" data-emble-version="2.0">\n';
+        h += '<p><span style="background-color:'+A+';color:'+AT+';">Add your diagram/visual element here</span></p>\n';
+        h += '<details>\n<summary style="cursor:pointer;font-size:14px;color:'+P+';background-color:#ffffff;padding:12px;">Image Description</summary>\n';
+        h += '<div style="padding:12px;">'+(vd ? esc(vd) : 'Paste description here')+'</div>\n</details></div>\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+    if (document.getElementById('togInsights').checked) {
+        h += '<h3 style="color:'+P+';">Key Insights</h3>\n\n';
+        var items = collectInsights();
+        for (var c = 0; c < items.length; c += 3) {
+            var chunk = items.slice(c, c+3);
+            h += '<div id="'+genId()+'" class="customise emble-columns-container emble-columns-stretch-child-height" data-context-menu="customise delete" data-emble-name="Columns" data-emble-version="2.0">\n';
+            chunk.forEach(function(card){
+                h += '<div class="emble-columns-child emble-prevent-delete">\n<div id="'+genId()+'" class="customise emble emble-cblock emble-width-control fullwidth-on grey" style="background-color:'+CB+';border-radius:'+R+'px;" data-context-menu="customise delete" data-emble-version="2.0">\n<h3 style="color:'+P+' !important;">'+esc(card.title)+'</h3>\n<p>'+esc(card.text)+'</p>\n</div>\n<p class="narrow-p">&nbsp;</p>\n</div>\n';
+            });
+            for (var p = chunk.length; p < 3; p++) h += '<div class="emble-columns-child emble-prevent-delete"><p>&nbsp;</p></div>\n';
+            h += '</div>\n\n';
+        }
+        h += '<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+    if (document.getElementById('togTools').checked) {
+        h += embleBanner('icon-courses', 'Industry Tools &amp; Technology', cfg);
+        h += '<div id="'+genId()+'" class="customise emble emble-cblock emble-width-control fullwidth-on grey" style="background-color:'+CB+';border-radius:'+R+'px;" data-context-menu="customise delete" data-emble-version="2.0">\n';
+        collectTools().forEach(function(t){if (t.label||t.text) h += '<p><strong>'+esc(t.label)+':</strong> '+esc(t.text)+'</p>\n';});
+        h += '</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+    if (document.getElementById('togVideo').checked) {
+        var vd2 = document.getElementById('fVideoDesc').value;
+        var vs = document.getElementById('fVideoSearch').value;
+        h += embleBanner('icon-video', 'Video', cfg);
+        h += '<div id="'+genId()+'" class="customise emble-columns-container emble-columns-controller-1-2 emble-columns-stretch-child-height" data-context-menu="customise delete" data-emble-name="Columns" data-emble-version="2.0">\n';
+        h += '<div class="emble-columns-child emble-prevent-delete">\n<p>Watch this (<span style="background-color:'+A+';color:'+AT+';">X:XX mins</span>) video to learn about <span style="background-color:'+A+';color:'+AT+';">...</span>'+(vd2 ? ' '+esc(vd2).replace(/[.!]+$/,'')+'.' : '')+'</p>\n<p>&nbsp;</p>\n</div>\n';
+        h += '<div class="emble-columns-child emble-prevent-delete">\n<p>*</p>\n<p><span style="background-color:'+A+';color:'+AT+';">Embed your YouTube video here.'+(vs ? ' [Suggested search: &ldquo;'+esc(vs)+'&rdquo;]' : '')+'</span></p>\n<p>&nbsp;</p>\n</div>\n';
+        h += '<div class="emble-columns-child emble-prevent-delete">\n<p>Column 3</p>\n<p>&nbsp;</p>\n</div>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+    if (document.getElementById('togQuiz').checked) {
+        h += embleBanner('icon-check', 'Knowledge Check', cfg);
+        h += '<div id="'+genId()+'" class="customise emble emble-cblock emble-width-control fullwidth-on grey" style="background-color:'+CB+';border-radius:'+R+'px;" data-context-menu="customise delete" data-emble-version="2.0">\n<ul>\n<li><span style="font-size:14pt;color:'+P+';">Read each question carefully</span></li>\n<li><span style="font-size:14pt;color:'+P+';">Navigate with circles or arrows</span></li>\n<li><span style="font-size:14pt;color:'+P+';">Select Check when done</span></li>\n</ul>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+        h += '<p><span style="background-color:'+A+';color:'+AT+';">Placeholder for Knowledge Check — Create an H5P Quiz using the questions below:</span></p>\n\n';
+        var qs = collectQuiz();
+        if (qs.length) {
+            h += '<div id="'+genId()+'" class="customise emble emble-cblock emble-width-control fullwidth-on grey" style="background-color:'+CB+';border-radius:'+R+'px;" data-context-menu="customise delete" data-emble-version="2.0">\n';
+            qs.forEach(function(q, idx){
+                h += '<p><strong>Q'+(idx+1)+': '+esc(q.text)+'</strong></p>\n';
+                q.options.forEach(function(op, i){if (op) h += '<p>'+String.fromCharCode(97+i)+') '+esc(op)+(i===q.correct?' ✅':'')+'</p>\n';});
+                h += '<p>&nbsp;</p>\n';
+            });
+            h += '</div>\n\n';
+        }
+        h += '<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+    if (document.getElementById('togReflection').checked) {
+        h += embleBanner('icon-question', 'Reflection Questions', cfg);
+        h += '<ol>\n';
+        collectReflections().forEach(function(r){h += '<li>'+esc(r)+'</li>\n';});
+        h += '</ol>\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+    if (document.getElementById('togActivity').checked) {
+        var at = document.getElementById('fActTitle').value || 'Activity';
+        var ad = document.getElementById('fActDuration').value;
+        var af = document.getElementById('fActFormat').value;
+        var ap = document.getElementById('fActPurpose').value;
+        var ar = document.getElementById('fActResources').value;
+        var ai = document.getElementById('fActInstructions').innerHTML.trim();
+        h += embleBanner('icon-edit', 'Activity: '+esc(at), cfg);
+        h += '<div id="'+genId()+'" class="customise emble-columns-container emble-columns-controller-1-2 emble-columns-stretch-child-height" data-context-menu="customise delete" data-emble-name="Columns" data-emble-version="2.0">\n';
+        h += '<div class="emble-columns-child emble-prevent-delete">\n<div id="'+genId()+'" class="customise emble emble-cblock emble-width-control fullwidth-on grey" style="background-color:'+CB+';border-radius:'+R+'px;" data-context-menu="customise delete" data-emble-version="2.0">\n';
+        h += '<p><strong>Duration:</strong> '+(ad?esc(ad):'&nbsp;')+'</p>\n<p><strong>Format:</strong> '+(af?esc(af):'&nbsp;')+'</p>\n<p><strong>Purpose:</strong> '+(ap?esc(ap):'&nbsp;')+'</p>\n';
+        if (ar) h += '<p><strong>Resources:</strong> '+esc(ar)+'</p>\n';
+        h += '</div>\n<p class="narrow-p">&nbsp;</p>\n</div>\n';
+        h += '<div class="emble-columns-child emble-prevent-delete">\n<div id="'+genId()+'" class="customise emble emble-cblock emble-width-control fullwidth-on grey" style="background-color:'+CB+';border-radius:'+R+'px;" data-context-menu="customise delete" data-emble-version="2.0">\n<p><strong>Instructions:</strong></p>\n';
+        if (ai) h += ai + '\n';
+        h += '</div>\n<p class="narrow-p">&nbsp;</p>\n</div>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+    h += '<p>&nbsp;</p>\n';
+    return h;
+}
+
+function embleBanner(iconClass, titleHTML, cfg) {
+    var A = cfg.A, AT = cfg.AT, P = cfg.P, CB = cfg.CB, R = cfg.R;
+    // Full Emble title-with-icon component so Emble's context menu remains fully functional.
+    // Key insight: Emble's CSS targets the <i> tag (not .emble-icon parent) for background-color,
+    // so the accent colour MUST be set inline on the <i> to win.
+    return '<div id="'+genId()+'" class="emble customise title-with-icon" data-cove-palette="1" data-customise="icon icon-colour-options" data-context-menu="customise delete" style="background-color:'+CB+' !important;border-radius:'+R+'px !important;">\n'+
+        '<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-cove-palette="1" style="background-color:'+A+' !important;color:'+AT+' !important;border-radius:'+R+'px !important;" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag icon-check icon-question" data-emble-version="2.0"><i class="'+iconClass+'" style="background-color:transparent !important;background:none !important;color:'+AT+' !important;">&nbsp;</i></div>\n'+
+        '<div class="title-with-icon-title">\n<h3 style="color:'+P+' !important;margin:0;">'+titleHTML+'</h3>\n</div>\n'+
+        '</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+}
+
+// ========== FLEX MODE GENERATOR ==========
+function generateFlex(cfg) {
+    var P = cfg.P, A = cfg.A, CB = cfg.CB, AT = cfg.AT, R = cfg.R;
+    var R2 = Math.max(0, R-2);
+    var sHl = 'background-color:'+A+';color:'+AT+';padding:2px 5px;border-radius:'+R2+'px;';
+    var sCard = 'background-color:'+CB+';padding:18px 22px;border-radius:'+R+'px;margin:12px 0;';
+    var sCardFloat = 'background-color:#ffffff;padding:18px 22px;border-radius:'+R+'px;margin:20px 0;border:1px solid '+CB+';box-shadow:0 2px 8px rgba(0,0,0,0.1);';
+    var sH3 = 'color:'+P+';font-size:1.25rem;margin:20px 0 10px;';
+    var sH3Card = 'color:'+P+';font-size:1.1rem;margin:0 0 8px;';
+    var sH2 = 'color:'+P+';font-size:1.75rem;margin:0 0 12px;';
+    var sRule = 'border:0;border-top:3px solid '+P+';margin:16px 0 24px;';
+    var sPage = 'font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#222;line-height:1.6;';
+
+    var title = document.getElementById('fPageTitle').value || 'Page Title';
+    var photoDesc = document.getElementById('fPhotoDesc').value;
+    var openingHtml = document.getElementById('fOpeningPara').innerHTML.trim();
+
+    var h = '<div style="'+sPage+'">\n';
+    h += '<h2 style="'+sH2+'">'+esc(title)+'</h2>\n';
+    h += '<hr style="'+sRule+'" />\n';
+    h += photoDesc ? '<p><span style="'+sHl+'">Add photograph here: '+esc(photoDesc)+'</span></p>\n' : '<p><span style="'+sHl+'">Add your photograph here</span></p>\n';
+    h += openingHtml ? openingHtml+'\n' : '<p><span style="'+sHl+'">Add opening paragraph</span></p>\n';
+
+    collectContentBlocks().forEach(function(b){
+        if (b.heading) h += '<h3 style="'+sH3+'">'+esc(b.heading)+'</h3>\n';
+        h += renderBody(b.body);
+    });
+
+    if (document.getElementById('togVisual').checked) {
+        var vd = document.getElementById('fVisualDesc').value;
+        h += '<div style="'+sCardFloat+'">\n<p><span style="'+sHl+'">Add your diagram/visual element here</span></p>\n';
+        h += '<details style="margin-top:10px;border-top:1px solid rgba(0,0,0,.08);padding-top:10px;">\n<summary style="cursor:pointer;font-weight:600;color:'+P+';padding:10px 12px;">Image Description</summary>\n<div style="padding:10px 12px;">'+(vd?esc(vd):'Paste description here')+'</div>\n</details>\n</div>\n';
+    }
+
+    if (document.getElementById('togInsights').checked) {
+        h += '<h3 style="'+sH3+'">Key Insights</h3>\n';
+        var items = collectInsights();
+        for (var c = 0; c < items.length; c += 3) {
+            var chunk = items.slice(c, c+3);
+            h += '<div style="display:flex;flex-wrap:wrap;gap:14px;margin:12px 0;">\n';
+            chunk.forEach(function(card){
+                h += '<div style="'+sCard+';margin:0;flex:1 1 180px;min-width:0;">\n<h3 style="'+sH3Card+'">'+esc(card.title)+'</h3>\n<p style="margin:0;">'+esc(card.text)+'</p>\n</div>\n';
+            });
+            h += '</div>\n';
+        }
+        h += '<p>&nbsp;</p>\n';
+    }
+
+    if (document.getElementById('togTools').checked) {
+        h += flexBanner('tools', 'Industry Tools &amp; Technology', cfg);
+        h += '<div style="'+sCard+'">\n';
+        collectTools().forEach(function(t){if (t.label||t.text) h += '<p style="margin:6px 0;"><strong>'+esc(t.label)+':</strong> '+esc(t.text)+'</p>\n';});
+        h += '</div>\n';
+    }
+
+    if (document.getElementById('togVideo').checked) {
+        var vd2 = document.getElementById('fVideoDesc').value;
+        var vs = document.getElementById('fVideoSearch').value;
+        h += flexBanner('video', 'Video', cfg);
+        var vdClean = vd2 ? esc(vd2).replace(/[.!]+$/,'') : '';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:14px;margin:12px 0;">\n';
+        h += '<div style="flex:1 1 240px;min-width:0;"><p>Watch this (<span style="'+sHl+'">X:XX mins</span>) video to learn about <span style="'+sHl+'">...</span>'+(vdClean?' '+vdClean+'.':'')+'</p></div>\n';
+        h += '<div style="flex:2 1 400px;min-width:0;"><p><span style="'+sHl+'">Embed your video here.'+(vs?' [Suggested search: &ldquo;'+esc(vs)+'&rdquo;]':'')+' Paste embed code in place of this text.</span></p></div>\n';
+        h += '</div>\n';
+    }
+
+    if (document.getElementById('togQuiz').checked) {
+        h += flexBanner('quiz', 'Knowledge Check', cfg);
+        h += '<div style="'+sCard+'">\n<ul style="margin:0;padding:0 0 0 20px;">\n<li>Read each question carefully</li>\n<li>Navigate with circles or arrows</li>\n<li>Select Check when done</li>\n<li>Show Solution or Retry if needed</li>\n</ul>\n</div>\n';
+        h += '<p><span style="'+sHl+'">Placeholder for Knowledge Check — Create an H5P Quiz using the questions below:</span></p>\n';
+        var qs = collectQuiz();
+        if (qs.length) {
+            h += '<div style="'+sCard+'">\n';
+            qs.forEach(function(q, idx){
+                h += '<p style="margin:6px 0;"><strong>Q'+(idx+1)+': '+esc(q.text)+'</strong></p>\n';
+                q.options.forEach(function(op,i){if (op) h += '<p style="margin:4px 0;">'+String.fromCharCode(97+i)+') '+esc(op)+(i===q.correct?' ✅':'')+'</p>\n';});
+                h += '<p>&nbsp;</p>\n';
+            });
+            h += '</div>\n';
+        }
+    }
+
+    if (document.getElementById('togReflection').checked) {
+        h += flexBanner('reflection', 'Reflection Questions', cfg);
+        h += '<ol style="margin:8px 0 16px 20px;">\n';
+        collectReflections().forEach(function(r){h += '<li style="margin-bottom:8px;">'+esc(r)+'</li>\n';});
+        h += '</ol>\n';
+    }
+
+    if (document.getElementById('togActivity').checked) {
+        var at = document.getElementById('fActTitle').value || 'Activity';
+        var ad = document.getElementById('fActDuration').value;
+        var af = document.getElementById('fActFormat').value;
+        var ap = document.getElementById('fActPurpose').value;
+        var ar = document.getElementById('fActResources').value;
+        var ai = document.getElementById('fActInstructions').innerHTML.trim();
+        h += flexBanner('activity', 'Activity: '+esc(at), cfg);
+        h += '<div style="display:flex;flex-wrap:wrap;gap:14px;margin:12px 0;align-items:stretch;">\n';
+        h += '<div style="'+sCard+';margin:0;flex:1 1 240px;min-width:0;display:flex;flex-direction:column;">\n';
+        h += '<p style="margin:6px 0;"><strong>Duration:</strong> '+(ad?esc(ad):'&nbsp;')+'</p>\n';
+        h += '<p style="margin:6px 0;"><strong>Format:</strong> '+(af?esc(af):'&nbsp;')+'</p>\n';
+        h += '<p style="margin:6px 0;"><strong>Purpose:</strong> '+(ap?esc(ap):'&nbsp;')+'</p>\n';
+        if (ar) h += '<p style="margin:6px 0;"><strong>Resources:</strong> '+esc(ar)+'</p>\n';
+        h += '</div>\n';
+        h += '<div style="'+sCard+';margin:0;flex:2 1 400px;min-width:0;display:flex;flex-direction:column;">\n';
+        h += '<p style="margin:6px 0;"><strong>Instructions:</strong></p>\n';
+        if (ai) h += ai + '\n';
+        h += '</div>\n</div>\n';
+    }
+
+    h += '</div>\n<p>&nbsp;</p>\n';
+    return h;
+}
+
+// The critical flex banner function. Uses ONLY string concatenation. Calls buildIconImgTag which is tested.
+function flexBanner(slot, titleHTML, cfg) {
+    var P = cfg.P, A = cfg.A, CB = cfg.CB, AT = cfg.AT, R = cfg.R;
+    var iconContent = buildIconImgTag(slot);
+    return '<div style="display:flex;align-items:stretch;background-color:'+CB+';border-radius:'+R+'px;overflow:hidden;margin:24px 0 12px;min-height:80px;width:100%;">\n' +
+        '<div style="width:80px;background-color:'+A+';color:'+AT+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.75rem;align-self:stretch;">' + iconContent + '</div>\n' +
+        '<div style="flex:1;display:flex;align-items:center;padding:0 22px;"><h3 style="margin:0;color:'+P+';font-size:1.25rem;line-height:1.2;">'+titleHTML+'</h3></div>\n' +
+        '</div>\n';
+}
+
+// ========== ACTIONS ==========
+function copyHTML() {
+    var c = document.getElementById('outputContent').textContent;
+    var ta = document.createElement('textarea'); ta.value = c; ta.style.position='fixed'; ta.style.left='-9999px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); var b = event.target, o = b.textContent; b.textContent='Copied!'; b.style.background='#28a745'; setTimeout(function(){b.textContent=o;b.style.background='';},2000); }
+    catch(e) { alert('Copy manually'); }
+    document.body.removeChild(ta);
+}
+function backToEdit() { updateStep(3,''); updateStep(2,'active'); document.getElementById('editForm').style.display='block'; document.getElementById('outputSection').style.display='none'; }
+function resetAll() { if (confirm('Start over?')) location.reload(); }
+
+function loadSample() {
+    document.getElementById('copilotInput').value = '──── Page Title (Page 1 of 3) ──────────────────────────\nDesign Thinking Through Eclecticism: Expanding the Designer\'s Creative Vocabulary\n──── Photographic Element ──────────────────────────────\nA high-resolution photograph of an Australian creative studio space with an eclectic combination of mid-century timber furniture, contemporary lighting, and Indigenous art on the wall.\n──── Opening Paragraph ─────────────────────────────────\nIn contemporary Australian design practice, eclectic composition often emerges organically when clients bring diverse personal histories into a single project. Imagine a young couple in Brisbane renovating a Queenslander cottage: one partner collects vintage science lab glassware, while the other has inherited carved wooden screens from their Sri Lankan family home.\n\nFor interior designers, recognising how disparate elements can form a coherent visual narrative is essential. This approach goes beyond visual mixing; it tests the designer\'s judgment in selecting, editing, and recombining elements in ways that meet both functional and cultural aims.\n──── Content Block ─────────────────────────────────────\nHeading: How Eclecticism Challenges Traditional Design Logic\nEclectic interiors in Australian homes frequently emerge where architectural heritage meets contemporary needs. In older terrace houses in Sydney\'s Inner West, for example, clients often preserve original Victorian features while introducing recycled steel, polished concrete, and digital artworks.\n\nA common misconception is that eclecticism lacks discipline. In practice, it requires deeper conceptual clarity and stronger curatorial control than single-style interiors.\n──── Content Block ─────────────────────────────────────\nHeading: Curating With Intention in Australian Contexts\nInterior designers increasingly work with clients whose cultural influences, travel histories, and professional experiences translate into unique design expectations.\n\nRather than simply assembling objects, designers must analyse which combinations support function, well-being, and cultural authenticity.\n──── Content Block ─────────────────────────────────────\nHeading: Navigating Misinterpretations of Style\nMany emerging designers assume eclectic schemes are client-led rather than designer-led. In professional practice, the opposite is true.\n\nUnderstanding what eclecticism is not also strengthens practice. It is not indiscriminate decoration, nor is it a simple homage to historical styles.\n──── Visual Element ────────────────────────────────────\nType: Mind map\nThe mind map centres on the concept "Eclectic Design Logic" with four main branches: Historical Influences, Material Strategies, Client Identity, and Spatial Cohesion.\n──── Key Insights ──────────────────────────────────────\nInterconnected concepts: Eclectic design relies on underlying relationships, not random assortment.\nCuratorial discipline: Designers must apply structured decision-making to avoid visual confusion.\nAustralian cultural layers: Diverse client identities shape eclectic outcomes in contemporary practice.\n──── Industry Tools & Technology ───────────────────────\nCurrent tools: Physical material boards, colour sample sets, reference books on global design histories.\nRecommended RMIT tools: Miro for mind-mapping and VAL for documenting precedent images.\nWhere helpful: Use Miro to map client influences and design logic before material selection.\nDiscipline-specific tools: Museum-grade conservation guidelines for handling artefacts; digital colour analysis tools.\n──── Video ─────────────────────────────────────────────\nDescription: A short explainer on how designers synthesise diverse stylistic influences into coherent interior schemes.\nPurpose: To help students understand how eclectic combinations are curated through analysis rather than intuition.\nSuggested search: "professional interior design eclectic curation process"\n──── Knowledge Check ───────────────────────────────────\nTEACHER INSTRUCTION: Use the H5P Quiz (Question Set) content type in Canvas.\nQ1: When working on an eclectic interior, which action best demonstrates advanced design reasoning?\na) Selecting objects based solely on client preference\nb) Choosing contrasting items without considering relationships\nc) Identifying an organising logic that guides material and object selection ✅\nd) Avoiding historical references entirely\nQ2: Eclectic interiors in Australia often involve blending diverse cultural influences within a single space.\na) True ✅\nb) False\nQ3: In a Victorian terrace with mixed heritage elements, what strategy best supports cohesive eclectic design?\na) Random placement of items\nb) Avoiding any contemporary materials\nc) Establishing visual hierarchy through colour, scale, and rhythm ✅\nd) Matching all materials perfectly\n──── Reflection Questions ──────────────────────────────\nHow can eclectic design approaches help you respond to the cultural diversity of Australian clients?\nWhat decision-making strategies can ensure eclectic schemes remain cohesive and intentional?\n──── Activity ──────────────────────────────────────────\nTitle: Curating a Visual Logic for an Eclectic Room\nDuration: 45 minutes\nFormat: Individual\nPurpose: To practise identifying relationships between varied elements and organising them into a cohesive visual strategy.\nResources: Miro or physical sketchbook; digital images of objects and materials.\nInstructions:\nSelect four unrelated objects or materials representing different historical or cultural influences.\nIdentify two underlying relationships between them (e.g., texture, colour temperature, symbolic meaning).\nProduce a visual map showing how these relationships create cohesion within a proposed room.\nAlternative: Students may complete the activity using tactile material samples if digital access is limited.';
+    showTextarea();
+}
+
+// ========== INIT ==========
+buildIconUploadUI();
+loadProjectFromStorage();
+document.getElementById('copilotInput').addEventListener('input', function(){ document.getElementById('parseBtn').disabled = !this.value.trim(); });
+['projectName','colPrimary','colAccent','colCardBg','colAccentText','selRadius'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener('change', saveProjectToStorage); el.addEventListener('input', saveProjectToStorage); }
+});
+document.querySelectorAll('input[name="outputMode"]').forEach(function(el){el.addEventListener('change', saveProjectToStorage);});
+['togVisual','togInsights','togTools','togVideo','togQuiz','togReflection','togActivity'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', function(){
+        var m = {togVisual:'visualSection',togInsights:'insightsSection',togTools:'toolsSection',togVideo:'videoSection',togQuiz:'quizSection',togReflection:'reflectionSection',togActivity:'activitySection'};
+        var t = document.getElementById(m[id]);
+        if (t) t.style.display = this.checked ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>
