@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI to Canvas for Projects — Before &amp; After Class</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+.main-wrapper{flex:1;padding:20px}
+.container{max-width:1600px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+.header{background:#000054;color:#fff;padding:30px;text-align:center}
+.header h1{font-size:2rem;margin-bottom:10px;font-weight:700}
+.header p{font-size:1.05rem;opacity:.9}
+.workflow-steps{display:flex;justify-content:center;padding:20px 30px;background:#f2f2f2;border-bottom:3px solid #fac800;flex-wrap:wrap;gap:10px}
+.step{display:flex;align-items:center;margin:0 15px;font-weight:600;color:#000054;font-size:.95rem}
+.step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+.step.active .step-number{background:#e61e2a}
+.step.completed .step-number{background:#28a745}
+.main-layout{display:grid;grid-template-columns:420px 1fr;min-height:70vh}
+.sidebar{background:#f2f2f2;padding:25px;border-right:1px solid #e3e5e0;display:flex;flex-direction:column}
+.content-area{padding:30px;overflow-y:auto}
+.custom-panel{background:#fff;border:2px solid #000054;border-radius:6px;margin-bottom:20px;overflow:hidden}
+.custom-header{padding:10px 14px;background:#000054;color:#fff;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:.95rem}
+.custom-header .chev{transition:transform .2s}
+.custom-panel.collapsed .custom-header .chev{transform:rotate(-90deg)}
+.custom-body{padding:14px;border-top:3px solid #fac800}
+.custom-panel.collapsed .custom-body{display:none}
+.custom-group{margin-bottom:14px}
+.custom-group:last-child{margin-bottom:0}
+.custom-group > label{display:block;font-weight:600;color:#000054;margin-bottom:6px;font-size:.8rem;text-transform:uppercase;letter-spacing:.5px}
+.mode-toggle{display:flex;gap:8px}
+.mode-toggle label{flex:1;display:flex;align-items:center;gap:6px;padding:8px 10px;background:#f2f2f2;border:2px solid transparent;border-radius:4px;cursor:pointer;font-size:.85rem;font-weight:600}
+.mode-toggle label:has(input:checked){background:#fff9e6;border-color:#fac800}
+.mode-toggle input[type="radio"]{cursor:pointer}
+.preset-btns{display:flex;gap:6px;margin-bottom:10px}
+.preset-btns button{flex:1;padding:6px 10px;font-size:.8rem;border:1px solid #000054;background:#fff;color:#000054;border-radius:3px;cursor:pointer;font-weight:600}
+.preset-btns button:hover{background:#000054;color:#fff}
+.colour-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.colour-grid > div{display:flex;align-items:center;gap:6px;background:#f8f9fa;padding:5px 8px;border-radius:4px}
+.colour-grid label{margin:0;flex:1;font-size:.78rem;font-weight:600;color:#000054}
+.colour-grid input[type="color"]{width:36px;height:26px;border:1px solid #ddd;border-radius:3px;cursor:pointer;padding:1px;background:#fff}
+.custom-group select{width:100%;padding:7px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.85rem;background:#fff}
+.icon-upload-grid{display:flex;flex-direction:column;gap:6px}
+.icon-upload-row{display:flex;align-items:center;gap:8px;background:#f8f9fa;padding:6px 8px;border-radius:4px;flex-wrap:wrap}
+.icon-upload-row > label{flex:1 0 120px;font-size:.78rem;font-weight:600;color:#000054;margin:0}
+.icon-preview{width:32px;height:32px;border:1px solid #ddd;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;background:#fff;flex-shrink:0;overflow:hidden}
+.icon-preview img{max-width:100%;max-height:100%;object-fit:contain}
+.icon-url-input{flex:1 0 100%;padding:5px 8px;font-size:.72rem;border:1px solid #ddd;border-radius:3px;font-family:monospace;margin-top:4px}
+.icon-url-input.invalid{border-color:#e61e2a;background:#fff5f5}
+.icon-clear-btn{padding:4px 6px;font-size:.7rem;border:1px solid #e61e2a;background:#fff;color:#e61e2a;border-radius:3px;cursor:pointer}
+.icon-status{font-size:.7rem;color:#666;flex:1 0 100%;margin-top:2px;min-height:14px}
+.icon-status.ok{color:#28a745;font-weight:600}
+.icon-status.err{color:#e61e2a;font-weight:600}
+.flex-only{display:none}
+body.mode-flex .flex-only{display:block}
+.custom-note{font-size:.72rem;color:#666;margin-top:4px;line-height:1.4;font-style:italic}
+.paste-area{border:3px dashed #000054;border-radius:8px;padding:18px;text-align:center;transition:all .3s;cursor:pointer;background:#fff;margin-bottom:15px}
+.paste-area:hover{border-color:#e61e2a}
+.paste-icon{font-size:2rem;color:#000054;margin-bottom:8px}
+.paste-text{font-size:1rem;color:#000054;margin-bottom:6px;font-weight:600}
+.paste-subtext{font-size:.82rem;color:#666}
+textarea#copilotInput{width:100%;min-height:240px;padding:12px;border:2px solid #e3e5e0;border-radius:6px;font-size:.85rem;font-family:monospace;resize:vertical;background:#fff;line-height:1.5;display:none}
+.context-input-area{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:12px;margin-bottom:15px}
+.context-input-area label{display:block;font-weight:600;color:#000054;margin-bottom:4px;font-size:.85rem}
+.context-input-area input{width:100%;padding:8px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit;margin-bottom:8px}
+.context-input-area input:focus{outline:none;border-color:#000054}
+.context-input-area input:last-child{margin-bottom:0}
+.extraction-status{display:none;background:#fff;border:2px solid #fac800;border-radius:6px;padding:16px;margin-top:12px}
+.extraction-status h3{color:#000054;margin-bottom:10px;font-size:1rem}
+.status-item{display:flex;align-items:center;margin-bottom:6px;font-size:.85rem}
+.status-icon{width:18px;height:18px;border-radius:50%;margin-right:8px;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#fff;font-weight:700;flex-shrink:0}
+.status-icon.found{background:#28a745}.status-icon.missing{background:#e61e2a}
+.format-badge{display:inline-block;border-radius:3px;padding:1px 6px;font-size:.7rem;font-weight:600;margin-left:4px}
+.format-badge.new{background:#e6f9e6;border:1px solid #28a745;color:#28a745}
+.format-badge.legacy{background:#fff9e6;border:1px solid #fac800;color:#856404}
+.btn{padding:11px 24px;border:none;border-radius:4px;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .3s}
+.btn-primary{background:#e61e2a;color:#fff}.btn-primary:hover{background:#c51923}
+.btn-secondary{background:#000054;color:#fff}.btn-secondary:hover{background:#000043}
+.btn-outline{background:#fff;color:#000054;border:2px solid #000054}.btn-outline:hover{background:#f2f2f2}
+.btn:disabled{background:#999;cursor:not-allowed}
+.button-group{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap}
+.edit-form{display:none}
+.form-section{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:22px;margin-bottom:22px}
+.form-section h3{color:#000054;margin-bottom:16px;font-size:1.15rem;border-bottom:2px solid #fac800;padding-bottom:8px}
+.form-section.before-class{border-left:4px solid #000054}
+.form-section.after-class{border-left:4px solid #e61e2a}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-weight:600;color:#000054;margin-bottom:6px;font-size:.9rem}
+.form-group input[type="text"],.form-group textarea,.form-group select{width:100%;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit;background:#fafbfc}
+.form-group textarea{min-height:80px;resize:vertical}
+.help-text{font-size:.8rem;color:#666;margin-top:4px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.list-editor{margin-top:8px}
+.list-item{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.list-item input{flex:1;padding:8px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit}
+.list-item button{background:none;border:none;color:#e61e2a;cursor:pointer;font-size:1.1rem;padding:4px}
+.add-remove-btns{display:flex;gap:8px;margin-top:8px}
+.add-remove-btns button{padding:4px 12px;font-size:.8rem;border-radius:3px;border:1px solid #ddd;cursor:pointer;background:#fff}
+.video-fields{background:#f2f2f2;border:1px solid #e3e5e0;border-radius:4px;padding:15px;margin-top:12px}
+.video-fields h4{color:#000054;font-size:.95rem;margin-bottom:12px}
+.section-toggle{margin-bottom:10px}
+.section-toggle label{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;color:#000054}
+.section-toggle input[type="checkbox"]{width:18px;height:18px}
+.output-section{display:none}
+.output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+.output-header{background:#000054;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+.output-header .mode-badge{background:#fac800;color:#000054;padding:3px 10px;border-radius:3px;font-size:.78rem;font-weight:700}
+.output-content{padding:20px;font-family:monospace;font-size:.78rem;line-height:1.5;max-height:500px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
+.preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:30px;margin-top:20px}
+.tab-bar{display:flex;border-bottom:2px solid #e3e5e0;margin-bottom:20px}
+.tab{padding:12px 24px;font-weight:600;color:#666;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s}
+.tab:hover{color:#000054}
+.tab.active{color:#000054;border-bottom-color:#e61e2a}
+.tab-content{display:none}.tab-content.active{display:block}
+.alert{padding:15px;border-radius:4px;margin-bottom:20px;display:flex}
+.alert-info{background:#e6f3ff;border:1px solid #0066cc;color:#004085}
+.alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
+.footer{background:#000054;color:#fff;text-align:center;padding:20px;font-size:.9rem}
+@media(max-width:1200px){.main-layout{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body class="mode-emble">
+<div class="main-wrapper">
+<div class="container">
+<div class="header">
+<h1>AI to Canvas for Projects — Before &amp; After Class</h1>
+<p>Customisable Edition · Emble Mode (in-house) or Flex Mode (export)</p>
+</div>
+<div class="workflow-steps">
+<div class="step active" id="step1"><div class="step-number">1</div><span>Paste Copilot Output</span></div>
+<div class="step" id="step2"><div class="step-number">2</div><span>Review &amp; Edit</span></div>
+<div class="step" id="step3"><div class="step-number">3</div><span>Generate HTML</span></div>
+</div>
+<div class="main-layout">
+<div class="sidebar">
+<div class="custom-panel" id="customPanel">
+<div class="custom-header" onclick="toggleCustomPanel()"><span>⚙ Output Customisation</span><span class="chev">▼</span></div>
+<div class="custom-body">
+<div class="custom-group">
+<label>Output Mode</label>
+<div class="mode-toggle">
+<label><input type="radio" name="outputMode" value="emble" checked onchange="onModeChange()"> Emble</label>
+<label><input type="radio" name="outputMode" value="flex" onchange="onModeChange()"> Flex</label>
+</div>
+</div>
+<div class="custom-group">
+<label>Palette Preset</label>
+<div class="preset-btns">
+<button type="button" onclick="loadRmitPalette()">RMIT Default</button>
+<button type="button" onclick="loadBlankPalette()">Blank Slate</button>
+</div>
+<div class="colour-grid">
+<div><label>Primary</label><input type="color" id="colPrimary" value="#000054"></div>
+<div><label>Accent</label><input type="color" id="colAccent" value="#fac800"></div>
+<div><label>Card BG</label><input type="color" id="colCardBg" value="#f2f2f2"></div>
+<div><label>Accent Text</label><input type="color" id="colAccentText" value="#000054"></div>
+</div>
+</div>
+<div class="custom-group">
+<label>Corner Radius</label>
+<select id="selRadius">
+<option value="0">0px (sharp — RMIT default)</option>
+<option value="4">4px</option>
+<option value="8">8px</option>
+<option value="12">12px</option>
+<option value="20">20px</option>
+</select>
+</div>
+<div class="custom-group flex-only">
+<label>Section Icons (Canvas File URLs)</label>
+<div class="icon-upload-grid" id="iconUploadGrid"></div>
+<div class="custom-note">Paste the Canvas file URL for each section.</div>
+</div>
+<div class="custom-group" style="border-top:1px solid #e3e5e0;padding-top:12px;">
+<label>🔒 Project Lock</label>
+<input type="text" id="projectName" placeholder="Project / team name" style="width:100%;padding:7px 10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.85rem;margin-bottom:8px;">
+<div class="preset-btns">
+<button type="button" onclick="exportProject()">💾 Export</button>
+<button type="button" onclick="loadProjectFromFile()">📂 Import</button>
+<button type="button" onclick="resetProject()">↺ Reset</button>
+</div>
+<input type="file" id="projectFile" accept="application/json" style="display:none;" onchange="handleProjectFile(this)">
+<div id="projectStatus" class="custom-note" style="margin-top:6px;"></div>
+</div>
+</div>
+</div>
+<div class="paste-area" id="pasteArea" onclick="showTextarea()">
+<div class="paste-icon">📋</div>
+<div class="paste-text">Paste Copilot Output</div>
+<div class="paste-subtext">Click here, then paste</div>
+</div>
+<textarea id="copilotInput" placeholder="Paste your Copilot output here..."></textarea>
+<div class="context-input-area">
+<label>Week / Module Number</label>
+<input type="text" id="weekNumber" placeholder="e.g. 1, 2, 3...">
+<label>Topic Name</label>
+<input type="text" id="topicName" placeholder="e.g. Workplace Communication">
+<div class="custom-note">Used in the page heading</div>
+</div>
+<div class="button-group">
+<button class="btn btn-primary" id="parseBtn" onclick="parseInput()" disabled>Parse Content</button>
+<button class="btn btn-outline" onclick="loadSample()">Load Sample</button>
+</div>
+<div class="extraction-status" id="extractionStatus"><h3>📊 Parsed Sections</h3><div id="statusList"></div></div>
+</div>
+<div class="content-area">
+<div id="initialInstructions">
+<h2 style="color:#000054;margin-bottom:20px;">How to Use This Tool</h2>
+<ol style="font-size:1.05rem;line-height:2;">
+<li><strong>Configure</strong> output mode, palette, corner radius, and icons (Flex only)</li>
+<li><strong>Paste</strong> your Copilot-generated Before &amp; After Class activities</li>
+<li><strong>Enter</strong> the week number and topic name</li>
+<li><strong>Review</strong> the automatically parsed activities and edit as needed</li>
+<li><strong>Generate</strong> two Canvas-ready pages — one Before, one After</li>
+</ol>
+<div class="alert alert-info" style="margin-top:25px;"><div style="margin-right:12px;font-size:1.4rem;">ℹ️</div><div><strong>Emble Mode</strong> preserves the Emble component structure for in-house Canvas pages.<br><strong>Flex Mode</strong> outputs pure inline-styled HTML for export to SCORM or other platforms.</div></div>
+<div class="alert alert-warning" style="margin-top:15px;"><div style="margin-right:12px;font-size:1.4rem;">💡</div><div><strong>Tip:</strong> This tool generates TWO separate HTML outputs — one Before Class page and one After Class page. Copy each individually into Canvas. The parser handles both label-on-own-line and inline Copilot formats automatically.</div></div>
+</div>
+<div class="edit-form" id="editForm">
+<h2 style="color:#000054;margin-bottom:20px;">Review &amp; Edit Parsed Content</h2>
+<div class="form-section before-class">
+<h3>📥 Before Class Activity</h3>
+<div class="form-row">
+<div class="form-group"><label>Activity Title</label><input type="text" id="fBeforeTitle" placeholder="e.g. Exploring Workplace Communication"></div>
+<div class="form-group"><label>Format</label>
+<select id="fBeforeFormat">
+<option value="Watch + Respond">Watch + Respond</option>
+<option value="Read + Reflect">Read + Reflect</option>
+<option value="Quiz">Quiz</option>
+<option value="Online Activity">Online Activity</option>
+</select>
+</div>
+</div>
+<div class="form-group"><label>Description</label><textarea id="fBeforeDesc" rows="2"></textarea></div>
+<div class="form-group">
+<label>Instructions</label>
+<div id="beforeInstrItems" class="list-editor"></div>
+<div class="add-remove-btns">
+<button onclick="addInstrItem('before')">+ Add Step</button>
+<button onclick="removeInstrItem('before')">− Remove Last</button>
+</div>
+</div>
+<div class="form-group"><label>Purpose</label><textarea id="fBeforePurpose" rows="2"></textarea></div>
+<div class="section-toggle">
+<label><input type="checkbox" id="togBeforeVideo"> Include Video Embed Block</label>
+</div>
+<div id="beforeVideoFields" class="video-fields" style="display:none;">
+<h4>🎬 Video Embed</h4>
+<div class="form-group"><label>Video Description</label><input type="text" id="fBeforeVideoDesc" placeholder="e.g. professional communication in Australian workplaces"></div>
+<div class="form-group"><label>Video Search Suggestion</label><input type="text" id="fBeforeVideoSearch" placeholder="e.g. Australian workplace communication skills"></div>
+</div>
+</div>
+<div class="form-section after-class">
+<h3>📤 After Class Activity</h3>
+<div class="form-row">
+<div class="form-group"><label>Activity Title</label><input type="text" id="fAfterTitle" placeholder="e.g. Communication Reflection"></div>
+<div class="form-group"><label>Format</label>
+<select id="fAfterFormat">
+<option value="Discussion">Discussion</option>
+<option value="Quiz">Quiz</option>
+<option value="Canvas Submission">Canvas Submission</option>
+<option value="Practical Task">Practical Task</option>
+</select>
+</div>
+</div>
+<div class="form-group"><label>Description</label><textarea id="fAfterDesc" rows="2"></textarea></div>
+<div class="form-group">
+<label>Instructions</label>
+<div id="afterInstrItems" class="list-editor"></div>
+<div class="add-remove-btns">
+<button onclick="addInstrItem('after')">+ Add Step</button>
+<button onclick="removeInstrItem('after')">− Remove Last</button>
+</div>
+</div>
+<div class="form-group"><label>Purpose</label><textarea id="fAfterPurpose" rows="2"></textarea></div>
+<div class="section-toggle">
+<label><input type="checkbox" id="togAfterVideo"> Include Video Embed Block</label>
+</div>
+<div id="afterVideoFields" class="video-fields" style="display:none;">
+<h4>🎬 Video Embed</h4>
+<div class="form-group"><label>Video Description</label><input type="text" id="fAfterVideoDesc"></div>
+<div class="form-group"><label>Video Search Suggestion</label><input type="text" id="fAfterVideoSearch"></div>
+</div>
+</div>
+<div class="button-group" style="padding-top:20px;border-top:2px solid #e3e5e0;">
+<button class="btn btn-primary" onclick="generateHTML()">Generate HTML</button>
+<button class="btn btn-secondary" onclick="resetAll()">Start Over</button>
+</div>
+</div>
+<div class="output-section" id="outputSection">
+<h2 style="color:#000054;margin-bottom:20px;">Generated HTML <span class="mode-badge" id="modeBadge" style="background:#fac800;color:#000054;padding:3px 10px;border-radius:3px;font-size:.78rem;font-weight:700;">EMBLE</span></h2>
+<div class="tab-bar">
+<div class="tab active" data-tab="before" onclick="switchTab('before')">Before Class Page</div>
+<div class="tab" data-tab="after" onclick="switchTab('after')">After Class Page</div>
+</div>
+<div class="tab-content active" id="tabBefore">
+<div class="output-container"><div class="output-header"><span>Before Class — HTML</span><button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem;" onclick="copyHTML('beforeHTML', this)">Copy HTML</button></div><div class="output-content" id="beforeHTML"></div></div>
+<div class="preview-container"><h3 style="color:#000054;margin-bottom:20px;">Preview — Before Class</h3><div id="beforePreview"></div></div>
+</div>
+<div class="tab-content" id="tabAfter">
+<div class="output-container"><div class="output-header"><span>After Class — HTML</span><button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem;" onclick="copyHTML('afterHTML', this)">Copy HTML</button></div><div class="output-content" id="afterHTML"></div></div>
+<div class="preview-container"><h3 style="color:#000054;margin-bottom:20px;">Preview — After Class</h3><div id="afterPreview"></div></div>
+</div>
+<div class="button-group">
+<button class="btn btn-secondary" onclick="backToEdit()">Back to Edit</button>
+<button class="btn btn-primary" onclick="resetAll()">New Content</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team — RMIT College of Vocational Education</p></footer>
+
+<script>
+// ========== CONSTANTS & STATE ==========
+var ICON_SLOTS = [
+    {key:'before', label:'Before Class Banner', emoji:'📥', embleClass:'icon-circle-arrow-down'},
+    {key:'after', label:'After Class Banner', emoji:'📤', embleClass:'icon-arrow-end'},
+    {key:'video', label:'Video Block (if used)', emoji:'🎬', embleClass:'icon-video'}
+];
+var iconRefs = {before:null, after:null, video:null};
+var beforeInstrCount = 0, afterInstrCount = 0;
+var LS_KEY = 'cove-before-after-converter-project-v1';
+
+// ========== HELPERS ==========
+function esc(s) { if (s === null || s === undefined) return ''; var d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+function escH(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function genId() { return 'emble-customise-' + Math.random().toString(16).slice(2,10); }
+function updateStep(n, s) { var e = document.getElementById('step'+n); e.classList.remove('active','completed'); if (s) e.classList.add(s); }
+function showTextarea() { document.getElementById('copilotInput').style.display='block'; document.getElementById('pasteArea').style.display='none'; document.getElementById('copilotInput').focus(); document.getElementById('parseBtn').disabled=false; }
+
+// ========== CANVAS FILE URL PARSER ==========
+function parseCanvasFileURL(url) {
+    if (!url || typeof url !== 'string') return null;
+    url = url.trim(); if (!url) return null;
+    var courseMatch = url.match(/\/courses\/(\d+)/);
+    if (!courseMatch) return null;
+    var courseId = courseMatch[1];
+    var pathFileMatch = url.match(/\/files\/(\d+)(?:\/|\?|$)/);
+    if (pathFileMatch) return {courseId: courseId, fileId: pathFileMatch[1], rawUrl: url};
+    var qFileMatch = url.match(/[?&]preview=(\d+)/);
+    if (qFileMatch) return {courseId: courseId, fileId: qFileMatch[1], rawUrl: url};
+    return null;
+}
+
+function buildIconImgTag(slot) {
+    var ref = iconRefs[slot];
+    var slotDef = ICON_SLOTS.find(function(s){return s.key === slot;});
+    var fallback = slotDef ? slotDef.emoji : '?';
+    if (!ref || typeof ref !== 'object') return fallback;
+    var cid = ref.courseId, fid = ref.fileId;
+    if (!cid || !fid) return fallback;
+    var cidStr = String(cid), fidStr = String(fid);
+    if (cidStr === '[object Object]' || fidStr === '[object Object]') return fallback;
+    var src = 'https://rmit.instructure.com/courses/' + cidStr + '/files/' + fidStr + '/preview';
+    var api = 'https://rmit.instructure.com/api/v1/courses/' + cidStr + '/files/' + fidStr;
+    return '<img id="' + fidStr + '" src="' + src + '" alt="' + slot + ' icon" style="max-width:65%;max-height:65%;object-fit:contain;" data-api-endpoint="' + api + '" data-api-returntype="File" />';
+}
+
+// ========== CUSTOMISATION UI ==========
+function toggleCustomPanel() { document.getElementById('customPanel').classList.toggle('collapsed'); }
+function onModeChange() {
+    var mode = document.querySelector('input[name="outputMode"]:checked').value;
+    document.body.classList.remove('mode-emble','mode-flex');
+    document.body.classList.add('mode-'+mode);
+    saveProjectToStorage();
+}
+function loadRmitPalette() {
+    document.getElementById('colPrimary').value='#000054';
+    document.getElementById('colAccent').value='#fac800';
+    document.getElementById('colCardBg').value='#f2f2f2';
+    document.getElementById('colAccentText').value='#000054';
+    document.getElementById('selRadius').value='0';
+}
+function loadBlankPalette() {
+    document.getElementById('colPrimary').value='#333333';
+    document.getElementById('colAccent').value='#0066cc';
+    document.getElementById('colCardBg').value='#f5f5f5';
+    document.getElementById('colAccentText').value='#ffffff';
+    document.getElementById('selRadius').value='8';
+}
+
+function buildIconUploadUI() {
+    var grid = document.getElementById('iconUploadGrid');
+    grid.innerHTML = ICON_SLOTS.map(function(s){
+        return '<div class="icon-upload-row">' +
+            '<div class="icon-preview" id="iconPreview_'+s.key+'">'+s.emoji+'</div>' +
+            '<label>'+s.label+'</label>' +
+            '<button class="icon-clear-btn" type="button" onclick="clearIcon(\''+s.key+'\')">✕</button>' +
+            '<input type="text" class="icon-url-input" id="iconUrl_'+s.key+'" placeholder="Paste Canvas file URL..." oninput="handleIconUrlChange(\''+s.key+'\', this)">' +
+            '<div class="icon-status" id="iconStatus_'+s.key+'"></div>' +
+        '</div>';
+    }).join('');
+}
+
+function handleIconUrlChange(slot, input) {
+    var url = input.value.trim();
+    var statusEl = document.getElementById('iconStatus_'+slot);
+    var previewEl = document.getElementById('iconPreview_'+slot);
+    var slotDef = ICON_SLOTS.find(function(s){return s.key===slot;});
+    var emoji = slotDef ? slotDef.emoji : '?';
+    if (!url) {
+        iconRefs[slot] = null;
+        input.classList.remove('invalid');
+        statusEl.textContent = ''; statusEl.className = 'icon-status';
+        previewEl.innerHTML = emoji;
+        saveProjectToStorage(); return;
+    }
+    var ref = parseCanvasFileURL(url);
+    if (ref) {
+        iconRefs[slot] = ref;
+        input.classList.remove('invalid');
+        statusEl.textContent = '✔ Course ' + ref.courseId + ' · File ' + ref.fileId;
+        statusEl.className = 'icon-status ok';
+        var absUrl = 'https://rmit.instructure.com/courses/' + ref.courseId + '/files/' + ref.fileId + '/preview';
+        previewEl.innerHTML = '<img src="' + absUrl + '" alt="' + slot + '" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\''+emoji+'\';">';
+    } else {
+        iconRefs[slot] = null;
+        input.classList.add('invalid');
+        statusEl.textContent = '✗ Could not extract IDs';
+        statusEl.className = 'icon-status err';
+        previewEl.innerHTML = emoji;
+    }
+    saveProjectToStorage();
+}
+
+function clearIcon(slot) {
+    iconRefs[slot] = null;
+    var slotDef = ICON_SLOTS.find(function(s){return s.key===slot;});
+    var emoji = slotDef ? slotDef.emoji : '?';
+    document.getElementById('iconPreview_'+slot).innerHTML = emoji;
+    var urlInput = document.getElementById('iconUrl_'+slot);
+    if (urlInput) { urlInput.value=''; urlInput.classList.remove('invalid'); }
+    var statusEl = document.getElementById('iconStatus_'+slot);
+    if (statusEl) { statusEl.textContent=''; statusEl.className='icon-status'; }
+    saveProjectToStorage();
+}
+
+// ========== PROJECT PERSISTENCE ==========
+function getProjectConfig() {
+    return {
+        name: document.getElementById('projectName').value || '',
+        mode: document.querySelector('input[name="outputMode"]:checked').value,
+        colPrimary: document.getElementById('colPrimary').value,
+        colAccent: document.getElementById('colAccent').value,
+        colCardBg: document.getElementById('colCardBg').value,
+        colAccentText: document.getElementById('colAccentText').value,
+        radius: document.getElementById('selRadius').value,
+        icons: JSON.parse(JSON.stringify(iconRefs))
+    };
+}
+function saveProjectToStorage() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(getProjectConfig())); updateProjectStatus(); } catch(e) {}
+}
+function loadProjectFromStorage() {
+    try {
+        var raw = localStorage.getItem(LS_KEY);
+        if (!raw) return;
+        var p = JSON.parse(raw);
+        if (p.name) document.getElementById('projectName').value = p.name;
+        if (p.mode) { var r = document.querySelector('input[name="outputMode"][value="'+p.mode+'"]'); if (r) { r.checked=true; onModeChange(); } }
+        if (p.colPrimary) document.getElementById('colPrimary').value = p.colPrimary;
+        if (p.colAccent) document.getElementById('colAccent').value = p.colAccent;
+        if (p.colCardBg) document.getElementById('colCardBg').value = p.colCardBg;
+        if (p.colAccentText) document.getElementById('colAccentText').value = p.colAccentText;
+        if (p.radius != null) document.getElementById('selRadius').value = p.radius;
+        if (p.icons) {
+            Object.keys(p.icons).forEach(function(k){
+                var ref = p.icons[k];
+                if (ref && ref.courseId && ref.fileId) {
+                    iconRefs[k] = {courseId: String(ref.courseId), fileId: String(ref.fileId), rawUrl: ref.rawUrl || ''};
+                    var urlInput = document.getElementById('iconUrl_'+k);
+                    if (urlInput) urlInput.value = iconRefs[k].rawUrl || ('https://rmit.instructure.com/courses/'+iconRefs[k].courseId+'/files/'+iconRefs[k].fileId+'/preview');
+                    var statusEl = document.getElementById('iconStatus_'+k);
+                    if (statusEl) { statusEl.textContent = '✔ Course '+iconRefs[k].courseId+' · File '+iconRefs[k].fileId; statusEl.className = 'icon-status ok'; }
+                    var previewEl = document.getElementById('iconPreview_'+k);
+                    if (previewEl) {
+                        var slotDef = ICON_SLOTS.find(function(s){return s.key===k;});
+                        var emoji = slotDef ? slotDef.emoji : '?';
+                        var absUrl = 'https://rmit.instructure.com/courses/'+iconRefs[k].courseId+'/files/'+iconRefs[k].fileId+'/preview';
+                        previewEl.innerHTML = '<img src="'+absUrl+'" alt="'+k+'" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\''+emoji+'\';">';
+                    }
+                }
+            });
+        }
+        updateProjectStatus();
+    } catch(e) {}
+}
+function updateProjectStatus() {
+    var el = document.getElementById('projectStatus');
+    if (!el) return;
+    var name = document.getElementById('projectName').value;
+    el.innerHTML = name ? '🔒 Locked: <strong>'+esc(name)+'</strong>' : '🔒 Auto-saved';
+}
+function exportProject() {
+    var p = getProjectConfig();
+    var blob = new Blob([JSON.stringify(p, null, 2)], {type:'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = ((p.name || 'before-after-project').replace(/[^\w\-]+/g, '-').toLowerCase() || 'before-after-project') + '-config.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href);}, 200);
+}
+function loadProjectFromFile() { document.getElementById('projectFile').click(); }
+function handleProjectFile(input) {
+    var f = input.files && input.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function(e) {
+        try { var p = JSON.parse(e.target.result); localStorage.setItem(LS_KEY, JSON.stringify(p)); loadProjectFromStorage(); alert('Imported.'); }
+        catch(err) { alert('Failed to load: '+err.message); }
+    };
+    r.readAsText(f); input.value = '';
+}
+function resetProject() {
+    if (!confirm('Reset all customisation?')) return;
+    try { localStorage.removeItem(LS_KEY); } catch(e) {}
+    loadRmitPalette();
+    document.getElementById('projectName').value = '';
+    ICON_SLOTS.forEach(function(s){clearIcon(s.key);});
+    var emble = document.querySelector('input[name="outputMode"][value="emble"]');
+    if (emble) { emble.checked=true; onModeChange(); }
+    document.getElementById('projectStatus').innerHTML = '';
+}
+
+// ========== TOGGLE LISTENERS (video sections) ==========
+document.getElementById('togBeforeVideo').addEventListener('change', function () {
+    document.getElementById('beforeVideoFields').style.display = this.checked ? 'block' : 'none';
+});
+document.getElementById('togAfterVideo').addEventListener('change', function () {
+    document.getElementById('afterVideoFields').style.display = this.checked ? 'block' : 'none';
+});
+
+// ========== INSTRUCTION LIST EDITORS ==========
+function addInstrItem(which, val) {
+    val = val || '';
+    var isB = which === 'before';
+    var count = isB ? ++beforeInstrCount : ++afterInstrCount;
+    var container = document.getElementById(isB ? 'beforeInstrItems' : 'afterInstrItems');
+    var prefix = isB ? 'bi' : 'ai';
+    var d = document.createElement('div');
+    d.className = 'list-item';
+    d.id = prefix + 'Item' + count;
+    d.innerHTML = '<span style="font-weight:600;color:#000054;min-width:20px;">'+count+'.</span>' +
+        '<input type="text" id="'+prefix+'Text'+count+'" value="'+escH(val)+'" placeholder="Instruction step '+count+'">' +
+        '<button onclick="this.closest(\'.list-item\').remove();renumberInstr(\''+which+'\')">✕</button>';
+    container.appendChild(d);
+}
+function removeInstrItem(which) {
+    var isB = which === 'before';
+    var count = isB ? beforeInstrCount : afterInstrCount;
+    if (count > 0) {
+        var prefix = isB ? 'bi' : 'ai';
+        var e = document.getElementById(prefix + 'Item' + count);
+        if (e) e.remove();
+        if (isB) beforeInstrCount--; else afterInstrCount--;
+    }
+}
+function renumberInstr(which) {
+    var isB = which === 'before';
+    var prefix = isB ? 'bi' : 'ai';
+    var container = document.getElementById(isB ? 'beforeInstrItems' : 'afterInstrItems');
+    var items = container.querySelectorAll('.list-item');
+    if (isB) beforeInstrCount = items.length; else afterInstrCount = items.length;
+    items.forEach(function (item, i) {
+        var n = i + 1;
+        item.id = prefix + 'Item' + n;
+        item.querySelector('span').textContent = n + '.';
+        item.querySelector('input').id = prefix + 'Text' + n;
+    });
+}
+
+// ========== DUAL-FORMAT PARSER (preserved from original) ==========
+function parseInput() {
+    var raw = document.getElementById('copilotInput').value.trim();
+    if (!raw) return alert('Paste Copilot output first.');
+
+    var sectionRe = /^[\u2500\u2501\u2014\-=]{2,}\s*(.+?)\s*[\u2500\u2501\u2014\-=]{2,}\s*$/;
+    var sections = {};
+    var currentKey = null;
+    var lines = raw.split('\n');
+
+    for (var li = 0; li < lines.length; li++) {
+        var t = lines[li].trim();
+        var m = t.match(sectionRe);
+        if (m) {
+            currentKey = m[1].trim().toLowerCase().replace(/\s+/g, '_');
+            sections[currentKey] = [];
+        } else if (currentKey) {
+            sections[currentKey].push(lines[li]);
+        }
+    }
+
+    function detectFormat(sectionLines) {
+        for (var i = 0; i < sectionLines.length; i++) {
+            var trimmed = sectionLines[i].trim();
+            if (/^Title:\s*$/i.test(trimmed)) return 'new';
+            if (/^Title:\s*.+/i.test(trimmed)) return 'legacy';
+        }
+        return 'legacy';
+    }
+
+    function parseNewFormat(sectionLines) {
+        var data = { title: '', format: '', description: '', instructions: [], purpose: '', videoDesc: '', videoSearch: '' };
+        var fieldLabels = [
+            { re: /^Title:\s*$/i, key: 'title' },
+            { re: /^Format:\s*$/i, key: 'format' },
+            { re: /^Description:\s*$/i, key: 'description' },
+            { re: /^Instructions:\s*$/i, key: 'instructions' },
+            { re: /^Purpose:\s*$/i, key: 'purpose' },
+            { re: /^Video\s+description:\s*$/i, key: 'videoDesc' },
+            { re: /^Suggested\s+search:\s*$/i, key: 'videoSearch' }
+        ];
+        var currentField = null;
+        var contentLines = [];
+        function flushField() {
+            if (!currentField) return;
+            var content = contentLines.join(' ').trim();
+            if (currentField === 'instructions') {
+                data.instructions = [];
+                for (var ci = 0; ci < contentLines.length; ci++) {
+                    var step = contentLines[ci].trim().replace(/^\d+[.)]\s*/, '').replace(/^[*\u2022\-\u2013]\s*/, '').trim();
+                    if (step) data.instructions.push(step);
+                }
+            } else {
+                data[currentField] = content;
+            }
+        }
+        for (var i = 0; i < sectionLines.length; i++) {
+            var line = sectionLines[i].trim();
+            var matched = false;
+            for (var fi = 0; fi < fieldLabels.length; fi++) {
+                if (fieldLabels[fi].re.test(line)) {
+                    flushField();
+                    currentField = fieldLabels[fi].key;
+                    contentLines = [];
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched) continue;
+            if (!line && currentField && currentField !== 'instructions') {
+                if (contentLines.length > 0) { flushField(); currentField = null; contentLines = []; }
+                continue;
+            }
+            if (currentField && line) contentLines.push(line);
+        }
+        flushField();
+        return data;
+    }
+
+    function parseLegacyFormat(sectionLines) {
+        var data = { title: '', format: '', description: '', instructions: [], purpose: '', videoDesc: '', videoSearch: '' };
+        var mode = '';
+        for (var i = 0; i < sectionLines.length; i++) {
+            var line = sectionLines[i].trim();
+            if (!line) continue;
+            var vdMatch = line.match(/^Video\s+description:\s*(.+)/i);
+            if (vdMatch) { data.videoDesc = vdMatch[1].trim(); mode = ''; continue; }
+            var vsMatch = line.match(/^Suggested\s+search:\s*(.+)/i);
+            if (vsMatch) { data.videoSearch = vsMatch[1].trim(); mode = ''; continue; }
+            var pMatch = line.match(/^Purpose:\s*(.+)/i);
+            if (pMatch) { data.purpose = pMatch[1].trim(); mode = ''; continue; }
+            var tfMatch = line.match(/^Title:\s*(.+?)\s+Format:\s*(.+)/i);
+            if (tfMatch) { data.title = tfMatch[1].trim(); data.format = tfMatch[2].trim(); mode = ''; continue; }
+            var tMatch = line.match(/^Title:\s*(.+)/i);
+            if (tMatch && !tfMatch) { data.title = tMatch[1].trim(); mode = ''; continue; }
+            var fMatch = line.match(/^Format:\s*(.+)/i);
+            if (fMatch) { data.format = fMatch[1].trim(); mode = ''; continue; }
+            var dMatch = line.match(/^Description:\s*(.*)/i);
+            if (dMatch) { data.description = dMatch[1].trim(); mode = 'desc'; continue; }
+            if (/^Instructions:/i.test(line)) { mode = 'instr'; continue; }
+            if (mode === 'instr') {
+                var step = line.replace(/^\d+[.)]\s*/, '').replace(/^[*\u2022\-\u2013]\s*/, '').trim();
+                if (step) data.instructions.push(step);
+                continue;
+            }
+            if (mode === 'desc' && line) data.description += ' ' + line;
+        }
+        return data;
+    }
+
+    function extractActivity(key) {
+        var sectionLines = sections[key] || [];
+        if (!sectionLines.length) return { title: '', format: '', description: '', instructions: [], purpose: '', videoDesc: '', videoSearch: '' };
+        var fmt = detectFormat(sectionLines);
+        return fmt === 'new' ? parseNewFormat(sectionLines) : parseLegacyFormat(sectionLines);
+    }
+
+    var sectionKeys = Object.keys(sections);
+    var beforeKey = sectionKeys.find(function (k) { return k.indexOf('before_class') !== -1 || k.indexOf('before-class') !== -1; });
+    var afterKey = sectionKeys.find(function (k) { return k.indexOf('after_class') !== -1 || k.indexOf('after-class') !== -1; });
+
+    var before = extractActivity(beforeKey);
+    var after = extractActivity(afterKey);
+
+    document.getElementById('fBeforeTitle').value = before.title;
+    setSelectByText('fBeforeFormat', before.format);
+    document.getElementById('fBeforeDesc').value = before.description;
+    document.getElementById('fBeforePurpose').value = before.purpose;
+    document.getElementById('beforeInstrItems').innerHTML = '';
+    beforeInstrCount = 0;
+    if (before.instructions.length) before.instructions.forEach(function (s) { addInstrItem('before', s); });
+    else { addInstrItem('before'); addInstrItem('before'); addInstrItem('before'); }
+
+    var bHasVideo = before.videoDesc || before.videoSearch || hasVideoRef(before.instructions);
+    document.getElementById('togBeforeVideo').checked = !!bHasVideo;
+    document.getElementById('beforeVideoFields').style.display = bHasVideo ? 'block' : 'none';
+    document.getElementById('fBeforeVideoDesc').value = before.videoDesc || autoExtractVideoDesc(before.instructions);
+    document.getElementById('fBeforeVideoSearch').value = before.videoSearch || (before.videoDesc || '');
+
+    document.getElementById('fAfterTitle').value = after.title;
+    setSelectByText('fAfterFormat', after.format);
+    document.getElementById('fAfterDesc').value = after.description;
+    document.getElementById('fAfterPurpose').value = after.purpose;
+    document.getElementById('afterInstrItems').innerHTML = '';
+    afterInstrCount = 0;
+    if (after.instructions.length) after.instructions.forEach(function (s) { addInstrItem('after', s); });
+    else { addInstrItem('after'); addInstrItem('after'); addInstrItem('after'); }
+
+    var aHasVideo = after.videoDesc || after.videoSearch || hasVideoRef(after.instructions);
+    document.getElementById('togAfterVideo').checked = !!aHasVideo;
+    document.getElementById('afterVideoFields').style.display = aHasVideo ? 'block' : 'none';
+    document.getElementById('fAfterVideoDesc').value = after.videoDesc || autoExtractVideoDesc(after.instructions);
+    document.getElementById('fAfterVideoSearch').value = after.videoSearch || (after.videoDesc || '');
+
+    var bLines = sections[beforeKey] || [];
+    var detectedFmt = detectFormat(bLines);
+    showExtractionStatus(before, after, bHasVideo, aHasVideo, detectedFmt);
+    showEditForm();
+}
+
+function hasVideoRef(instructions) {
+    var re = /\b(watch|video|viewing|view\s+the|youtube)\b/i;
+    return instructions.some(function (l) { return re.test(l); });
+}
+function autoExtractVideoDesc(instructions) {
+    var re = /\b(watch|video|viewing|view\s+the)\b/i;
+    var line = instructions.find(function (l) { return re.test(l); });
+    if (!line) return '';
+    var m = line.match(/(?:video|watch\s+(?:a\s+)?(?:short\s+)?video)\s+(?:on|about|introducing)\s+(.+?)(?:\(|$)/i);
+    return m ? m[1].replace(/[.,;:]+$/, '').trim() : '';
+}
+function setSelectByText(id, text) {
+    var sel = document.getElementById(id);
+    var t = (text || '').toLowerCase().replace(/[+]/g, '+');
+    for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value.toLowerCase() === t || sel.options[i].text.toLowerCase() === t) {
+            sel.selectedIndex = i; return;
+        }
+    }
+}
+
+function showExtractionStatus(before, after, bVid, aVid, detectedFormat) {
+    var fmtLabel = detectedFormat === 'new' ? 'Label-per-line' : 'Inline';
+    var fmtClass = detectedFormat === 'new' ? 'new' : 'legacy';
+    var items = [
+        { f: true, t: 'Format detected: <span class="format-badge ' + fmtClass + '">' + fmtLabel + '</span>' },
+        { f: !!before.title, t: 'Before: Title' + (before.title ? ' — ' + before.title : '') },
+        { f: !!before.format, t: 'Before: Format' + (before.format ? ' — ' + before.format : '') },
+        { f: before.instructions.length > 0, t: 'Before: Instructions (' + before.instructions.length + ' steps)' },
+        { f: !!before.purpose, t: 'Before: Purpose' },
+        { f: !!bVid, t: 'Before: Video ' + (bVid ? '(detected)' : '(none)') },
+        { f: !!after.title, t: 'After: Title' + (after.title ? ' — ' + after.title : '') },
+        { f: !!after.format, t: 'After: Format' + (after.format ? ' — ' + after.format : '') },
+        { f: after.instructions.length > 0, t: 'After: Instructions (' + after.instructions.length + ' steps)' },
+        { f: !!after.purpose, t: 'After: Purpose' },
+        { f: !!aVid, t: 'After: Video ' + (aVid ? '(detected)' : '(none)') }
+    ];
+    document.getElementById('statusList').innerHTML = items.map(function (i) {
+        return '<div class="status-item"><div class="status-icon ' + (i.f ? 'found' : 'missing') + '">' + (i.f ? '✔' : '✗') + '</div><span>' + i.t + '</span></div>';
+    }).join('');
+    document.getElementById('extractionStatus').style.display = 'block';
+}
+
+function showEditForm() {
+    updateStep(1, 'completed'); updateStep(2, 'active');
+    document.getElementById('initialInstructions').style.display = 'none';
+    document.getElementById('editForm').style.display = 'block';
+    document.getElementById('outputSection').style.display = 'none';
+}
+
+// ========== HTML GENERATOR — DISPATCHER ==========
+function generateHTML() {
+    var cfg = {
+        mode: document.querySelector('input[name="outputMode"]:checked').value,
+        P: document.getElementById('colPrimary').value,
+        A: document.getElementById('colAccent').value,
+        CB: document.getElementById('colCardBg').value,
+        AT: document.getElementById('colAccentText').value,
+        R: parseInt(document.getElementById('selRadius').value) || 0
+    };
+    var beforeH = cfg.mode === 'flex' ? generateFlexActivity('before', cfg) : generateEmbleActivity('before', cfg);
+    var afterH = cfg.mode === 'flex' ? generateFlexActivity('after', cfg) : generateEmbleActivity('after', cfg);
+    document.getElementById('beforeHTML').textContent = beforeH;
+    document.getElementById('beforePreview').innerHTML = beforeH;
+    document.getElementById('afterHTML').textContent = afterH;
+    document.getElementById('afterPreview').innerHTML = afterH;
+    document.getElementById('modeBadge').textContent = cfg.mode.toUpperCase();
+    updateStep(2,'completed'); updateStep(3,'active');
+    document.getElementById('editForm').style.display = 'none';
+    document.getElementById('outputSection').style.display = 'block';
+    switchTab('before');
+    window.scrollTo(0,0);
+}
+
+// ========== EMBLE MODE GENERATOR ==========
+function generateEmbleActivity(type, cfg) {
+    var P = cfg.P, A = cfg.A, CB = cfg.CB, AT = cfg.AT, R = cfg.R;
+    var isB = type === 'before';
+    var week = document.getElementById('weekNumber').value || 'X';
+    var title = document.getElementById(isB ? 'fBeforeTitle' : 'fAfterTitle').value || 'Activity';
+    var format = document.getElementById(isB ? 'fBeforeFormat' : 'fAfterFormat').value;
+    var desc = document.getElementById(isB ? 'fBeforeDesc' : 'fAfterDesc').value;
+    var purpose = document.getElementById(isB ? 'fBeforePurpose' : 'fAfterPurpose').value;
+    var steps = [];
+    document.querySelectorAll('#'+(isB?'beforeInstrItems':'afterInstrItems')+' .list-item input').forEach(function(inp){
+        if (inp.value.trim()) steps.push(inp.value.trim());
+    });
+    var includeVideo = document.getElementById(isB ? 'togBeforeVideo' : 'togAfterVideo').checked;
+    var videoDesc = document.getElementById(isB ? 'fBeforeVideoDesc' : 'fAfterVideoDesc').value;
+    var videoSearch = document.getElementById(isB ? 'fBeforeVideoSearch' : 'fAfterVideoSearch').value;
+
+    var pageTitle = isB ? 'Week ' + esc(week) + ': Before Class' : 'Week ' + esc(week) + ': After Class';
+    var sectionLabel = isB ? 'Before Class' : 'After Class';
+    var slot = isB ? 'before' : 'after';
+
+    var h = '<style>\n';
+    h += '.emble.heading-rule.rmit-blue{border-color:'+P+' !important;}\n';
+    h += '.emble.emble-cblock.grey{background-color:'+CB+' !important;border-radius:'+R+'px !important;}\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette]{background-color:'+CB+' !important;border-radius:'+R+'px !important;}\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] .emble-icon,\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] div.emble-icon.small.wrap.yellow.square{background-color:'+A+' !important;border-radius:'+R+'px !important;color:'+AT+' !important;}\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] .emble-icon i,\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] .emble-icon.yellow i{background-color:transparent !important;background:none !important;color:'+AT+' !important;}\n';
+    h += 'div.emble.customise.title-with-icon[data-cove-palette] .title-with-icon-title h3{color:'+P+' !important;}\n';
+    h += '</style>\n\n';
+
+    h += '<h2 style="text-align:left;color:'+P+';">' + pageTitle + '</h2>\n\n';
+    h += '<hr class="emble heading-rule rmit-blue border-medium width-full" style="border-color:'+P+';" data-context-menu="customise delete" data-customise="hr-border-style hr-line-width hr-line-color" data-emble-name="Horizontal Line" data-emble-version="2.0" />\n\n';
+    h += '<p class="narrow-p">&nbsp;</p>\n\n';
+
+    h += embleBanner(slot, sectionLabel + ': ' + esc(title), cfg);
+
+    h += '<div id="'+genId()+'" class="customise emble emble-cblock emble-width-control fullwidth-on grey" style="background-color:'+CB+';border-radius:'+R+'px;" data-context-menu="customise delete" data-emble-version="2.0">\n';
+    h += '<p><strong>Format:</strong> ' + esc(format) + '</p>\n';
+    if (desc) h += '<p>' + esc(desc) + '</p>\n';
+    h += '</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+
+    if (includeVideo) {
+        h += embleBanner('video', 'Video', cfg);
+        h += '<div id="'+genId()+'" class="customise emble-columns-container emble-columns-controller-1-2 emble-columns-stretch-child-height" data-context-menu="customise delete" data-emble-name="Columns" data-emble-version="2.0">\n';
+        h += '<div class="emble-columns-child emble-prevent-delete">\n';
+        var vdClean = videoDesc ? esc(videoDesc).replace(/[.!]+$/, '') : '';
+        h += '<p>Watch this (<span style="background-color:'+A+';color:'+AT+';">X:XX mins</span>) video to learn about <span style="background-color:'+A+';color:'+AT+';">...</span>'+(vdClean ? ' '+vdClean+'.' : '')+'</p>\n<p>&nbsp;</p>\n</div>\n';
+        h += '<div class="emble-columns-child emble-prevent-delete">\n<p>*</p>\n<p><span style="background-color:'+A+';color:'+AT+';">Embed your YouTube video here.';
+        if (videoSearch) h += ' [Suggested search: &ldquo;'+esc(videoSearch)+'&rdquo;]';
+        h += ' To embed: In YouTube &gt; Share &gt; Embed &gt; Copy the code. In Canvas, position your cursor above this prompt (where the * is), then select Insert &gt; Embed. Paste your copied code from YouTube and hit Submit. Finally delete this text</span></p>\n<p>&nbsp;</p>\n</div>\n';
+        h += '<div class="emble-columns-child emble-prevent-delete">\n<p>Column 3</p>\n<p>&nbsp;</p>\n</div>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+
+    if (steps.length) {
+        h += '<h3 style="color:'+P+';">Instructions</h3>\n\n<ol>\n';
+        steps.forEach(function(s){h += '<li>'+esc(s)+'</li>\n';});
+        h += '</ol>\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+
+    if (purpose) {
+        h += '<div id="'+genId()+'" class="customise emble emble-cblock emble-width-control fullwidth-on grey" style="background-color:'+CB+';border-radius:'+R+'px;" data-context-menu="customise delete" data-emble-version="2.0">\n';
+        h += '<p><strong>Purpose:</strong> ' + esc(purpose) + '</p>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+    }
+
+    h += '<p>&nbsp;</p>\n';
+    return h;
+}
+
+function embleBanner(slot, titleHTML, cfg) {
+    var A = cfg.A, AT = cfg.AT, P = cfg.P, CB = cfg.CB, R = cfg.R;
+    var slotDef = ICON_SLOTS.find(function(s){return s.key === slot;});
+    var iconClass = slotDef ? slotDef.embleClass : 'icon-circle-arrow-down';
+    return '<div id="'+genId()+'" class="emble customise title-with-icon" data-cove-palette="1" data-customise="icon icon-colour-options" data-context-menu="customise delete" style="background-color:'+CB+' !important;border-radius:'+R+'px !important;">\n'+
+        '<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-cove-palette="1" style="background-color:'+A+' !important;color:'+AT+' !important;border-radius:'+R+'px !important;" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag icon-check icon-question" data-emble-version="2.0"><i class="'+iconClass+'" style="background-color:transparent !important;background:none !important;color:'+AT+' !important;">&nbsp;</i></div>\n'+
+        '<div class="title-with-icon-title">\n<h3 style="color:'+P+' !important;margin:0;">'+titleHTML+'</h3>\n</div>\n'+
+        '</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n';
+}
+
+// ========== FLEX MODE GENERATOR ==========
+function generateFlexActivity(type, cfg) {
+    var P = cfg.P, A = cfg.A, CB = cfg.CB, AT = cfg.AT, R = cfg.R;
+    var R2 = Math.max(0, R-2);
+    var isB = type === 'before';
+    var week = document.getElementById('weekNumber').value || 'X';
+    var title = document.getElementById(isB ? 'fBeforeTitle' : 'fAfterTitle').value || 'Activity';
+    var format = document.getElementById(isB ? 'fBeforeFormat' : 'fAfterFormat').value;
+    var desc = document.getElementById(isB ? 'fBeforeDesc' : 'fAfterDesc').value;
+    var purpose = document.getElementById(isB ? 'fBeforePurpose' : 'fAfterPurpose').value;
+    var steps = [];
+    document.querySelectorAll('#'+(isB?'beforeInstrItems':'afterInstrItems')+' .list-item input').forEach(function(inp){
+        if (inp.value.trim()) steps.push(inp.value.trim());
+    });
+    var includeVideo = document.getElementById(isB ? 'togBeforeVideo' : 'togAfterVideo').checked;
+    var videoDesc = document.getElementById(isB ? 'fBeforeVideoDesc' : 'fAfterVideoDesc').value;
+    var videoSearch = document.getElementById(isB ? 'fBeforeVideoSearch' : 'fAfterVideoSearch').value;
+
+    var sHl = 'background-color:'+A+';color:'+AT+';padding:2px 5px;border-radius:'+R2+'px;';
+    var sCard = 'background-color:'+CB+';padding:18px 22px;border-radius:'+R+'px;margin:12px 0;';
+    var sH2 = 'color:'+P+';font-size:1.75rem;margin:0 0 12px;';
+    var sH3 = 'color:'+P+';font-size:1.25rem;margin:20px 0 10px;';
+    var sRule = 'border:0;border-top:3px solid '+P+';margin:16px 0 24px;';
+    var sPage = 'font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#222;line-height:1.6;';
+
+    var pageTitle = isB ? 'Week ' + esc(week) + ': Before Class' : 'Week ' + esc(week) + ': After Class';
+    var sectionLabel = isB ? 'Before Class' : 'After Class';
+    var slot = isB ? 'before' : 'after';
+
+    var h = '<div style="'+sPage+'">\n';
+    h += '<h2 style="'+sH2+'">' + pageTitle + '</h2>\n';
+    h += '<hr style="'+sRule+'" />\n';
+    h += flexBanner(slot, sectionLabel + ': ' + esc(title), cfg);
+
+    h += '<div style="'+sCard+'">\n';
+    h += '<p style="margin:6px 0;"><strong>Format:</strong> ' + esc(format) + '</p>\n';
+    if (desc) h += '<p style="margin:6px 0;">' + esc(desc) + '</p>\n';
+    h += '</div>\n';
+
+    if (includeVideo) {
+        h += flexBanner('video', 'Video', cfg);
+        var vdClean = videoDesc ? esc(videoDesc).replace(/[.!]+$/, '') : '';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:14px;margin:12px 0;">\n';
+        h += '<div style="flex:1 1 240px;min-width:0;"><p>Watch this (<span style="'+sHl+'">X:XX mins</span>) video to learn about <span style="'+sHl+'">...</span>'+(vdClean ? ' '+vdClean+'.' : '')+'</p></div>\n';
+        h += '<div style="flex:2 1 400px;min-width:0;"><p><span style="'+sHl+'">Embed your video here.';
+        if (videoSearch) h += ' [Suggested search: &ldquo;'+esc(videoSearch)+'&rdquo;]';
+        h += ' Paste embed code in place of this text.</span></p></div>\n';
+        h += '</div>\n';
+    }
+
+    if (steps.length) {
+        h += '<h3 style="'+sH3+'">Instructions</h3>\n<ol style="margin:8px 0 16px 20px;">\n';
+        steps.forEach(function(s){h += '<li style="margin-bottom:8px;">'+esc(s)+'</li>\n';});
+        h += '</ol>\n';
+    }
+
+    if (purpose) {
+        h += '<div style="'+sCard+'">\n<p style="margin:6px 0;"><strong>Purpose:</strong> ' + esc(purpose) + '</p>\n</div>\n';
+    }
+
+    h += '</div>\n<p>&nbsp;</p>\n';
+    return h;
+}
+
+function flexBanner(slot, titleHTML, cfg) {
+    var P = cfg.P, A = cfg.A, CB = cfg.CB, AT = cfg.AT, R = cfg.R;
+    var iconContent = buildIconImgTag(slot);
+    return '<div style="display:flex;align-items:stretch;background-color:'+CB+';border-radius:'+R+'px;overflow:hidden;margin:12px 0;min-height:80px;width:100%;">\n' +
+        '<div style="width:80px;background-color:'+A+';color:'+AT+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.75rem;align-self:stretch;">' + iconContent + '</div>\n' +
+        '<div style="flex:1;display:flex;align-items:center;padding:0 22px;"><h3 style="margin:0;color:'+P+';font-size:1.25rem;line-height:1.2;">'+titleHTML+'</h3></div>\n' +
+        '</div>\n';
+}
+
+// ========== TAB SWITCHING ==========
+function switchTab(which) {
+    document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function (t) { t.classList.remove('active'); });
+    if (which === 'before') {
+        document.querySelector('.tab[data-tab="before"]').classList.add('active');
+        document.getElementById('tabBefore').classList.add('active');
+    } else {
+        document.querySelector('.tab[data-tab="after"]').classList.add('active');
+        document.getElementById('tabAfter').classList.add('active');
+    }
+}
+
+// ========== ACTIONS ==========
+function copyHTML(id, btn) {
+    var c = document.getElementById(id).textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(c).then(function () { showCopyFeedback(btn); }).catch(function () { fallbackCopy(c, btn); });
+    } else { fallbackCopy(c, btn); }
+}
+function fallbackCopy(text, btn) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showCopyFeedback(btn); } catch (e) { alert('Please copy manually'); }
+    document.body.removeChild(ta);
+}
+function showCopyFeedback(btn) {
+    var orig = btn.textContent;
+    btn.textContent = 'Copied!'; btn.style.background = '#28a745';
+    setTimeout(function(){ btn.textContent = orig; btn.style.background = ''; }, 2000);
+}
+function backToEdit() { updateStep(3,''); updateStep(2,'active'); document.getElementById('editForm').style.display='block'; document.getElementById('outputSection').style.display='none'; }
+function resetAll() { if (confirm('Start over?')) location.reload(); }
+
+function loadSample() {
+    document.getElementById('weekNumber').value = '1';
+    document.getElementById('topicName').value = 'Layered Interior Design';
+    document.getElementById('copilotInput').value =
+'──── Before Class Activity ──────────────────────────────\nTitle:\nRecognising Design Clues in Existing Interiors\n\nFormat:\nWatch + Respond\n\nDescription:\nBefore our class on interpreting eclectic, professional, and adaptive interior strategies, complete the following task to activate your understanding.\n\nInstructions:\n1. Watch a short video demonstrating how designers read spatial clues, material traces, and historical layers in an existing interior.\n2. Identify two insights about how the designer determines what might be retained, adapted, or reinterpreted.\n3. Post your two insights in the Week 1 discussion forum before class.\n\nPurpose:\nThis activity prepares you for class discussions by helping you notice how designers interpret and evaluate existing interiors before making design decisions.\n\nVideo description:\nA designer walks through an existing interior, highlighting cultural traces, historical evidence, and early opportunities influencing design direction.\n\nSuggested search:\ndesigner walkthrough interpreting existing interior\n\n──── After Class Activity ───────────────────────────────\nTitle:\nSynthesis Response for a New Interior Scenario\n\nFormat:\nCanvas Submission\n\nDescription:\nAfter our class on synthesising design decisions across heritage, user needs, environmental performance, and cultural meaning, complete the following brief task.\n\nInstructions:\n1. Reflect on the synthesis methods discussed in class, focusing on how decisions balance competing design priorities.\n2. Apply this approach to a new scenario: a small suburban mechanics\u2019 workshop being converted into a youth arts drop-in space.\n3. Submit a 200–250 word written response via the Week 1 Canvas activity by the end of the week.\n\nPurpose:\nThis activity consolidates your learning by requiring you to apply synthesis reasoning to a new design context, clearly explaining the decisions you would prioritise.';
+    showTextarea();
+}
+
+// ========== INIT ==========
+buildIconUploadUI();
+loadProjectFromStorage();
+document.getElementById('copilotInput').addEventListener('input', function(){ document.getElementById('parseBtn').disabled = !this.value.trim(); });
+['projectName','colPrimary','colAccent','colCardBg','colAccentText','selRadius'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener('change', saveProjectToStorage); el.addEventListener('input', saveProjectToStorage); }
+});
+document.querySelectorAll('input[name="outputMode"]').forEach(function(el){el.addEventListener('change', saveProjectToStorage);});
+</script>
+</body>
+</html>
