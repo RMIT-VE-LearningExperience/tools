@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Extractor — Word Document</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --red:#e61e2a;
+  --blue:#000054;
+  --black:#000000;
+  --white:#ffffff;
+  --grey:#e3e5e0;
+  --emble-grey:#f2f2f2;
+  --yellow:#fac800;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:"Segoe UI",Arial,sans-serif;
+  background:var(--emble-grey);
+  color:var(--black);
+}
+header{
+  background:var(--blue);
+  color:var(--white);
+  padding:24px 32px;
+  border-bottom:4px solid var(--red);
+}
+header h1{margin:0 0 6px;font-size:1.5rem}
+header p{margin:0;font-size:.9rem;color:var(--grey)}
+main{max-width:1000px;margin:0 auto;padding:24px 20px 60px}
+.card{
+  background:var(--white);
+  border:1px solid var(--grey);
+  border-radius:8px;
+  padding:24px;
+  margin-bottom:20px;
+}
+.card h2{margin-top:0;color:var(--blue);font-size:1.15rem}
+.help-text{color:#555;font-size:.9rem;margin:0 0 16px}
+
+/* Dropzone */
+.dropzone{
+  border:2px dashed var(--blue);
+  border-radius:8px;
+  padding:40px 20px;
+  text-align:center;
+  background:var(--emble-grey);
+  cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+.dropzone:hover,.dropzone.dragover{
+  background:#eaf0ff;
+  border-color:var(--red);
+}
+.dropzone .icon{font-size:2.2rem;display:block;margin-bottom:8px}
+.dropzone strong{color:var(--blue)}
+.dropzone input{display:none}
+
+/* Status */
+.status{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px;
+  border-radius:6px;
+  font-size:.9rem;
+  margin-top:14px;
+}
+.status.info{background:#fff9e6;border:1px solid var(--yellow);color:#5a4400}
+.status.error{background:#fdf2f2;border:1px solid var(--red);color:#8a1019}
+.status.success{background:#f3f9f3;border:1px solid #28a745;color:#1d6b30}
+
+/* Filename row */
+.filename-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+.filename-row .fname{font-size:.9rem;color:var(--blue);font-weight:600}
+.btn{
+  background:var(--blue);
+  color:var(--white);
+  border:none;
+  padding:9px 18px;
+  border-radius:5px;
+  font-size:.88rem;
+  font-weight:600;
+  cursor:pointer;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.btn:hover{background:var(--red)}
+.btn.secondary{
+  background:var(--white);
+  color:var(--blue);
+  border:1px solid var(--blue);
+}
+.btn.secondary:hover{background:var(--blue);color:var(--white)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* Results header */
+.results-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-bottom:18px;
+}
+.results-bar h2{margin:0}
+.count-badge{
+  background:var(--blue);
+  color:var(--white);
+  border-radius:20px;
+  padding:3px 14px;
+  font-size:.85rem;
+  font-weight:600;
+}
+
+/* Gallery */
+.gallery{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  gap:16px;
+}
+.image-card{
+  background:var(--emble-grey);
+  border:1px solid var(--grey);
+  border-radius:6px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.image-thumb{
+  background:var(--white);
+  min-height:160px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px;
+  border-bottom:1px solid var(--grey);
+}
+.image-thumb img{max-width:100%;max-height:180px;object-fit:contain}
+.image-meta{
+  padding:10px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.image-order{
+  display:inline-block;
+  background:var(--blue);
+  color:var(--white);
+  font-family:Monaco,Menlo,monospace;
+  font-size:.78rem;
+  padding:2px 9px;
+  border-radius:3px;
+  width:fit-content;
+}
+.image-filename{font-size:.78rem;color:#666;word-break:break-all}
+.image-actions{display:flex;gap:6px;margin-top:2px}
+.image-actions .btn{padding:6px 12px;font-size:.78rem;flex:1;justify-content:center}
+
+footer{
+  text-align:center;
+  font-size:.78rem;
+  color:#777;
+  padding:18px 0 40px;
+}
+.privacy-note{
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+  background:var(--emble-grey);
+  border-left:3px solid var(--blue);
+  padding:10px 14px;
+  font-size:.82rem;
+  color:#444;
+  border-radius:0 6px 6px 0;
+  margin-bottom:18px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>&#128247; Image Extractor</h1>
+  <p>Upload a Word document or PDF and extract every embedded image, in the order it appears.</p>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>Step 1 — Upload your document</h2>
+    <p class="help-text">Drop a .docx or .pdf file below, or click to browse. Everything happens in your browser — nothing is uploaded anywhere.</p>
+
+    <div class="privacy-note">
+      <span>&#128274;</span>
+      <span>This tool runs entirely in your browser. Your document and images are never sent anywhere.</span>
+    </div>
+
+    <div class="dropzone" id="dropzone">
+      <span class="icon">&#128193;</span>
+      <strong>Click to choose a file</strong> or drag and drop it here
+      <input type="file" id="fileInput" accept=".docx,.pdf">
+    </div>
+    <p class="help-text" style="margin:10px 0 0">Accepts Word (.docx) or PDF (.pdf) files.</p>
+
+    <div id="filenameRow" class="filename-row" style="display:none">
+      <span class="fname" id="fname"></span>
+      <button class="btn secondary" id="clearBtn" type="button">Clear</button>
+    </div>
+
+    <div id="statusArea"></div>
+  </div>
+
+  <div class="card" id="resultsCard" style="display:none">
+    <div class="results-bar">
+      <h2>Step 2 — Extracted images <span class="count-badge" id="countBadge">0</span></h2>
+      <button class="btn" id="downloadAllBtn" type="button">&#11015; Download all as ZIP</button>
+    </div>
+    <p class="help-text">Images are numbered in the order they appear in the document. Download individually or all at once.</p>
+    <div class="gallery" id="gallery"></div>
+  </div>
+
+</main>
+
+<footer>RMIT College of Vocational Education — Image Extractor</footer>
+
+<script>
+var gImages = []; // {order, ext, mime, dataUri, blob}
+var gImagesPdfOrder = 0;
+var gSourceName = "";
+
+var dropzone = document.getElementById("dropzone");
+var fileInput = document.getElementById("fileInput");
+var filenameRow = document.getElementById("filenameRow");
+var fnameEl = document.getElementById("fname");
+var statusArea = document.getElementById("statusArea");
+var resultsCard = document.getElementById("resultsCard");
+var gallery = document.getElementById("gallery");
+var countBadge = document.getElementById("countBadge");
+var clearBtn = document.getElementById("clearBtn");
+var downloadAllBtn = document.getElementById("downloadAllBtn");
+
+dropzone.addEventListener("click", function(){ fileInput.click(); });
+dropzone.addEventListener("dragover", function(e){ e.preventDefault(); dropzone.classList.add("dragover"); });
+dropzone.addEventListener("dragleave", function(){ dropzone.classList.remove("dragover"); });
+dropzone.addEventListener("drop", function(e){
+  e.preventDefault();
+  dropzone.classList.remove("dragover");
+  if(e.dataTransfer.files && e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", function(e){
+  if(e.target.files && e.target.files.length) handleFile(e.target.files[0]);
+});
+clearBtn.addEventListener("click", resetTool);
+
+function resetTool(){
+  gImages = [];
+  gImagesPdfOrder = 0;
+  gSourceName = "";
+  fileInput.value = "";
+  filenameRow.style.display = "none";
+  statusArea.innerHTML = "";
+  resultsCard.style.display = "none";
+  gallery.innerHTML = "";
+}
+
+function showStatus(type, html){
+  statusArea.innerHTML = '<div class="status ' + type + '">' + html + '</div>';
+}
+
+function handleFile(file){
+  var isDocx = /\.docx$/i.test(file.name);
+  var isPdf = /\.pdf$/i.test(file.name);
+  if(!isDocx && !isPdf){
+    showStatus("error", "Please upload a .docx or .pdf file.");
+    return;
+  }
+  gSourceName = file.name.replace(/\.(docx|pdf)$/i, "");
+  fnameEl.textContent = file.name;
+  filenameRow.style.display = "flex";
+  resultsCard.style.display = "none";
+  gallery.innerHTML = "";
+  showStatus("info", "Reading document and extracting images&hellip;");
+
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var arrayBuffer = e.target.result;
+    if(isDocx) extractImagesDocx(arrayBuffer);
+    else extractImagesPdf(arrayBuffer);
+  };
+  reader.onerror = function(){
+    showStatus("error", "Couldn't read that file. Please try again.");
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function extractImagesDocx(arrayBuffer){
+  gImages = [];
+  var order = 0;
+
+  // mammoth's image handler is called once per image, in document order
+  var options = {
+    convertImage: mammoth.images.imgElement(function(image){
+      order++;
+      return image.read("base64").then(function(base64){
+        var mime = image.contentType || "image/png";
+        var ext = mimeToExt(mime);
+        var dataUri = "data:" + mime + ";base64," + base64;
+        gImages.push({
+          order: order,
+          ext: ext,
+          mime: mime,
+          dataUri: dataUri,
+          base64: base64
+        });
+        return { src: dataUri };
+      });
+    })
+  };
+
+  mammoth.convertToHtml({ arrayBuffer: arrayBuffer }, options).then(function(result){
+    if(!gImages.length){
+      showStatus("info", "No images were found in that document.");
+      resultsCard.style.display = "none";
+      return;
+    }
+    showStatus("success", "Extracted " + gImages.length + " image" + (gImages.length > 1 ? "s" : "") + " successfully.");
+    renderGallery();
+    if(result.messages && result.messages.length){
+      // These are mammoth's routine formatting warnings (unsupported styles etc.)
+      // They don't affect image extraction, logged here only for troubleshooting.
+      console.log("mammoth formatting warnings:", result.messages.map(function(m){ return m.message; }));
+    }
+  }).catch(function(err){
+    console.error(err);
+    showStatus("error", "Something went wrong reading that document: " + err.message);
+  });
+}
+
+function extractImagesPdf(arrayBuffer){
+  gImages = [];
+  gImagesPdfOrder = 0;
+  var order = 0;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  pdfjsLib.getDocument({ data: arrayBuffer }).promise.then(function(pdf){
+    var numPages = pdf.numPages;
+    var pageChain = Promise.resolve();
+
+    for(var p = 1; p <= numPages; p++){
+      pageChain = pageChain.then(function(pageNum){
+        showStatus("info", "Reading page " + pageNum + " of " + numPages + "&hellip;");
+        return extractImagesFromPdfPage(pdf, pageNum);
+      }.bind(null, p));
+    }
+
+    return pageChain;
+  }).then(function(){
+    if(!gImages.length){
+      showStatus("info", "No images were found in that document.");
+      resultsCard.style.display = "none";
+      return;
+    }
+    showStatus("success", "Extracted " + gImages.length + " image" + (gImages.length > 1 ? "s" : "") + " successfully.");
+    renderGallery();
+  }).catch(function(err){
+    console.error(err);
+    showStatus("error", "Something went wrong reading that PDF: " + err.message);
+  });
+}
+
+function extractImagesFromPdfPage(pdf, pageNum){
+  return pdf.getPage(pageNum).then(function(page){
+    return page.getOperatorList().then(function(opList){
+      var imageNames = [];
+      for(var i = 0; i < opList.fnArray.length; i++){
+        var fn = opList.fnArray[i];
+        if(fn === pdfjsLib.OPS.paintImageXObject || fn === pdfjsLib.OPS.paintInlineImageXObject){
+          var args = opList.argsArray[i];
+          if(args && args[0]) imageNames.push(args[0]);
+        }
+      }
+      if(!imageNames.length) return;
+
+      // PDF.js only decodes images into page.objs during an actual render pass —
+      // getOperatorList() alone just lists the draw instructions. Render the page
+      // to an off-screen canvas first so the images become available to read back.
+      var viewport = page.getViewport({ scale: 1 });
+      var renderCanvas = document.createElement("canvas");
+      renderCanvas.width = viewport.width;
+      renderCanvas.height = viewport.height;
+      var renderCtx = renderCanvas.getContext("2d");
+
+      return page.render({ canvasContext: renderCtx, viewport: viewport }).promise.then(function(){
+        // Resolve each image object on the page, in the order it was drawn
+        var chain = Promise.resolve();
+        imageNames.forEach(function(name){
+          chain = chain.then(function(){
+            return resolvePdfImage(page, name);
+          });
+        });
+        return chain;
+      });
+    });
+  });
+}
+
+function resolvePdfImage(page, name){
+  return new Promise(function(resolve){
+    var settled = false;
+    var safetyTimer = setTimeout(function(){
+      if(settled) return;
+      settled = true;
+      console.warn("Timed out waiting for PDF image '" + name + "' — skipping it.");
+      resolve();
+    }, 8000);
+
+    page.objs.get(name, function(imgObj){
+      if(settled) return;
+      settled = true;
+      clearTimeout(safetyTimer);
+      try{
+        if(!imgObj){ resolve(); return; }
+
+        var canvas, ctx, width, height;
+
+        // Newer PDF.js often hands back a decoded ImageBitmap (common for JPEGs)
+        if(imgObj.bitmap){
+          width = imgObj.bitmap.width;
+          height = imgObj.bitmap.height;
+          canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          ctx = canvas.getContext("2d");
+          ctx.drawImage(imgObj.bitmap, 0, 0);
+        }
+        // Older path: raw pixel data plus a width/height/kind
+        else if(imgObj.data && imgObj.width && imgObj.height){
+          width = imgObj.width;
+          height = imgObj.height;
+          canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          ctx = canvas.getContext("2d");
+          var imageData = ctx.createImageData(width, height);
+          var srcData = imgObj.data;
+
+          if(srcData.length === width * height * 4){
+            imageData.data.set(srcData);
+          } else if(srcData.length === width * height * 3){
+            var d = imageData.data, s = srcData;
+            for(var px = 0, di = 0, si = 0; px < width * height; px++, di += 4, si += 3){
+              d[di] = s[si]; d[di+1] = s[si+1]; d[di+2] = s[si+2]; d[di+3] = 255;
+            }
+          } else if(srcData.length === width * height){
+            // Grayscale, 1 byte per pixel
+            var d2 = imageData.data, s2 = srcData;
+            for(var px2 = 0, di2 = 0; px2 < width * height; px2++, di2 += 4){
+              d2[di2] = s2[px2]; d2[di2+1] = s2[px2]; d2[di2+2] = s2[px2]; d2[di2+3] = 255;
+            }
+          } else {
+            resolve(); return;
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
+        else {
+          resolve(); return;
+        }
+
+        var dataUri = canvas.toDataURL("image/png");
+        var base64 = dataUri.split(",")[1];
+        gImagesPdfOrder++;
+        gImages.push({
+          order: gImagesPdfOrder,
+          ext: "png",
+          mime: "image/png",
+          dataUri: dataUri,
+          base64: base64
+        });
+      }catch(e){
+        console.warn("Couldn't render a PDF image:", e);
+      }
+      resolve();
+    });
+  });
+}
+
+function mimeToExt(mime){
+  var map = {
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/gif": "gif",
+    "image/bmp": "bmp",
+    "image/tiff": "tiff",
+    "image/x-emf": "emf",
+    "image/x-wmf": "wmf",
+    "image/webp": "webp"
+  };
+  return map[mime] || "png";
+}
+
+function pad(n){ return n < 10 ? "0" + n : String(n); }
+
+function renderGallery(){
+  resultsCard.style.display = "block";
+  countBadge.textContent = gImages.length;
+  var h = "";
+  for(var i = 0; i < gImages.length; i++){
+    var img = gImages[i];
+    var filename = gSourceName + "_image_" + pad(img.order) + "." + img.ext;
+    h += '<div class="image-card">';
+    h += '<div class="image-thumb"><img src="' + img.dataUri + '" alt="Extracted image ' + img.order + '"></div>';
+    h += '<div class="image-meta">';
+    h += '<span class="image-order">Image ' + pad(img.order) + '</span>';
+    h += '<span class="image-filename">' + filename + '</span>';
+    h += '<div class="image-actions">';
+    h += '<a class="btn secondary" href="' + img.dataUri + '" download="' + filename + '">&darr; Save</a>';
+    h += '</div></div></div>';
+  }
+  gallery.innerHTML = h;
+}
+
+downloadAllBtn.addEventListener("click", function(){
+  if(!gImages.length) return;
+  downloadAllBtn.disabled = true;
+  downloadAllBtn.textContent = "Zipping…";
+  var zip = new JSZip();
+  for(var i = 0; i < gImages.length; i++){
+    var img = gImages[i];
+    var filename = gSourceName + "_image_" + pad(img.order) + "." + img.ext;
+    zip.file(filename, img.base64, { base64: true });
+  }
+  zip.generateAsync({ type: "blob" }).then(function(blob){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = gSourceName + "_images.zip";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    downloadAllBtn.disabled = false;
+    downloadAllBtn.innerHTML = "&#11015; Download all as ZIP";
+  }).catch(function(err){
+    console.error(err);
+    downloadAllBtn.disabled = false;
+    downloadAllBtn.innerHTML = "&#11015; Download all as ZIP";
+    showStatus("error", "Couldn't build the ZIP file: " + err.message);
+  });
+});
+</script>
+
+</body>
+</html>
