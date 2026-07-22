@@ -50,7 +50,7 @@
         .help-text{font-size:.8rem;color:#666;margin-top:4px}
         .rich-editor{width:100%;min-height:120px;padding:12px;border:2px solid #e3e5e0;border-radius:0 0 4px 4px;font-size:.9rem;font-family:inherit;background:#fff;overflow-y:auto;max-height:350px}
         .rich-editor:focus{outline:none;border-color:#000054}
-        .rich-editor p{margin-bottom:.4em}.rich-editor ul,.rich-editor ol{margin-left:20px;margin-bottom:.4em}.rich-editor li{margin-bottom:.2em}
+        .rich-editor p{margin-bottom:.4em}.rich-editor ul,.rich-editor ol{padding-left:24px;margin-bottom:.4em}.rich-editor ul{list-style:disc outside}.rich-editor ol{list-style:decimal outside}.rich-editor ul ul{list-style:circle outside;margin-bottom:0}.rich-editor li{margin-bottom:.2em}
         .editor-toolbar{display:flex;gap:4px;padding:5px 8px;background:#f8f9fa;border:2px solid #e3e5e0;border-bottom:none;border-radius:4px 4px 0 0}
         .editor-btn{padding:4px 10px;background:#fff;border:1px solid #ddd;border-radius:3px;cursor:pointer;font-size:13px;transition:all .2s}
         .editor-btn:hover{background:#e3e5e0}
@@ -75,6 +75,11 @@
         .output-content{padding:20px;font-family:'Monaco','Menlo',monospace;font-size:.8rem;line-height:1.5;max-height:500px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
         .preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:30px;margin-top:20px}
         .preview-container h3{color:#000054;margin-bottom:20px}
+        #previewContent p{margin-bottom:10px}
+        #previewContent ul,#previewContent ol{margin:0 0 12px 0;padding-left:28px}
+        #previewContent ul{list-style:disc outside}#previewContent ol{list-style:decimal outside}
+        #previewContent ul ul{list-style:circle outside;margin-bottom:0}#previewContent ol ol{list-style:lower-alpha outside;margin-bottom:0}
+        #previewContent li{margin-bottom:6px}
         .alert{padding:15px;border-radius:4px;margin-bottom:20px;display:flex;align-items:flex-start}
         .alert-info{background:#e6f3ff;border:1px solid #0066cc;color:#004085}
         .alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
@@ -148,9 +153,9 @@
                 <div class="form-section"><h3>📄 Page Header</h3>
                     <div class="form-group"><label>Page Title</label><input type="text" id="fPageTitle" placeholder="e.g. Regulatory Foundations (Victoria)"></div>
                     <div class="form-group"><label>Photographic Element Description</label><input type="text" id="fPhotoDesc" placeholder="Description for image alt text"><p class="help-text">Used as a placeholder prompt — you'll add the actual image in Canvas</p></div>
-                    <div class="form-group"><label>Opening Paragraph</label><div class="editor-toolbar"><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','bold')">B</button><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','italic')">I</button></div><div id="fOpeningPara" class="rich-editor" contenteditable="true"></div></div>
+                    <div class="form-group"><label>Opening Paragraph</label><div class="editor-toolbar"><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','bold')">B</button><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','italic')">I</button><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','insertUnorderedList')">•</button><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','insertOrderedList')">1.</button></div><div id="fOpeningPara" class="rich-editor" contenteditable="true"></div></div>
                 </div>
-                <div class="form-section"><h3>📝 Main Content</h3><p class="help-text" style="margin-bottom:15px;">Each content block becomes a heading + paragraph section.</p><div id="mainContentBlocks"></div><div class="add-remove-btns"><button onclick="addContentBlock()">+ Add Content Block</button></div></div>
+                <div class="form-section"><h3>📝 Main Content</h3><p class="help-text" style="margin-bottom:15px;">Each content block becomes a heading + paragraph section. Formatting is kept: a blank line starts a new paragraph, <strong>-</strong> or <strong>&bull;</strong> starts a bullet, <strong>1.</strong> starts a numbered item (indent two spaces for a sub-level), <strong>**text**</strong> becomes bold, <strong>*text*</strong> becomes italic, and <strong>###&nbsp;text</strong> becomes a sub-heading.</p><div id="mainContentBlocks"></div><div class="add-remove-btns"><button onclick="addContentBlock()">+ Add Content Block</button></div></div>
                 <div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togVisual" checked> Include Visual Element / Diagram</label></div><div id="visualSection"><div class="form-group"><label>Visual Element Description</label><textarea id="fVisualDesc" placeholder="Description of the diagram or visual element"></textarea></div></div></div>
                 <div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togInsights" checked> Include Key Insights</label></div><div id="insightsSection"><div class="insight-cards" id="insightCards"></div><div class="add-remove-btns"><button onclick="addInsight()">+ Add Insight</button><button onclick="removeInsight()">− Remove Last</button></div></div></div>
                 <div class="form-section"><div class="section-toggle"><label><input type="checkbox" id="togTools" checked> Include Industry Tools &amp; Technology</label></div><div id="toolsSection"><div id="toolsEntries"></div><div class="add-remove-btns"><button onclick="addToolEntry()">+ Add Entry</button><button onclick="removeToolEntry()">− Remove Last</button></div></div></div>
@@ -272,9 +277,9 @@ function parseDelimitedFormat(raw){
     // Page Title — from explicit section, or fallback to preamble first line
     if(sectionMap.pageTitle){
         const tLines=sectionMap.pageTitle[0].lines.filter(l=>l.trim());
-        parsedData.pageTitle=tLines[0]||'';
+        parsedData.pageTitle=cleanTitle(tLines[0]||'');
     } else if(preambleLines.length){
-        parsedData.pageTitle=preambleLines[0];
+        parsedData.pageTitle=cleanTitle(preambleLines.find(l=>l.trim()&&!/^Module\s+\d/i.test(l.trim()))||preambleLines[0]);
     } else parsedData.pageTitle='';
 
     // Photo
@@ -285,15 +290,10 @@ function parseDelimitedFormat(raw){
     // Opening Paragraph — preserve paragraph breaks
     if(sectionMap.opening){
         const oLines=sectionMap.opening[0].lines;
-        // Group non-empty lines into paragraphs separated by blank lines
-        const paras=[];let cur=[];
-        for(const l of oLines){
-            if(l.trim()===''){if(cur.length){paras.push(cur.join(' '));cur=[];}}
-            else cur.push(l.trim());
-        }
-        if(cur.length)paras.push(cur.join(' '));
-        parsedData.openingParas=paras; // Store as array for multi-paragraph support
-        parsedData.openingPara=paras.join('\n\n');
+        // Group into paragraphs separated by blank lines, keeping list items intact
+        const joined=joinParas(oLines);
+        parsedData.openingParas=joined.split(/\n{2,}/).filter(p=>p.trim());
+        parsedData.openingPara=joined;
     } else {parsedData.openingPara='';parsedData.openingParas=[];}
 
     // Content Blocks
@@ -306,19 +306,17 @@ function parseDelimitedFormat(raw){
             if(cLines.length>0){
                 const hMatch=cLines[0].match(/^Heading:\s*(.+)/i);
                 if(hMatch){
-                    heading=hMatch[1].trim();
+                    heading=cleanHeading(hMatch[1]);
                     bodyLines=cLines.slice(1);
                 } else {
                     // First short line might be heading
                     if(cLines[0].length<80&&cLines.length>1){
-                        heading=cLines[0];bodyLines=cLines.slice(1);
+                        heading=cleanHeading(cLines[0]);bodyLines=cLines.slice(1);
                     } else {
                         bodyLines=cLines;
                     }
                 }
             }
-            // Join body paragraphs preserving blank-line breaks
-            const body=joinParas(s.lines.slice(cLines[0]===s.lines.find(l=>l.trim())?0:0));
             // Re-parse body from original lines (including blanks) after heading
             let afterHeading=false;const rawBody=[];
             for(const l of s.lines){
@@ -472,7 +470,7 @@ function parseDelimitedFormat(raw){
 
 function classifyDelimitedSection(name){
     const n=name.toLowerCase().replace(/[^a-z0-9\s&]/g,'');
-    if(/page\s*title|^page\s*\d/.test(n)) return 'pageTitle';
+    if(/page\s*title|^page\s*\d|^title$|page\s*(?:heading|name)/.test(n)) return 'pageTitle';
     if(/photograph/.test(n)) return 'photo';
     if(/opening\s*paragraph/.test(n)) return 'opening';
     if(/content\s*block/.test(n)) return 'contentBlock';
@@ -486,23 +484,127 @@ function classifyDelimitedSection(name){
     return null;
 }
 
-function joinParas(lines){
-    // Group lines into paragraphs separated by blank lines
-    const paras=[];let cur=[];
-    for(const l of lines){
-        if(l.trim()===''){if(cur.length){paras.push(cur.join(' '));cur=[];}}
-        else cur.push(l.trim());
-    }
-    if(cur.length)paras.push(cur.join(' '));
-    return paras.join('\n\n');
+// ═══════════════════════════════════════════════════════
+// SHARED: List detection and rendering
+// Bulleted and numbered lists are preserved end to end:
+// parser → edit form → generated Emble HTML
+// ═══════════════════════════════════════════════════════
+const BULLET_RE=/^([ \t]*)(?:[*•▪◦‣·]|[-–—])[ \t]+(.+)$/;
+const ORDERED_RE=/^([ \t]*)(?:\(?(?:\d{1,2}|[a-z])[.)])[ \t]+(.+)$/;
+
+// Returns {type:'ul'|'ol', indent:<spaces>, text:<item text>} or null
+function listInfo(line){
+    if(typeof line!=='string')return null;
+    const b=line.match(BULLET_RE);
+    if(b)return{type:'ul',indent:b[1].replace(/\t/g,'  ').length,text:b[2].trim()};
+    const o=line.match(ORDERED_RE);
+    if(o)return{type:'ol',indent:o[1].replace(/\t/g,'  ').length,text:o[2].trim()};
+    return null;
 }
+function isListLine(line){return listInfo(line)!==null}
+function hasListLines(text){return String(text||'').split('\n').some(isListLine)}
+// Strips markdown heading hashes and bold/italic wrappers from a heading line
+function cleanHeading(t){
+    return String(t||'').trim()
+        .replace(/^#{1,6}\s+/,'').replace(/\s*#+$/,'')
+        .replace(/^\*\*([\s\S]+?)\*\*$/,'$1').replace(/^__([\s\S]+?)__$/,'$1')
+        .replace(/^\*([\s\S]+?)\*$/,'$1').replace(/^_([\s\S]+?)_$/,'$1')
+        .trim();
+}
+// Heading cleanup plus removal of a leading Page Title / Title label
+function cleanTitle(t){
+    return cleanHeading(String(t||'').trim()
+        .replace(/^#{1,6}\s*/,'')
+        .replace(/^\*\*([^*]+?)\*\*/,'$1').replace(/^__([^_]+?)__/,'$1')
+        .replace(/^(?:Page\s*(?:Title|Heading|Name)|Title|Heading)\s*[:\-–—]\s*/i,''));
+}
+// Strips the marker from a list line, leaves other lines untouched
+function stripMarker(line){const i=listInfo(line);return i?i.text:String(line||'').trim()}
+
+// Escape + inline emphasis. Copilot writes **bold**, __bold__, *italic*, _italic_
+function inlineHtml(s,escFn){
+    let t=(escFn||esc)(String(s||'').trim());
+    t=t.replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g,'<strong>$1</strong>');
+    t=t.replace(/(^|[\s(\[])__(?=\S)([^_\n]*?\S)__(?=$|[\s).,;:!?\]])/g,'$1<strong>$2</strong>');
+    t=t.replace(/(^|[\s(\[])\*(?=\S)([^*\n]*?\S)\*(?=$|[\s).,;:!?\]])/g,'$1<em>$2</em>');
+    t=t.replace(/(^|[\s(\[])_(?=\S)([^_\n]*?\S)_(?=$|[\s).,;:!?\]])/g,'$1<em>$2</em>');
+    return t;
+}
+
+// Converts a block of lines into <p>/<ul>/<ol> HTML, supporting nesting by indent
+function blocksToHtml(text,escFn){
+    const lines=String(text||'').split('\n').map(l=>l.replace(/\s+$/,'')).filter(l=>l.trim());
+    // Normalise indentation: an evenly indented list is top level, not nested
+    let base=null;
+    for(const line of lines){const i=listInfo(line);if(i&&(base===null||i.indent<base))base=i.indent;}
+    if(base===null)base=0;
+    let h='';const stack=[];
+    function closeOne(){const t=stack.pop().type;h+=stack.length?`</${t}>\n</li>\n`:`</${t}>\n`}
+    function closeAll(){while(stack.length)closeOne()}
+    for(const line of lines){
+        const info=listInfo(line);
+        if(info){
+            info.indent=Math.max(0,info.indent-base);
+            while(stack.length&&stack[stack.length-1].indent>info.indent)closeOne();
+            const top=stack[stack.length-1];
+            if(!top||info.indent>top.indent){
+                if(stack.length)h=h.replace(/<\/li>\n$/,'\n');
+                stack.push({type:info.type,indent:stack.length?info.indent:0});
+                h+=`<${info.type}>\n`;
+            } else if(top.type!==info.type){
+                closeOne();
+                stack.push({type:info.type,indent:info.indent});
+                h+=`<${info.type}>\n`;
+            }
+            h+=`<li>${inlineHtml(info.text,escFn)}</li>\n`;
+        } else {
+            closeAll();
+            const t=line.trim();
+            const hM=t.match(/^#{1,6}\s+(.+?)\s*#*$/);
+            if(hM){h+=`<h4>${inlineHtml(hM[1],escFn)}</h4>\n`;continue;}
+            h+=/^Tip:/i.test(t)?`<p><strong>${inlineHtml(t,escFn)}</strong></p>\n`:`<p>${inlineHtml(t,escFn)}</p>\n`;
+        }
+    }
+    closeAll();
+    return h;
+}
+
+// A line that ends mid sentence is a wrapped continuation of the line before it.
+// Anything ending in terminal punctuation is treated as a finished paragraph.
+const CONTINUES_RE=/[.!?:;"”’)\]]\s*$/;
+
+// The single grouping rule used by every parser.
+// Blank lines always break a paragraph. Where there are no blank lines, each
+// line is its own paragraph unless the previous line ended mid sentence, in
+// which case the two are joined. List items always keep their own line and
+// their indentation, so sub levels survive.
+function groupParagraphs(lines){
+    const out=[];let forceBreak=true;
+    for(const raw of lines||[]){
+        const l=String(raw).replace(/\s+$/,'');
+        if(!l.trim()){forceBreak=true;if(out.length&&out[out.length-1]!=='')out.push('');continue;}
+        const item=isListLine(l)?l:l.trim();
+        const prev=out.length?out[out.length-1]:'';
+        const canContinue=!forceBreak&&prev&&!isListLine(prev)&&!isListLine(l)
+            &&!/^#{1,6}\s/.test(l.trim())&&!/^#{1,6}\s/.test(prev.trim())&&!CONTINUES_RE.test(prev);
+        if(canContinue)out[out.length-1]=prev+' '+item.trim();
+        else out.push(item);
+        forceBreak=false;
+    }
+    while(out.length&&out[out.length-1]==='')out.pop();
+    while(out.length&&out[0]==='')out.shift();
+    return out.join('\n');
+}
+// Retained name for existing call sites
+function joinParas(lines){return groupParagraphs(lines)}
 
 // ═══════════════════════════════════════════════════════
 // LABEL-BASED FORMAT PARSER (Original v3 logic)
 // ═══════════════════════════════════════════════════════
 function parseLabelFormat(raw){
     const matchers=[
-        {key:'pageTitle',    re:/^(?:Page\s+[\d.]+[:\s]|Page\s+Title[:\s])/i},
+        {key:'pageTitle',    re:/^(?:Page\s+[\d.]+[:\s]|Page\s*(?:Title|Heading|Name)\b\s*:?)/i},
+        {key:'pageTitle',    re:/^(?:Title|Heading)\s*[:\-–—]\s*(?=\S)/i, preambleOnly:true},
         {key:'photo',        re:/^(?:[\u{1F4F7}\u{1F5BC}]\s*)?Photographic\s+Element/iu},
         {key:'opening',      re:/^(?:[\u{1F4DD}\u{270F}]\s*)?Opening\s+Paragraph/iu},
         {key:'mainContent',  re:/^(?:[\u{1F4D6}\u{1F4AC}]\s*)?Main\s+Content/iu},
@@ -521,11 +623,19 @@ function parseLabelFormat(raw){
     for(let i=0;i<lines.length;i++){
         const line=lines[i];
         const trimmed=line.trim();
+        // Copilot often bolds or hashes its labels (**Page Title:** ...). Strip
+        // those markers before matching, otherwise the ^ anchors never fire.
+        const forMatch=trimmed
+            .replace(/^#{1,6}\s*/,'')
+            .replace(/^\*\*([^*]+?)\*\*/,'$1').replace(/^__([^_]+?)__/,'$1')
+            .replace(/^\*([^*]+?)\*/,'$1')
+            .trim();
         let matched=false;
         for(const m of matchers){
-            if(m.re.test(trimmed)){
+            if(m.preambleOnly&&currentSection!=='preamble')continue;
+            if(m.re.test(forMatch)){
                 currentSection=m.key;
-                const afterLabel=trimmed.replace(m.re,'').replace(/^[:\s]*(?:\([^)]*\))?[:\s]*/,'').trim();
+                const afterLabel=forMatch.replace(m.re,'').replace(/^[:\s]*(?:\([^)]*\))?[:\s]*/,'').replace(/^\*\*|\*\*$/g,'').trim();
                 if(afterLabel) tagged.push({section:currentSection,text:afterLabel,isHeader:true});
                 matched=true;
                 dbg('LINE_MATCH',`Line ${i}: ${m.key} → "${afterLabel.substring(0,60)}"`);
@@ -533,12 +643,19 @@ function parseLabelFormat(raw){
             }
         }
         if(!matched && trimmed){
-            tagged.push({section:currentSection,text:trimmed,isHeader:false});
+            // Keep leading indentation on list items so sub-levels survive
+            const keep=isListLine(line)?line.replace(/\s+$/,''):trimmed;
+            tagged.push({section:currentSection,text:keep,isHeader:false});
+        } else if(!matched && !trimmed){
+            // Blank lines are paragraph markers, kept for prose sections only
+            tagged.push({section:currentSection,text:'',isHeader:false,blank:true});
         }
     }
 
+    const PARA_SECTIONS={opening:1,mainContent:1};
     const sectionTexts={};
     for(const t of tagged){
+        if(t.blank&&!PARA_SECTIONS[t.section])continue;
         if(!sectionTexts[t.section])sectionTexts[t.section]=[];
         sectionTexts[t.section].push(t.text);
     }
@@ -548,48 +665,59 @@ function parseLabelFormat(raw){
 
     // Page title
     if(sectionTexts.pageTitle&&sectionTexts.pageTitle.length){
-        parsedData.pageTitle=sectionTexts.pageTitle[0];
+        parsedData.pageTitle=cleanTitle(sectionTexts.pageTitle.find(l=>l.trim())||'');
     } else if(sectionTexts.preamble&&sectionTexts.preamble.length){
-        parsedData.pageTitle=sectionTexts.preamble.find(l=>!l.match(/^Module\s+\d/i))||sectionTexts.preamble[0];
+        parsedData.pageTitle=cleanTitle(sectionTexts.preamble.find(l=>l.trim()&&!l.match(/^Module\s+\d/i))||sectionTexts.preamble[0]);
     } else { parsedData.pageTitle=''; }
 
     parsedData.photoDesc=sectionTexts.photo?sectionTexts.photo.join(' '):'';
-    parsedData.openingPara=sectionTexts.opening?sectionTexts.opening.join(' '):'';
-    parsedData.openingParas=sectionTexts.opening?[sectionTexts.opening.join(' ')]:[];
+    parsedData.openingPara=sectionTexts.opening?groupParagraphs(sectionTexts.opening):'';
+    parsedData.openingParas=parsedData.openingPara?parsedData.openingPara.split(/\n{2,}/).filter(p=>p.trim()):[];
 
     // Main Content Blocks
     parsedData.contentBlocks=[];
+    function hasBody(a){return a.some(l=>String(l).trim())}
     function parseContentLines(arr){
         let curH='',curB=[];
         for(let ri=0;ri<arr.length;ri++){
             const t=arr[ri];
             const shMatch=t.match(/^(?:Section\s+Heading\s*\d*|Heading\s*\d*)[:\s]+(.+)/i);
             if(shMatch){
-                if(curH||curB.length)parsedData.contentBlocks.push({heading:curH,body:curB.join('\n')});
+                if(curH||hasBody(curB))parsedData.contentBlocks.push({heading:curH,body:groupParagraphs(curB)});
                 const afterLabel=shMatch[1].trim();
                 const phraseEnd=afterLabel.match(/^([^.!?]{3,60}?)\s+([A-Z].{20,})$/);
-                if(phraseEnd){curH=phraseEnd[1].trim();curB=[phraseEnd[2].trim()];}
-                else{curH=afterLabel;curB=[];}
+                if(phraseEnd){curH=cleanHeading(phraseEnd[1]);curB=[phraseEnd[2].trim()];}
+                else{curH=cleanHeading(afterLabel);curB=[];}
                 continue;
             }
-            const isNumHead=/^\d+\.\s+[A-Z]/.test(t)&&t.length<80;
-            const isBullet=/^[*•\-—]\s/.test(t);
+            const isBullet=isListLine(t);
             const endsLikeSent=/[.!?]$/.test(t);
             const isShort=t.length<80&&!endsLikeSent&&!isBullet;
             let nextT='';for(let rj=ri+1;rj<arr.length;rj++){if(arr[rj].trim()){nextT=arr[rj].trim();break;}}
+            let prevT='';for(let rj=ri-1;rj>=0;rj--){if(arr[rj].trim()){prevT=arr[rj].trim();break;}}
             const nextLonger=nextT.length>t.length;
-            const nextBullet=/^[*•\-—]\s/.test(nextT);
-            if(isNumHead||(isShort&&t.length>3&&(nextLonger||nextBullet))){
-                if(curH||curB.length)parsedData.contentBlocks.push({heading:curH,body:curB.join('\n')});
-                curH=t.replace(/^\d+\.\s+/,'');curB=[];
-            } else if(t){
+            const nextBullet=isListLine(nextT);
+            // A numbered line is only a heading if it stands alone — a run of
+            // consecutive numbered lines is a numbered list, not headings
+            const inOrderedRun=ORDERED_RE.test(nextT)||ORDERED_RE.test(prevT);
+            const isNumHead=/^\d+\.\s+[A-Z]/.test(t)&&t.length<80&&!inOrderedRun;
+            const isMdHead=/^#{1,6}\s+\S/.test(t);
+            if(isMdHead||isNumHead||(isShort&&t.length>3&&(nextLonger||nextBullet))){
+                if(curH||hasBody(curB))parsedData.contentBlocks.push({heading:curH,body:groupParagraphs(curB)});
+                curH=cleanHeading(t.replace(/^\d+\.\s+/,''));curB=[];
+            } else {
+                // Blank lines are kept so paragraph breaks survive into the body
                 curB.push(t);
             }
         }
-        if(curH||curB.length)parsedData.contentBlocks.push({heading:curH,body:curB.join('\n')});
+        if(curH||hasBody(curB))parsedData.contentBlocks.push({heading:curH,body:groupParagraphs(curB)});
     }
     if(sectionTexts.mainContent&&sectionTexts.mainContent.length){parseContentLines(sectionTexts.mainContent);}
-    if(parsedData.contentBlocks.length===0){const sl=sectionTexts.opening||[];if(sl.length>1){parsedData.openingPara=sl[0];parseContentLines(sl.slice(1));}}
+    if(parsedData.contentBlocks.length===0){
+        const sl=sectionTexts.opening||[];
+        const fi=sl.findIndex(l=>l.trim());
+        if(fi>-1&&sl.slice(fi+1).some(l=>l.trim())){parsedData.openingPara=sl[fi];parseContentLines(sl.slice(fi+1));}
+    }
     if(parsedData.contentBlocks.length===0){const pl=sectionTexts.preamble||[];if(pl.length>1)parseContentLines(pl.slice(1));}
     dbg('CONTENT_BLOCKS',parsedData.contentBlocks.length);
 
@@ -768,12 +896,8 @@ function populateForm(){
     const d=parsedData;
     document.getElementById('fPageTitle').value=d.pageTitle||'';
     document.getElementById('fPhotoDesc').value=d.photoDesc||'';
-    // Opening paragraph — support multi-paragraph
-    if(d.openingParas&&d.openingParas.length>1){
-        document.getElementById('fOpeningPara').innerHTML=d.openingParas.map(p=>`<p>${escH(p)}</p>`).join('');
-    } else {
-        document.getElementById('fOpeningPara').innerHTML=d.openingPara?`<p>${escH(d.openingPara)}</p>`:'';
-    }
+    // Opening paragraph — multi-paragraph and bulleted/numbered lists
+    document.getElementById('fOpeningPara').innerHTML=d.openingPara?blocksToHtml(d.openingPara,escH):'';
     document.getElementById('mainContentBlocks').innerHTML='';contentBlockCount=0;
     if(d.contentBlocks&&d.contentBlocks.length){d.contentBlocks.forEach(b=>addContentBlock(b.heading,b.body));}else{addContentBlock();}
     document.getElementById('fVisualDesc').value=d.visualDesc||'';
@@ -794,7 +918,15 @@ function populateForm(){
     if(d.reflections&&d.reflections.length){d.reflections.forEach(r=>addReflection(r));}
     const hr=d.reflections&&d.reflections.length>0;document.getElementById('togReflection').checked=hr;document.getElementById('reflectionSection').style.display=hr?'':'none';
     document.getElementById('fActTitle').value=d.actTitle||'';document.getElementById('fActDuration').value=d.actDuration||'';document.getElementById('fActFormat').value=d.actFormat||'';document.getElementById('fActPurpose').value=d.actPurpose||'';document.getElementById('fActResources').value=d.actResources||'';
-    if(d.actInstructions){const items=d.actInstructions.split('\n').filter(l=>l.trim());document.getElementById('fActInstructions').innerHTML='<ol>'+items.map(i=>'<li>'+escH(i)+'</li>').join('')+'</ol>';}else{document.getElementById('fActInstructions').innerHTML='';}
+    if(d.actInstructions){
+        // If the source used bullets, keep them as bullets; otherwise number the steps
+        if(hasListLines(d.actInstructions)){
+            document.getElementById('fActInstructions').innerHTML=blocksToHtml(d.actInstructions,escH);
+        } else {
+            const items=d.actInstructions.split('\n').filter(l=>l.trim());
+            document.getElementById('fActInstructions').innerHTML='<ol>'+items.map(i=>'<li>'+inlineHtml(i,escH)+'</li>').join('')+'</ol>';
+        }
+    } else {document.getElementById('fActInstructions').innerHTML='';}
     const ha=!!d.actTitle;document.getElementById('togActivity').checked=ha;document.getElementById('activitySection').style.display=ha?'':'none';
 }
 
@@ -837,21 +969,7 @@ function generateHTML(){
         const body=document.getElementById('cbBody'+n)?.value||'';
         if(!heading&&!body)return;
         if(heading)h+=`<h3>${esc(heading)}</h3>\n`;
-        if(body){
-            const paras=body.split('\n').filter(l=>l.trim());
-            let inList=false;
-            paras.forEach(p=>{
-                const t=p.trim();
-                if(/^[*•\-—]\s/.test(t)){
-                    if(!inList){h+='<ul>\n';inList=true;}
-                    h+=`<li>${esc(t.replace(/^[*•\-—]\s+/,''))}</li>\n`;
-                } else {
-                    if(inList){h+='</ul>\n';inList=false;}
-                    h+=(/^Tip:/i.test(t)?`<p><strong>${esc(t)}</strong></p>\n`:`<p>${esc(t)}</p>\n`);
-                }
-            });
-            if(inList)h+='</ul>\n';
-        }
+        if(body){h+=blocksToHtml(body);}
         h+=`<p class="narrow-p">&nbsp;</p>\n\n`;
     });
     // Visual
@@ -860,7 +978,7 @@ function generateHTML(){
         h+=`<div id="${genId()}" class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n`;
         h+=`<p><span style="background-color: #fac800;">Add your diagram/visual element here</span></p>\n`;
         h+=`<details>\n<summary style="cursor: pointer; font-size: 14px; color: #000054; font-family: Helvetica, Arial, sans-serif; background-color: #ffffff; padding: 12px;">Image Description</summary>\n`;
-        h+=`<div style="padding: 12px;">${vd?esc(vd):'Paste your detailed image description here'}</div>\n</details></div>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
+        h+=`<div style="padding: 12px;">${vd?blocksToHtml(vd):'<p>Paste your detailed image description here</p>'}</div>\n</details></div>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
     }
     // Key Insights — 3 columns per row
     if(document.getElementById('togInsights').checked){
@@ -869,7 +987,7 @@ function generateHTML(){
         for(let c=0;c<cards.length;c+=3){
             const chunk=cards.slice(c,c+3);
             h+=`<div id="${genId()}" class="customise emble-columns-container emble-columns-stretch-child-height" data-context-menu="customise delete" data-customise="new-columns-arrangement new-columns-border new-columns-padding columns-stretch-children cobl-column-channel cobl-column-theme" data-emble-name="Columns" data-emble-version="2.0">\n`;
-            chunk.forEach(card=>{const n=card.id.replace('insightCard','');const t=document.getElementById('insTitle'+n)?.value||'Insight';const txt=document.getElementById('insText'+n)?.value||'';h+=`<div class="emble-columns-child emble-prevent-delete">\n<div id="${genId()}" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n<h3>${esc(t)}</h3>\n<p>${esc(txt)}</p>\n</div>\n<p class="narrow-p">&nbsp;</p>\n</div>\n`;});
+            chunk.forEach(card=>{const n=card.id.replace('insightCard','');const t=document.getElementById('insTitle'+n)?.value||'Insight';const txt=document.getElementById('insText'+n)?.value||'';h+=`<div class="emble-columns-child emble-prevent-delete">\n<div id="${genId()}" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n<h3>${esc(t)}</h3>\n${txt?blocksToHtml(txt):'<p>&nbsp;</p>\n'}</div>\n<p class="narrow-p">&nbsp;</p>\n</div>\n`;});
             for(let p=chunk.length;p<3;p++)h+=`<div class="emble-columns-child emble-prevent-delete">\n<p>&nbsp;</p>\n</div>\n`;
             h+=`</div>\n\n`;
         }
@@ -883,7 +1001,12 @@ function generateHTML(){
             const n=entry.id.replace('toolEntry','');
             const label=document.getElementById('toolLabel'+n)?.value||'';
             const text=document.getElementById('toolText'+n)?.value||'';
-            if(label||text) h+=`<p><strong>${esc(label)}:</strong> ${esc(text)}</p>\n`;
+            if(!label&&!text)return;
+            if(hasListLines(text)){
+                h+=`<p><strong>${esc(label)}:</strong></p>\n`+blocksToHtml(text);
+            } else {
+                h+=`<p><strong>${esc(label)}:</strong> ${inlineHtml(text)}</p>\n`;
+            }
         });
         h+=`</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
     }
@@ -912,7 +1035,7 @@ function generateHTML(){
         const qs=document.getElementById('quizQuestions').querySelectorAll('.quiz-question');
         if(qs.length){
             h+=`<div id="${genId()}" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n`;
-            qs.forEach((q,idx)=>{const n=q.id.replace('quizQ','');const qt=document.getElementById('qqText'+n)?.value||'';h+=`<p><strong>Q${idx+1}: ${esc(qt)}</strong></p>\n`;const cr=q.querySelector('input[type="radio"]:checked');const ci=cr?parseInt(cr.value):0;for(let i=0;i<4;i++){const op=document.getElementById('qqOpt'+n+'_'+i);if(op&&op.value)h+=`<p>${String.fromCharCode(97+i)}) ${esc(op.value)}${i===ci?' ✅':''}</p>\n`;}h+=`<p>&nbsp;</p>\n`;});
+            qs.forEach((q,idx)=>{const n=q.id.replace('quizQ','');const qt=document.getElementById('qqText'+n)?.value||'';h+=`<p><strong>Q${idx+1}: ${inlineHtml(qt)}</strong></p>\n`;const cr=q.querySelector('input[type="radio"]:checked');const ci=cr?parseInt(cr.value):0;for(let i=0;i<4;i++){const op=document.getElementById('qqOpt'+n+'_'+i);if(op&&op.value)h+=`<p>${String.fromCharCode(97+i)}) ${inlineHtml(op.value)}${i===ci?' ✅':''}</p>\n`;}h+=`<p>&nbsp;</p>\n`;});
             h+=`</div>\n\n`;
         }
         h+=`<p class="narrow-p">&nbsp;</p>\n\n`;
@@ -920,7 +1043,7 @@ function generateHTML(){
     // Reflection
     if(document.getElementById('togReflection').checked){
         h+=`<div id="${genId()}" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-question">&nbsp;</i></div>\n<div class="title-with-icon-title">\n<h3>Reflection Questions</h3>\n</div>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n<ol>\n`;
-        document.getElementById('reflectionQuestions').querySelectorAll('[id^="reflQ"]').forEach(rq=>{const n=rq.id.replace('reflQ','');const t=document.getElementById('reflText'+n)?.value||'';if(t)h+=`<li>${esc(t)}</li>\n`;});
+        document.getElementById('reflectionQuestions').querySelectorAll('[id^="reflQ"]').forEach(rq=>{const n=rq.id.replace('reflQ','');const t=document.getElementById('reflText'+n)?.value||'';if(t)h+=`<li>${inlineHtml(t)}</li>\n`;});
         h+=`</ol>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
     }
     // Activity — 2 columns
@@ -929,8 +1052,8 @@ function generateHTML(){
         h+=`<div id="${genId()}" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-edit">&nbsp;</i></div>\n<div class="title-with-icon-title">\n<h3>Activity: ${esc(at)}</h3>\n</div>\n</div>\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
         h+=`<div id="${genId()}" class="customise emble-columns-container emble-columns-controller-1-2 emble-columns-stretch-child-height" data-context-menu="customise delete" data-customise="new-columns-arrangement new-columns-border new-columns-padding columns-stretch-children cobl-column-channel cobl-column-theme" data-emble-name="Columns" data-emble-version="2.0">\n`;
         h+=`<div class="emble-columns-child emble-prevent-delete">\n<div id="${genId()}" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n`;
-        h+=`<p><strong>Duration:</strong> ${ad?esc(ad):'&nbsp;'}</p>\n<p><strong>Format:</strong> ${af?esc(af):'&nbsp;'}</p>\n<p><strong>Purpose:</strong> ${ap?esc(ap):'&nbsp;'}</p>\n`;
-        if(ar)h+=`<p><strong>Resources:</strong> ${esc(ar)}</p>\n`;
+        h+=`<p><strong>Duration:</strong> ${ad?inlineHtml(ad):'&nbsp;'}</p>\n<p><strong>Format:</strong> ${af?inlineHtml(af):'&nbsp;'}</p>\n<p><strong>Purpose:</strong> ${ap?inlineHtml(ap):'&nbsp;'}</p>\n`;
+        if(ar)h+=`<p><strong>Resources:</strong> ${inlineHtml(ar)}</p>\n`;
         h+=`</div>\n<p class="narrow-p">&nbsp;</p>\n</div>\n`;
         h+=`<div class="emble-columns-child emble-prevent-delete">\n<div id="${genId()}" class="customise emble emble-cblock emble-width-control fullwidth-on grey" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">\n<p><strong>Instructions:</strong></p>\n`;
         if(ai)h+=ai+'\n';
