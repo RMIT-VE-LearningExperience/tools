@@ -46,6 +46,10 @@ export default {
         return json({ tools: await listTools(env) });
       }
 
+      if (request.method === "GET" && url.pathname === "/download") {
+        return handleDownload(url, env);
+      }
+
       if (request.method === "POST" && url.pathname === "/api/upload") {
         const originResponse = requireSameOriginPost(request);
         if (originResponse) return originResponse;
@@ -239,7 +243,7 @@ async function listTools(env) {
       name: titleFromPath(item.path),
       url: `${baseUrl}${item.path}`,
       embedCode: iframeEmbedCode(`${baseUrl}${item.path}`, titleFromPath(item.path)),
-      downloadUrl: `${baseUrl}${item.path}`,
+      downloadUrl: downloadUrl(item.path),
       historyUrl: githubHistoryUrl(env, item.path),
       size: item.size || 0
     }))
@@ -281,10 +285,33 @@ async function handleUpload(request, env) {
     path: targetPath,
     url: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`,
     embedCode: iframeEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`, titleFromPath(targetPath)),
-    downloadUrl: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`,
+    downloadUrl: downloadUrl(targetPath),
     commitUrl: result.commit?.html_url,
     historyUrl: githubHistoryUrl(env, targetPath)
   }));
+}
+
+async function handleDownload(url, env) {
+  const path = validateDownloadPath(url.searchParams.get("path") || "");
+  const sourceUrl = `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${path}`;
+  const response = await fetch(sourceUrl, {
+    headers: {
+      "Accept": "text/html,*/*"
+    }
+  });
+
+  if (!response.ok) {
+    return html(renderUploadResult(`Could not download "${path}".`, false), { status: response.status });
+  }
+
+  return new Response(response.body, {
+    status: 200,
+    headers: {
+      "Content-Type": response.headers.get("Content-Type") || "text/html; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${downloadFileName(path)}"`,
+      "Cache-Control": "no-store"
+    }
+  });
 }
 
 function normaliseTargetPath(value) {
@@ -309,6 +336,25 @@ function normaliseTargetPath(value) {
 
   if (!/^[a-z0-9][a-z0-9/_-]*\.html$/.test(cleaned)) {
     throw new Error("Use only letters, numbers, hyphens, underscores, and folders in the target path.");
+  }
+
+  return cleaned;
+}
+
+function validateDownloadPath(value) {
+  const cleaned = value
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "");
+
+  if (
+    !cleaned.endsWith(".html") ||
+    cleaned.includes("..") ||
+    cleaned.startsWith(".") ||
+    cleaned.startsWith("tools-admin-worker/") ||
+    cleaned.startsWith(".github/") ||
+    !/^[A-Za-z0-9][A-Za-z0-9/_-]*\.html$/.test(cleaned)
+  ) {
+    throw new Error("That download path is not allowed.");
   }
 
   return cleaned;
@@ -422,6 +468,14 @@ function titleFromPath(path) {
 
 function iframeEmbedCode(url, title) {
   return `<iframe src="${url}" title="${escapeHtml(title)}" width="100%" height="720" style="border:0;" loading="lazy"></iframe>`;
+}
+
+function downloadUrl(path) {
+  return `/download?path=${encodeURIComponent(path)}`;
+}
+
+function downloadFileName(path) {
+  return path.split("/").pop().replace(/[^A-Za-z0-9._-]/g, "-") || "activity.html";
 }
 
 function githubHistoryUrl(env, path) {
