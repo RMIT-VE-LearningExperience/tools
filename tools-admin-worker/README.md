@@ -6,6 +6,7 @@ Password-protected Cloudflare Worker dashboard for listing and uploading standal
 
 - Lists every `.html` file in the repo and shows its public GitHub Pages URL.
 - Copies public URLs and iframe embed codes for each activity.
+- Downloads published HTML files from GitHub Pages.
 - Uploads a new `.html` file through a browser form.
 - Replaces an existing `.html` file when overwrite is enabled.
 - Injects the shared Google Analytics snippet when it is missing.

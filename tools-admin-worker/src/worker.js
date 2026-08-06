@@ -117,6 +117,7 @@ async function listTools(env) {
       name: titleFromPath(item.path),
       url: `${baseUrl}${item.path}`,
       embedCode: iframeEmbedCode(`${baseUrl}${item.path}`, titleFromPath(item.path)),
+      downloadUrl: `${baseUrl}${item.path}`,
       historyUrl: githubHistoryUrl(env, item.path),
       size: item.size || 0
     }))
@@ -158,6 +159,7 @@ async function handleUpload(request, env) {
     path: targetPath,
     url: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`,
     embedCode: iframeEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`, titleFromPath(targetPath)),
+    downloadUrl: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`,
     commitUrl: result.commit?.html_url,
     historyUrl: githubHistoryUrl(env, targetPath)
   }));
@@ -334,6 +336,7 @@ function renderDashboard(tools, env) {
       <td class="actions-cell">
         <button type="button" data-copy="${escapeHtml(tool.url)}">Copy URL</button>
         <button type="button" data-copy="${escapeHtml(tool.embedCode)}">Copy embed</button>
+        <a class="button-link" href="${escapeHtml(tool.downloadUrl)}" download>Download</a>
         <button type="button" data-replace-path="${escapeHtml(tool.path)}">Replace</button>
         <a class="button-link" href="${escapeHtml(tool.historyUrl)}" target="_blank" rel="noopener">History</a>
       </td>
@@ -413,6 +416,7 @@ function renderUploadResult(message, ok, detail = null) {
         <div class="result-actions">
           <button type="button" data-copy="${escapeHtml(detail.url)}">Copy URL</button>
           <button type="button" data-copy="${escapeHtml(detail.embedCode)}">Copy embed</button>
+          <a class="button-link" href="${escapeHtml(detail.downloadUrl)}" download>Download</a>
           ${detail.commitUrl ? `<a class="button-link" href="${escapeHtml(detail.commitUrl)}" target="_blank" rel="noopener">View commit</a>` : ""}
           <a class="button-link" href="${escapeHtml(detail.historyUrl)}" target="_blank" rel="noopener">Version history</a>
         </div>
