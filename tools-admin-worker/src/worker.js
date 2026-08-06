@@ -116,6 +116,8 @@ async function listTools(env) {
       path: item.path,
       name: titleFromPath(item.path),
       url: `${baseUrl}${item.path}`,
+      embedCode: iframeEmbedCode(`${baseUrl}${item.path}`, titleFromPath(item.path)),
+      historyUrl: githubHistoryUrl(env, item.path),
       size: item.size || 0
     }))
     .sort((a, b) => a.path.localeCompare(b.path));
@@ -143,7 +145,7 @@ async function handleUpload(request, env) {
     return html(renderUploadResult(`"${targetPath}" already exists. Tick overwrite to replace it.`, false), { status: 409 });
   }
 
-  await putFile(env, {
+  const result = await putFile(env, {
     path: targetPath,
     content: finalHtml,
     sha: existing?.sha,
@@ -154,7 +156,10 @@ async function handleUpload(request, env) {
 
   return html(renderUploadResult("Upload complete.", true, {
     path: targetPath,
-    url: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`
+    url: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`,
+    embedCode: iframeEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`, titleFromPath(targetPath)),
+    commitUrl: result.commit?.html_url,
+    historyUrl: githubHistoryUrl(env, targetPath)
   }));
 }
 
@@ -186,7 +191,7 @@ function normaliseTargetPath(value) {
 }
 
 function injectGoogleAnalytics(source, measurementId) {
-  if (!measurementId || source.includes(measurementId) || source.includes("googletagmanager.com/gtag/js")) {
+  if (!measurementId || source.includes(measurementId)) {
     return source;
   }
 
@@ -291,6 +296,14 @@ function titleFromPath(path) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function iframeEmbedCode(url, title) {
+  return `<iframe src="${url}" title="${escapeHtml(title)}" width="100%" height="720" style="border:0;" loading="lazy"></iframe>`;
+}
+
+function githubHistoryUrl(env, path) {
+  return `https://github.com/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/commits/${env.GITHUB_BRANCH}/${encodePath(path)}`;
+}
+
 function html(body, init = {}) {
   return new Response(body, {
     ...init,
@@ -318,7 +331,12 @@ function renderDashboard(tools, env) {
     <tr>
       <td><a href="${escapeHtml(tool.url)}" target="_blank" rel="noopener">${escapeHtml(tool.name)}</a></td>
       <td><code>${escapeHtml(tool.path)}</code></td>
-      <td><button type="button" data-copy="${escapeHtml(tool.url)}">Copy URL</button></td>
+      <td class="actions-cell">
+        <button type="button" data-copy="${escapeHtml(tool.url)}">Copy URL</button>
+        <button type="button" data-copy="${escapeHtml(tool.embedCode)}">Copy embed</button>
+        <button type="button" data-replace-path="${escapeHtml(tool.path)}">Replace</button>
+        <a class="button-link" href="${escapeHtml(tool.historyUrl)}" target="_blank" rel="noopener">History</a>
+      </td>
     </tr>
   `).join("");
 
@@ -332,7 +350,7 @@ function renderDashboard(tools, env) {
     </header>
 
     <section class="panel upload">
-      <h2>Upload activity</h2>
+      <h2>Upload or replace activity</h2>
       <form action="/api/upload" method="post" enctype="multipart/form-data">
         <label>
           HTML file
@@ -340,15 +358,15 @@ function renderDashboard(tools, env) {
         </label>
         <label>
           Public path
-          <input name="path" type="text" placeholder="example-activity.html" pattern="[A-Za-z0-9/_\\-. ]+\\.html">
+          <input id="path" name="path" type="text" placeholder="example-activity.html" pattern="[A-Za-z0-9/_\\-. ]+\\.html">
         </label>
         <label class="check">
-          <input name="overwrite" type="checkbox">
-          Allow overwrite
+          <input id="overwrite" name="overwrite" type="checkbox">
+          Replace existing version
         </label>
         <button type="submit">Upload and publish</button>
       </form>
-      <p class="hint">The Worker injects GA if it is missing, commits to <code>${escapeHtml(env.GITHUB_OWNER)}/${escapeHtml(env.GITHUB_REPO)}</code>, and GitHub Pages publishes the URL.</p>
+      <p class="hint">Replacing a file creates a new Git commit for that path, so previous versions remain available from the History link.</p>
     </section>
 
     <section class="panel">
@@ -358,7 +376,7 @@ function renderDashboard(tools, env) {
       </div>
       <table>
         <thead>
-          <tr><th>Name</th><th>Path</th><th>URL</th></tr>
+          <tr><th>Name</th><th>Path</th><th>Actions</th></tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
@@ -372,6 +390,15 @@ function renderDashboard(tools, env) {
         button.textContent = "Copied";
         setTimeout(() => button.textContent = previous, 1400);
       });
+
+      document.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-replace-path]");
+        if (!button) return;
+
+        document.querySelector("#path").value = button.dataset.replacePath;
+        document.querySelector("#overwrite").checked = true;
+        document.querySelector(".upload").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     </script>
   `);
 }
@@ -380,7 +407,26 @@ function renderUploadResult(message, ok, detail = null) {
   return page(ok ? "Upload complete" : "Upload failed", `
     <section class="panel result">
       <h1>${escapeHtml(message)}</h1>
-      ${detail ? `<p><a href="${escapeHtml(detail.url)}" target="_blank" rel="noopener">${escapeHtml(detail.url)}</a></p><p><code>${escapeHtml(detail.path)}</code></p>` : ""}
+      ${detail ? `
+        <p><a href="${escapeHtml(detail.url)}" target="_blank" rel="noopener">${escapeHtml(detail.url)}</a></p>
+        <p><code>${escapeHtml(detail.path)}</code></p>
+        <div class="result-actions">
+          <button type="button" data-copy="${escapeHtml(detail.url)}">Copy URL</button>
+          <button type="button" data-copy="${escapeHtml(detail.embedCode)}">Copy embed</button>
+          ${detail.commitUrl ? `<a class="button-link" href="${escapeHtml(detail.commitUrl)}" target="_blank" rel="noopener">View commit</a>` : ""}
+          <a class="button-link" href="${escapeHtml(detail.historyUrl)}" target="_blank" rel="noopener">Version history</a>
+        </div>
+        <script>
+          document.addEventListener("click", async (event) => {
+            const button = event.target.closest("[data-copy]");
+            if (!button) return;
+            await navigator.clipboard.writeText(button.dataset.copy);
+            const previous = button.textContent;
+            button.textContent = "Copied";
+            setTimeout(() => button.textContent = previous, 1400);
+          });
+        </script>
+      ` : ""}
       <p class="actions"><a href="/">Back to dashboard</a></p>
     </section>
   `);
@@ -436,8 +482,8 @@ function page(title, body) {
     label{display:flex;flex-direction:column;gap:6px;font-size:.82rem;font-weight:700;color:var(--muted)}
     input[type=file],input[type=text]{font:inherit;border:1px solid var(--line);border-radius:6px;padding:9px;background:#fff;color:var(--ink);min-height:40px}
     .check{flex-direction:row;align-items:center;color:var(--ink);padding-bottom:9px}
-    button,.actions a{font:inherit;font-weight:700;background:var(--navy);color:#fff;border:1px solid var(--navy);border-radius:6px;padding:9px 12px;text-decoration:none;cursor:pointer;min-height:40px}
-    button:hover,.actions a:hover{background:#101076}
+    button,.actions a,.button-link{font:inherit;font-weight:700;background:var(--navy);color:#fff;border:1px solid var(--navy);border-radius:6px;padding:9px 12px;text-decoration:none;cursor:pointer;min-height:40px;display:inline-flex;align-items:center}
+    button:hover,.actions a:hover,.button-link:hover{background:#101076}
     .hint{color:var(--muted);font-size:.86rem;margin-top:12px}
     .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
     .section-head span{color:var(--muted);font-size:.85rem}
@@ -446,12 +492,15 @@ function page(title, body) {
     th{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
     td code{font-size:.82rem;word-break:break-all}
     td a{color:var(--navy);font-weight:700}
-    td button{background:#fff;color:var(--navy);min-height:32px;padding:6px 9px}
+    td button,td .button-link{background:#fff;color:var(--navy);min-height:32px;padding:6px 9px}
+    td button:hover,td .button-link:hover{background:#f4f5ff}
+    .actions-cell,.result-actions{display:flex;flex-wrap:wrap;gap:7px}
+    .result-actions{margin-top:16px}
     .result{margin-top:44px}
     .result h1{margin-bottom:12px}
     .result p{margin-top:10px}
     pre{white-space:pre-wrap;background:#f6f6f6;border:1px solid var(--line);padding:12px;border-radius:6px;overflow:auto}
-    @media(max-width:760px){header{align-items:flex-start;flex-direction:column}.upload form{grid-template-columns:1fr}table,thead,tbody,tr,th,td{display:block}thead{display:none}td{padding:9px 0}.panel{margin:14px;padding:16px}}
+    @media(max-width:760px){header{align-items:flex-start;flex-direction:column}.upload form{grid-template-columns:1fr}table,thead,tbody,tr,th,td{display:block}thead{display:none}td{padding:9px 0}.panel{margin:14px;padding:16px}.actions-cell{margin-top:6px}}
   </style>
 </head>
 <body>
