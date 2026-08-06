@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Colour Wheel &amp; Palette Studio</title>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
+<style>
+  :root{
+    --rmit-navy:#000054;
+    --rmit-red:#e61e2a;
+    --rmit-yellow:#fac800;
+    --line:#d7d9d4;
+    --emble-grey:#f2f2f2;
+    --ink:#12122b;
+    --card:#ffffff;
+    --muted:#5b5d6b;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(0,0,20,.06), 0 8px 24px rgba(0,0,40,.06);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--emble-grey);color:var(--ink);line-height:1.45;-webkit-font-smoothing:antialiased}
+
+  header.app{background:var(--rmit-navy);color:#fff;padding:18px 22px;display:flex;align-items:center;gap:16px;border-bottom:4px solid var(--rmit-red)}
+  header.app .mark{width:40px;height:40px;border-radius:8px;flex:0 0 auto;
+    background:conic-gradient(from -90deg,#e61e2a 0deg 60deg,#f07800 60deg 120deg,#fac800 120deg 180deg,#2e9e1e 180deg 240deg,#0038b8 240deg 300deg,#7a28c4 300deg 360deg);
+    box-shadow:inset 0 0 0 6px var(--rmit-navy), inset 0 0 0 7px rgba(255,255,255,.35)}
+  header.app h1{font-size:1.02rem;margin:0;font-weight:700;letter-spacing:.2px}
+  header.app p{margin:2px 0 0;font-size:.78rem;opacity:.72}
+
+  .wrap{max-width:880px;margin:0 auto;padding:22px;display:flex;flex-direction:column;gap:22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card .hd{padding:12px 16px;border-bottom:1px solid var(--line)}
+  .card .hd h2{margin:0;font-size:.82rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+  .card .bd{padding:18px}
+
+  /* Wheel */
+  .wheelstage{display:flex;flex-direction:column;align-items:center}
+  #wheelCanvas{width:480px;max-width:100%;height:auto;touch-action:none;cursor:crosshair;display:block}
+
+  /* HSV sliders */
+  .sliders{width:100%;max-width:520px;margin:18px auto 0;display:flex;flex-direction:column;gap:11px}
+  .sld{display:grid;grid-template-columns:74px 1fr 48px;align-items:center;gap:12px}
+  .sld label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .sld .v{font-size:.75rem;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:12px;border-radius:8px;outline:none;background:var(--line)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--rmit-navy);box-shadow:0 1px 3px rgba(0,0,0,.35);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--rmit-navy);cursor:pointer}
+
+  .subhead{font-size:.7rem;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:22px 0 9px;display:flex;align-items:center;gap:8px}
+  .subhead .line{height:1px;background:var(--line);flex:1}
+
+  /* Harmonies */
+  .harmonies{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  @media(max-width:560px){.harmonies{grid-template-columns:repeat(2,1fr)}}
+  .harmonies button{text-align:left;padding:8px 10px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;font-size:.78rem;color:var(--ink);transition:all .12s;display:flex;align-items:center;gap:7px}
+  .harmonies button:hover{border-color:var(--rmit-navy)}
+  .harmonies button.active{background:var(--rmit-navy);color:#fff;border-color:var(--rmit-navy)}
+  .harmonies button .dot{width:8px;height:8px;border-radius:50%;background:var(--rmit-yellow);flex:0 0 auto}
+
+  /* Palette strip */
+  .paletterow{display:flex;gap:6px}
+  .swatch{flex:1;min-width:0;border-radius:8px;overflow:hidden;border:1px solid var(--line);cursor:pointer;background:#fff;transition:transform .1s}
+  .swatch:hover{transform:translateY(-2px)}
+  .swatch.sel{outline:3px solid var(--rmit-navy);outline-offset:1px}
+  .swatch .chip{height:56px}
+  .swatch .meta{padding:5px 4px;text-align:center;font-size:.62rem;line-height:1.3}
+  .swatch .hex{font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.3px}
+  .swatch .base-tag{font-size:.55rem;text-transform:uppercase;letter-spacing:.5px;color:var(--rmit-red);font-weight:700}
+  .actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+
+  .btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:7px 12px;border-radius:7px;cursor:pointer;font-size:.78rem;display:inline-flex;align-items:center;gap:6px;transition:all .12s}
+  .btn:hover{border-color:var(--rmit-navy)}
+  .btn.primary{background:var(--rmit-navy);color:#fff;border-color:var(--rmit-navy)}
+  .btn.primary:hover{background:#00006e}
+  .btn.ghost{background:transparent}
+  .btn.sm{padding:4px 8px;font-size:.7rem}
+
+  .editor{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+  .editor .preview{width:52px;height:52px;border-radius:8px;border:1px solid var(--line)}
+  .editor .fields{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+  .field{display:flex;flex-direction:column;gap:2px}
+  .field label{font-size:.62rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+  .field input[type=text]{width:96px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:.82rem;font-variant-numeric:tabular-nums}
+  .field input[type=text]:focus{outline:none;border-color:var(--rmit-navy)}
+  .field .val{font-size:.82rem;font-variant-numeric:tabular-nums;padding:6px 0}
+
+  /* Tint / tone / shade */
+  .ttrow{display:grid;grid-template-columns:60px 1fr auto;align-items:center;gap:12px;margin-bottom:9px}
+  .ttrow label{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .ttrow .result{display:flex;align-items:center;gap:8px}
+  .ttrow .rchip{width:34px;height:34px;border-radius:7px;border:1px solid var(--line);cursor:pointer}
+  .ttrow .rhex{font-size:.72rem;font-weight:700;font-variant-numeric:tabular-nums;width:64px}
+  .tt-help{font-size:.72rem;color:var(--muted);margin-bottom:12px;line-height:1.5}
+
+  /* Primary/secondary/tertiary */
+  .ref-group{margin-bottom:12px}
+  .ref-group .glabel{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink);margin-bottom:5px}
+  .ref-swatches{display:flex;flex-wrap:wrap;gap:6px}
+  .ref{width:70px;border-radius:7px;overflow:hidden;border:1px solid var(--line);cursor:pointer;background:#fff;transition:transform .1s}
+  .ref:hover{transform:translateY(-2px)}
+  .ref .chip{height:34px}
+  .ref .name{font-size:.56rem;text-align:center;padding:3px 2px;line-height:1.2;color:var(--muted)}
+  .ref-note{font-size:.72rem;color:var(--muted);background:var(--emble-grey);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:6px;line-height:1.5}
+
+  /* Image */
+  .dropzone{border:2px dashed var(--line);border-radius:var(--radius);padding:26px 16px;text-align:center;color:var(--muted);cursor:pointer;transition:all .15s;background:#fbfbfa}
+  .dropzone:hover,.dropzone.drag{border-color:var(--rmit-navy);background:#f4f5ff;color:var(--rmit-navy)}
+  .dropzone strong{display:block;color:var(--ink);font-size:.9rem;margin-bottom:2px}
+  .dropzone small{font-size:.72rem}
+  #imgPreview{max-width:100%;max-height:210px;border-radius:8px;border:1px solid var(--line);margin-top:12px;display:none}
+  .controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-top:14px}
+  .controls .grp{display:flex;align-items:center;gap:6px}
+  .controls label{font-size:.74rem;color:var(--muted)}
+  .controls select{padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:.78rem;background:#fff}
+  .controls input[type=checkbox]{accent-color:var(--rmit-navy);width:15px;height:15px}
+  .dominant{display:flex;align-items:center;gap:14px}
+  .dominant .big{width:72px;height:72px;border-radius:10px;border:1px solid var(--line);flex:0 0 auto}
+  .dominant .info{font-size:.85rem}
+  .dominant .info .hex{font-weight:700;font-size:1.05rem;font-variant-numeric:tabular-nums}
+  .dominant .info small{color:var(--muted);font-variant-numeric:tabular-nums}
+  .grid-swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px}
+  .mini{border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;background:#fff;transition:transform .1s}
+  .mini:hover{transform:translateY(-2px)}
+  .mini .chip{height:44px}
+  .mini .meta{padding:4px;text-align:center;font-size:.6rem;line-height:1.3}
+  .mini .meta .hex{font-weight:700;font-variant-numeric:tabular-nums}
+  .websafe-note{font-size:.72rem;color:var(--muted);background:var(--emble-grey);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:10px;line-height:1.5}
+  .reduce-grid{display:flex;flex-wrap:wrap;gap:3px;margin-top:10px;max-height:210px;overflow:auto;padding:2px}
+  .reduce-grid .cell{width:22px;height:22px;border-radius:4px;cursor:pointer;border:1px solid rgba(0,0,0,.08)}
+  .empty{color:var(--muted);font-size:.85rem;text-align:center;padding:24px 0}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--rmit-navy);color:#fff;padding:10px 18px;border-radius:8px;font-size:.82rem;opacity:0;pointer-events:none;transition:all .25s;z-index:50;box-shadow:0 8px 24px rgba(0,0,40,.25)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  footer.app{text-align:center;color:var(--muted);font-size:.72rem;padding:6px 22px 26px}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="mark" aria-hidden="true"></div>
+  <div>
+    <h1>Colour Wheel &amp; Palette Studio</h1>
+    <p>Build harmonies, adjust tint, tone and shade, or pull a palette from an image</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- WHEEL (hero) -->
+  <section class="card">
+    <div class="hd"><h2>Colour wheel</h2></div>
+    <div class="bd">
+      <div class="wheelstage">
+        <canvas id="wheelCanvas" width="480" height="480" aria-label="Interactive colour wheel"></canvas>
+        <div class="sliders">
+          <div class="sld"><label for="hueR">Hue</label><input type="range" id="hueR" min="0" max="360" value="210"><span class="v" id="hueV">210&deg;</span></div>
+          <div class="sld"><label for="satR">Saturation</label><input type="range" id="satR" min="0" max="100" value="70"><span class="v" id="satV">70%</span></div>
+          <div class="sld"><label for="valR">Value</label><input type="range" id="valR" min="0" max="100" value="85"><span class="v" id="valV">85%</span></div>
+        </div>
+      </div>
+
+      <div class="subhead">Colour harmony <span class="line"></span></div>
+      <div class="harmonies" id="harmonies"></div>
+
+      <div class="subhead">Palette <span class="line"></span></div>
+      <div class="paletterow" id="paletteRow"></div>
+      <div class="actions">
+        <button class="btn" id="copyHex">Copy hex list</button>
+        <button class="btn" id="copyCss">Copy CSS variables</button>
+        <button class="btn ghost" id="randomBtn">Random base</button>
+      </div>
+      <div class="editor">
+        <div class="preview" id="editPreview"></div>
+        <div class="fields">
+          <div class="field"><label for="hexInput">Hex</label><input type="text" id="hexInput" maxlength="7" spellcheck="false"></div>
+          <div class="field"><label>RGB</label><div class="val" id="rgbVal">&mdash;</div></div>
+          <div class="field"><label>HSB</label><div class="val" id="hsbVal">&mdash;</div></div>
+          <div class="field"><label>&nbsp;</label><button class="btn primary" id="setBaseBtn">Set as base</button></div>
+        </div>
+      </div>
+
+      <div class="subhead">Tint, tone &amp; shade <span class="line"></span></div>
+      <div class="tt-help">Adjustments to the <strong>selected</strong> swatch. Tint mixes toward white, shade toward black, tone toward grey.</div>
+      <div id="ttRows"></div>
+
+      <div class="subhead">Primary, secondary &amp; tertiary <span class="line"></span></div>
+      <div id="refBlock"></div>
+      <div class="ref-note">These are the traditional artist (red&ndash;yellow&ndash;blue) colours the wheel image is based on. The interactive wheel above uses the digital HSV model, which is what produces accurate hex values for Canvas and the web. Click any swatch to load it as the wheel base.</div>
+    </div>
+  </section>
+
+  <!-- IMAGE (below the wheel) -->
+  <section class="card">
+    <div class="hd"><h2>Palette from image</h2></div>
+    <div class="bd">
+      <div class="dropzone" id="dropzone">
+        <strong>Drop an image, click to browse, or paste</strong>
+        <small>PNG, JPG, GIF or WEBP &mdash; processed entirely in your browser</small>
+        <input type="file" id="fileInput" accept="image/*" hidden>
+      </div>
+      <img id="imgPreview" alt="Uploaded image preview">
+
+      <div id="analysis" style="display:none">
+        <div class="controls">
+          <div class="grp"><label for="paletteSize">Palette size</label>
+            <select id="paletteSize"><option>4</option><option selected>6</option><option>8</option><option>12</option></select></div>
+          <div class="grp"><input type="checkbox" id="ignoreBg"><label for="ignoreBg">Ignore near-white background</label></div>
+          <div class="grp"><input type="checkbox" id="webSafe"><label for="webSafe">Snap to web-safe (216)</label></div>
+        </div>
+
+        <div class="subhead">Dominant colour <span class="line"></span></div>
+        <div class="dominant" id="dominant"></div>
+
+        <div class="subhead">Extracted palette <span class="line"></span></div>
+        <div class="grid-swatches" id="extracted"></div>
+        <div class="actions">
+          <button class="btn" id="copyImgHex">Copy palette hex</button>
+          <button class="btn" id="loadHarmony">Send to wheel as base</button>
+        </div>
+
+        <div class="subhead">Web colour reduction <span class="line"></span></div>
+        <div class="controls">
+          <div class="grp"><label for="reduceCount">Reduce image to</label>
+            <select id="reduceCount"><option>16</option><option>32</option><option>64</option><option>128</option><option selected>256</option></select><label>colours</label></div>
+          <button class="btn" id="reduceBtn">Build reduced palette</button>
+        </div>
+        <div class="reduce-grid" id="reduceGrid"></div>
+        <div class="websafe-note">
+          Two different things share the name &ldquo;web colours&rdquo;. The <strong>web-safe</strong> set is
+          <strong>216</strong> colours (the 6&times;6&times;6 cube of 00/33/66/99/CC/FF) &mdash; use the
+          <em>Snap to web-safe</em> toggle for that. The reduction here quantises the image to a
+          <strong>256-colour</strong> indexed palette, the classic GIF-style limit. Both are offered so you can
+          pick whichever you mean.
+        </div>
+      </div>
+      <div id="imgEmpty" class="empty">Load an image to extract its dominant colour and palette.</div>
+    </div>
+  </section>
+
+</div>
+
+<footer class="app">RMIT College of Vocational Education &middot; Learning &amp; Teaching Innovation &middot; runs offline, no data leaves your browser</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== Colour maths ===== */
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const wrap360=x=>((x%360)+360)%360;
+function hsv2rgb(h,s,v){h=wrap360(h)/60;const c=v*s,x=c*(1-Math.abs(h%2-1)),m=v-c;let r=0,g=0,b=0;
+  if(h<1){r=c;g=x;}else if(h<2){r=x;g=c;}else if(h<3){g=c;b=x;}else if(h<4){g=x;b=c;}else if(h<5){r=x;b=c;}else{r=c;b=x;}
+  return[Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)];}
+function rgb2hsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;
+  if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;}return[wrap360(h),mx?d/mx:0,mx];}
+const rgb2hex=(r,g,b)=>'#'+[r,g,b].map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join('');
+function hex2rgb(hex){hex=hex.replace('#','').trim();if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+  if(!/^[0-9a-fA-F]{6}$/.test(hex))return null;return[parseInt(hex.slice(0,2),16),parseInt(hex.slice(2,4),16),parseInt(hex.slice(4,6),16)];}
+const hsvHex=({h,s,v})=>{const[r,g,b]=hsv2rgb(h,s,v);return rgb2hex(r,g,b);};
+const mix=(a,b,t)=>a.map((v,i)=>Math.round(v*(1-t)+b[i]*t));
+
+/* ===== State ===== */
+const RULES=[
+  {id:'analogous',label:'Analogous'},{id:'monochromatic',label:'Monochromatic'},
+  {id:'complementary',label:'Complementary'},{id:'split',label:'Split comp.'},
+  {id:'double_split',label:'Double split'},{id:'triad',label:'Triadic'},
+  {id:'square',label:'Square'},{id:'compound',label:'Compound'},
+  {id:'shades',label:'Shades'},{id:'custom',label:'Custom'}
+];
+const BASE_INDEX=2;
+const state={swatches:[],rule:'analogous',selected:BASE_INDEX};
+
+function deriveRule(rule,base){const{h,s,v}=base;const mk=(dh,sm,vm)=>({h:wrap360(h+dh),s:clamp(s*sm),v:clamp(v*vm)});
+  switch(rule){
+    case 'analogous':return[mk(-40,1,1),mk(-20,1,1),{h,s,v},mk(20,1,1),mk(40,1,1)];
+    case 'monochromatic':return[mk(0,0.3,1.12),mk(0,0.62,1.05),{h,s,v},mk(0,1,0.74),mk(0,1,0.5)];
+    case 'complementary':return[mk(0,0.42,1.15),mk(0,0.72,1.02),{h,s,v},mk(180,0.72,1.02),mk(180,1,1)];
+    case 'split':return[mk(150,1,1),mk(0,0.6,1.1),{h,s,v},mk(0,0.6,0.82),mk(210,1,1)];
+    case 'double_split':return[mk(-30,1,1),mk(30,1,1),{h,s,v},mk(150,1,1),mk(210,1,1)];
+    case 'triad':return[mk(120,1,1),mk(0,0.6,1.1),{h,s,v},mk(0,0.6,0.82),mk(240,1,1)];
+    case 'square':return[mk(90,1,1),mk(270,1,1),{h,s,v},mk(180,1,1),mk(180,0.6,1.1)];
+    case 'compound':return[mk(-30,1,1),mk(30,0.7,1.02),{h,s,v},mk(180,0.7,1.02),mk(180,1,0.85)];
+    case 'shades':return[mk(0,1,1.25),mk(0,1,1.08),{h,s,v},mk(0,1,0.68),mk(0,1,0.44)];
+    default:return null;
+  }}
+function setRule(rule){state.rule=rule;const base=state.swatches[BASE_INDEX];
+  if(rule!=='custom')state.swatches=deriveRule(rule,base).map(s=>({...s}));
+  renderHarmonies();renderPalette();drawWheel();}
+function applyBaseChange(){if(state.rule!=='custom'){const base=state.swatches[BASE_INDEX];
+  state.swatches=deriveRule(state.rule,base).map(s=>({...s}));}renderPalette();drawWheel();}
+
+/* ===== Wheel ===== */
+const canvas=document.getElementById('wheelCanvas'),ctx=canvas.getContext('2d');
+const SIZE=canvas.width,CX=SIZE/2,CY=SIZE/2,R=SIZE/2-14;
+let wheelCache=null,cachedV=-1;
+function renderWheelCache(v){const off=document.createElement('canvas');off.width=SIZE;off.height=SIZE;
+  const octx=off.getContext('2d'),img=octx.createImageData(SIZE,SIZE),d=img.data;
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){const dx=x-CX,dy=y-CY,dist=Math.hypot(dx,dy),i=(y*SIZE+x)*4;
+    if(dist<=R+0.5){const hue=wrap360(Math.atan2(dx,-dy)*180/Math.PI),sat=clamp(dist/R),[r,g,b]=hsv2rgb(hue,sat,v);
+      d[i]=r;d[i+1]=g;d[i+2]=b;d[i+3]=dist>R?Math.round(255*(1-(dist-R)/0.5)):255;}else d[i+3]=0;}
+  octx.putImageData(img,0,0);wheelCache=off;cachedV=v;}
+function handlePos(sw){const rad=wrap360(sw.h)*Math.PI/180;return{x:CX+Math.sin(rad)*sw.s*R,y:CY-Math.cos(rad)*sw.s*R};}
+function drawWheel(){const v=state.swatches[BASE_INDEX].v;
+  if(!wheelCache||Math.abs(v-cachedV)>0.004)renderWheelCache(v);
+  ctx.clearRect(0,0,SIZE,SIZE);ctx.drawImage(wheelCache,0,0);
+  ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);ctx.strokeStyle='rgba(0,0,30,.18)';ctx.lineWidth=1;ctx.stroke();
+  const bp=handlePos(state.swatches[BASE_INDEX]);ctx.strokeStyle='rgba(0,0,40,.28)';ctx.lineWidth=1.5;
+  state.swatches.forEach((sw,i)=>{if(i===BASE_INDEX)return;const p=handlePos(sw);ctx.beginPath();ctx.moveTo(bp.x,bp.y);ctx.lineTo(p.x,p.y);ctx.stroke();});
+  state.swatches.forEach((sw,i)=>{const p=handlePos(sw),isBase=i===BASE_INDEX,isSel=i===state.selected,r=isBase?15:12;
+    ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fillStyle=hsvHex(sw);ctx.fill();
+    ctx.lineWidth=isSel?4:3;ctx.strokeStyle=isSel?'#000054':'#fff';ctx.stroke();
+    ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.lineWidth=1;ctx.strokeStyle='rgba(0,0,20,.35)';ctx.stroke();
+    if(isBase){ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fillStyle=sw.v>0.6&&sw.s<0.5?'#000':'#fff';ctx.fill();}});}
+function evtToWheel(e){const rect=canvas.getBoundingClientRect(),sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+  const x=(e.clientX-rect.left)*sx,y=(e.clientY-rect.top)*sy,dx=x-CX,dy=y-CY;
+  return{x,y,hue:wrap360(Math.atan2(dx,-dy)*180/Math.PI),sat:clamp(Math.hypot(dx,dy)/R)};}
+function handleAt(x,y){for(let i=0;i<state.swatches.length;i++){const p=handlePos(state.swatches[i]);if(Math.hypot(x-p.x,y-p.y)<=16)return i;}return -1;}
+let dragIndex=-1;
+canvas.addEventListener('pointerdown',e=>{const{x,y,hue,sat}=evtToWheel(e);let i=handleAt(x,y);
+  if(i<0){i=state.selected;updateHandle(i,hue,sat);}dragIndex=i;state.selected=i;
+  canvas.setPointerCapture&&canvas.setPointerCapture(e.pointerId);renderPalette();drawWheel();e.preventDefault();});
+canvas.addEventListener('pointermove',e=>{if(dragIndex<0)return;const{hue,sat}=evtToWheel(e);updateHandle(dragIndex,hue,sat);e.preventDefault();});
+window.addEventListener('pointerup',()=>dragIndex=-1);
+function updateHandle(i,hue,sat){state.swatches[i]={...state.swatches[i],h:hue,s:sat};
+  if(i===BASE_INDEX)applyBaseChange();else{if(state.rule!=='custom'){state.rule='custom';renderHarmonies();}renderPalette();drawWheel();}
+  syncEditor();}
+
+/* ===== Harmonies ===== */
+const harmoniesEl=document.getElementById('harmonies');
+function renderHarmonies(){harmoniesEl.innerHTML='';RULES.forEach(r=>{const b=document.createElement('button');
+  b.className=state.rule===r.id?'active':'';b.innerHTML='<span class="dot"></span>'+r.label;b.onclick=()=>setRule(r.id);harmoniesEl.appendChild(b);});}
+
+/* ===== Palette + editor + sliders ===== */
+const paletteRow=document.getElementById('paletteRow');
+function renderPalette(){paletteRow.innerHTML='';state.swatches.forEach((sw,i)=>{const hex=hsvHex(sw);
+  const el=document.createElement('div');el.className='swatch'+(i===state.selected?' sel':'');
+  el.innerHTML=`<div class="chip" style="background:${hex}"></div><div class="meta">${i===BASE_INDEX?'<div class="base-tag">Base</div>':''}<div class="hex">${hex.toUpperCase()}</div></div>`;
+  el.onclick=()=>{state.selected=i;renderPalette();drawWheel();};paletteRow.appendChild(el);});syncEditor();}
+
+const hueR=document.getElementById('hueR'),satR=document.getElementById('satR'),valR=document.getElementById('valR');
+const hueV=document.getElementById('hueV'),satV=document.getElementById('satV'),valV=document.getElementById('valV');
+function syncSliders(sw){hueR.value=Math.round(sw.h);satR.value=Math.round(sw.s*100);valR.value=Math.round(sw.v*100);
+  hueV.textContent=Math.round(sw.h)+'\u00b0';satV.textContent=Math.round(sw.s*100)+'%';valV.textContent=Math.round(sw.v*100)+'%';
+  hueR.style.background='linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)';
+  satR.style.background=`linear-gradient(to right,${hsvHex({h:sw.h,s:0,v:sw.v})},${hsvHex({h:sw.h,s:1,v:sw.v})})`;
+  valR.style.background=`linear-gradient(to right,#000,${hsvHex({h:sw.h,s:sw.s,v:1})})`;}
+function sliderChanged(){const sw={h:+hueR.value,s:satR.value/100,v:valR.value/100};
+  state.swatches[state.selected]=sw;
+  if(state.selected===BASE_INDEX)applyBaseChange();else{if(state.rule!=='custom'){state.rule='custom';renderHarmonies();}renderPalette();drawWheel();}
+  syncEditor();}
+[hueR,satR,valR].forEach(el=>el.addEventListener('input',sliderChanged));
+
+function syncEditor(){const sw=state.swatches[state.selected],hex=hsvHex(sw),[r,g,b]=hsv2rgb(sw.h,sw.s,sw.v);
+  document.getElementById('editPreview').style.background=hex;
+  document.getElementById('hexInput').value=hex.toUpperCase();
+  document.getElementById('rgbVal').textContent=`${r}, ${g}, ${b}`;
+  document.getElementById('hsbVal').textContent=`${Math.round(sw.h)}\u00b0, ${Math.round(sw.s*100)}%, ${Math.round(sw.v*100)}%`;
+  syncSliders(sw);renderTintTone();}
+document.getElementById('hexInput').addEventListener('change',e=>{const rgb=hex2rgb(e.target.value);
+  if(!rgb){toast('That is not a valid hex colour');syncEditor();return;}const[h,s,v]=rgb2hsv(...rgb);
+  state.swatches[state.selected]={h,s,v};
+  if(state.selected===BASE_INDEX)applyBaseChange();else{if(state.rule!=='custom'){state.rule='custom';renderHarmonies();}}
+  renderPalette();drawWheel();});
+document.getElementById('setBaseBtn').onclick=()=>{state.swatches[BASE_INDEX]={...state.swatches[state.selected]};
+  state.selected=BASE_INDEX;applyBaseChange();renderPalette();};
+
+/* ===== Tint / tone / shade ===== */
+const TT=[{id:'tint',label:'Tint',target:[255,255,255]},{id:'shade',label:'Shade',target:[0,0,0]},{id:'tone',label:'Tone',target:[128,128,128]}];
+const ttVals={tint:0.4,shade:0.4,tone:0.4};
+function buildTintTone(){const wrap=document.getElementById('ttRows');wrap.innerHTML='';
+  TT.forEach(t=>{const row=document.createElement('div');row.className='ttrow';
+    row.innerHTML=`<label>${t.label}</label>
+      <input type="range" id="tt_${t.id}" min="0" max="100" value="${ttVals[t.id]*100}">
+      <div class="result"><div class="rchip" id="ttc_${t.id}"></div><span class="rhex" id="tth_${t.id}"></span>
+      <button class="btn sm" id="tts_${t.id}">Use</button></div>`;
+    wrap.appendChild(row);
+    row.querySelector('#tt_'+t.id).addEventListener('input',e=>{ttVals[t.id]=e.target.value/100;renderTintTone();});
+    row.querySelector('#tts_'+t.id).onclick=()=>loadColour(document.getElementById('tth_'+t.id).textContent);});}
+function renderTintTone(){const base=hsv2rgb(...Object.values(state.swatches[state.selected]));
+  TT.forEach(t=>{const out=mix(base,t.target,ttVals[t.id]),hex=rgb2hex(...out);
+    const c=document.getElementById('ttc_'+t.id),h=document.getElementById('tth_'+t.id);
+    if(c){c.style.background=hex;c.onclick=()=>loadColour(hex);}if(h)h.textContent=hex.toUpperCase();});}
+
+/* ===== Primary / secondary / tertiary reference ===== */
+const REF=[
+  {group:'Primary',items:[['Red','#e60000'],['Yellow','#ffd400'],['Blue','#0038b8']]},
+  {group:'Secondary',items:[['Orange','#f07800'],['Green','#2e9e1e'],['Violet','#7a28c4']]},
+  {group:'Tertiary',items:[['Red-orange','#e64a00'],['Yellow-orange','#f5a300'],['Yellow-green','#9fc400'],['Blue-green','#009e9e'],['Blue-violet','#4128b8'],['Red-violet','#c41e7a']]}
+];
+function buildRef(){const wrap=document.getElementById('refBlock');wrap.innerHTML='';
+  REF.forEach(g=>{const gd=document.createElement('div');gd.className='ref-group';
+    let sw='';g.items.forEach(([name,hex])=>{sw+=`<div class="ref" onclick="loadColour('${hex}')"><div class="chip" style="background:${hex}"></div><div class="name">${name}</div></div>`;});
+    gd.innerHTML=`<div class="glabel">${g.group}</div><div class="ref-swatches">${sw}</div>`;wrap.appendChild(gd);});}
+
+/* ===== Copy / random ===== */
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1600);}
+function copy(text,msg){navigator.clipboard.writeText(text).then(()=>toast(msg||'Copied')).catch(()=>toast('Copy failed'));}
+document.getElementById('copyHex').onclick=()=>copy(state.swatches.map(hsvHex).map(h=>h.toUpperCase()).join(', '),'Hex list copied');
+document.getElementById('copyCss').onclick=()=>{const css=state.swatches.map((s,i)=>`  --colour-${i+1}: ${hsvHex(s).toUpperCase()};`).join('\n');copy(`:root{\n${css}\n}`,'CSS variables copied');};
+document.getElementById('randomBtn').onclick=()=>{state.swatches[BASE_INDEX]={h:Math.random()*360,s:0.55+Math.random()*0.4,v:0.7+Math.random()*0.3};state.selected=BASE_INDEX;applyBaseChange();renderPalette();};
+window.loadColour=hex=>{const rgb=hex2rgb(hex);if(!rgb)return;const[h,s,v]=rgb2hsv(...rgb);
+  state.swatches[BASE_INDEX]={h,s,v};state.selected=BASE_INDEX;applyBaseChange();renderPalette();toast(hex.toUpperCase()+' set as wheel base');};
+window.copyText=(t,m)=>copy(t,m);
+
+/* ===== Image analysis ===== */
+const dropzone=document.getElementById('dropzone'),fileInput=document.getElementById('fileInput'),imgPreview=document.getElementById('imgPreview');
+let sampledPixels=[];
+dropzone.onclick=()=>fileInput.click();
+fileInput.onchange=e=>{if(e.target.files[0])loadImage(e.target.files[0]);};
+['dragenter','dragover'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.remove('drag');}));
+dropzone.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))loadImage(f);});
+window.addEventListener('paste',e=>{const item=[...(e.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'));if(item)loadImage(item.getAsFile());});
+function loadImage(file){const url=URL.createObjectURL(file),img=new Image();
+  img.onload=()=>{imgPreview.src=url;imgPreview.style.display='block';
+    const maxDim=180,scale=Math.min(1,maxDim/Math.max(img.width,img.height));
+    const w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));
+    const c=document.createElement('canvas');c.width=w;c.height=h;const cc=c.getContext('2d');cc.drawImage(img,0,0,w,h);
+    const data=cc.getImageData(0,0,w,h).data;sampledPixels=[];
+    for(let i=0;i<data.length;i+=4){if(data[i+3]<128)continue;sampledPixels.push([data[i],data[i+1],data[i+2]]);}
+    document.getElementById('analysis').style.display='block';document.getElementById('imgEmpty').style.display='none';
+    document.getElementById('reduceGrid').innerHTML='';runAnalysis();};
+  img.src=url;}
+function makeBox(pixels){let rmin=255,gmin=255,bmin=255,rmax=0,gmax=0,bmax=0;
+  for(const[r,g,b]of pixels){if(r<rmin)rmin=r;if(r>rmax)rmax=r;if(g<gmin)gmin=g;if(g>gmax)gmax=g;if(b<bmin)bmin=b;if(b>bmax)bmax=b;}
+  const rr=rmax-rmin,gr=gmax-gmin,br=bmax-bmin,range=Math.max(rr,gr,br),channel=range===rr?0:range===gr?1:2;
+  return{pixels,range,channel};}
+function splitBox(box){box.pixels.sort((a,b)=>a[box.channel]-b[box.channel]);const mid=box.pixels.length>>1;
+  return[makeBox(box.pixels.slice(0,mid)),makeBox(box.pixels.slice(mid))];}
+function medianCut(pixels,target){if(!pixels.length)return[];let boxes=[makeBox(pixels.slice())];
+  while(boxes.length<target){let idx=-1,best=-1;for(let i=0;i<boxes.length;i++)if(boxes[i].pixels.length>1&&boxes[i].range>best){best=boxes[i].range;idx=i;}
+    if(idx<0)break;const[a,b]=splitBox(boxes[idx]);boxes.splice(idx,1,a,b);}
+  return boxes.map(box=>{let r=0,g=0,bl=0;const n=box.pixels.length;for(const p of box.pixels){r+=p[0];g+=p[1];bl+=p[2];}
+    return{rgb:[Math.round(r/n),Math.round(g/n),Math.round(bl/n)],count:n};});}
+function websafeSnap([r,g,b]){const q=x=>Math.round(x/51)*51;return[q(r),q(g),q(b)];}
+function currentPixels(){if(document.getElementById('ignoreBg').checked){const f=sampledPixels.filter(([r,g,b])=>!(r>238&&g>238&&b>238));return f.length>16?f:sampledPixels;}return sampledPixels;}
+function runAnalysis(){const px=currentPixels(),useWeb=document.getElementById('webSafe').checked,n=parseInt(document.getElementById('paletteSize').value,10);
+  const domBoxes=medianCut(px,8).sort((a,b)=>b.count-a.count);let dom=domBoxes[0].rgb;if(useWeb)dom=websafeSnap(dom);
+  renderDominant(dom,domBoxes[0].count,px.length);
+  let boxes=medianCut(px,n).sort((a,b)=>b.count-a.count),cols=boxes.map(b=>useWeb?websafeSnap(b.rgb):b.rgb);
+  const seen=new Set();cols=cols.filter(c=>{const k=c.join(',');if(seen.has(k))return false;seen.add(k);return true;});
+  renderExtracted(cols);}
+function renderDominant(rgb,count,total){const hex=rgb2hex(...rgb),pct=Math.round(count/total*100);
+  document.getElementById('dominant').innerHTML=`<div class="big" style="background:${hex}"></div><div class="info">
+    <div class="hex">${hex.toUpperCase()}</div><small>rgb(${rgb.join(', ')}) &middot; ~${pct}% of sampled pixels</small><br>
+    <button class="btn sm" style="margin-top:6px" onclick="loadColour('${hex}')">Send to wheel</button>
+    <button class="btn sm ghost" style="margin-top:6px" onclick="copyText('${hex.toUpperCase()}','Copied ${hex.toUpperCase()}')">Copy</button></div>`;}
+function renderExtracted(cols){const el=document.getElementById('extracted');el.innerHTML='';
+  el.dataset.hexes=cols.map(c=>rgb2hex(...c).toUpperCase()).join(', ');
+  cols.forEach(rgb=>{const hex=rgb2hex(...rgb),d=document.createElement('div');d.className='mini';
+    d.innerHTML=`<div class="chip" style="background:${hex}"></div><div class="meta"><div class="hex">${hex.toUpperCase()}</div></div>`;
+    d.onclick=()=>loadColour(hex);el.appendChild(d);});}
+['paletteSize','ignoreBg','webSafe'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(sampledPixels.length)runAnalysis();}));
+document.getElementById('copyImgHex').onclick=()=>{const h=document.getElementById('extracted').dataset.hexes||'';if(h)copy(h,'Palette hex copied');};
+document.getElementById('loadHarmony').onclick=()=>{const h=(document.getElementById('extracted').dataset.hexes||'').split(', ')[0];if(h)loadColour(h);};
+document.getElementById('reduceBtn').onclick=()=>{if(!sampledPixels.length)return;
+  const count=parseInt(document.getElementById('reduceCount').value,10),boxes=medianCut(currentPixels(),count).sort((a,b)=>b.count-a.count);
+  const grid=document.getElementById('reduceGrid');grid.innerHTML='';
+  boxes.forEach(b=>{const hex=rgb2hex(...b.rgb),cell=document.createElement('div');cell.className='cell';cell.style.background=hex;
+    cell.title=hex.toUpperCase()+`  (~${Math.round(b.count/sampledPixels.length*100)}%)`;cell.onclick=()=>loadColour(hex);grid.appendChild(cell);});
+  toast(`Reduced to ${boxes.length} colours`);};
+
+/* ===== Init ===== */
+(function init(){state.swatches[BASE_INDEX]={h:210,s:0.7,v:0.85};
+  state.swatches=deriveRule('analogous',state.swatches[BASE_INDEX]).map(x=>({...x}));
+  buildTintTone();buildRef();renderHarmonies();renderPalette();drawWheel();})();
+</script>
+</body>
+</html>
