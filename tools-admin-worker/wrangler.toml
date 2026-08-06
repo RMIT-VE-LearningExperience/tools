@@ -1,0 +1,11 @@
+name = "tools-admin-dashboard"
+main = "src/worker.js"
+compatibility_date = "2026-08-07"
+
+[vars]
+GITHUB_OWNER = "RMIT-VE-LearningExperience"
+GITHUB_REPO = "tools"
+GITHUB_BRANCH = "main"
+PUBLIC_BASE_URL = "https://rmit-ve-learningexperience.github.io/tools/"
+GA_MEASUREMENT_ID = "G-1MDBG3TN2X"
+ADMIN_USERNAME = "admin"
