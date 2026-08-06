@@ -4,7 +4,9 @@ Password-protected Cloudflare Worker dashboard for listing and uploading standal
 
 ## What it does
 
+- Provides a form-based login page backed by an HTTP-only signed session cookie.
 - Lists every `.html` file in the repo and shows its public GitHub Pages URL.
+- Searches published tools by activity name or path.
 - Copies public URLs and iframe embed codes for each activity.
 - Downloads published HTML files from GitHub Pages.
 - Uploads a new `.html` file through a browser form.
