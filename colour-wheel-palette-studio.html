@@ -4,14 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Colour Wheel &amp; Palette Studio</title>
-<!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-1MDBG3TN2X');
-</script>
 <style>
   :root{
     --rmit-navy:#000054;
@@ -102,14 +94,27 @@
   .ttrow .rhex{font-size:.72rem;font-weight:700;font-variant-numeric:tabular-nums;width:64px}
   .tt-help{font-size:.72rem;color:var(--muted);margin-bottom:12px;line-height:1.5}
 
-  /* Primary/secondary/tertiary */
-  .ref-group{margin-bottom:12px}
-  .ref-group .glabel{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink);margin-bottom:5px}
-  .ref-swatches{display:flex;flex-wrap:wrap;gap:6px}
-  .ref{width:70px;border-radius:7px;overflow:hidden;border:1px solid var(--line);cursor:pointer;background:#fff;transition:transform .1s}
-  .ref:hover{transform:translateY(-2px)}
-  .ref .chip{height:34px}
-  .ref .name{font-size:.56rem;text-align:center;padding:3px 2px;line-height:1.2;color:var(--muted)}
+  /* Scheme description + dims label */
+  .scheme-desc{font-size:.8rem;color:var(--muted);margin-top:10px;padding:6px 0 6px 11px;border-left:3px solid var(--rmit-yellow)}
+  .dims-label{font-size:.66rem;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);text-align:center;margin-bottom:2px}
+
+  /* Colour mixing diagram */
+  .mix-tier{margin-bottom:16px}
+  .mix-tier-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink);margin-bottom:8px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .mix-tier-label span{font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:.72rem}
+  .mix-primaries{display:flex;gap:12px;flex-wrap:wrap}
+  .mix-eqs{display:flex;flex-wrap:wrap;gap:12px}
+  .mix-eq{display:flex;align-items:flex-start;gap:5px;background:#fbfbfa;border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+  .mix-chip{display:flex;flex-direction:column;align-items:center;gap:3px;width:48px}
+  .mix-chip .box{width:40px;height:40px;border-radius:8px;border:1px solid var(--line);cursor:pointer;transition:transform .1s}
+  .mix-chip .box:hover{transform:translateY(-2px)}
+  .mix-chip .cap{font-size:.56rem;line-height:1.15;text-align:center;color:var(--muted)}
+  .mix-chip.result .box{box-shadow:0 0 0 2px #fff,0 0 0 3px var(--rmit-navy)}
+  .mix-chip.result .cap{color:var(--ink);font-weight:700}
+  .mix-chip.primary-lg{width:64px}
+  .mix-chip.primary-lg .box{width:56px;height:56px}
+  .mix-chip.primary-lg .cap{font-size:.62rem;font-weight:700;color:var(--ink)}
+  .mix-op{font-size:1.05rem;color:var(--muted);align-self:center;padding-top:6px;font-weight:600}
   .ref-note{font-size:.72rem;color:var(--muted);background:var(--emble-grey);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:6px;line-height:1.5}
 
   /* Image */
@@ -143,6 +148,15 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   footer.app{text-align:center;color:var(--muted);font-size:.72rem;padding:6px 22px 26px}
 </style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
 </head>
 <body>
 
@@ -163,6 +177,7 @@
       <div class="wheelstage">
         <canvas id="wheelCanvas" width="480" height="480" aria-label="Interactive colour wheel"></canvas>
         <div class="sliders">
+          <div class="dims-label">The three dimensions of colour</div>
           <div class="sld"><label for="hueR">Hue</label><input type="range" id="hueR" min="0" max="360" value="210"><span class="v" id="hueV">210&deg;</span></div>
           <div class="sld"><label for="satR">Saturation</label><input type="range" id="satR" min="0" max="100" value="70"><span class="v" id="satV">70%</span></div>
           <div class="sld"><label for="valR">Value</label><input type="range" id="valR" min="0" max="100" value="85"><span class="v" id="valV">85%</span></div>
@@ -171,6 +186,7 @@
 
       <div class="subhead">Colour harmony <span class="line"></span></div>
       <div class="harmonies" id="harmonies"></div>
+      <div class="scheme-desc" id="schemeDesc"></div>
 
       <div class="subhead">Palette <span class="line"></span></div>
       <div class="paletterow" id="paletteRow"></div>
@@ -193,9 +209,9 @@
       <div class="tt-help">Adjustments to the <strong>selected</strong> swatch. Tint mixes toward white, shade toward black, tone toward grey.</div>
       <div id="ttRows"></div>
 
-      <div class="subhead">Primary, secondary &amp; tertiary <span class="line"></span></div>
-      <div id="refBlock"></div>
-      <div class="ref-note">These are the traditional artist (red&ndash;yellow&ndash;blue) colours the wheel image is based on. The interactive wheel above uses the digital HSV model, which is what produces accurate hex values for Canvas and the web. Click any swatch to load it as the wheel base.</div>
+      <div class="subhead">How primary, secondary &amp; tertiary colours are mixed <span class="line"></span></div>
+      <div id="mixBlock"></div>
+      <div class="ref-note">The traditional artist (red&ndash;yellow&ndash;blue) model. Primaries are pure hues that cannot be mixed from other colours; each secondary is a mix of two primaries; each tertiary mixes a primary with its neighbouring secondary. The interactive wheel above uses the digital HSV model, which is what produces accurate hex values for Canvas and the web. Click any colour to load it as the wheel base.</div>
     </div>
   </section>
 
@@ -269,12 +285,25 @@ const mix=(a,b,t)=>a.map((v,i)=>Math.round(v*(1-t)+b[i]*t));
 
 /* ===== State ===== */
 const RULES=[
-  {id:'analogous',label:'Analogous'},{id:'monochromatic',label:'Monochromatic'},
-  {id:'complementary',label:'Complementary'},{id:'split',label:'Split comp.'},
-  {id:'double_split',label:'Double split'},{id:'triad',label:'Triadic'},
-  {id:'square',label:'Square'},{id:'compound',label:'Compound'},
-  {id:'shades',label:'Shades'},{id:'custom',label:'Custom'}
+  {id:'monochromatic',label:'Monochromatic'},{id:'analogous',label:'Analogous'},
+  {id:'complementary',label:'Complementary'},{id:'discordant',label:'Discordant'},
+  {id:'split',label:'Split comp.'},{id:'double_split',label:'Double split'},
+  {id:'triad',label:'Triadic'},{id:'square',label:'Square'},
+  {id:'compound',label:'Compound'},{id:'shades',label:'Shades'},{id:'custom',label:'Custom'}
 ];
+const DESC={
+  monochromatic:'A single colour with varying shades and tints.',
+  analogous:'Colours that sit next to one another on the colour wheel, for example red, orange and yellow.',
+  complementary:'Colours that sit opposite each other on the colour wheel, for example red and green.',
+  discordant:'Deliberately breaks from the harmonious schemes, for example a pop of blue against red or green.',
+  split:'A base colour plus the two colours either side of its complement.',
+  double_split:'Two pairs of colours taken from either side of a complementary axis.',
+  triad:'Three colours evenly spaced around the wheel.',
+  square:'Four colours evenly spaced around the wheel.',
+  compound:'Analogous neighbours combined with a complementary accent.',
+  shades:'A single colour with varying darkness (value).',
+  custom:'Freely positioned swatches. Drag any handle on the wheel.'
+};
 const BASE_INDEX=2;
 const state={swatches:[],rule:'analogous',selected:BASE_INDEX};
 
@@ -283,6 +312,7 @@ function deriveRule(rule,base){const{h,s,v}=base;const mk=(dh,sm,vm)=>({h:wrap36
     case 'analogous':return[mk(-40,1,1),mk(-20,1,1),{h,s,v},mk(20,1,1),mk(40,1,1)];
     case 'monochromatic':return[mk(0,0.3,1.12),mk(0,0.62,1.05),{h,s,v},mk(0,1,0.74),mk(0,1,0.5)];
     case 'complementary':return[mk(0,0.42,1.15),mk(0,0.72,1.02),{h,s,v},mk(180,0.72,1.02),mk(180,1,1)];
+    case 'discordant':return[mk(0,1,0.58),mk(0,0.5,1.12),{h,s,v},mk(150,1,0.95),mk(200,1,1.1)];
     case 'split':return[mk(150,1,1),mk(0,0.6,1.1),{h,s,v},mk(0,0.6,0.82),mk(210,1,1)];
     case 'double_split':return[mk(-30,1,1),mk(30,1,1),{h,s,v},mk(150,1,1),mk(210,1,1)];
     case 'triad':return[mk(120,1,1),mk(0,0.6,1.1),{h,s,v},mk(0,0.6,0.82),mk(240,1,1)];
@@ -336,7 +366,8 @@ function updateHandle(i,hue,sat){state.swatches[i]={...state.swatches[i],h:hue,s
 /* ===== Harmonies ===== */
 const harmoniesEl=document.getElementById('harmonies');
 function renderHarmonies(){harmoniesEl.innerHTML='';RULES.forEach(r=>{const b=document.createElement('button');
-  b.className=state.rule===r.id?'active':'';b.innerHTML='<span class="dot"></span>'+r.label;b.onclick=()=>setRule(r.id);harmoniesEl.appendChild(b);});}
+  b.className=state.rule===r.id?'active':'';b.innerHTML='<span class="dot"></span>'+r.label;b.onclick=()=>setRule(r.id);harmoniesEl.appendChild(b);});
+  document.getElementById('schemeDesc').textContent=DESC[state.rule]||'';}
 
 /* ===== Palette + editor + sliders ===== */
 const paletteRow=document.getElementById('paletteRow');
@@ -389,16 +420,30 @@ function renderTintTone(){const base=hsv2rgb(...Object.values(state.swatches[sta
     const c=document.getElementById('ttc_'+t.id),h=document.getElementById('tth_'+t.id);
     if(c){c.style.background=hex;c.onclick=()=>loadColour(hex);}if(h)h.textContent=hex.toUpperCase();});}
 
-/* ===== Primary / secondary / tertiary reference ===== */
-const REF=[
-  {group:'Primary',items:[['Red','#e60000'],['Yellow','#ffd400'],['Blue','#0038b8']]},
-  {group:'Secondary',items:[['Orange','#f07800'],['Green','#2e9e1e'],['Violet','#7a28c4']]},
-  {group:'Tertiary',items:[['Red-orange','#e64a00'],['Yellow-orange','#f5a300'],['Yellow-green','#9fc400'],['Blue-green','#009e9e'],['Blue-violet','#4128b8'],['Red-violet','#c41e7a']]}
+/* ===== Colour mixing diagram ===== */
+const PRIMARIES=[['Red','#e60000'],['Yellow','#ffd400'],['Blue','#0038b8']];
+const SECONDARIES=[
+  {name:'Orange',hex:'#f07800',a:['Red','#e60000'],b:['Yellow','#ffd400']},
+  {name:'Green',hex:'#2e9e1e',a:['Yellow','#ffd400'],b:['Blue','#0038b8']},
+  {name:'Violet',hex:'#7a28c4',a:['Blue','#0038b8'],b:['Red','#e60000']}
 ];
-function buildRef(){const wrap=document.getElementById('refBlock');wrap.innerHTML='';
-  REF.forEach(g=>{const gd=document.createElement('div');gd.className='ref-group';
-    let sw='';g.items.forEach(([name,hex])=>{sw+=`<div class="ref" onclick="loadColour('${hex}')"><div class="chip" style="background:${hex}"></div><div class="name">${name}</div></div>`;});
-    gd.innerHTML=`<div class="glabel">${g.group}</div><div class="ref-swatches">${sw}</div>`;wrap.appendChild(gd);});}
+const TERTIARIES=[
+  {name:'Red-orange',hex:'#e64a00',a:['Red','#e60000'],b:['Orange','#f07800']},
+  {name:'Yellow-orange',hex:'#f5a300',a:['Yellow','#ffd400'],b:['Orange','#f07800']},
+  {name:'Yellow-green',hex:'#9fc400',a:['Yellow','#ffd400'],b:['Green','#2e9e1e']},
+  {name:'Blue-green',hex:'#009e9e',a:['Blue','#0038b8'],b:['Green','#2e9e1e']},
+  {name:'Blue-violet',hex:'#4128b8',a:['Blue','#0038b8'],b:['Violet','#7a28c4']},
+  {name:'Red-violet',hex:'#c41e7a',a:['Red','#e60000'],b:['Violet','#7a28c4']}
+];
+function mchip(name,hex,cls){return `<div class="mix-chip ${cls||''}"><div class="box" style="background:${hex}" onclick="loadColour('${hex}')" title="Load ${hex.toUpperCase()}"></div><div class="cap">${name}</div></div>`;}
+function meq(item){return `<div class="mix-eq">${mchip(item.a[0],item.a[1])}<div class="mix-op">+</div>${mchip(item.b[0],item.b[1])}<div class="mix-op">=</div>${mchip(item.name,item.hex,'result')}</div>`;}
+function buildMixing(){document.getElementById('mixBlock').innerHTML=`
+  <div class="mix-tier"><div class="mix-tier-label">Primary <span>pure hues &mdash; not mixed from anything</span></div>
+    <div class="mix-primaries">${PRIMARIES.map(p=>mchip(p[0],p[1],'primary-lg')).join('')}</div></div>
+  <div class="mix-tier"><div class="mix-tier-label">Secondary <span>primary + primary</span></div>
+    <div class="mix-eqs">${SECONDARIES.map(meq).join('')}</div></div>
+  <div class="mix-tier"><div class="mix-tier-label">Tertiary <span>primary + neighbouring secondary</span></div>
+    <div class="mix-eqs">${TERTIARIES.map(meq).join('')}</div></div>`;}
 
 /* ===== Copy / random ===== */
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1600);}
@@ -471,7 +516,7 @@ document.getElementById('reduceBtn').onclick=()=>{if(!sampledPixels.length)retur
 /* ===== Init ===== */
 (function init(){state.swatches[BASE_INDEX]={h:210,s:0.7,v:0.85};
   state.swatches=deriveRule('analogous',state.swatches[BASE_INDEX]).map(x=>({...x}));
-  buildTintTone();buildRef();renderHarmonies();renderPalette();drawWheel();})();
+  buildTintTone();buildMixing();renderHarmonies();renderPalette();drawWheel();})();
 </script>
 </body>
 </html>
