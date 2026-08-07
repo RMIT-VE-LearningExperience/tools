@@ -17,7 +17,7 @@ export default {
 
       if (request.method === "GET" && url.pathname === "/login") {
         const next = safeNextPath(url.searchParams.get("next") || "/");
-        if (await isAuthenticated(request, env)) {
+        if (await isAuthenticated(request, env) || isAllowedAccessUser(request, env)) {
           return redirect(next);
         }
 
@@ -138,6 +138,10 @@ async function handleLogin(request, env) {
 }
 
 async function requireSession(request, env) {
+  if (isAllowedAccessUser(request, env)) {
+    return null;
+  }
+
   if (!env.ADMIN_PASSWORD) {
     return html(renderSetupRequired(), { status: 503 });
   }
@@ -198,6 +202,28 @@ function isAllowedSessionUser(username, env) {
   if (!username) return false;
   if (username === (env.ADMIN_USERNAME || "admin")) return true;
   return Boolean(env.TEST_USERNAME && env.TEST_PASSWORD && username === env.TEST_USERNAME);
+}
+
+function isAllowedAccessUser(request, env) {
+  if (String(env.ACCESS_TRUST_HEADERS || "").toLowerCase() !== "true") {
+    return false;
+  }
+
+  const email = getAccessEmail(request);
+  if (!email) return false;
+
+  return getAllowedAccessEmails(env).includes(email.toLowerCase());
+}
+
+function getAccessEmail(request) {
+  return (request.headers.get("Cf-Access-Authenticated-User-Email") || "").trim();
+}
+
+function getAllowedAccessEmails(env) {
+  return String(env.ACCESS_ALLOWED_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 async function timingSafeEqual(a, b) {

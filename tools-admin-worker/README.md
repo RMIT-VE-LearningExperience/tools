@@ -4,7 +4,7 @@ Password-protected Cloudflare Worker dashboard for listing and uploading standal
 
 ## What it does
 
-- Provides a form-based login page backed by an HTTP-only signed session cookie.
+- Provides a form-based login page backed by an HTTP-only signed session cookie, with Cloudflare Access email allowlist support.
 - Lists every `.html` file in the repo and shows its public GitHub Pages URL.
 - Searches published tools by activity name or path.
 - Stores editable descriptions, tags, owner, and notes in `tools-metadata.json`.
@@ -31,6 +31,22 @@ npx wrangler secret put GITHUB_TOKEN
 ```
 
 `GITHUB_TOKEN` should be a fine-grained GitHub personal access token with contents read/write access to `RMIT-VE-LearningExperience/tools`.
+
+## Cloudflare Access
+
+The Worker trusts Cloudflare Access for these approved emails:
+
+- `lawrence.makoona@rmit.edu.au`
+- `kirsty.tod@rmit.edu.au`
+
+When Cloudflare Access is enabled for `tools-admin-dashboard.lawrence-makoona.workers.dev`, either user can authenticate through Access and skip the dashboard password page after `ACCESS_TRUST_HEADERS` is set to `true`. The local password login remains as a fallback while Access is being configured.
+
+To configure the edge gate in Cloudflare, the API token needs `Access: Apps and Policies Write` or `Zero Trust Edit`. Without that permission, configure it in the Cloudflare dashboard:
+
+1. Go to Workers & Pages > `tools-admin-dashboard` > Settings > Domains & Routes.
+2. Enable Cloudflare Access for the `workers.dev` route.
+3. Create an allow policy for `lawrence.makoona@rmit.edu.au` and `kirsty.tod@rmit.edu.au`.
+4. Set `ACCESS_TRUST_HEADERS = "true"` in `wrangler.toml` and redeploy.
 
 ## Local development
 
