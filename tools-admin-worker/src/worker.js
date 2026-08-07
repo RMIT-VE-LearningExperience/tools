@@ -51,10 +51,20 @@ export default {
         return await handleDownload(url, env);
       }
 
+      if (request.method === "GET" && url.pathname === "/versions") {
+        return await handleVersions(url, env);
+      }
+
       if (request.method === "POST" && url.pathname === "/api/upload") {
         const originResponse = requireSameOriginPost(request);
         if (originResponse) return originResponse;
         return await handleUpload(request, env);
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/restore") {
+        const originResponse = requireSameOriginPost(request);
+        if (originResponse) return originResponse;
+        return await handleRestore(request, env);
       }
 
       return html(renderNotFound(), { status: 404 });
@@ -277,6 +287,7 @@ async function listTools(env) {
       embedCode: iframeEmbedCode(`${baseUrl}${item.path}`, titleFromPath(item.path)),
       downloadUrl: downloadUrl(item.path),
       historyUrl: githubHistoryUrl(env, item.path),
+      versionsUrl: versionsUrl(item.path),
       size: item.size || 0
     }))
     .sort((a, b) => a.path.localeCompare(b.path));
@@ -293,7 +304,6 @@ async function handleUpload(request, env) {
   const filename = String(payload.filename || "");
   const requestedPath = String(payload.path || "").trim();
   const rawHtml = String(payload.content || "");
-  const overwrite = Boolean(payload.overwrite);
 
   if (!rawHtml) {
     return html(renderUploadResult("No HTML file was uploaded.", false), { status: 400 });
@@ -311,10 +321,6 @@ async function handleUpload(request, env) {
   const finalHtml = injectGoogleAnalytics(rawHtml, env.GA_MEASUREMENT_ID);
   const existing = await getExistingFile(env, targetPath);
 
-  if (existing && !overwrite) {
-    return html(renderUploadResult(`"${targetPath}" already exists. Tick overwrite to replace it.`, false), { status: 409 });
-  }
-
   const result = await putFile(env, {
     path: targetPath,
     content: finalHtml,
@@ -330,7 +336,46 @@ async function handleUpload(request, env) {
     embedCode: iframeEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`, titleFromPath(targetPath)),
     downloadUrl: downloadUrl(targetPath),
     commitUrl: result.commit?.html_url,
-    historyUrl: githubHistoryUrl(env, targetPath)
+    historyUrl: githubHistoryUrl(env, targetPath),
+    versionsUrl: versionsUrl(targetPath),
+    action: existing ? "Replaced existing file" : "Added new file"
+  }));
+}
+
+async function handleVersions(url, env) {
+  const path = validateDownloadPath(url.searchParams.get("path") || "");
+  const commits = await listFileCommits(env, path);
+
+  return html(renderVersions(path, commits, env));
+}
+
+async function handleRestore(request, env) {
+  const formData = await request.formData();
+  const path = validateDownloadPath(String(formData.get("path") || ""));
+  const commitSha = validateSha(String(formData.get("sha") || ""));
+  const version = await getFileAtRef(env, path, commitSha);
+  const existing = await getExistingFile(env, path);
+
+  if (!existing) {
+    return html(renderUploadResult(`"${path}" does not exist on ${env.GITHUB_BRANCH}.`, false), { status: 404 });
+  }
+
+  const result = await putFile(env, {
+    path,
+    content: version,
+    sha: existing.sha,
+    message: `Restore ${path} to ${commitSha.slice(0, 7)} from tools admin`
+  });
+
+  return html(renderUploadResult("Version restored.", true, {
+    path,
+    url: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${path}`,
+    embedCode: iframeEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${path}`, titleFromPath(path)),
+    downloadUrl: downloadUrl(path),
+    commitUrl: result.commit?.html_url,
+    historyUrl: githubHistoryUrl(env, path),
+    versionsUrl: versionsUrl(path),
+    action: `Restored ${commitSha.slice(0, 7)}`
   }));
 }
 
@@ -406,6 +451,16 @@ function validateDownloadPath(value) {
   return cleaned;
 }
 
+function validateSha(value) {
+  const cleaned = value.trim();
+
+  if (!/^[a-f0-9]{40}$/i.test(cleaned)) {
+    throw new Error("That version identifier is not valid.");
+  }
+
+  return cleaned;
+}
+
 function injectGoogleAnalytics(source, measurementId) {
   if (!measurementId || source.includes(measurementId)) {
     return source;
@@ -429,6 +484,29 @@ async function getExistingFile(env, path) {
   if (response.status === 404) return null;
   if (!response.ok) throw await githubError(response);
   return response.json();
+}
+
+async function listFileCommits(env, path) {
+  const commits = await githubJson(env, `/commits?path=${encodeURIComponent(path)}&sha=${encodeURIComponent(env.GITHUB_BRANCH)}&per_page=30`);
+
+  return commits.map((commit) => ({
+    sha: commit.sha,
+    shortSha: commit.sha.slice(0, 7),
+    message: commit.commit?.message?.split("\n")[0] || "No commit message",
+    date: commit.commit?.committer?.date || commit.commit?.author?.date || "",
+    author: commit.commit?.author?.name || commit.author?.login || "Unknown",
+    url: commit.html_url
+  }));
+}
+
+async function getFileAtRef(env, path, ref) {
+  const file = await githubJson(env, `/contents/${encodePath(path)}?ref=${encodeURIComponent(ref)}`);
+
+  if (file.encoding !== "base64" || !file.content) {
+    throw new Error(`Could not read ${path} at ${ref}.`);
+  }
+
+  return base64DecodeUtf8(file.content);
 }
 
 async function putFile(env, { path, content, sha, message }) {
@@ -505,6 +583,17 @@ function base64EncodeUtf8(value) {
   return encoded;
 }
 
+function base64DecodeUtf8(value) {
+  const binary = atob(value.replace(/\s+/g, ""));
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return new TextDecoder().decode(bytes);
+}
+
 function encodePath(path) {
   return path.split("/").map(encodeURIComponent).join("/");
 }
@@ -531,12 +620,29 @@ function downloadUrl(path) {
   return `/download?path=${encodeURIComponent(path)}`;
 }
 
+function versionsUrl(path) {
+  return `/versions?path=${encodeURIComponent(path)}`;
+}
+
 function downloadFileName(path) {
   return path.split("/").pop().replace(/[^A-Za-z0-9._-]/g, "-") || "activity.html";
 }
 
+function rawFileUrl(env, path, ref) {
+  return `https://raw.githubusercontent.com/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/${encodeURIComponent(ref)}/${encodePath(path)}`;
+}
+
 function githubHistoryUrl(env, path) {
   return `https://github.com/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/commits/${env.GITHUB_BRANCH}/${encodePath(path)}`;
+}
+
+function formatDate(value) {
+  if (!value) return "Unknown date";
+
+  return new Date(value).toLocaleString("en-AU", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  });
 }
 
 function html(body, init = {}) {
@@ -562,6 +668,7 @@ function json(body, init = {}) {
 }
 
 function renderDashboard(tools, env) {
+  const existingPaths = tools.map((tool) => tool.path);
   const rows = tools.map((tool) => `
     <tr data-search="${escapeHtml(`${tool.name} ${tool.path}`.toLowerCase())}">
       <td><a href="${escapeHtml(tool.url)}" target="_blank" rel="noopener">${escapeHtml(tool.name)}</a></td>
@@ -571,6 +678,7 @@ function renderDashboard(tools, env) {
         <button type="button" data-copy="${escapeHtml(tool.embedCode)}">Copy embed</button>
         <a class="button-link" href="${escapeHtml(tool.downloadUrl)}" download>Download</a>
         <button type="button" data-replace-path="${escapeHtml(tool.path)}">Replace</button>
+        <a class="button-link" href="${escapeHtml(tool.versionsUrl)}">Versions</a>
         <a class="button-link" href="${escapeHtml(tool.historyUrl)}" target="_blank" rel="noopener">History</a>
       </td>
     </tr>
@@ -601,13 +709,9 @@ function renderDashboard(tools, env) {
           Public path
           <input id="path" name="path" type="text" placeholder="example-activity.html" pattern="[A-Za-z0-9/_\\-. ]+\\.html">
         </label>
-        <label class="check">
-          <input id="overwrite" name="overwrite" type="checkbox">
-          Replace existing version
-        </label>
         <button type="submit">Upload and publish</button>
       </form>
-      <p class="hint">Replacing a file creates a new Git commit for that path, so previous versions remain available from the History link.</p>
+      <p class="hint" id="upload-mode">Choose a file and path. Existing paths are replaced automatically.</p>
     </section>
 
     <section class="panel">
@@ -641,7 +745,7 @@ function renderDashboard(tools, env) {
         if (!button) return;
 
         document.querySelector("#path").value = button.dataset.replacePath;
-        document.querySelector("#overwrite").checked = true;
+        updateUploadMode();
         document.querySelector(".upload").scrollIntoView({ behavior: "smooth", block: "start" });
       });
 
@@ -658,6 +762,36 @@ function renderDashboard(tools, env) {
 
         document.querySelector("#visible-count").textContent = String(visible);
       });
+
+      const existingPaths = new Set(${JSON.stringify(existingPaths)});
+      const pathInput = document.querySelector("#path");
+      const fileInput = document.querySelector("#file");
+      const uploadMode = document.querySelector("#upload-mode");
+
+      function normalisePath(value) {
+        return value.replace(/\\\\/g, "/").replace(/^\\/+/, "").trim().replace(/\\s+/g, "-").toLowerCase();
+      }
+
+      function updateUploadMode() {
+        const candidate = normalisePath(pathInput.value || (fileInput.files[0]?.name || ""));
+        if (!candidate) {
+          uploadMode.textContent = "Choose a file and path. Existing paths are replaced automatically.";
+          return;
+        }
+
+        uploadMode.textContent = existingPaths.has(candidate)
+          ? "This upload will replace the existing file at " + candidate + "."
+          : "This upload will create a new file at " + candidate + ".";
+      }
+
+      fileInput.addEventListener("change", () => {
+        if (!pathInput.value && fileInput.files[0]) {
+          pathInput.value = fileInput.files[0].name;
+        }
+        updateUploadMode();
+      });
+
+      pathInput.addEventListener("input", updateUploadMode);
 
       document.querySelector(".upload form").addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -679,7 +813,6 @@ function renderDashboard(tools, env) {
           body: JSON.stringify({
             filename: file.name,
             path: document.querySelector("#path").value,
-            overwrite: document.querySelector("#overwrite").checked,
             content: await file.text()
           })
         });
@@ -698,6 +831,7 @@ function renderUploadResult(message, ok, detail = null) {
     <section class="panel result">
       <h1>${escapeHtml(message)}</h1>
       ${detail ? `
+        ${detail.action ? `<p><strong>${escapeHtml(detail.action)}</strong></p>` : ""}
         <p><a href="${escapeHtml(detail.url)}" target="_blank" rel="noopener">${escapeHtml(detail.url)}</a></p>
         <p><code>${escapeHtml(detail.path)}</code></p>
         <div class="result-actions">
@@ -705,6 +839,7 @@ function renderUploadResult(message, ok, detail = null) {
           <button type="button" data-copy="${escapeHtml(detail.embedCode)}">Copy embed</button>
           <a class="button-link" href="${escapeHtml(detail.downloadUrl)}" download>Download</a>
           ${detail.commitUrl ? `<a class="button-link" href="${escapeHtml(detail.commitUrl)}" target="_blank" rel="noopener">View commit</a>` : ""}
+          ${detail.versionsUrl ? `<a class="button-link" href="${escapeHtml(detail.versionsUrl)}">Versions</a>` : ""}
           <a class="button-link" href="${escapeHtml(detail.historyUrl)}" target="_blank" rel="noopener">Version history</a>
         </div>
         <script>
@@ -720,6 +855,68 @@ function renderUploadResult(message, ok, detail = null) {
       ` : ""}
       <p class="actions"><a href="/">Back to dashboard</a></p>
     </section>
+  `);
+}
+
+function renderVersions(path, commits, env) {
+  const rows = commits.map((commit, index) => `
+    <tr>
+      <td>
+        <strong>${index === 0 ? "Current" : escapeHtml(commit.shortSha)}</strong>
+        <div class="muted">${escapeHtml(formatDate(commit.date))}</div>
+      </td>
+      <td>
+        ${escapeHtml(commit.message)}
+        <div class="muted">${escapeHtml(commit.author)}</div>
+      </td>
+      <td class="actions-cell">
+        <a class="button-link" href="${escapeHtml(rawFileUrl(env, path, commit.sha))}" target="_blank" rel="noopener">View</a>
+        <a class="button-link" href="${escapeHtml(commit.url)}" target="_blank" rel="noopener">Commit</a>
+        ${index === 0 ? "" : `
+          <form action="/api/restore" method="post" data-confirm-restore="${escapeHtml(commit.shortSha)}">
+            <input type="hidden" name="path" value="${escapeHtml(path)}">
+            <input type="hidden" name="sha" value="${escapeHtml(commit.sha)}">
+            <button type="submit">Restore</button>
+          </form>
+        `}
+      </td>
+    </tr>
+  `).join("");
+
+  return page(`${titleFromPath(path)} Versions`, `
+    <header>
+      <div>
+        <p class="eyebrow">Version history</p>
+        <h1>${escapeHtml(titleFromPath(path))}</h1>
+      </div>
+      <div class="header-actions">
+        <a class="public" href="/">Dashboard</a>
+        <a class="public" href="${escapeHtml(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${path}`)}" target="_blank" rel="noopener">Public page</a>
+      </div>
+    </header>
+    <section class="panel">
+      <div class="section-head">
+        <h2><code>${escapeHtml(path)}</code></h2>
+        <span>${commits.length} versions</span>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Version</th><th>Change</th><th>Actions</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="hint">Restoring a version creates a new commit on <code>${escapeHtml(env.GITHUB_BRANCH)}</code>; it does not delete newer history.</p>
+    </section>
+    <script>
+      document.addEventListener("submit", (event) => {
+        const form = event.target.closest("[data-confirm-restore]");
+        if (!form) return;
+        const version = form.dataset.confirmRestore;
+        if (!confirm("Restore version " + version + " for ${escapeJsString(path)}?")) {
+          event.preventDefault();
+        }
+      });
+    </script>
   `);
 }
 
@@ -814,7 +1011,9 @@ function page(title, body) {
     td button,td .button-link{background:#fff;color:var(--navy);min-height:32px;padding:6px 9px}
     td button:hover,td .button-link:hover{background:#f4f5ff}
     .actions-cell,.result-actions{display:flex;flex-wrap:wrap;gap:7px}
+    .actions-cell form{margin:0}
     .result-actions{margin-top:16px}
+    .muted{color:var(--muted);font-size:.82rem;margin-top:3px}
     .result{margin-top:44px}
     .result h1{margin-bottom:12px}
     .result p{margin-top:10px}
