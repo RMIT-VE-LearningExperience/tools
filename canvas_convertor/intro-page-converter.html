@@ -69,15 +69,15 @@
         .footer a{color:#fac800;text-decoration:none}.footer a:hover{text-decoration:underline}
         @media(max-width:1000px){.main-layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid #e3e5e0}}
     </style>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
 
-      gtag('config', 'G-1MDBG3TN2X');
-    </script>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
 </head>
 <body>
 <div class="main-wrapper">
@@ -378,7 +378,7 @@ function generateHTML(){
     h+=`<div id="${genId()}" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n`;
     h+=`<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-outcomes">&nbsp;</i></div>\n`;
     h+=`<div class="title-with-icon-title">\n`;
-    h+=`<h3>Learning Objectives</h3>\n`;
+    h+=`<h3>Learning objectives</h3>\n`;
     h+=`</div>\n</div>\n\n`;
     h+=`<p class="narrow-p">&nbsp;</p>\n\n`;
     if(objItems.length){
