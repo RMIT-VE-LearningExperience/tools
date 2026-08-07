@@ -1,6 +1,4 @@
 const TEXT_ENCODER = new TextEncoder();
-const SESSION_COOKIE = "tools_admin_session";
-const SESSION_TTL_SECONDS = 8 * 60 * 60;
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const METADATA_PATH = "tools-metadata.json";
 const PUBLIC_INDEX_PATH = "tools-directory.html";
@@ -15,35 +13,20 @@ export default {
         return json({ ok: true });
       }
 
-      if (request.method === "GET" && url.pathname === "/login") {
-        const next = safeNextPath(url.searchParams.get("next") || "/");
-        if (await isAuthenticated(request, env) || isAllowedAccessUser(request, env)) {
-          return redirect(next);
-        }
-
-        return html(renderLogin("", next));
+      if (url.pathname === "/login") {
+        return redirect(safeNextPath(url.searchParams.get("next") || "/"));
       }
 
-      if (request.method === "POST" && url.pathname === "/login") {
-        const originResponse = requireSameOriginPost(request);
-        if (originResponse) return originResponse;
-        return await handleLogin(request, env);
+      if (url.pathname === "/logout") {
+        return redirect("/cdn-cgi/access/logout");
       }
 
-      if (request.method === "POST" && url.pathname === "/logout") {
-        const originResponse = requireSameOriginPost(request);
-        if (originResponse) return originResponse;
-        return redirect("/", {
-          "Set-Cookie": `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`
-        });
-      }
-
-      const authResponse = await requireSession(request, env);
+      const authResponse = requireAccess(request, env);
       if (authResponse) return authResponse;
 
       if (request.method === "GET" && url.pathname === "/") {
         const tools = await listTools(env);
-        return html(renderDashboard(tools, env));
+        return html(renderDashboard(tools, env, request));
       }
 
       if (request.method === "GET" && url.pathname === "/api/tools") {
@@ -114,109 +97,25 @@ export default {
   }
 };
 
-async function handleLogin(request, env) {
-  const password = env.ADMIN_PASSWORD;
-
-  if (!password) {
-    return html(renderSetupRequired(), { status: 503 });
-  }
-
-  const formData = await request.formData();
-  const suppliedUsername = String(formData.get("username") || "");
-  const suppliedPassword = String(formData.get("password") || "");
-  const next = safeNextPath(String(formData.get("next") || "/"));
-
-  const authenticatedUsername = await validateCredentials(suppliedUsername, suppliedPassword, env);
-
-  if (!authenticatedUsername) {
-    return html(renderLogin("The username or password is incorrect.", next), { status: 401 });
-  }
-
-  return redirect(next, {
-    "Set-Cookie": await createSessionCookie(authenticatedUsername, env)
-  });
-}
-
-async function requireSession(request, env) {
-  if (isAllowedAccessUser(request, env)) {
-    return null;
-  }
-
-  if (!env.ADMIN_PASSWORD) {
-    return html(renderSetupRequired(), { status: 503 });
-  }
-
-  if (await isAuthenticated(request, env)) {
-    return null;
-  }
-
-  const url = new URL(request.url);
-  const next = encodeURIComponent(`${url.pathname}${url.search}`);
-  return redirect(`/login?next=${next}`, {}, 303);
-}
-
-async function isAuthenticated(request, env) {
-  if (!env.ADMIN_PASSWORD) return false;
-
-  const cookie = getCookie(request, SESSION_COOKIE);
-  if (!cookie) return false;
-
-  const [payload, signature] = cookie.split(".");
-  if (!payload || !signature) return false;
-
-  const expectedSignature = await hmac(payload, env.ADMIN_PASSWORD);
-  if (!await timingSafeEqual(signature, expectedSignature)) return false;
-
-  let session;
-  try {
-    session = JSON.parse(base64UrlDecode(payload));
-  } catch {
-    return false;
-  }
-
-  return isAllowedSessionUser(session?.username, env) && Number(session.exp) > Math.floor(Date.now() / 1000);
-}
-
-async function validateCredentials(username, password, env) {
-  const adminUsername = env.ADMIN_USERNAME || "admin";
-  const adminUsernameMatches = await timingSafeEqual(username, adminUsername);
-  const adminPasswordMatches = await timingSafeEqual(password, env.ADMIN_PASSWORD || "");
-
-  if (adminUsernameMatches && adminPasswordMatches) {
-    return adminUsername;
-  }
-
-  if (env.TEST_USERNAME && env.TEST_PASSWORD) {
-    const testUsernameMatches = await timingSafeEqual(username, env.TEST_USERNAME);
-    const testPasswordMatches = await timingSafeEqual(password, env.TEST_PASSWORD);
-
-    if (testUsernameMatches && testPasswordMatches) {
-      return env.TEST_USERNAME;
-    }
-  }
-
-  return "";
-}
-
-function isAllowedSessionUser(username, env) {
-  if (!username) return false;
-  if (username === (env.ADMIN_USERNAME || "admin")) return true;
-  return Boolean(env.TEST_USERNAME && env.TEST_PASSWORD && username === env.TEST_USERNAME);
-}
-
-function isAllowedAccessUser(request, env) {
-  if (String(env.ACCESS_TRUST_HEADERS || "").toLowerCase() !== "true") {
-    return false;
-  }
-
+function requireAccess(request, env) {
   const email = getAccessEmail(request);
-  if (!email) return false;
+  if (!email) {
+    return html(renderAccessRequired(), { status: 403 });
+  }
 
-  return getAllowedAccessEmails(env).includes(email.toLowerCase());
+  if (!isAllowedAccessEmail(email, env)) {
+    return html(renderAccessDenied(email), { status: 403 });
+  }
+
+  return null;
 }
 
 function getAccessEmail(request) {
   return (request.headers.get("Cf-Access-Authenticated-User-Email") || "").trim();
+}
+
+function isAllowedAccessEmail(email, env) {
+  return getAllowedAccessEmails(env).includes(String(email || "").trim().toLowerCase());
 }
 
 function getAllowedAccessEmails(env) {
@@ -224,19 +123,6 @@ function getAllowedAccessEmails(env) {
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
-}
-
-async function timingSafeEqual(a, b) {
-  const aBytes = TEXT_ENCODER.encode(a);
-  const bBytes = TEXT_ENCODER.encode(b);
-  const maxLength = Math.max(aBytes.length, bBytes.length);
-  let mismatch = aBytes.length ^ bBytes.length;
-
-  for (let i = 0; i < maxLength; i += 1) {
-    mismatch |= (aBytes[i] || 0) ^ (bBytes[i] || 0);
-  }
-
-  return mismatch === 0;
 }
 
 function requireSameOriginPost(request) {
@@ -251,39 +137,6 @@ function requireSameOriginPost(request) {
   }
 
   return html(renderUploadResult("Cross-origin submissions are not allowed.", false), { status: 403 });
-}
-
-async function createSessionCookie(username, env) {
-  const payload = base64UrlEncode(JSON.stringify({
-    username,
-    exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS
-  }));
-  const signature = await hmac(payload, env.ADMIN_PASSWORD);
-
-  return `${SESSION_COOKIE}=${payload}.${signature}; Path=/; Max-Age=${SESSION_TTL_SECONDS}; HttpOnly; Secure; SameSite=Lax`;
-}
-
-async function hmac(value, secret) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    TEXT_ENCODER.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const signature = await crypto.subtle.sign("HMAC", key, TEXT_ENCODER.encode(value));
-  return base64UrlEncodeBytes(new Uint8Array(signature));
-}
-
-function getCookie(request, name) {
-  const cookie = request.headers.get("Cookie") || "";
-  const prefix = `${name}=`;
-
-  return cookie
-    .split(";")
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(prefix))
-    ?.slice(prefix.length) || "";
 }
 
 function safeNextPath(value) {
@@ -303,34 +156,6 @@ function redirect(location, headers = {}, status = 303) {
       ...headers
     }
   });
-}
-
-function base64UrlEncode(value) {
-  return base64UrlEncodeBytes(TEXT_ENCODER.encode(value));
-}
-
-function base64UrlEncodeBytes(bytes) {
-  let binary = "";
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
-
-  return btoa(binary)
-    .replaceAll("+", "-")
-    .replaceAll("/", "_")
-    .replaceAll("=", "");
-}
-
-function base64UrlDecode(value) {
-  const padded = value.replaceAll("-", "+").replaceAll("_", "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
-  const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
-
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-
-  return new TextDecoder().decode(bytes);
 }
 
 async function listTools(env) {
@@ -978,8 +803,9 @@ function json(body, init = {}) {
   });
 }
 
-function renderDashboard(tools, env) {
+function renderDashboard(tools, env, request) {
   const existingPaths = tools.map((tool) => tool.path);
+  const accessEmail = getAccessEmail(request);
   const rows = tools.map((tool) => `
     <tr data-search="${escapeHtml(`${tool.name} ${tool.path}`.toLowerCase())}">
       <td>
@@ -1018,10 +844,9 @@ function renderDashboard(tools, env) {
         <h1>Tools Admin</h1>
       </div>
       <div class="header-actions">
+        <span class="signed-in">${escapeHtml(accessEmail)}</span>
         <a class="public" href="${escapeHtml(env.PUBLIC_BASE_URL)}" target="_blank" rel="noopener">Public site</a>
-        <form action="/logout" method="post">
-          <button type="submit">Log out</button>
-        </form>
+        <a class="logout" href="/logout">Log out</a>
       </div>
     </header>
 
@@ -1389,35 +1214,22 @@ function renderPublicIndex(tools) {
 </html>`;
 }
 
-function renderLogin(error = "", next = "/") {
-  return page("Tools Admin Login", `
-    <main class="login-wrap">
-      <section class="login-panel">
-        <p class="eyebrow">GitHub Pages publisher</p>
-        <h1>Tools Admin</h1>
-        ${error ? `<p class="error">${escapeHtml(error)}</p>` : ""}
-        <form action="/login" method="post">
-          <input type="hidden" name="next" value="${escapeHtml(next)}">
-          <label>
-            Username
-            <input name="username" type="text" autocomplete="username" required autofocus>
-          </label>
-          <label>
-            Password
-            <input name="password" type="password" autocomplete="current-password" required>
-          </label>
-          <button type="submit">Log in</button>
-        </form>
-      </section>
-    </main>
+function renderAccessRequired() {
+  return page("Access required", `
+    <section class="panel result">
+      <h1>Access required</h1>
+      <p>This dashboard is protected by Cloudflare Access. Sign in through Cloudflare Access to continue.</p>
+      <p><a href="/">Try again</a></p>
+    </section>
   `);
 }
 
-function renderSetupRequired() {
-  return page("Setup required", `
+function renderAccessDenied(email) {
+  return page("Access denied", `
     <section class="panel result">
-      <h1>Setup required</h1>
-      <p>Set the <code>ADMIN_PASSWORD</code> and <code>GITHUB_TOKEN</code> Worker secrets before using the dashboard.</p>
+      <h1>Access denied</h1>
+      <p><code>${escapeHtml(email)}</code> is not allowed to use this dashboard.</p>
+      <p><a href="/logout">Log out of Cloudflare Access</a></p>
     </section>
   `);
 }
@@ -1459,12 +1271,12 @@ function page(title, body) {
     .eyebrow{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;opacity:.72;margin-bottom:4px}
     .public, header a{color:#fff}
     .header-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-    .header-actions form{margin:0}
-    .header-actions button{background:#fff;color:var(--navy);border-color:#fff;min-height:34px;padding:6px 10px}
+    .signed-in{font-size:.85rem;color:#dadae8}
+    .logout{background:#fff;color:var(--navy);border:1px solid #fff;border-radius:6px;min-height:34px;padding:6px 10px;text-decoration:none;display:inline-flex;align-items:center;font-weight:700}
     .panel{max-width:1120px;margin:22px auto;background:#fff;border:1px solid var(--line);padding:20px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,20,.06)}
     .upload form{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr) auto auto;gap:14px;align-items:end;margin-top:16px}
     label{display:flex;flex-direction:column;gap:6px;font-size:.82rem;font-weight:700;color:var(--muted)}
-    input[type=file],input[type=text],input[type=password],input[type=search],textarea{font:inherit;border:1px solid var(--line);border-radius:6px;padding:9px;background:#fff;color:var(--ink);min-height:40px}
+    input[type=file],input[type=text],input[type=search],textarea{font:inherit;border:1px solid var(--line);border-radius:6px;padding:9px;background:#fff;color:var(--ink);min-height:40px}
     textarea{resize:vertical}
     .check{flex-direction:row;align-items:center;color:var(--ink);padding-bottom:9px}
     button,.actions a,.button-link{font:inherit;font-weight:700;background:var(--navy);color:#fff;border:1px solid var(--navy);border-radius:6px;padding:9px 12px;text-decoration:none;cursor:pointer;min-height:40px;display:inline-flex;align-items:center}
@@ -1500,11 +1312,6 @@ function page(title, body) {
     .result{margin-top:44px}
     .result h1{margin-bottom:12px}
     .result p{margin-top:10px}
-    .login-wrap{min-height:100vh;display:grid;place-items:center;padding:20px}
-    .login-panel{width:min(100%,390px);background:#fff;border:1px solid var(--line);border-radius:8px;padding:24px;box-shadow:0 1px 2px rgba(0,0,20,.06),0 12px 34px rgba(0,0,40,.12)}
-    .login-panel h1{margin-bottom:18px}
-    .login-panel form{display:grid;gap:14px}
-    .login-panel button{justify-content:center}
     .error{background:#fff1f1;border:1px solid #f0b7bd;color:#8c121b;border-radius:6px;padding:9px 10px;margin-bottom:14px}
     pre{white-space:pre-wrap;background:#f6f6f6;border:1px solid var(--line);padding:12px;border-radius:6px;overflow:auto}
     @media(max-width:760px){header{align-items:flex-start;flex-direction:column}.upload form{grid-template-columns:1fr}.section-head{align-items:stretch;flex-direction:column}.search{min-width:0;max-width:none}table,thead,tbody,tr,th,td{display:block}thead{display:none}td{padding:9px 0}.panel{margin:14px;padding:16px}.actions-cell{margin-top:6px}}
