@@ -24,7 +24,7 @@ export default {
       if (request.method === "POST" && url.pathname === "/login") {
         const originResponse = requireSameOriginPost(request);
         if (originResponse) return originResponse;
-        return handleLogin(request, env);
+        return await handleLogin(request, env);
       }
 
       if (request.method === "POST" && url.pathname === "/logout") {
@@ -48,13 +48,13 @@ export default {
       }
 
       if (request.method === "GET" && url.pathname === "/download") {
-        return handleDownload(url, env);
+        return await handleDownload(url, env);
       }
 
       if (request.method === "POST" && url.pathname === "/api/upload") {
         const originResponse = requireSameOriginPost(request);
         if (originResponse) return originResponse;
-        return handleUpload(request, env);
+        return await handleUpload(request, env);
       }
 
       return html(renderNotFound(), { status: 404 });
@@ -71,7 +71,6 @@ export default {
 };
 
 async function handleLogin(request, env) {
-  const username = env.ADMIN_USERNAME || "admin";
   const password = env.ADMIN_PASSWORD;
 
   if (!password) {
@@ -83,15 +82,14 @@ async function handleLogin(request, env) {
   const suppliedPassword = String(formData.get("password") || "");
   const next = safeNextPath(String(formData.get("next") || "/"));
 
-  const usernameMatches = await timingSafeEqual(suppliedUsername, username);
-  const passwordMatches = await timingSafeEqual(suppliedPassword, password);
+  const authenticatedUsername = await validateCredentials(suppliedUsername, suppliedPassword, env);
 
-  if (!usernameMatches || !passwordMatches) {
+  if (!authenticatedUsername) {
     return html(renderLogin("The username or password is incorrect.", next), { status: 401 });
   }
 
   return redirect(next, {
-    "Set-Cookie": await createSessionCookie(username, env)
+    "Set-Cookie": await createSessionCookie(authenticatedUsername, env)
   });
 }
 
@@ -128,7 +126,34 @@ async function isAuthenticated(request, env) {
     return false;
   }
 
-  return session?.username === (env.ADMIN_USERNAME || "admin") && Number(session.exp) > Math.floor(Date.now() / 1000);
+  return isAllowedSessionUser(session?.username, env) && Number(session.exp) > Math.floor(Date.now() / 1000);
+}
+
+async function validateCredentials(username, password, env) {
+  const adminUsername = env.ADMIN_USERNAME || "admin";
+  const adminUsernameMatches = await timingSafeEqual(username, adminUsername);
+  const adminPasswordMatches = await timingSafeEqual(password, env.ADMIN_PASSWORD || "");
+
+  if (adminUsernameMatches && adminPasswordMatches) {
+    return adminUsername;
+  }
+
+  if (env.TEST_USERNAME && env.TEST_PASSWORD) {
+    const testUsernameMatches = await timingSafeEqual(username, env.TEST_USERNAME);
+    const testPasswordMatches = await timingSafeEqual(password, env.TEST_PASSWORD);
+
+    if (testUsernameMatches && testPasswordMatches) {
+      return env.TEST_USERNAME;
+    }
+  }
+
+  return "";
+}
+
+function isAllowedSessionUser(username, env) {
+  if (!username) return false;
+  if (username === (env.ADMIN_USERNAME || "admin")) return true;
+  return Boolean(env.TEST_USERNAME && env.TEST_PASSWORD && username === env.TEST_USERNAME);
 }
 
 async function timingSafeEqual(a, b) {
@@ -258,28 +283,35 @@ async function listTools(env) {
 }
 
 async function handleUpload(request, env) {
-  const formData = await request.formData();
-  const file = formData.get("file");
-  const requestedPath = String(formData.get("path") || "").trim();
+  const contentType = request.headers.get("Content-Type") || "";
 
-  if (!file || typeof file === "string") {
+  if (!contentType.includes("application/json")) {
+    return html(renderUploadResult("Upload request must use the dashboard form. Refresh and try again.", false), { status: 415 });
+  }
+
+  const payload = JSON.parse(await request.text());
+  const filename = String(payload.filename || "");
+  const requestedPath = String(payload.path || "").trim();
+  const rawHtml = String(payload.content || "");
+  const overwrite = Boolean(payload.overwrite);
+
+  if (!rawHtml) {
     return html(renderUploadResult("No HTML file was uploaded.", false), { status: 400 });
   }
 
-  if (!file.name.toLowerCase().endsWith(".html")) {
+  if (!filename.toLowerCase().endsWith(".html") && !requestedPath.toLowerCase().endsWith(".html")) {
     return html(renderUploadResult("Only .html files can be uploaded.", false), { status: 400 });
   }
 
-  if (file.size > MAX_UPLOAD_BYTES) {
+  if (TEXT_ENCODER.encode(rawHtml).byteLength > MAX_UPLOAD_BYTES) {
     return html(renderUploadResult(`Upload is too large. Keep HTML files under ${formatBytes(MAX_UPLOAD_BYTES)}.`, false), { status: 413 });
   }
 
-  const targetPath = normaliseTargetPath(requestedPath || file.name);
-  const rawHtml = await file.text();
+  const targetPath = normaliseTargetPath(requestedPath || filename);
   const finalHtml = injectGoogleAnalytics(rawHtml, env.GA_MEASUREMENT_ID);
   const existing = await getExistingFile(env, targetPath);
 
-  if (existing && formData.get("overwrite") !== "on") {
+  if (existing && !overwrite) {
     return html(renderUploadResult(`"${targetPath}" already exists. Tick overwrite to replace it.`, false), { status: 409 });
   }
 
@@ -408,17 +440,14 @@ async function putFile(env, { path, content, sha, message }) {
 
   if (sha) body.sha = sha;
 
-  const response = await githubFetch(env, `/contents/${encodePath(path)}`, {
+  return githubJson(env, `/contents/${encodePath(path)}`, {
     method: "PUT",
     body: JSON.stringify(body)
   });
-
-  if (!response.ok) throw await githubError(response);
-  return response.json();
 }
 
-async function githubJson(env, path) {
-  const response = await githubFetch(env, path);
+async function githubJson(env, path, init = {}) {
+  const response = await githubFetch(env, path, init);
   if (!response.ok) throw await githubError(response);
   return response.json();
 }
@@ -453,6 +482,10 @@ async function githubError(response) {
   return new Error(`GitHub API request failed (${response.status})${detail}`);
 }
 
+function formatBytes(bytes) {
+  return `${Math.round(bytes / 1024 / 1024)} MB`;
+}
+
 function base64EncodeUtf8(value) {
   const bytes = TEXT_ENCODER.encode(value);
   const chunkSize = 24 * 1024;
@@ -470,10 +503,6 @@ function base64EncodeUtf8(value) {
   }
 
   return encoded;
-}
-
-function formatBytes(bytes) {
-  return `${Math.round(bytes / 1024 / 1024)} MB`;
 }
 
 function encodePath(path) {
@@ -566,7 +595,7 @@ function renderDashboard(tools, env) {
       <form action="/api/upload" method="post" enctype="multipart/form-data">
         <label>
           HTML file
-          <input name="file" type="file" accept=".html,text/html" required>
+          <input id="file" name="file" type="file" accept=".html,text/html" required>
         </label>
         <label>
           Public path
@@ -628,6 +657,37 @@ function renderDashboard(tools, env) {
         }
 
         document.querySelector("#visible-count").textContent = String(visible);
+      });
+
+      document.querySelector(".upload form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const form = event.currentTarget;
+        const file = document.querySelector("#file").files[0];
+        const button = form.querySelector("button[type=submit]");
+
+        if (!file) return;
+
+        button.disabled = true;
+        button.textContent = "Uploading...";
+
+        const response = await fetch(form.action, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            filename: file.name,
+            path: document.querySelector("#path").value,
+            overwrite: document.querySelector("#overwrite").checked,
+            content: await file.text()
+          })
+        });
+        const nextPage = await response.text();
+
+        document.open();
+        document.write(nextPage);
+        document.close();
       });
     </script>
   `);
