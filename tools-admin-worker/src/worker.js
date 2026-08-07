@@ -2,6 +2,9 @@ const TEXT_ENCODER = new TextEncoder();
 const SESSION_COOKIE = "tools_admin_session";
 const SESSION_TTL_SECONDS = 8 * 60 * 60;
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+const METADATA_PATH = "tools-metadata.json";
+const PUBLIC_INDEX_PATH = "tools-directory.html";
+const ARCHIVE_PREFIX = "archive/";
 
 export default {
   async fetch(request, env) {
@@ -55,6 +58,10 @@ export default {
         return await handleVersions(url, env);
       }
 
+      if (request.method === "GET" && url.pathname === "/metadata") {
+        return await handleMetadata(url, env);
+      }
+
       if (request.method === "POST" && url.pathname === "/api/upload") {
         const originResponse = requireSameOriginPost(request);
         if (originResponse) return originResponse;
@@ -65,6 +72,33 @@ export default {
         const originResponse = requireSameOriginPost(request);
         if (originResponse) return originResponse;
         return await handleRestore(request, env);
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/metadata") {
+        const originResponse = requireSameOriginPost(request);
+        if (originResponse) return originResponse;
+        return await handleMetadataSave(request, env);
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/archive") {
+        const originResponse = requireSameOriginPost(request);
+        if (originResponse) return originResponse;
+        return await handleArchive(request, env);
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/generate-index") {
+        const originResponse = requireSameOriginPost(request);
+        if (originResponse) return originResponse;
+        await regeneratePublicIndex(env);
+        return html(renderUploadResult("Public index regenerated.", true, {
+          path: PUBLIC_INDEX_PATH,
+          url: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${PUBLIC_INDEX_PATH}`,
+          embedCode: iframeEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${PUBLIC_INDEX_PATH}`, "Tools Directory"),
+          downloadUrl: downloadUrl(PUBLIC_INDEX_PATH),
+          historyUrl: githubHistoryUrl(env, PUBLIC_INDEX_PATH),
+          versionsUrl: versionsUrl(PUBLIC_INDEX_PATH),
+          action: "Updated public tools directory"
+        }));
       }
 
       return html(renderNotFound(), { status: 404 });
@@ -276,19 +310,27 @@ function base64UrlDecode(value) {
 async function listTools(env) {
   const tree = await githubJson(env, `/git/trees/${env.GITHUB_BRANCH}?recursive=1`);
   const baseUrl = ensureTrailingSlash(env.PUBLIC_BASE_URL);
+  const metadata = await getMetadata(env);
 
   return tree.tree
     .filter((item) => item.type === "blob" && item.path.endsWith(".html"))
     .filter((item) => !item.path.startsWith("tools-admin-worker/"))
+    .filter((item) => !item.path.startsWith(ARCHIVE_PREFIX))
+    .filter((item) => item.path !== PUBLIC_INDEX_PATH)
     .map((item) => ({
       path: item.path,
       name: titleFromPath(item.path),
-      description: descriptionFromPath(item.path),
+      description: metadata.tools?.[item.path]?.description || descriptionFromPath(item.path),
+      tags: metadata.tools?.[item.path]?.tags || inferTags(item.path),
+      owner: metadata.tools?.[item.path]?.owner || "",
+      notes: metadata.tools?.[item.path]?.notes || "",
       url: `${baseUrl}${item.path}`,
       embedCode: iframeEmbedCode(`${baseUrl}${item.path}`, titleFromPath(item.path)),
+      canvasEmbedCode: canvasEmbedCode(`${baseUrl}${item.path}`, titleFromPath(item.path)),
       downloadUrl: downloadUrl(item.path),
       historyUrl: githubHistoryUrl(env, item.path),
       versionsUrl: versionsUrl(item.path),
+      metadataUrl: metadataUrl(item.path),
       size: item.size || 0
     }))
     .sort((a, b) => a.path.localeCompare(b.path));
@@ -305,6 +347,10 @@ async function handleUpload(request, env) {
   const filename = String(payload.filename || "");
   const requestedPath = String(payload.path || "").trim();
   const rawHtml = String(payload.content || "");
+  const description = String(payload.description || "").trim();
+  const tags = parseTags(String(payload.tags || ""));
+  const owner = String(payload.owner || "").trim();
+  const notes = String(payload.notes || "").trim();
 
   if (!rawHtml) {
     return html(renderUploadResult("No HTML file was uploaded.", false), { status: 400 });
@@ -316,6 +362,11 @@ async function handleUpload(request, env) {
 
   if (TEXT_ENCODER.encode(rawHtml).byteLength > MAX_UPLOAD_BYTES) {
     return html(renderUploadResult(`Upload is too large. Keep HTML files under ${formatBytes(MAX_UPLOAD_BYTES)}.`, false), { status: 413 });
+  }
+
+  const validation = validateUploadHtml(rawHtml);
+  if (validation.errors.length > 0) {
+    return html(renderUploadResult(validation.errors.join(" "), false), { status: 400 });
   }
 
   const targetPath = normaliseTargetPath(requestedPath || filename);
@@ -330,11 +381,14 @@ async function handleUpload(request, env) {
       ? `Update ${targetPath} from tools admin`
       : `Add ${targetPath} from tools admin`
   });
+  await updateMetadata(env, targetPath, { description, tags, owner, notes });
+  await regeneratePublicIndex(env);
 
   return html(renderUploadResult("Upload complete.", true, {
     path: targetPath,
     url: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`,
     embedCode: iframeEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`, titleFromPath(targetPath)),
+    canvasEmbedCode: canvasEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`, titleFromPath(targetPath)),
     downloadUrl: downloadUrl(targetPath),
     commitUrl: result.commit?.html_url,
     historyUrl: githubHistoryUrl(env, targetPath),
@@ -367,16 +421,83 @@ async function handleRestore(request, env) {
     sha: existing.sha,
     message: `Restore ${path} to ${commitSha.slice(0, 7)} from tools admin`
   });
+  await regeneratePublicIndex(env);
 
   return html(renderUploadResult("Version restored.", true, {
     path,
     url: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${path}`,
     embedCode: iframeEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${path}`, titleFromPath(path)),
+    canvasEmbedCode: canvasEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${path}`, titleFromPath(path)),
     downloadUrl: downloadUrl(path),
     commitUrl: result.commit?.html_url,
     historyUrl: githubHistoryUrl(env, path),
     versionsUrl: versionsUrl(path),
     action: `Restored ${commitSha.slice(0, 7)}`
+  }));
+}
+
+async function handleMetadata(url, env) {
+  const path = validateDownloadPath(url.searchParams.get("path") || "");
+  const metadata = await getMetadata(env);
+  const details = metadata.tools?.[path] || {};
+
+  return html(renderMetadata(path, {
+    description: details.description || descriptionFromPath(path),
+    tags: (details.tags || inferTags(path)).join(", "),
+    owner: details.owner || "",
+    notes: details.notes || ""
+  }, env));
+}
+
+async function handleMetadataSave(request, env) {
+  const formData = await request.formData();
+  const path = validateDownloadPath(String(formData.get("path") || ""));
+  await updateMetadata(env, path, {
+    description: String(formData.get("description") || "").trim(),
+    tags: parseTags(String(formData.get("tags") || "")),
+    owner: String(formData.get("owner") || "").trim(),
+    notes: String(formData.get("notes") || "").trim()
+  });
+  await regeneratePublicIndex(env);
+
+  return redirect("/");
+}
+
+async function handleArchive(request, env) {
+  const formData = await request.formData();
+  const path = validateDownloadPath(String(formData.get("path") || ""));
+  const existing = await getExistingFile(env, path);
+
+  if (!existing) {
+    return html(renderUploadResult(`"${path}" does not exist.`, false), { status: 404 });
+  }
+
+  const archivePath = `${ARCHIVE_PREFIX}${path}`;
+  const archivedExisting = await getExistingFile(env, archivePath);
+
+  if (archivedExisting) {
+    return html(renderUploadResult(`"${archivePath}" already exists.`, false), { status: 409 });
+  }
+
+  const content = base64DecodeUtf8(existing.content || "");
+  await putFile(env, {
+    path: archivePath,
+    content,
+    message: `Archive ${path} from tools admin`
+  });
+  await deleteFile(env, path, existing.sha, `Remove archived ${path} from tools admin`);
+  await moveMetadataToArchive(env, path, archivePath);
+  await regeneratePublicIndex(env);
+
+  return html(renderUploadResult("File archived.", true, {
+    path: archivePath,
+    url: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${archivePath}`,
+    embedCode: iframeEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${archivePath}`, titleFromPath(path)),
+    canvasEmbedCode: canvasEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${archivePath}`, titleFromPath(path)),
+    downloadUrl: downloadUrl(archivePath),
+    historyUrl: githubHistoryUrl(env, archivePath),
+    versionsUrl: versionsUrl(archivePath),
+    action: `${path} moved to ${archivePath}`
   }));
 }
 
@@ -487,6 +608,59 @@ async function getExistingFile(env, path) {
   return response.json();
 }
 
+async function getMetadata(env) {
+  const existing = await getExistingFile(env, METADATA_PATH);
+  if (!existing?.content) return { tools: {} };
+
+  try {
+    return JSON.parse(base64DecodeUtf8(existing.content));
+  } catch {
+    return { tools: {} };
+  }
+}
+
+async function saveMetadata(env, metadata, message = "Update tools metadata from tools admin") {
+  const existing = await getExistingFile(env, METADATA_PATH);
+  return putFile(env, {
+    path: METADATA_PATH,
+    content: `${JSON.stringify(metadata, null, 2)}\n`,
+    sha: existing?.sha,
+    message
+  });
+}
+
+async function updateMetadata(env, path, updates) {
+  const metadata = await getMetadata(env);
+  metadata.tools = metadata.tools || {};
+  const current = metadata.tools[path] || {};
+  const next = {
+    ...current,
+    description: updates.description || current.description || descriptionFromPath(path),
+    tags: updates.tags?.length ? updates.tags : current.tags || inferTags(path),
+    owner: updates.owner || current.owner || "",
+    notes: updates.notes || current.notes || "",
+    updatedAt: new Date().toISOString()
+  };
+
+  metadata.tools[path] = next;
+  return saveMetadata(env, metadata);
+}
+
+async function moveMetadataToArchive(env, path, archivePath) {
+  const metadata = await getMetadata(env);
+  metadata.tools = metadata.tools || {};
+
+  if (metadata.tools[path]) {
+    metadata.tools[archivePath] = {
+      ...metadata.tools[path],
+      archivedFrom: path,
+      archivedAt: new Date().toISOString()
+    };
+    delete metadata.tools[path];
+    await saveMetadata(env, metadata, `Archive metadata for ${path}`);
+  }
+}
+
 async function listFileCommits(env, path) {
   const commits = await githubJson(env, `/commits?path=${encodeURIComponent(path)}&sha=${encodeURIComponent(env.GITHUB_BRANCH)}&per_page=30`);
 
@@ -522,6 +696,30 @@ async function putFile(env, { path, content, sha, message }) {
   return githubJson(env, `/contents/${encodePath(path)}`, {
     method: "PUT",
     body: JSON.stringify(body)
+  });
+}
+
+async function deleteFile(env, path, sha, message) {
+  return githubJson(env, `/contents/${encodePath(path)}`, {
+    method: "DELETE",
+    body: JSON.stringify({
+      message,
+      sha,
+      branch: env.GITHUB_BRANCH
+    })
+  });
+}
+
+async function regeneratePublicIndex(env) {
+  const tools = await listTools(env);
+  const existing = await getExistingFile(env, PUBLIC_INDEX_PATH);
+  const content = renderPublicIndex(tools);
+
+  return putFile(env, {
+    path: PUBLIC_INDEX_PATH,
+    content,
+    sha: existing?.sha,
+    message: "Update public tools directory from tools admin"
   });
 }
 
@@ -648,8 +846,55 @@ function descriptionFromPath(path) {
   return `Standalone HTML activity for ${title}.`;
 }
 
+function inferTags(path) {
+  const lower = path.toLowerCase();
+  const tags = [];
+
+  if (lower.includes("canvas")) tags.push("Canvas");
+  if (lower.includes("converter") || lower.includes("convertor")) tags.push("Converter");
+  if (lower.includes("generator")) tags.push("Generator");
+  if (lower.includes("simulation")) tags.push("Simulation");
+  if (lower.includes("template")) tags.push("Template");
+  if (lower.includes("ai")) tags.push("AI");
+  if (lower.includes("assessment")) tags.push("Assessment");
+  if (lower.includes("matrix")) tags.push("Matrix");
+
+  return [...new Set(tags)];
+}
+
+function parseTags(value) {
+  return [...new Set(value
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+    .slice(0, 12))];
+}
+
+function validateUploadHtml(source) {
+  const warnings = [];
+  const errors = [];
+
+  if (!/<title>[^<]+<\/title>/i.test(source)) {
+    warnings.push("No title element found.");
+  }
+
+  if (!/<html[\s>]/i.test(source) && !/<!doctype html>/i.test(source)) {
+    warnings.push("No html or doctype marker found.");
+  }
+
+  if (/<script[^>]+src=["'][^"']*(http:\/\/)/i.test(source)) {
+    warnings.push("Contains an insecure http script reference.");
+  }
+
+  return { warnings, errors };
+}
+
 function iframeEmbedCode(url, title) {
   return `<iframe src="${url}" title="${escapeHtml(title)}" width="100%" height="720" style="border:0;" loading="lazy"></iframe>`;
+}
+
+function canvasEmbedCode(url, title) {
+  return `<p><iframe src="${url}" title="${escapeHtml(title)}" width="100%" height="720" loading="lazy" style="border: 1px solid #d8d9dd; max-width: 100%;"></iframe></p>`;
 }
 
 function downloadUrl(path) {
@@ -658,6 +903,10 @@ function downloadUrl(path) {
 
 function versionsUrl(path) {
   return `/versions?path=${encodeURIComponent(path)}`;
+}
+
+function metadataUrl(path) {
+  return `/metadata?path=${encodeURIComponent(path)}`;
 }
 
 function downloadFileName(path) {
@@ -710,6 +959,8 @@ function renderDashboard(tools, env) {
       <td>
         <a href="${escapeHtml(tool.url)}" target="_blank" rel="noopener">${escapeHtml(tool.name)}</a>
         <div class="muted">${escapeHtml(tool.description)}</div>
+        ${tool.tags.length ? `<div class="tag-row">${tool.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>` : ""}
+        ${tool.owner ? `<div class="muted">Owner: ${escapeHtml(tool.owner)}</div>` : ""}
       </td>
       <td><code>${escapeHtml(tool.path)}</code></td>
       <td class="actions-cell">
@@ -718,10 +969,16 @@ function renderDashboard(tools, env) {
           <div class="menu-panel">
             <button type="button" data-copy="${escapeHtml(tool.url)}">Copy URL</button>
             <button type="button" data-copy="${escapeHtml(tool.embedCode)}">Copy embed</button>
+            <button type="button" data-copy="${escapeHtml(tool.canvasEmbedCode)}">Copy Canvas embed</button>
             <a class="button-link" href="${escapeHtml(tool.downloadUrl)}" download>Download</a>
             <button type="button" data-replace-path="${escapeHtml(tool.path)}">Replace</button>
-            <a class="button-link" href="${escapeHtml(tool.versionsUrl)}">Versions</a>
-            <a class="button-link" href="${escapeHtml(tool.historyUrl)}" target="_blank" rel="noopener">History</a>
+            <a class="button-link" href="${escapeHtml(tool.metadataUrl)}">Edit details</a>
+            <a class="button-link" href="${escapeHtml(tool.versionsUrl)}">Manage versions</a>
+            <a class="button-link" href="${escapeHtml(tool.historyUrl)}" target="_blank" rel="noopener">GitHub history</a>
+            <form action="/api/archive" method="post" data-confirm-archive="${escapeHtml(tool.path)}">
+              <input type="hidden" name="path" value="${escapeHtml(tool.path)}">
+              <button type="submit">Archive</button>
+            </form>
           </div>
         </details>
       </td>
@@ -753,9 +1010,27 @@ function renderDashboard(tools, env) {
           Public path
           <input id="path" name="path" type="text" placeholder="example-activity.html" pattern="[A-Za-z0-9/_\\-. ]+\\.html">
         </label>
+        <label>
+          Description
+          <input id="description" type="text" placeholder="Short purpose of this activity">
+        </label>
+        <label>
+          Tags
+          <input id="tags" type="text" placeholder="Canvas, Assessment">
+        </label>
+        <label>
+          Owner
+          <input id="owner" type="text" placeholder="Name or team">
+        </label>
+        <label>
+          Notes
+          <input id="notes" type="text" placeholder="Course, project, or usage note">
+        </label>
         <button type="submit">Upload and publish</button>
       </form>
       <p class="hint" id="upload-mode">Choose a file and path. Existing paths are replaced automatically.</p>
+      <div class="upload-checks" id="upload-checks" hidden></div>
+      <iframe class="preview-frame" id="preview-frame" title="Upload preview" hidden></iframe>
     </section>
 
     <section class="panel">
@@ -766,6 +1041,9 @@ function renderDashboard(tools, env) {
           <input id="search" type="search" placeholder="Search name or path">
         </label>
         <span><span id="visible-count">${tools.length}</span> of ${tools.length} files</span>
+        <form action="/api/generate-index" method="post">
+          <button type="submit">Update public index</button>
+        </form>
       </div>
       <table>
         <thead>
@@ -802,6 +1080,14 @@ function renderDashboard(tools, env) {
         document.querySelector(".upload").scrollIntoView({ behavior: "smooth", block: "start" });
       });
 
+      document.addEventListener("submit", (event) => {
+        const form = event.target.closest("[data-confirm-archive]");
+        if (!form) return;
+        if (!confirm("Archive " + form.dataset.confirmArchive + "?")) {
+          event.preventDefault();
+        }
+      });
+
       document.querySelector("#search").addEventListener("input", (event) => {
         const query = event.target.value.trim().toLowerCase();
         const rows = [...document.querySelectorAll("tbody tr")];
@@ -820,6 +1106,8 @@ function renderDashboard(tools, env) {
       const pathInput = document.querySelector("#path");
       const fileInput = document.querySelector("#file");
       const uploadMode = document.querySelector("#upload-mode");
+      const uploadChecks = document.querySelector("#upload-checks");
+      const previewFrame = document.querySelector("#preview-frame");
 
       function normalisePath(value) {
         return value.replace(/\\\\/g, "/").replace(/^\\/+/, "").trim().replace(/\\s+/g, "-").toLowerCase();
@@ -842,9 +1130,31 @@ function renderDashboard(tools, env) {
           pathInput.value = fileInput.files[0].name;
         }
         updateUploadMode();
+        updatePreviewAndValidation();
       });
 
       pathInput.addEventListener("input", updateUploadMode);
+
+      async function updatePreviewAndValidation() {
+        const file = fileInput.files[0];
+        if (!file) {
+          uploadChecks.hidden = true;
+          previewFrame.hidden = true;
+          return;
+        }
+
+        const content = await file.text();
+        const checks = [];
+        checks.push(file.name.toLowerCase().endsWith(".html") ? "HTML extension detected." : "Warning: file extension is not .html.");
+        checks.push(/<title>[^<]+<\\/title>/i.test(content) ? "Title found." : "Warning: missing title element.");
+        checks.push(content.includes("${escapeJsString(env.GA_MEASUREMENT_ID)}") ? "GA already present." : "GA will be added on upload.");
+        checks.push(content.length < ${MAX_UPLOAD_BYTES} ? "File size is within limit." : "Warning: file may be too large.");
+
+        uploadChecks.hidden = false;
+        uploadChecks.innerHTML = checks.map((check) => "<div>" + check + "</div>").join("");
+        previewFrame.hidden = false;
+        previewFrame.srcdoc = content;
+      }
 
       document.querySelector(".upload form").addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -866,6 +1176,10 @@ function renderDashboard(tools, env) {
           body: JSON.stringify({
             filename: file.name,
             path: document.querySelector("#path").value,
+            description: document.querySelector("#description").value,
+            tags: document.querySelector("#tags").value,
+            owner: document.querySelector("#owner").value,
+            notes: document.querySelector("#notes").value,
             content: await file.text()
           })
         });
@@ -890,10 +1204,11 @@ function renderUploadResult(message, ok, detail = null) {
         <div class="result-actions">
           <button type="button" data-copy="${escapeHtml(detail.url)}">Copy URL</button>
           <button type="button" data-copy="${escapeHtml(detail.embedCode)}">Copy embed</button>
+          ${detail.canvasEmbedCode ? `<button type="button" data-copy="${escapeHtml(detail.canvasEmbedCode)}">Copy Canvas embed</button>` : ""}
           <a class="button-link" href="${escapeHtml(detail.downloadUrl)}" download>Download</a>
           ${detail.commitUrl ? `<a class="button-link" href="${escapeHtml(detail.commitUrl)}" target="_blank" rel="noopener">View commit</a>` : ""}
-          ${detail.versionsUrl ? `<a class="button-link" href="${escapeHtml(detail.versionsUrl)}">Versions</a>` : ""}
-          <a class="button-link" href="${escapeHtml(detail.historyUrl)}" target="_blank" rel="noopener">Version history</a>
+          ${detail.versionsUrl ? `<a class="button-link" href="${escapeHtml(detail.versionsUrl)}">Manage versions</a>` : ""}
+          <a class="button-link" href="${escapeHtml(detail.historyUrl)}" target="_blank" rel="noopener">GitHub history</a>
         </div>
         <script>
           document.addEventListener("click", async (event) => {
@@ -973,6 +1288,81 @@ function renderVersions(path, commits, env) {
   `);
 }
 
+function renderMetadata(path, details, env) {
+  return page(`Edit ${titleFromPath(path)}`, `
+    <header>
+      <div>
+        <p class="eyebrow">Tool details</p>
+        <h1>${escapeHtml(titleFromPath(path))}</h1>
+      </div>
+      <div class="header-actions">
+        <a class="public" href="/">Dashboard</a>
+        <a class="public" href="${escapeHtml(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${path}`)}" target="_blank" rel="noopener">Public page</a>
+      </div>
+    </header>
+    <section class="panel">
+      <form class="details-form" action="/api/metadata" method="post">
+        <input type="hidden" name="path" value="${escapeHtml(path)}">
+        <label>
+          Description
+          <textarea name="description" rows="3">${escapeHtml(details.description)}</textarea>
+        </label>
+        <label>
+          Tags
+          <input name="tags" type="text" value="${escapeHtml(details.tags)}" placeholder="Canvas, Converter, Assessment">
+        </label>
+        <label>
+          Owner
+          <input name="owner" type="text" value="${escapeHtml(details.owner)}" placeholder="Name or team">
+        </label>
+        <label>
+          Notes
+          <textarea name="notes" rows="5">${escapeHtml(details.notes)}</textarea>
+        </label>
+        <button type="submit">Save details</button>
+      </form>
+    </section>
+  `);
+}
+
+function renderPublicIndex(tools) {
+  const rows = tools.map((tool) => `
+    <article class="tool">
+      <h2><a href="${escapeHtml(tool.url)}">${escapeHtml(tool.name)}</a></h2>
+      <p>${escapeHtml(tool.description)}</p>
+      ${tool.tags.length ? `<p class="tags">${tool.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</p>` : ""}
+    </article>
+  `).join("");
+
+  return `<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tools Directory</title>
+  <style>
+    body{margin:0;background:#f2f2f2;color:#17172f;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.45}
+    header{background:#000054;color:#fff;border-bottom:4px solid #e61e2a;padding:28px clamp(18px,4vw,42px)}
+    main{max-width:980px;margin:0 auto;padding:24px}
+    h1,h2,p{margin:0}
+    h1{font-size:1.6rem}
+    .tool{background:#fff;border:1px solid #d8d9dd;border-radius:8px;padding:16px;margin-bottom:12px}
+    .tool h2{font-size:1rem;margin-bottom:6px}
+    a{color:#000054;font-weight:700}
+    .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+    .tags span{font-size:.78rem;border:1px solid #d8d9dd;border-radius:999px;padding:3px 8px;background:#fafafa}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tools Directory</h1>
+    <p>${tools.length} published HTML activities</p>
+  </header>
+  <main>${rows}</main>
+</body>
+</html>`;
+}
+
 function renderLogin(error = "", next = "/") {
   return page("Tools Admin Login", `
     <main class="login-wrap">
@@ -1048,7 +1438,8 @@ function page(title, body) {
     .panel{max-width:1120px;margin:22px auto;background:#fff;border:1px solid var(--line);padding:20px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,20,.06)}
     .upload form{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr) auto auto;gap:14px;align-items:end;margin-top:16px}
     label{display:flex;flex-direction:column;gap:6px;font-size:.82rem;font-weight:700;color:var(--muted)}
-    input[type=file],input[type=text],input[type=password],input[type=search]{font:inherit;border:1px solid var(--line);border-radius:6px;padding:9px;background:#fff;color:var(--ink);min-height:40px}
+    input[type=file],input[type=text],input[type=password],input[type=search],textarea{font:inherit;border:1px solid var(--line);border-radius:6px;padding:9px;background:#fff;color:var(--ink);min-height:40px}
+    textarea{resize:vertical}
     .check{flex-direction:row;align-items:center;color:var(--ink);padding-bottom:9px}
     button,.actions a,.button-link{font:inherit;font-weight:700;background:var(--navy);color:#fff;border:1px solid var(--navy);border-radius:6px;padding:9px 12px;text-decoration:none;cursor:pointer;min-height:40px;display:inline-flex;align-items:center}
     button:hover,.actions a:hover,.button-link:hover{background:#101076}
@@ -1075,6 +1466,11 @@ function page(title, body) {
     .menu-panel button:hover,.menu-panel .button-link:hover{background:#f4f5ff;color:var(--navy)}
     .result-actions{margin-top:16px}
     .muted{color:var(--muted);font-size:.82rem;margin-top:3px}
+    .tag-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+    .tag-row span{font-size:.72rem;border:1px solid var(--line);border-radius:999px;padding:2px 7px;background:#fafafa;color:var(--muted)}
+    .upload-checks{border:1px solid var(--line);border-radius:8px;background:#fbfbfb;padding:10px;margin-top:12px;color:var(--muted);font-size:.86rem}
+    .preview-frame{width:100%;height:320px;border:1px solid var(--line);border-radius:8px;background:#fff;margin-top:12px}
+    .details-form{display:grid;gap:14px}
     .result{margin-top:44px}
     .result h1{margin-bottom:12px}
     .result p{margin-top:10px}

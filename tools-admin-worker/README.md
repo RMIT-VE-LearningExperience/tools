@@ -7,14 +7,18 @@ Password-protected Cloudflare Worker dashboard for listing and uploading standal
 - Provides a form-based login page backed by an HTTP-only signed session cookie.
 - Lists every `.html` file in the repo and shows its public GitHub Pages URL.
 - Searches published tools by activity name or path.
-- Copies public URLs and iframe embed codes for each activity.
+- Stores editable descriptions, tags, owner, and notes in `tools-metadata.json`.
+- Copies public URLs, generic iframe embeds, and Canvas-friendly iframe embeds for each activity.
 - Downloads published HTML files from GitHub Pages.
+- Previews and validates uploads before publishing.
 - Uploads a new `.html` file through a browser form.
 - Automatically replaces an existing `.html` file when the upload path already exists.
+- Archives published files by moving them into `archive/`.
 - Injects the shared Google Analytics snippet when it is missing.
 - Commits the file to `main` through the GitHub API.
 - Provides a Versions page for each file and can restore an older commit as a new commit.
 - Links to each file's GitHub commit history for version review or rollback.
+- Regenerates `tools-directory.html` as a public index of published tools.
 - Lets GitHub Pages publish the public URL.
 
 ## Required secrets
