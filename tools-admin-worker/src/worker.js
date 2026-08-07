@@ -304,11 +304,14 @@ async function handleDownload(url, env) {
     return html(renderUploadResult(`Could not download "${path}".`, false), { status: response.status });
   }
 
-  return new Response(response.body, {
+  const file = await response.arrayBuffer();
+
+  return new Response(file, {
     status: 200,
     headers: {
       "Content-Type": response.headers.get("Content-Type") || "text/html; charset=utf-8",
       "Content-Disposition": `attachment; filename="${downloadFileName(path)}"`,
+      "Content-Length": String(file.byteLength),
       "Cache-Control": "no-store"
     }
   });
