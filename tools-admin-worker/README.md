@@ -8,7 +8,8 @@ Cloudflare Access-protected Worker dashboard for listing and uploading standalon
 - Lists every `.html` file in the repo and shows its public GitHub Pages URL.
 - Searches published tools by activity name or path.
 - Stores editable descriptions, tags, owner, and notes in `tools-metadata.json`.
-- Copies public URLs, generic iframe embeds, and Canvas-friendly iframe embeds for each activity.
+- Controls whether each activity appears in the generated public tools directory.
+- Copies public URLs and Canvas-friendly iframe embeds for each activity.
 - Downloads published HTML files from GitHub Pages.
 - Previews and validates uploads before publishing.
 - Uploads a new `.html` file through a browser form.

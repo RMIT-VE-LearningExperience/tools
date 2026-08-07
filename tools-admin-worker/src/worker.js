@@ -175,6 +175,7 @@ async function listTools(env) {
       tags: metadata.tools?.[item.path]?.tags || inferTags(item.path),
       owner: metadata.tools?.[item.path]?.owner || "",
       notes: metadata.tools?.[item.path]?.notes || "",
+      isPublic: metadata.tools?.[item.path]?.public !== false,
       url: `${baseUrl}${item.path}`,
       canvasEmbedCode: canvasEmbedCode(`${baseUrl}${item.path}`, titleFromPath(item.path)),
       downloadUrl: downloadUrl(item.path),
@@ -201,6 +202,7 @@ async function handleUpload(request, env) {
   const tags = parseTags(String(payload.tags || ""));
   const owner = String(payload.owner || "").trim();
   const notes = String(payload.notes || "").trim();
+  const isPublic = payload.public !== false;
 
   if (!rawHtml) {
     return html(renderUploadResult("No HTML file was uploaded.", false), { status: 400 });
@@ -231,7 +233,7 @@ async function handleUpload(request, env) {
       ? `Update ${targetPath} from tools admin`
       : `Add ${targetPath} from tools admin`
   });
-  await updateMetadata(env, targetPath, { description, tags, owner, notes });
+  await updateMetadata(env, targetPath, { description, tags, owner, notes, public: isPublic });
   await regeneratePublicIndex(env);
 
   return html(renderUploadResult("Upload complete.", true, {
@@ -293,7 +295,8 @@ async function handleMetadata(url, env) {
     description: details.description || descriptionFromPath(path),
     tags: (details.tags || inferTags(path)).join(", "),
     owner: details.owner || "",
-    notes: details.notes || ""
+    notes: details.notes || "",
+    public: details.public !== false
   }, env));
 }
 
@@ -304,7 +307,8 @@ async function handleMetadataSave(request, env) {
     description: String(formData.get("description") || "").trim(),
     tags: parseTags(String(formData.get("tags") || "")),
     owner: String(formData.get("owner") || "").trim(),
-    notes: String(formData.get("notes") || "").trim()
+    notes: String(formData.get("notes") || "").trim(),
+    public: formData.has("public")
   });
   await regeneratePublicIndex(env);
 
@@ -486,6 +490,7 @@ async function updateMetadata(env, path, updates) {
     tags: updates.tags?.length ? updates.tags : current.tags || inferTags(path),
     owner: updates.owner || current.owner || "",
     notes: updates.notes || current.notes || "",
+    public: updates.public ?? current.public ?? true,
     updatedAt: new Date().toISOString()
   };
 
@@ -558,7 +563,7 @@ async function deleteFile(env, path, sha, message) {
 }
 
 async function regeneratePublicIndex(env) {
-  const tools = await listTools(env);
+  const tools = (await listTools(env)).filter((tool) => tool.isPublic);
   const existing = await getExistingFile(env, PUBLIC_INDEX_PATH);
   const content = renderPublicIndex(tools);
 
@@ -805,6 +810,7 @@ function renderDashboard(tools, env, request) {
         <div class="muted">${escapeHtml(tool.description)}</div>
         ${tool.tags.length ? `<div class="tag-row">${tool.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>` : ""}
         ${tool.owner ? `<div class="muted">Owner: ${escapeHtml(tool.owner)}</div>` : ""}
+        <div class="muted">${tool.isPublic ? "Shown on public index" : "Hidden from public index"}</div>
       </td>
       <td><code>${escapeHtml(tool.path)}</code></td>
       <td class="actions-cell">
@@ -867,6 +873,10 @@ function renderDashboard(tools, env, request) {
         <label>
           Notes
           <input id="notes" type="text" placeholder="Course, project, or usage note">
+        </label>
+        <label class="check">
+          <input id="is-public" type="checkbox" checked>
+          Show on public site
         </label>
         <button type="submit">Upload and publish</button>
       </form>
@@ -1022,6 +1032,7 @@ function renderDashboard(tools, env, request) {
             tags: document.querySelector("#tags").value,
             owner: document.querySelector("#owner").value,
             notes: document.querySelector("#notes").value,
+            public: document.querySelector("#is-public").checked,
             content: await file.text()
           })
         });
@@ -1159,6 +1170,10 @@ function renderMetadata(path, details, env) {
         <label>
           Notes
           <textarea name="notes" rows="5">${escapeHtml(details.notes)}</textarea>
+        </label>
+        <label class="check">
+          <input name="public" type="checkbox" value="1" ${details.public ? "checked" : ""}>
+          Show on public site
         </label>
         <button type="submit">Save details</button>
       </form>
