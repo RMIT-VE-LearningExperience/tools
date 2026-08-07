@@ -76,7 +76,7 @@ export default {
         return html(renderUploadResult("Public index regenerated.", true, {
           path: PUBLIC_INDEX_PATH,
           url: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${PUBLIC_INDEX_PATH}`,
-          embedCode: iframeEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${PUBLIC_INDEX_PATH}`, "Tools Directory"),
+          canvasEmbedCode: canvasEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${PUBLIC_INDEX_PATH}`, "Tools Directory"),
           downloadUrl: downloadUrl(PUBLIC_INDEX_PATH),
           historyUrl: githubHistoryUrl(env, PUBLIC_INDEX_PATH),
           versionsUrl: versionsUrl(PUBLIC_INDEX_PATH),
@@ -176,7 +176,6 @@ async function listTools(env) {
       owner: metadata.tools?.[item.path]?.owner || "",
       notes: metadata.tools?.[item.path]?.notes || "",
       url: `${baseUrl}${item.path}`,
-      embedCode: iframeEmbedCode(`${baseUrl}${item.path}`, titleFromPath(item.path)),
       canvasEmbedCode: canvasEmbedCode(`${baseUrl}${item.path}`, titleFromPath(item.path)),
       downloadUrl: downloadUrl(item.path),
       historyUrl: githubHistoryUrl(env, item.path),
@@ -238,7 +237,6 @@ async function handleUpload(request, env) {
   return html(renderUploadResult("Upload complete.", true, {
     path: targetPath,
     url: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`,
-    embedCode: iframeEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`, titleFromPath(targetPath)),
     canvasEmbedCode: canvasEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${targetPath}`, titleFromPath(targetPath)),
     downloadUrl: downloadUrl(targetPath),
     commitUrl: result.commit?.html_url,
@@ -277,7 +275,6 @@ async function handleRestore(request, env) {
   return html(renderUploadResult("Version restored.", true, {
     path,
     url: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${path}`,
-    embedCode: iframeEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${path}`, titleFromPath(path)),
     canvasEmbedCode: canvasEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${path}`, titleFromPath(path)),
     downloadUrl: downloadUrl(path),
     commitUrl: result.commit?.html_url,
@@ -343,7 +340,6 @@ async function handleArchive(request, env) {
   return html(renderUploadResult("File archived.", true, {
     path: archivePath,
     url: `${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${archivePath}`,
-    embedCode: iframeEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${archivePath}`, titleFromPath(path)),
     canvasEmbedCode: canvasEmbedCode(`${ensureTrailingSlash(env.PUBLIC_BASE_URL)}${archivePath}`, titleFromPath(path)),
     downloadUrl: downloadUrl(archivePath),
     historyUrl: githubHistoryUrl(env, archivePath),
@@ -740,10 +736,6 @@ function validateUploadHtml(source) {
   return { warnings, errors };
 }
 
-function iframeEmbedCode(url, title) {
-  return `<iframe src="${url}" title="${escapeHtml(title)}" width="100%" height="720" style="border:0;" loading="lazy"></iframe>`;
-}
-
 function canvasEmbedCode(url, title) {
   return `<p><iframe src="${url}" title="${escapeHtml(title)}" width="100%" height="720" loading="lazy" style="border: 1px solid #d8d9dd; max-width: 100%;"></iframe></p>`;
 }
@@ -820,8 +812,7 @@ function renderDashboard(tools, env, request) {
           <summary aria-label="Actions for ${escapeHtml(tool.name)}">...</summary>
           <div class="menu-panel">
             <button type="button" data-copy="${escapeHtml(tool.url)}">Copy URL</button>
-            <button type="button" data-copy="${escapeHtml(tool.embedCode)}">Copy embed</button>
-            <button type="button" data-copy="${escapeHtml(tool.canvasEmbedCode)}">Copy Canvas embed</button>
+            <button type="button" data-copy="${escapeHtml(tool.canvasEmbedCode)}">Copy embed</button>
             <a class="button-link" href="${escapeHtml(tool.downloadUrl)}" download>Download</a>
             <button type="button" data-replace-path="${escapeHtml(tool.path)}">Replace</button>
             <a class="button-link" href="${escapeHtml(tool.metadataUrl)}">Edit details</a>
@@ -1054,8 +1045,7 @@ function renderUploadResult(message, ok, detail = null) {
         <p><code>${escapeHtml(detail.path)}</code></p>
         <div class="result-actions">
           <button type="button" data-copy="${escapeHtml(detail.url)}">Copy URL</button>
-          <button type="button" data-copy="${escapeHtml(detail.embedCode)}">Copy embed</button>
-          ${detail.canvasEmbedCode ? `<button type="button" data-copy="${escapeHtml(detail.canvasEmbedCode)}">Copy Canvas embed</button>` : ""}
+          ${detail.canvasEmbedCode ? `<button type="button" data-copy="${escapeHtml(detail.canvasEmbedCode)}">Copy embed</button>` : ""}
           <a class="button-link" href="${escapeHtml(detail.downloadUrl)}" download>Download</a>
           ${detail.commitUrl ? `<a class="button-link" href="${escapeHtml(detail.commitUrl)}" target="_blank" rel="noopener">View commit</a>` : ""}
           ${detail.versionsUrl ? `<a class="button-link" href="${escapeHtml(detail.versionsUrl)}">Manage versions</a>` : ""}
