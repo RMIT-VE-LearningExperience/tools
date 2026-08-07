@@ -1299,8 +1299,8 @@ function page(title, body) {
     .action-menu summary{list-style:none;width:36px;height:32px;border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;color:var(--navy);font-weight:800;cursor:pointer;background:#fff}
     .action-menu summary::-webkit-details-marker{display:none}
     .action-menu summary:hover{background:#f4f5ff}
-    .menu-panel{position:absolute;right:0;top:38px;z-index:10;min-width:160px;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,40,.14);padding:6px;display:grid;gap:4px}
-    .menu-panel button,.menu-panel .button-link{width:100%;justify-content:flex-start;border-color:transparent;background:#fff;color:var(--ink);min-height:34px}
+    .menu-panel{position:absolute;right:0;top:38px;z-index:10;min-width:180px;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,40,.14);padding:6px;display:grid;gap:2px}
+    .menu-panel button,.menu-panel .button-link{width:100%;justify-content:flex-start;border-color:transparent;background:#fff;color:var(--ink);min-height:32px;padding:7px 10px;font-size:.9rem;font-weight:500;line-height:1.25;text-align:left}
     .menu-panel button:hover,.menu-panel .button-link:hover{background:#f4f5ff;color:var(--navy)}
     .result-actions{margin-top:16px}
     .muted{color:var(--muted);font-size:.82rem;margin-top:3px}
