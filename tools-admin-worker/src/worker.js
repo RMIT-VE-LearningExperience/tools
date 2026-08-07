@@ -283,6 +283,7 @@ async function listTools(env) {
     .map((item) => ({
       path: item.path,
       name: titleFromPath(item.path),
+      description: descriptionFromPath(item.path),
       url: `${baseUrl}${item.path}`,
       embedCode: iframeEmbedCode(`${baseUrl}${item.path}`, titleFromPath(item.path)),
       downloadUrl: downloadUrl(item.path),
@@ -612,6 +613,41 @@ function titleFromPath(path) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function descriptionFromPath(path) {
+  const title = titleFromPath(path);
+  const lower = `${path} ${title}`.toLowerCase();
+
+  if (lower.includes("converter") || lower.includes("convertor")) {
+    return `Converts source content into ${title.replace(/\bConverter\b|\bConvertor\b/g, "").trim() || "a ready-to-use format"}.`;
+  }
+
+  if (lower.includes("generator")) {
+    return `Generates ${title.replace(/\bGenerator\b/g, "").trim() || "structured activity content"}.`;
+  }
+
+  if (lower.includes("simulation")) {
+    return `Interactive simulation for ${title.replace(/\bSimulation\b/g, "").trim() || "practice and decision-making"}.`;
+  }
+
+  if (lower.includes("matrix")) {
+    return `Decision-support matrix for ${title.replace(/\bMatrix\b/g, "").trim() || "comparing options"}.`;
+  }
+
+  if (lower.includes("extractor")) {
+    return `Extracts ${title.replace(/\bExtractor\b/g, "").trim() || "content"} from uploaded material.`;
+  }
+
+  if (lower.includes("recommendation") || lower.includes("table")) {
+    return `Reference page for ${title.replace(/\bTable\b/g, "").trim() || "tool guidance"}.`;
+  }
+
+  if (lower.includes("template")) {
+    return `Reusable template for ${title.replace(/\bTemplate\b/g, "").trim() || "structured work"}.`;
+  }
+
+  return `Standalone HTML activity for ${title}.`;
+}
+
 function iframeEmbedCode(url, title) {
   return `<iframe src="${url}" title="${escapeHtml(title)}" width="100%" height="720" style="border:0;" loading="lazy"></iframe>`;
 }
@@ -671,15 +707,23 @@ function renderDashboard(tools, env) {
   const existingPaths = tools.map((tool) => tool.path);
   const rows = tools.map((tool) => `
     <tr data-search="${escapeHtml(`${tool.name} ${tool.path}`.toLowerCase())}">
-      <td><a href="${escapeHtml(tool.url)}" target="_blank" rel="noopener">${escapeHtml(tool.name)}</a></td>
+      <td>
+        <a href="${escapeHtml(tool.url)}" target="_blank" rel="noopener">${escapeHtml(tool.name)}</a>
+        <div class="muted">${escapeHtml(tool.description)}</div>
+      </td>
       <td><code>${escapeHtml(tool.path)}</code></td>
       <td class="actions-cell">
-        <button type="button" data-copy="${escapeHtml(tool.url)}">Copy URL</button>
-        <button type="button" data-copy="${escapeHtml(tool.embedCode)}">Copy embed</button>
-        <a class="button-link" href="${escapeHtml(tool.downloadUrl)}" download>Download</a>
-        <button type="button" data-replace-path="${escapeHtml(tool.path)}">Replace</button>
-        <a class="button-link" href="${escapeHtml(tool.versionsUrl)}">Versions</a>
-        <a class="button-link" href="${escapeHtml(tool.historyUrl)}" target="_blank" rel="noopener">History</a>
+        <details class="action-menu">
+          <summary aria-label="Actions for ${escapeHtml(tool.name)}">...</summary>
+          <div class="menu-panel">
+            <button type="button" data-copy="${escapeHtml(tool.url)}">Copy URL</button>
+            <button type="button" data-copy="${escapeHtml(tool.embedCode)}">Copy embed</button>
+            <a class="button-link" href="${escapeHtml(tool.downloadUrl)}" download>Download</a>
+            <button type="button" data-replace-path="${escapeHtml(tool.path)}">Replace</button>
+            <a class="button-link" href="${escapeHtml(tool.versionsUrl)}">Versions</a>
+            <a class="button-link" href="${escapeHtml(tool.historyUrl)}" target="_blank" rel="noopener">History</a>
+          </div>
+        </details>
       </td>
     </tr>
   `).join("");
@@ -739,6 +783,15 @@ function renderDashboard(tools, env) {
         button.textContent = "Copied";
         setTimeout(() => button.textContent = previous, 1400);
       });
+
+      document.addEventListener("toggle", (event) => {
+        const menu = event.target.closest(".action-menu");
+        if (!menu || !menu.open) return;
+
+        document.querySelectorAll(".action-menu[open]").forEach((openMenu) => {
+          if (openMenu !== menu) openMenu.open = false;
+        });
+      }, true);
 
       document.addEventListener("click", (event) => {
         const button = event.target.closest("[data-replace-path]");
@@ -1011,7 +1064,15 @@ function page(title, body) {
     td button,td .button-link{background:#fff;color:var(--navy);min-height:32px;padding:6px 9px}
     td button:hover,td .button-link:hover{background:#f4f5ff}
     .actions-cell,.result-actions{display:flex;flex-wrap:wrap;gap:7px}
+    .actions-cell{position:relative;justify-content:flex-end}
     .actions-cell form{margin:0}
+    .action-menu{position:relative}
+    .action-menu summary{list-style:none;width:36px;height:32px;border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;color:var(--navy);font-weight:800;cursor:pointer;background:#fff}
+    .action-menu summary::-webkit-details-marker{display:none}
+    .action-menu summary:hover{background:#f4f5ff}
+    .menu-panel{position:absolute;right:0;top:38px;z-index:10;min-width:160px;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,40,.14);padding:6px;display:grid;gap:4px}
+    .menu-panel button,.menu-panel .button-link{width:100%;justify-content:flex-start;border-color:transparent;background:#fff;color:var(--ink);min-height:34px}
+    .menu-panel button:hover,.menu-panel .button-link:hover{background:#f4f5ff;color:var(--navy)}
     .result-actions{margin-top:16px}
     .muted{color:var(--muted);font-size:.82rem;margin-top:3px}
     .result{margin-top:44px}
