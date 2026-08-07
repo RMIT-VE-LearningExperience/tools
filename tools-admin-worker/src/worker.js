@@ -1,6 +1,7 @@
 const TEXT_ENCODER = new TextEncoder();
 const SESSION_COOKIE = "tools_admin_session";
 const SESSION_TTL_SECONDS = 8 * 60 * 60;
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 export default {
   async fetch(request, env) {
@@ -58,6 +59,12 @@ export default {
 
       return html(renderNotFound(), { status: 404 });
     } catch (error) {
+      console.error("Worker request failed", {
+        method: request.method,
+        url: request.url,
+        message: error?.message || String(error),
+        stack: error?.stack || ""
+      });
       return html(renderError(error), { status: 500 });
     }
   }
@@ -263,6 +270,10 @@ async function handleUpload(request, env) {
     return html(renderUploadResult("Only .html files can be uploaded.", false), { status: 400 });
   }
 
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return html(renderUploadResult(`Upload is too large. Keep HTML files under ${formatBytes(MAX_UPLOAD_BYTES)}.`, false), { status: 413 });
+  }
+
   const targetPath = normaliseTargetPath(requestedPath || file.name);
   const rawHtml = await file.text();
   const finalHtml = injectGoogleAnalytics(rawHtml, env.GA_MEASUREMENT_ID);
@@ -444,11 +455,25 @@ async function githubError(response) {
 
 function base64EncodeUtf8(value) {
   const bytes = TEXT_ENCODER.encode(value);
-  let binary = "";
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
+  const chunkSize = 24 * 1024;
+  let encoded = "";
+
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    const chunk = bytes.subarray(offset, offset + chunkSize);
+    let binary = "";
+
+    for (const byte of chunk) {
+      binary += String.fromCharCode(byte);
+    }
+
+    encoded += btoa(binary);
   }
-  return btoa(binary);
+
+  return encoded;
+}
+
+function formatBytes(bytes) {
+  return `${Math.round(bytes / 1024 / 1024)} MB`;
 }
 
 function encodePath(path) {
