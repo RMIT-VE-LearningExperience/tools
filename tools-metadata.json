@@ -1,0 +1,12 @@
+{
+  "tools": {
+    "akordii/akordii.html": {
+      "description": "Standalone HTML activity for Akordii.",
+      "tags": [],
+      "owner": "Gordon",
+      "notes": "",
+      "public": true,
+      "updatedAt": "2026-08-10T06:45:21.161Z"
+    }
+  }
+}
