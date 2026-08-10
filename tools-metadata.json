@@ -7,6 +7,16 @@
       "notes": "",
       "public": true,
       "updatedAt": "2026-08-10T06:45:21.161Z"
+    },
+    "zoom-callout-generator.html": {
+      "description": "Photo Zoom Tool",
+      "tags": [
+        "LD"
+      ],
+      "owner": "BAU",
+      "notes": "Course Development",
+      "public": true,
+      "updatedAt": "2026-08-10T06:56:03.530Z"
     }
   }
 }
