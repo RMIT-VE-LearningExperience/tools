@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zoom Callout Generator</title>
+<style>
+  :root {
+    --rmit-navy: #000054;
+    --rmit-red: #e61e2a;
+    --rmit-yellow: #fac800;
+    --rmit-grey: #e3e5e0;
+    --emble-grey: #f2f2f2;
+    --ink: #1a1a2e;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+    background: var(--emble-grey);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  header {
+    background: var(--rmit-navy);
+    color: #fff;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  header .logo-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--rmit-yellow);
+    box-shadow: 0 0 0 4px rgba(250,200,0,.25);
+    flex-shrink: 0;
+  }
+  header h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: .2px; }
+  header p { font-size: .82rem; opacity: .75; margin-top: 2px; }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  .step-card {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: 0 1px 4px rgba(0,0,84,.08);
+    margin-bottom: 22px;
+    overflow: hidden;
+  }
+  .step-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--rmit-grey);
+  }
+  .step-num {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--rmit-navy); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: .9rem; flex-shrink: 0;
+  }
+  .step-head h2 { font-size: 1.02rem; font-weight: 600; color: var(--rmit-navy); }
+  .step-head .hint { font-size: .8rem; color: #666; margin-left: auto; }
+  .step-body { padding: 20px; }
+
+  /* Upload zones */
+  .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 720px) { .upload-grid { grid-template-columns: 1fr; } }
+  .dropzone {
+    border: 2px dashed #b8bcc4;
+    border-radius: var(--radius);
+    padding: 26px 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    position: relative;
+    min-height: 150px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  }
+  .dropzone:hover, .dropzone.dragover { border-color: var(--rmit-navy); background: #f7f8ff; }
+  .dropzone.loaded { border-style: solid; border-color: #2e9e5b; background: #f4fbf6; }
+  .dropzone .dz-icon { font-size: 1.7rem; }
+  .dropzone .dz-title { font-weight: 600; color: var(--rmit-navy); font-size: .95rem; }
+  .dropzone .dz-sub { font-size: .8rem; color: #777; }
+  .dropzone img.thumb {
+    max-height: 90px; max-width: 90%;
+    border-radius: 6px;
+    background:
+      linear-gradient(45deg, #ddd 25%, transparent 25%, transparent 75%, #ddd 75%) 0 0 / 16px 16px,
+      linear-gradient(45deg, #ddd 25%, #fff 25%, #fff 75%, #ddd 75%) 8px 8px / 16px 16px;
+  }
+  .dropzone .filename { font-size: .78rem; color: #444; word-break: break-all; }
+  .dropzone .replace-note { font-size: .74rem; color: #888; }
+  input[type="file"] { display: none; }
+
+  /* Editor */
+  #editorStep { display: none; }
+  .editor-layout { display: grid; grid-template-columns: 1fr 268px; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .editor-layout { grid-template-columns: 1fr; } }
+
+  .canvas-wrap {
+    background:
+      linear-gradient(45deg, #e8e8e8 25%, transparent 25%, transparent 75%, #e8e8e8 75%) 0 0 / 20px 20px,
+      linear-gradient(45deg, #e8e8e8 25%, #fdfdfd 25%, #fdfdfd 75%, #e8e8e8 75%) 10px 10px / 20px 20px;
+    border-radius: var(--radius);
+    border: 1px solid var(--rmit-grey);
+    padding: 10px;
+    text-align: center;
+  }
+  #editCanvas { display: block; margin: 0 auto; max-width: 100%; touch-action: none; border-radius: 4px; }
+  #editCanvas.mode-circle { cursor: move; }
+  #editCanvas.mode-detail { cursor: grab; }
+  .canvas-help {
+    font-size: .78rem; color: #666; margin-top: 8px; line-height: 1.5;
+  }
+  kbd {
+    background: var(--emble-grey); border: 1px solid #ccc; border-bottom-width: 2px;
+    border-radius: 4px; padding: 0 5px; font-size: .72rem; font-family: inherit;
+  }
+
+  /* Controls panel */
+  .controls { display: flex; flex-direction: column; gap: 18px; }
+  .ctrl-group label.ctrl-label {
+    display: block; font-size: .8rem; font-weight: 600;
+    color: var(--rmit-navy); margin-bottom: 7px; text-transform: uppercase; letter-spacing: .4px;
+  }
+  .mode-toggle { display: flex; border: 1px solid var(--rmit-navy); border-radius: 6px; overflow: hidden; }
+  .mode-toggle button {
+    flex: 1; padding: 8px 6px; border: none; background: #fff;
+    font-size: .82rem; font-weight: 600; color: var(--rmit-navy); cursor: pointer;
+    font-family: inherit;
+  }
+  .mode-toggle button.active { background: var(--rmit-navy); color: #fff; }
+  .mode-toggle button:focus-visible { outline: 2px solid var(--rmit-red); outline-offset: -2px; }
+
+  input[type="range"] { width: 100%; accent-color: var(--rmit-navy); }
+  .range-row { display: flex; align-items: center; gap: 10px; }
+  .range-val { font-size: .78rem; color: #555; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+  .swatch {
+    width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+    border: 2px solid #ccc; padding: 0;
+  }
+  .swatch.selected { border-color: var(--rmit-navy); box-shadow: 0 0 0 3px rgba(0,0,84,.2); }
+  .swatch:focus-visible { outline: 2px solid var(--rmit-red); outline-offset: 2px; }
+
+  .fill-options { display: flex; gap: 8px; }
+  .fill-btn {
+    flex: 1; padding: 7px 4px; border: 1px solid #bbb; border-radius: 6px;
+    background: #fff; font-size: .78rem; cursor: pointer; font-family: inherit; color: var(--ink);
+  }
+  .fill-btn.active { border-color: var(--rmit-navy); background: var(--rmit-navy); color: #fff; font-weight: 600; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 22px; border-radius: 6px; border: none;
+    font-family: inherit; font-size: .92rem; font-weight: 600; cursor: pointer;
+    transition: filter .15s;
+  }
+  .btn:hover { filter: brightness(1.12); }
+  .btn-primary { background: var(--rmit-red); color: #fff; }
+  .btn-secondary { background: #fff; color: var(--rmit-navy); border: 1.5px solid var(--rmit-navy); }
+  .btn-ghost {
+    background: none; border: none; color: var(--rmit-navy); text-decoration: underline;
+    font-size: .8rem; cursor: pointer; font-family: inherit; padding: 4px;
+  }
+  .btn:focus-visible, .btn-ghost:focus-visible { outline: 2px solid var(--rmit-red); outline-offset: 2px; }
+
+  #downloadStep { display: none; }
+  .download-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .quality-inline { display: flex; align-items: center; gap: 10px; margin-left: auto; font-size: .82rem; color: #555; }
+  .quality-inline input[type="range"] { width: 130px; }
+
+  .footer-note { text-align: center; font-size: .74rem; color: #999; margin-top: 10px; }
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
+</head>
+<body>
+
+<header>
+  <div class="logo-dot" aria-hidden="true"></div>
+  <div>
+    <h1>Zoom Callout Generator</h1>
+    <p>Add a circular zoom callout to an image and download it as a JPEG</p>
+  </div>
+</header>
+
+<main>
+
+  <!-- STEP 1 -->
+  <section class="step-card" id="uploadStep">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <h2>Upload your images</h2>
+      <span class="hint">Both files stay in your browser. Nothing is uploaded to a server.</span>
+    </div>
+    <div class="step-body">
+      <div class="upload-grid">
+        <div class="dropzone" id="baseDrop" tabindex="0" role="button" aria-label="Upload base image">
+          <span class="dz-icon" aria-hidden="true">&#128444;&#65039;</span>
+          <span class="dz-title">Base image</span>
+          <span class="dz-sub">Drop a JPG or PNG here, or click to browse</span>
+          <input type="file" id="baseInput" accept="image/png,image/jpeg,image/webp">
+        </div>
+        <div class="dropzone" id="detailDrop" tabindex="0" role="button" aria-label="Upload detail image">
+          <span class="dz-icon" aria-hidden="true">&#128269;</span>
+          <span class="dz-title">Detail image</span>
+          <span class="dz-sub">Drop a PNG (transparent background works best), or click to browse</span>
+          <input type="file" id="detailInput" accept="image/png,image/jpeg,image/webp">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="step-card" id="editorStep">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <h2>Position and adjust</h2>
+      <span class="hint">Changes preview live at export quality</span>
+    </div>
+    <div class="step-body">
+      <div class="editor-layout">
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="editCanvas" class="mode-circle"></canvas>
+          </div>
+          <p class="canvas-help">
+            Drag the circle to move everything together. Drag the red corner handles to resize the detail and the circle as one.
+            The square handle on the ring adjusts the circle on its own, and scrolling zooms the detail on its own.
+            Hold <kbd>Shift</kbd> and drag to nudge the detail inside the circle.
+            You can also drop a new detail PNG straight onto the canvas.
+          </p>
+        </div>
+
+        <div class="controls">
+          <div class="ctrl-group">
+            <label class="ctrl-label">Drag mode</label>
+            <div class="mode-toggle" role="group" aria-label="Drag mode">
+              <button type="button" id="modeCircleBtn" class="active">Move circle</button>
+              <button type="button" id="modeDetailBtn">Move detail</button>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <label class="ctrl-label" for="circleSize">Circle size</label>
+            <div class="range-row">
+              <input type="range" id="circleSize" min="6" max="90" value="32" step="1">
+              <span class="range-val" id="circleSizeVal">32%</span>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <label class="ctrl-label" for="detailZoom">Detail zoom</label>
+            <div class="range-row">
+              <input type="range" id="detailZoom" min="10" max="400" value="100" step="1">
+              <span class="range-val" id="detailZoomVal">100%</span>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <label class="ctrl-label" for="ringWidth">Ring thickness</label>
+            <div class="range-row">
+              <input type="range" id="ringWidth" min="2" max="80" value="12" step="1">
+              <span class="range-val" id="ringWidthVal">12 px</span>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <label class="ctrl-label">Ring colour</label>
+            <div class="swatches" id="ringSwatches"></div>
+          </div>
+
+          <div class="ctrl-group">
+            <label class="ctrl-label">Circle fill</label>
+            <div class="fill-options" id="fillOptions">
+              <button type="button" class="fill-btn active" data-fill="blur">Blur</button>
+              <button type="button" class="fill-btn" data-fill="#ffffff">White</button>
+              <button type="button" class="fill-btn" data-fill="#f2f2f2">Emble Grey</button>
+              <button type="button" class="fill-btn" data-fill="none">None</button>
+            </div>
+          </div>
+
+          <div class="ctrl-group" id="blurGroup">
+            <label class="ctrl-label" for="blurAmount">Blur strength</label>
+            <div class="range-row">
+              <input type="range" id="blurAmount" min="2" max="60" value="12" step="1">
+              <span class="range-val" id="blurAmountVal">12 px</span>
+            </div>
+          </div>
+
+          <button type="button" class="btn-ghost" id="centreBtn">Centre circle on detail</button>
+          <button type="button" class="btn-ghost" id="resetBtn">Reset position and zoom</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="step-card" id="downloadStep">
+    <div class="step-head">
+      <div class="step-num">3</div>
+      <h2>Download</h2>
+      <span class="hint" id="exportSizeHint"></span>
+    </div>
+    <div class="step-body">
+      <div class="download-row">
+        <button type="button" class="btn btn-primary" id="downloadJpegBtn">Download JPEG</button>
+        <button type="button" class="btn btn-secondary" id="downloadPngBtn">Download PNG</button>
+        <div class="quality-inline">
+          <label for="jpegQuality">JPEG quality</label>
+          <input type="range" id="jpegQuality" min="60" max="100" value="90" step="1">
+          <span class="range-val" id="jpegQualityVal">90</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="footer-note">All processing happens locally in your browser. Learning and Teaching Innovation Team, College of Vocational Education.</p>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- State ----------
+  var baseImg = null;       // HTMLImageElement
+  var detailImg = null;     // HTMLImageElement
+  var baseFileName = "image";
+
+  // All geometry is stored in the base image's natural pixel coordinates,
+  // so the export is always a faithful full-resolution render.
+  var callout = { cx: 0, cy: 0, r: 0 };
+  var detail = { scale: 1, baseScale: 1, offsetX: 0, offsetY: 0 };
+  var ring = { color: "#fac800", width: 12 };
+  var fillColor = "blur";
+  var blurAmount = 12;   // px at the base image's natural resolution
+  var blurCache = null;  // pre-blurred copy of the base image
+
+  // Build (or rebuild) the blurred copy of the base image once, so dragging
+  // stays smooth instead of re-blurring on every frame.
+  function buildBlurCache() {
+    if (!baseImg) return;
+    var t = document.createElement("canvas");
+    t.width = baseImg.naturalWidth;
+    t.height = baseImg.naturalHeight;
+    var tc = t.getContext("2d");
+    if (typeof tc.filter === "string") {
+      tc.filter = "blur(" + blurAmount + "px)";
+      tc.drawImage(baseImg, 0, 0);
+    } else {
+      // Fallback for browsers without canvas filters: downscale then upscale
+      var f = Math.max(2, blurAmount * 0.75);
+      var s = document.createElement("canvas");
+      s.width = Math.max(1, Math.round(t.width / f));
+      s.height = Math.max(1, Math.round(t.height / f));
+      s.getContext("2d").drawImage(baseImg, 0, 0, s.width, s.height);
+      tc.imageSmoothingEnabled = true;
+      tc.imageSmoothingQuality = "high";
+      tc.drawImage(s, 0, 0, t.width, t.height);
+    }
+    blurCache = t;
+  }
+
+  var viewScale = 1;        // natural px -> display px
+  var dpr = window.devicePixelRatio || 1;
+  var dragMode = "circle";  // "circle" | "detail"
+
+  var canvas = document.getElementById("editCanvas");
+  var ctx = canvas.getContext("2d");
+
+  // ---------- Palette ----------
+  var palette = [
+    { name: "Yellow", hex: "#fac800" },
+    { name: "Red", hex: "#e61e2a" },
+    { name: "Blue", hex: "#000054" },
+    { name: "Black", hex: "#000000" },
+    { name: "White", hex: "#ffffff" },
+    { name: "Grey", hex: "#e3e5e0" }
+  ];
+  var swatchWrap = document.getElementById("ringSwatches");
+  palette.forEach(function (p) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "swatch" + (p.hex === ring.color ? " selected" : "");
+    b.style.background = p.hex;
+    b.title = p.name + " " + p.hex;
+    b.setAttribute("aria-label", "Ring colour " + p.name);
+    b.addEventListener("click", function () {
+      ring.color = p.hex;
+      swatchWrap.querySelectorAll(".swatch").forEach(function (s) { s.classList.remove("selected"); });
+      b.classList.add("selected");
+      render();
+    });
+    swatchWrap.appendChild(b);
+  });
+
+  // ---------- Upload handling ----------
+  function setupDropzone(zoneId, inputId, onFile) {
+    var zone = document.getElementById(zoneId);
+    var input = document.getElementById(inputId);
+    zone.addEventListener("click", function () { input.click(); });
+    zone.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); }
+    });
+    input.addEventListener("change", function () {
+      if (input.files && input.files[0]) onFile(input.files[0]);
+      input.value = "";
+    });
+    zone.addEventListener("dragover", function (e) { e.preventDefault(); zone.classList.add("dragover"); });
+    zone.addEventListener("dragleave", function () { zone.classList.remove("dragover"); });
+    zone.addEventListener("drop", function (e) {
+      e.preventDefault();
+      zone.classList.remove("dragover");
+      var f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f && f.type.indexOf("image/") === 0) onFile(f);
+    });
+  }
+
+  function loadImageFile(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var img = new Image();
+        img.onload = function () { resolve(img); };
+        img.onerror = function () { reject(new Error("Could not read that image file.")); };
+        img.src = reader.result;
+      };
+      reader.onerror = function () { reject(new Error("Could not read that file.")); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function markLoaded(zoneId, img, file) {
+    var zone = document.getElementById(zoneId);
+    zone.classList.add("loaded");
+    zone.innerHTML = "";
+    var thumb = document.createElement("img");
+    thumb.className = "thumb";
+    thumb.alt = "";
+    thumb.src = img.src;
+    var name = document.createElement("span");
+    name.className = "filename";
+    name.textContent = file.name + " (" + img.naturalWidth + " x " + img.naturalHeight + " px)";
+    var note = document.createElement("span");
+    note.className = "replace-note";
+    note.textContent = "Click or drop another file to replace";
+    var input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/webp";
+    input.id = zoneId === "baseDrop" ? "baseInput" : "detailInput";
+    zone.appendChild(thumb);
+    zone.appendChild(name);
+    zone.appendChild(note);
+    zone.appendChild(input);
+    input.addEventListener("change", function () {
+      if (input.files && input.files[0]) {
+        (zoneId === "baseDrop" ? handleBaseFile : handleDetailFile)(input.files[0]);
+      }
+      input.value = "";
+    });
+  }
+
+  function handleBaseFile(file) {
+    loadImageFile(file).then(function (img) {
+      baseImg = img;
+      baseFileName = file.name.replace(/\.[^.]+$/, "") || "image";
+      markLoaded("baseDrop", img, file);
+      initialiseLayout();
+      maybeShowEditor();
+    }).catch(alertError);
+  }
+
+  function handleDetailFile(file, dropNaturalPos) {
+    loadImageFile(file).then(function (img) {
+      detailImg = img;
+      markLoaded("detailDrop", img, file);
+      if (baseImg) {
+        fitDetailToCircle();
+        if (dropNaturalPos) {
+          callout.cx = clamp(dropNaturalPos.x, 0, baseImg.naturalWidth);
+          callout.cy = clamp(dropNaturalPos.y, 0, baseImg.naturalHeight);
+        }
+      }
+      maybeShowEditor();
+    }).catch(alertError);
+  }
+
+  function alertError(err) { alert(err.message || "Something went wrong loading that file."); }
+
+  setupDropzone("baseDrop", "baseInput", handleBaseFile);
+  setupDropzone("detailDrop", "detailInput", handleDetailFile);
+
+  // ---------- Layout / defaults ----------
+  function initialiseLayout() {
+    var minDim = Math.min(baseImg.naturalWidth, baseImg.naturalHeight);
+    callout.cx = baseImg.naturalWidth / 2;
+    callout.cy = baseImg.naturalHeight / 2;
+    callout.r = minDim * 0.16;
+    ring.width = Math.max(4, Math.round(callout.r * 0.09));
+    document.getElementById("ringWidth").max = Math.max(20, Math.round(minDim * 0.06));
+    document.getElementById("ringWidth").value = ring.width;
+    document.getElementById("ringWidthVal").textContent = ring.width + " px";
+    blurAmount = clamp(Math.round(minDim * 0.012), 4, 60);
+    var blurEl = document.getElementById("blurAmount");
+    blurEl.value = blurAmount;
+    document.getElementById("blurAmountVal").textContent = blurAmount + " px";
+    buildBlurCache();
+    syncCircleSlider();
+    if (detailImg) fitDetailToCircle();
+  }
+
+  function fitDetailToCircle() {
+    var maxDim = Math.max(detailImg.naturalWidth, detailImg.naturalHeight);
+    detail.baseScale = (callout.r * 1.7) / maxDim;
+    detail.scale = detail.baseScale;
+    detail.offsetX = 0;
+    detail.offsetY = 0;
+    syncZoomSlider();
+  }
+
+  function maybeShowEditor() {
+    if (!baseImg || !detailImg) return;
+    document.getElementById("editorStep").style.display = "block";
+    document.getElementById("downloadStep").style.display = "block";
+    document.getElementById("exportSizeHint").textContent =
+      "Exports at " + baseImg.naturalWidth + " x " + baseImg.naturalHeight + " px";
+    sizeCanvas();
+    render();
+    document.getElementById("editorStep").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function sizeCanvas() {
+    if (!baseImg) return;
+    var wrap = canvas.parentElement;
+    var availW = wrap.clientWidth - 20;
+    viewScale = Math.min(availW / baseImg.naturalWidth, 640 / baseImg.naturalHeight, 1);
+    if (viewScale <= 0) viewScale = availW / baseImg.naturalWidth;
+    var dispW = Math.round(baseImg.naturalWidth * viewScale);
+    var dispH = Math.round(baseImg.naturalHeight * viewScale);
+    canvas.style.width = dispW + "px";
+    canvas.style.height = dispH + "px";
+    canvas.width = Math.round(dispW * dpr);
+    canvas.height = Math.round(dispH * dpr);
+  }
+
+  window.addEventListener("resize", function () {
+    if (baseImg && detailImg) { sizeCanvas(); render(); }
+  });
+
+  // ---------- Rendering ----------
+  function drawScene(c, scale, showHandle, bg) {
+    c.setTransform(scale, 0, 0, scale, 0, 0);
+    c.imageSmoothingEnabled = true;
+    c.imageSmoothingQuality = "high";
+    c.clearRect(0, 0, baseImg.naturalWidth, baseImg.naturalHeight);
+    if (bg) {
+      c.fillStyle = bg;
+      c.fillRect(0, 0, baseImg.naturalWidth, baseImg.naturalHeight);
+    }
+    c.drawImage(baseImg, 0, 0);
+
+    // Clipped detail inside the circle
+    c.save();
+    c.beginPath();
+    c.arc(callout.cx, callout.cy, callout.r, 0, Math.PI * 2);
+    c.clip();
+    if (fillColor === "blur") {
+      if (!blurCache) buildBlurCache();
+      if (blurCache) c.drawImage(blurCache, 0, 0);
+    } else if (fillColor !== "none") {
+      c.fillStyle = fillColor;
+      c.fill();
+    }
+    if (detailImg) {
+      var dw = detailImg.naturalWidth * detail.scale;
+      var dh = detailImg.naturalHeight * detail.scale;
+      c.drawImage(
+        detailImg,
+        callout.cx + detail.offsetX - dw / 2,
+        callout.cy + detail.offsetY - dh / 2,
+        dw, dh
+      );
+    }
+    c.restore();
+
+    // Ring
+    c.beginPath();
+    c.arc(callout.cx, callout.cy, callout.r, 0, Math.PI * 2);
+    c.lineWidth = ring.width;
+    c.strokeStyle = ring.color;
+    c.stroke();
+
+    // Resize handle (editor only)
+    if (showHandle) {
+      var h = handlePos();
+      var hs = Math.max(7 / viewScale, callout.r * 0.06);
+      c.fillStyle = "#ffffff";
+      c.strokeStyle = "#000054";
+      c.lineWidth = 2 / viewScale;
+      c.fillRect(h.x - hs, h.y - hs, hs * 2, hs * 2);
+      c.strokeRect(h.x - hs, h.y - hs, hs * 2, hs * 2);
+
+      // Detail bounding box with corner resize handles
+      if (detailImg) {
+        var corners = detailCorners();
+        c.setLineDash([6 / viewScale, 5 / viewScale]);
+        c.strokeStyle = "rgba(0,0,84,.55)";
+        c.lineWidth = 1.5 / viewScale;
+        c.strokeRect(corners[0].x, corners[0].y,
+                     corners[3].x - corners[0].x, corners[3].y - corners[0].y);
+        c.setLineDash([]);
+        var chs = Math.max(6 / viewScale, callout.r * 0.045);
+        c.lineWidth = 2 / viewScale;
+        corners.forEach(function (pt) {
+          c.fillStyle = "#ffffff";
+          c.strokeStyle = "#e61e2a";
+          c.fillRect(pt.x - chs, pt.y - chs, chs * 2, chs * 2);
+          c.strokeRect(pt.x - chs, pt.y - chs, chs * 2, chs * 2);
+        });
+      }
+    }
+  }
+
+  // Corners of the detail image's bounding box in natural coordinates.
+  // Order: top left, top right, bottom left, bottom right
+  // (so the diagonally opposite corner of index i is index 3 - i).
+  function detailCorners() {
+    var dw = detailImg.naturalWidth * detail.scale;
+    var dh = detailImg.naturalHeight * detail.scale;
+    var l = callout.cx + detail.offsetX - dw / 2;
+    var t = callout.cy + detail.offsetY - dh / 2;
+    return [
+      { x: l, y: t },
+      { x: l + dw, y: t },
+      { x: l, y: t + dh },
+      { x: l + dw, y: t + dh }
+    ];
+  }
+
+  function render() {
+    if (!baseImg) return;
+    drawScene(ctx, dpr * viewScale, true);
+  }
+
+  function handlePos() {
+    var a = Math.PI / 4; // lower right
+    return {
+      x: callout.cx + callout.r * Math.cos(a),
+      y: callout.cy + callout.r * Math.sin(a)
+    };
+  }
+
+  // ---------- Interaction ----------
+  var dragging = null; // "move" | "resize" | "detail" | "resizeDetail"
+  var lastPt = null;
+  var detailResizeState = null;
+
+  function toNatural(e) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) / viewScale,
+      y: (e.clientY - rect.top) / viewScale
+    };
+  }
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  canvas.addEventListener("pointerdown", function (e) {
+    if (!baseImg || !detailImg) return;
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    var p = toNatural(e);
+
+    // Detail corner handles take priority over everything else
+    var corners = detailCorners();
+    var cornerHit = Math.max(12 / viewScale, callout.r * 0.07);
+    var hitIndex = -1;
+    for (var i = 0; i < 4; i++) {
+      if (Math.hypot(p.x - corners[i].x, p.y - corners[i].y) <= cornerHit) { hitIndex = i; break; }
+    }
+    if (hitIndex >= 0) {
+      var opp = corners[3 - hitIndex];
+      detailResizeState = {
+        opp: opp,
+        vec: { x: corners[hitIndex].x - opp.x, y: corners[hitIndex].y - opp.y },
+        scale0: detail.scale,
+        r0: callout.r,
+        off0: { x: detail.offsetX, y: detail.offsetY }
+      };
+      dragging = "resizeDetail";
+      lastPt = p;
+      return;
+    }
+
+    var h = handlePos();
+    var handleHit = Math.max(12 / viewScale, callout.r * 0.09);
+    var distHandle = Math.hypot(p.x - h.x, p.y - h.y);
+    var distCentre = Math.hypot(p.x - callout.cx, p.y - callout.cy);
+
+    if (distHandle <= handleHit) {
+      dragging = "resize";
+    } else if (distCentre <= callout.r + ring.width / 2) {
+      dragging = (e.shiftKey || dragMode === "detail") ? "detail" : "move";
+    } else {
+      // Clicking elsewhere jumps the circle there
+      callout.cx = clamp(p.x, 0, baseImg.naturalWidth);
+      callout.cy = clamp(p.y, 0, baseImg.naturalHeight);
+      dragging = "move";
+      render();
+    }
+    lastPt = p;
+  });
+
+  canvas.addEventListener("pointermove", function (e) {
+    if (!dragging || !lastPt) return;
+    var p = toNatural(e);
+    var dx = p.x - lastPt.x;
+    var dy = p.y - lastPt.y;
+
+    if (dragging === "move") {
+      callout.cx = clamp(callout.cx + dx, 0, baseImg.naturalWidth);
+      callout.cy = clamp(callout.cy + dy, 0, baseImg.naturalHeight);
+    } else if (dragging === "detail") {
+      detail.offsetX += dx;
+      detail.offsetY += dy;
+    } else if (dragging === "resizeDetail" && detailResizeState) {
+      // Project the pointer onto the diagonal so the aspect ratio is preserved.
+      // The opposite corner stays anchored, and the circle scales and moves
+      // with the detail so the whole callout resizes as one unit.
+      var st = detailResizeState;
+      var lenSq = st.vec.x * st.vec.x + st.vec.y * st.vec.y;
+      var t = ((p.x - st.opp.x) * st.vec.x + (p.y - st.opp.y) * st.vec.y) / lenSq;
+      var minDimT = Math.min(baseImg.naturalWidth, baseImg.naturalHeight);
+      t = clamp(t, 0.05, 12);
+      t = clamp(t, (minDimT * 0.03) / st.r0, (minDimT * 1.2) / st.r0);
+      detail.scale = st.scale0 * t;
+      callout.r = st.r0 * t;
+      var nx = st.opp.x + st.vec.x * t;
+      var ny = st.opp.y + st.vec.y * t;
+      // New detail centre, with the circle repositioned so the detail keeps
+      // the same relative placement inside it
+      detail.offsetX = st.off0.x * t;
+      detail.offsetY = st.off0.y * t;
+      callout.cx = (st.opp.x + nx) / 2 - detail.offsetX;
+      callout.cy = (st.opp.y + ny) / 2 - detail.offsetY;
+      syncZoomSlider();
+      syncCircleSlider();
+    } else if (dragging === "resize") {
+      var newR = Math.hypot(p.x - callout.cx, p.y - callout.cy);
+      var minDim = Math.min(baseImg.naturalWidth, baseImg.naturalHeight);
+      callout.r = clamp(newR, minDim * 0.03, minDim * 0.9);
+      syncCircleSlider();
+    }
+    lastPt = p;
+    render();
+  });
+
+  function endDrag() { dragging = null; lastPt = null; detailResizeState = null; }
+  canvas.addEventListener("pointerup", endDrag);
+  canvas.addEventListener("pointercancel", endDrag);
+
+  canvas.addEventListener("wheel", function (e) {
+    if (!baseImg || !detailImg) return;
+    var p = toNatural(e);
+    var inside = Math.hypot(p.x - callout.cx, p.y - callout.cy) <= callout.r + ring.width;
+    if (!inside) return;
+    e.preventDefault();
+    var factor = e.deltaY < 0 ? 1.06 : 1 / 1.06;
+    detail.scale = clamp(detail.scale * factor, detail.baseScale * 0.1, detail.baseScale * 4);
+    syncZoomSlider();
+    render();
+  }, { passive: false });
+
+  // Drop a new detail PNG straight onto the canvas
+  canvas.addEventListener("dragover", function (e) { e.preventDefault(); });
+  canvas.addEventListener("drop", function (e) {
+    e.preventDefault();
+    var f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f && f.type.indexOf("image/") === 0) {
+      var rect = canvas.getBoundingClientRect();
+      handleDetailFile(f, {
+        x: (e.clientX - rect.left) / viewScale,
+        y: (e.clientY - rect.top) / viewScale
+      });
+    }
+  });
+
+  // ---------- Controls ----------
+  var modeCircleBtn = document.getElementById("modeCircleBtn");
+  var modeDetailBtn = document.getElementById("modeDetailBtn");
+  function setMode(m) {
+    dragMode = m;
+    modeCircleBtn.classList.toggle("active", m === "circle");
+    modeDetailBtn.classList.toggle("active", m === "detail");
+    canvas.className = m === "circle" ? "mode-circle" : "mode-detail";
+  }
+  modeCircleBtn.addEventListener("click", function () { setMode("circle"); });
+  modeDetailBtn.addEventListener("click", function () { setMode("detail"); });
+
+  var circleSize = document.getElementById("circleSize");
+  var circleSizeVal = document.getElementById("circleSizeVal");
+  circleSize.addEventListener("input", function () {
+    if (!baseImg) return;
+    var minDim = Math.min(baseImg.naturalWidth, baseImg.naturalHeight);
+    callout.r = (parseInt(circleSize.value, 10) / 100) * minDim / 2;
+    circleSizeVal.textContent = circleSize.value + "%";
+    render();
+  });
+  function syncCircleSlider() {
+    var minDim = Math.min(baseImg.naturalWidth, baseImg.naturalHeight);
+    var pct = Math.round((callout.r * 2 / minDim) * 100);
+    circleSize.value = clamp(pct, parseInt(circleSize.min, 10), parseInt(circleSize.max, 10));
+    circleSizeVal.textContent = circleSize.value + "%";
+  }
+
+  var detailZoom = document.getElementById("detailZoom");
+  var detailZoomVal = document.getElementById("detailZoomVal");
+  detailZoom.addEventListener("input", function () {
+    detail.scale = detail.baseScale * (parseInt(detailZoom.value, 10) / 100);
+    detailZoomVal.textContent = detailZoom.value + "%";
+    render();
+  });
+  function syncZoomSlider() {
+    var pct = Math.round((detail.scale / detail.baseScale) * 100);
+    detailZoom.value = clamp(pct, parseInt(detailZoom.min, 10), parseInt(detailZoom.max, 10));
+    detailZoomVal.textContent = detailZoom.value + "%";
+  }
+
+  var ringWidthEl = document.getElementById("ringWidth");
+  var ringWidthVal = document.getElementById("ringWidthVal");
+  ringWidthEl.addEventListener("input", function () {
+    ring.width = parseInt(ringWidthEl.value, 10);
+    ringWidthVal.textContent = ring.width + " px";
+    render();
+  });
+
+  document.getElementById("fillOptions").addEventListener("click", function (e) {
+    var btn = e.target.closest(".fill-btn");
+    if (!btn) return;
+    fillColor = btn.dataset.fill;
+    this.querySelectorAll(".fill-btn").forEach(function (b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    document.getElementById("blurGroup").style.display = fillColor === "blur" ? "" : "none";
+    render();
+  });
+
+  var blurAmountEl = document.getElementById("blurAmount");
+  var blurAmountVal = document.getElementById("blurAmountVal");
+  var blurRebuildPending = false;
+  blurAmountEl.addEventListener("input", function () {
+    blurAmount = parseInt(blurAmountEl.value, 10);
+    blurAmountVal.textContent = blurAmount + " px";
+    // Throttle the rebuild to one per frame so the slider stays responsive on large images
+    if (!blurRebuildPending) {
+      blurRebuildPending = true;
+      requestAnimationFrame(function () {
+        blurRebuildPending = false;
+        buildBlurCache();
+        render();
+      });
+    }
+  });
+
+  document.getElementById("centreBtn").addEventListener("click", function () {
+    if (!baseImg || !detailImg) return;
+    // Move the circle's centre to the detail's centre and refit the radius
+    // to the detail's current size, matching the initial fit ratio
+    callout.cx += detail.offsetX;
+    callout.cy += detail.offsetY;
+    detail.offsetX = 0;
+    detail.offsetY = 0;
+    var dw = detailImg.naturalWidth * detail.scale;
+    var dh = detailImg.naturalHeight * detail.scale;
+    var minDim = Math.min(baseImg.naturalWidth, baseImg.naturalHeight);
+    callout.r = clamp(Math.max(dw, dh) / 1.7, minDim * 0.03, minDim * 1.2);
+    syncCircleSlider();
+    render();
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", function () {
+    if (!baseImg) return;
+    initialiseLayout();
+    if (detailImg) fitDetailToCircle();
+    render();
+  });
+
+  // ---------- Export ----------
+  var jpegQuality = document.getElementById("jpegQuality");
+  var jpegQualityVal = document.getElementById("jpegQualityVal");
+  jpegQuality.addEventListener("input", function () {
+    jpegQualityVal.textContent = jpegQuality.value;
+  });
+
+  function exportImage(type) {
+    if (!baseImg || !detailImg) return;
+    var out = document.createElement("canvas");
+    out.width = baseImg.naturalWidth;
+    out.height = baseImg.naturalHeight;
+    var octx = out.getContext("2d");
+    drawScene(octx, 1, false, type === "image/jpeg" ? "#ffffff" : null);
+    var quality = parseInt(jpegQuality.value, 10) / 100;
+    var url = out.toDataURL(type, type === "image/jpeg" ? quality : undefined);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = baseFileName + "_zoom." + (type === "image/jpeg" ? "jpg" : "png");
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  document.getElementById("downloadJpegBtn").addEventListener("click", function () {
+    exportImage("image/jpeg");
+  });
+  document.getElementById("downloadPngBtn").addEventListener("click", function () {
+    exportImage("image/png");
+  });
+
+})();
+</script>
+</body>
+</html>
