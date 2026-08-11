@@ -17,6 +17,17 @@
       "notes": "Course Development",
       "public": true,
       "updatedAt": "2026-08-10T06:56:03.530Z"
+    },
+    "ip_ai_rpl_isolate.html": {
+      "description": "sanitises personal information",
+      "tags": [
+        "IP",
+        "RPL"
+      ],
+      "owner": "IP Team",
+      "notes": "AI for RPL",
+      "public": false,
+      "updatedAt": "2026-08-11T22:42:11.756Z"
     }
   }
 }
