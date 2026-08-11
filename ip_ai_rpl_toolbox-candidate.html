@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Toolbox · Candidate — the RPL prompts for any AI</title>
+<style>
+:root{
+  --sky:#F2F7FA; --sky-2:#E7F0F5; --paper:#FFFFFF;
+  --ink:#132430; --ink-2:#2C4454; --muted:#607C8D;
+  --rule:#D5E3EB; --rule-2:#BFD4DF;
+  --live:#A65214; --live-bg:#FDF0E4;
+  --tagged:#0A6A60; --tagged-bg:#E4F4F1;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--sky);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+
+.brand{display:flex;align-items:center;gap:18px}
+.mark{width:64px;height:84px;flex:none;display:block}
+.mark .tower{fill:var(--rule-2)}
+.mark .blade{fill:var(--tagged);opacity:.9}
+.mark .hub{fill:var(--ink)}
+.rotor{transform-box:view-box;transform-origin:50px 34px;animation:spin 8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.rotor{animation:none}}
+
+.masthead{border-bottom:1px solid var(--rule);padding:22px 28px 18px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between;background:rgba(255,255,255,.8)}
+h1{margin:0;font-size:clamp(26px,4vw,38px);font-weight:750;letter-spacing:-.035em;text-transform:uppercase;line-height:.95}
+h1 span{color:var(--tagged)}
+.tagline{margin:8px 0 0;color:var(--ink-2);font-size:13.5px;max-width:58ch}
+.badge{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--rule-2);background:var(--paper);color:var(--ink-2);padding:7px 12px;border-radius:2px}
+
+.wrap{display:grid;grid-template-columns:238px 1fr;min-height:70vh}
+@media(max-width:880px){.wrap{grid-template-columns:1fr}}
+.rail{border-right:1px solid var(--rule);background:rgba(247,251,253,.95);padding:14px 0}
+.raillabel{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:12px 18px 6px}
+.stg{display:flex;gap:11px;align-items:flex-start;width:100%;text-align:left;background:none;border:0;padding:11px 18px;cursor:pointer;font:inherit;color:var(--muted);border-left:3px solid transparent}
+.stg:hover{background:var(--paper)}
+.stg[aria-current="true"]{background:var(--paper);border-left-color:var(--tagged);color:var(--ink)}
+.stg:focus-visible{outline:2px solid var(--live);outline-offset:-2px}
+.stg .id{font-family:var(--mono);font-size:10.5px;width:26px;flex:none;padding-top:2px}
+.stg .nm{font-size:13px;line-height:1.35}
+.stg .sub{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+
+.main{background:rgba(255,255,255,.93);padding:24px 28px 34px;min-width:0}
+h2{font-size:18px;font-weight:750;text-transform:uppercase;letter-spacing:-.02em;margin:0 0 6px}
+.lede{color:var(--ink-2);font-size:13.5px;margin:0 0 4px;max-width:70ch;line-height:1.6}
+.lede b{color:var(--ink)}
+.meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tagged);margin-bottom:3px}
+
+.gate{border-left:3px solid var(--live);background:var(--live-bg);padding:13px 16px;margin:16px 0;font-size:13px;line-height:1.6;max-width:74ch}
+.gate b{color:var(--live)}
+.note{border-left:3px solid var(--rule-2);background:var(--sky-2);padding:11px 15px;margin:16px 0;font-size:12.5px;line-height:1.6;color:var(--ink-2);max-width:74ch}
+.note b{color:var(--ink)}
+
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:6px}
+label.fl{display:block;font-size:11.5px;color:var(--muted);margin:12px 0 4px}
+input[type=text],textarea{width:100%;background:var(--paper);border:1px solid var(--rule-2);color:var(--ink);font-family:var(--mono);font-size:12px;padding:8px 10px;border-radius:3px;line-height:1.6}
+input:focus,textarea:focus{outline:2px solid var(--tagged);outline-offset:1px;border-color:var(--tagged)}
+textarea{resize:vertical}
+.toggle{display:flex;align-items:flex-start;gap:10px;font-size:12.5px;color:var(--ink-2);margin:18px 0 0;max-width:70ch}
+.toggle input{width:auto;margin-top:3px}
+
+button.act{appearance:none;font-family:var(--sans);font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:10px 14px;border-radius:3px;cursor:pointer;border:1px solid var(--rule-2);background:var(--paper);color:var(--ink);white-space:nowrap}
+button.act:hover{border-color:var(--muted)}
+button.act.primary{background:var(--tagged);border-color:var(--tagged);color:#fff}
+button.act.primary:hover{filter:brightness(1.1)}
+button.act.copied{background:var(--tagged);border-color:var(--tagged);color:#fff}
+button.act:focus-visible{outline:2px solid var(--live);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 0;align-items:center}
+
+.regrow{border:1px solid var(--rule);background:var(--paper);border-radius:4px;padding:12px 14px;margin:10px 0}
+.regcols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:820px){.regcols{grid-template-columns:1fr}}
+
+pre{margin:16px 0 0;padding:16px 18px;background:var(--paper);border:1px solid var(--rule);border-radius:4px;font-family:var(--mono);font-size:12px;line-height:1.68;white-space:pre-wrap;word-break:break-word;max-height:46vh;overflow-y:auto;max-width:96ch}
+pre .ph{background:var(--live-bg);color:var(--live);padding:1px 4px;border-radius:2px;font-weight:700}
+.missing{font-size:12px;color:var(--live);margin:14px 0 0;max-width:74ch;line-height:1.55}
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 100 130" aria-hidden="true">
+      <path class="tower" d="M46.6 34 h6.8 l3.6 86 h-14 Z"/>
+      <path class="tower" d="M36 120 h28 l3 7 h-34 Z"/>
+      <g class="rotor">
+        <path class="blade" d="M50 34 C 56 26 60 12 58.5 2 C 53 9 49.5 22 47.6 32 Z"/>
+        <path class="blade" d="M50 34 C 59 36 73 43 79 51 C 70 51 57 44 48.6 37.4 Z"/>
+        <path class="blade" d="M50 34 C 41 36 27 43 21 51 C 30 51 43 44 51.4 37.4 Z"/>
+      </g>
+      <circle class="hub" cx="50" cy="34" r="4.4"/>
+    </svg>
+    <div>
+      <h1>Tool<span>box</span></h1>
+      <p class="tagline">Six prompts to work through your own experience, ready to copy into whatever AI you already use. Fill in your details once and every prompt picks them up.</p>
+    </div>
+  </div>
+  <div class="badge">Layer A · candidate</div>
+</header>
+
+<div class="wrap">
+  <nav class="rail" id="rail"></nav>
+  <main class="main" id="main"></main>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var RULES = "STANDING RULES \u2014 these override any later instruction.\n\n1. You do not decide competency. You prepare material for a qualified assessor to decide. Never write \"competent\", \"not yet competent\", \"meets the requirement\" or \"satisfies\". Write what was claimed, what supports it, and what an assessor would still need.\n\n2. You never assert a fact about the candidate that the candidate has not stated or a document has not shown. If you need a fact, ask for it. Do not infer it, do not fill it in from what is typical of the trade, and do not soften a gap by describing it as probably covered.\n\n3. Every statement you output carries one of these tags:\n     [S]  stated by the candidate\n     [D]  shown in a supplied document (name the document)\n     [I]  inferred by you \u2014 always requires confirmation\n     [Q]  unknown, question posed\n   An untagged statement is a defect. If you cannot tag it, delete it.\n\n4. Where you are uncertain, ask rather than hedge. A [Q] is more useful to an assessor than a qualified assertion.\n\n5. Do not improve the candidate's language into competency-standard phrasing. If the candidate says \"I pulled the pump apart and found the seal had gone\", record that. Rewriting it as \"disassembled rotating equipment and diagnosed seal failure\" is the machine asserting a competency claim in the candidate's voice, and an assessor who notices will discount the whole portfolio.\n\n6. Tokens like [PERSON_1], and descriptions like \"a large primary aluminium smelter (NSW)\", are deliberate substitutions. Never speculate about who or where they refer to, and never ask for the real values.\n\n7. Stop where told to stop. Do not run ahead to the next section.\n\n8. Australian English. Plain language a tradesperson would use.";
+var PROMPTS = [{"id": "A0", "name": "Intake and scope", "sub": "Where you're starting from", "when": "Start here. Establishes what you hold and where you're aiming. <b>No analysis happens yet</b> \u2014 this step only sets the scope.", "paste": "Nothing yet. Just answer the questions as they come.", "text": "You are helping a tradesperson prepare an RPL application. This step establishes scope only. Do not analyse anything yet.\n\nTrade qualification held: <<SOURCE_QUAL>>\nUnits completed: <<SOURCE_UNITS>>\nAiming at: <<TARGET_QUAL>>\nAssessing RTO: <<RTO>>\nJurisdiction: <<JURISDICTION>>\n\nAsk me, one question at a time, waiting for each answer:\n\n1. How was the trade qualification completed \u2014 apprenticeship, TRA pathway, or another route? (This determines licence eligibility.)\n2. What licences and tickets do I hold now, and when does each expire?\n3. How long have I worked in the trade, and what was my longest single role?\n4. When did I last do hands-on trade work?\n5. Any work in the target industry already, however brief?\n6. Any statements of attainment beyond the qualification \u2014 short courses, OEM training, site inductions?\n\nThen output a scope summary with tagged statements, and STOP. Do not proceed to evidence gathering."}, {"id": "A1", "name": "Evidence inventory", "sub": "What you've actually done", "when": "The long one \u2014 expect a real interview, not a form. <b>Don't tell it what the unit requires.</b> The prompt deliberately withholds that, and volunteering it turns your answers into coaching rather than evidence.", "paste": "Nothing. This is all interview.", "text": "Interview me about my actual work, one task domain at a time.\n\nDo NOT show me the unit requirements. Do not tell me what any unit or qualification is looking for. If I know what you want to hear, my answers stop being evidence.\n\nFor each task domain, ask:\n\n- What was the task? Describe it as you would to an apprentice.\n- How often did you do it?\n- What equipment, make and model?\n- Who else was involved, and what did you do versus them?\n- What went wrong on it once, and what did you do about it?\n- What would you check before starting? What would stop you?\n- Under what supervision \u2014 alone, signed off by someone, or directed?\n\nThat last question is the one assessors care most about and candidates most often skip. Press on it.\n\nDo not accept \"yes I've done that\" \u2014 ask for a specific occasion. Ask follow-ups where an answer is thin.\n\nContinue until I say I have nothing further for this domain, then move to the next. Output nothing but questions until I say \"inventory complete\", then summarise by task domain with tagged statements and compare it to nothing."}, {"id": "A2", "name": "Document triage", "sub": "What your papers prove", "when": "Separates what a document <b>proves</b> from what it merely <b>asserts</b>. A payslip proves employment, not competence.", "paste": "Your reduced .txt files, at the bottom of the prompt.", "text": "Here are my documents. Personal details have been replaced with tokens before you saw them. For each one, produce three lines:\n\nPROVES:   what this document independently establishes [D]\nASSERTS:  what it merely claims without corroboration [S]\nDOES NOT: what a reader might wrongly assume it shows\n\nThen flag, as [Q]:\n- anything undated or with no issuing authority\n- any qualification or ticket that may be superseded\n- any reference that describes character rather than performance\n- any document describing a team's work without isolating my contribution\n\nA payslip proves employment, not competence. A position description proves what an employer expected, not what I did. Say so.\n\n=== MY DOCUMENTS ===\n[paste the reduced text here]"}, {"id": "A3", "name": "Claim construction", "sub": "Your evidence, structured", "when": "Turns the interview into structured claims \u2014 <b>including the weak points</b>, stated plainly rather than smoothed over.", "paste": "Nothing, if you're in the same conversation. Otherwise paste the A1 and A2 outputs first.", "text": "Using ONLY my answers from the inventory and the documents you triaged, draft my evidence claims.\n\nStructure each as:\n\nCLAIM:         one sentence, in my words, not yours\nBASIS:         [S] my statement / [D] document / both\nFREQUENCY:     how often, over what period\nAUTONOMY:      supervised / signed off / independent\nCORROBORATION: what third party could confirm this, and how\nWEAKNESS:      the first thing a sceptical assessor would challenge\n\nDo not merge claims to make them look stronger. Do not add detail I did not give you. Where a claim rests only on [S] with no corroboration route, say so plainly in WEAKNESS.\n\nIf you find yourself wanting to write a claim I did not make, write it as [Q] and ask me."}, {"id": "A4", "name": "Currency probe", "sub": "When you last did it", "when": "Short and blunt. <b>Currency is where most RPL claims quietly fail</b> \u2014 work that was current five years ago may not be now.", "paste": "The A3 claims, if you've started a new conversation.", "text": "Currency is where most RPL claims fail, and it fails quietly.\n\nFor each claim from the previous step, ask me \u2014 one claim at a time:\n\n- When did you last do this? Month and year.\n- How many times in the last two years?\n- Has the equipment, standard or regulation changed since?\n- Would you do it the same way today?\n- What has changed in the standards you work to since you last did it?\n\nThen classify each claim:\n\nCURRENT     performed recently, against current standards\nLAPSED      performed, but standards or technology have moved\nHISTORIC    performed, but not recently enough to rely on\nUNRESOLVED  I could not answer\n\nDo not classify anything CURRENT on my say-so alone if the equipment or standard has changed. Ask what changed."}, {"id": "A5", "name": "Gap surface", "sub": "What's missing", "when": "The first time the qualification is mentioned at all. That's deliberate \u2014 everything before this was about what you did, not what someone wants to hear.", "paste": "The unit requirements. Fill the field in Your details and they drop in automatically.", "text": "Now, and only now, compare my claims to the unit requirements below.\n\nProduce:\n\n1. WHAT I HAVE \u2014 claims with a plausible route to a requirement, each tagged, each carrying its weakness across from the claim step.\n\n2. WHAT I AM MISSING \u2014 requirements with no claim against them. For each, classify:\n   (a) more evidence would probably close it \u2014 say exactly what document or corroboration to go and get\n   (b) needs gap training \u2014 name it if you can\n   (c) needs site, OEM or employer training that no VET covers\n   (d) no VET pathway appears to exist for this at all\n\n3. WHAT TO GO AND COLLECT \u2014 a concrete list. Who to ask, for what, in what form.\n\nCategory (d) matters even where it does not help me. Be explicit when you hit one.\n\nEnd with: \"This is a preparation document. It is not an assessment and carries no weight until an assessor has reviewed it.\"\n\n=== UNIT REQUIREMENTS ===\n<<UNIT_DESCRIPTOR>>"}];
+var FIELDS = [{"k": "SOURCE_QUAL", "label": "Trade qualification you hold", "ph": "UEE30820 Certificate III in Electrotechnology Electrician"}, {"k": "TARGET_QUAL", "label": "Qualification you're aiming at", "ph": "UEP40622 Certificate IV in Wind Power Generation"}, {"k": "RTO", "label": "Assessing RTO", "ph": "the RTO and its RPL policy"}, {"k": "JURISDICTION", "label": "State or territory", "ph": "NSW"}, {"k": "SOURCE_UNITS", "label": "Units you actually completed \u2014 from your testamur, not the qualification's full elective bank", "ph": "UEECD0007, UEECD0019, UEEEL0014, UEEEL0039 \u2026", "big": true, "rows": 2}, {"k": "UNIT_DESCRIPTOR", "label": "Unit requirements \u2014 paste from training.gov.au. Only needed at A5.", "ph": "Elements and performance criteria, performance evidence, knowledge evidence, assessment conditions.", "big": true, "rows": 5}];
+var GATE = "<b>Run your documents through Isolation first.</b> Every prompt here assumes you have already been through Isolation and are pasting the reduced copies. Whatever you paste into a chat window goes to that company's servers and, depending on the product, may be retained or used for training. A name, address, licence number or USI pasted once cannot be recalled. And note that a reduced document is still about you \u2014 your trade, tickets, dates and work history remain, and may identify you even without a name on them.";
+var INTRO = "";
+
+var params = {};
+var outputs = {};
+var meta = {ref:"", model:"", date:new Date().toISOString().slice(0,10), docs:""};
+var register = [];   // {orig, reduced, shows}
+var withRules = true;
+var cur = "details";
+
+var $ = function(id){ return document.getElementById(id); };
+function esc(t){ return String(t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+
+function fill(text){
+  return text.replace(/<<(\w+)>>/g, function(m,k){
+    return (params[k] && params[k].trim()) ? params[k].trim() : m;
+  });
+}
+function renderPre(text){
+  return esc(fill(text)).replace(/&lt;&lt;(\w+)&gt;&gt;/g, function(_,k){
+    return '<span class="ph">&lt;&lt;'+k+'&gt;&gt;</span>';
+  });
+}
+function fullText(text){
+  var body = fill(text);
+  return withRules ? RULES + "\n\n---\n\n" + body : body;
+}
+function unfilled(text){
+  var m = text.match(/<<(\w+)>>/g) || [];
+  return m.map(function(x){ return x.slice(2,-2); }).filter(function(v,i,a){ return a.indexOf(v)===i; });
+}
+
+function copyBtn(getText, label){
+  var b = document.createElement("button");
+  b.className = "act primary"; b.textContent = label || "Copy prompt";
+  b.onclick = function(){
+    var t = getText();
+    var done = function(){
+      var old = b.textContent;
+      b.textContent = "Copied"; b.classList.add("copied");
+      setTimeout(function(){ b.textContent = old; b.classList.remove("copied"); }, 1600);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(done, function(){ fallback(t,done); });
+    } else fallback(t,done);
+  };
+  return b;
+}
+function fallback(t, done){
+  var ta = document.createElement("textarea");
+  ta.value = t; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); done(); }catch(e){ alert("Copy failed — select the text and copy it manually."); }
+  document.body.removeChild(ta);
+}
+
+function renderRail(){
+  var r = $("rail"); r.innerHTML = "";
+  function item(id, code, name, sub){
+    var b = document.createElement("button");
+    b.className = "stg";
+    b.setAttribute("aria-current", cur===id ? "true":"false");
+    b.innerHTML = '<span class="id">'+esc(code)+'</span><span class="nm">'+esc(name)+
+      '<span class="sub">'+esc(sub)+'</span></span>';
+    b.onclick = function(){ cur = id; render(); };
+    r.appendChild(b);
+  }
+  var l1 = document.createElement("div"); l1.className="raillabel"; l1.textContent="Set up";
+  r.appendChild(l1);
+  item("details","··","Your details","Filled into every prompt");
+  item("rules","··","Standing rules","What keeps it honest");
+
+  var l2 = document.createElement("div"); l2.className="raillabel"; l2.textContent="Prompts · in order";
+  r.appendChild(l2);
+  PROMPTS.forEach(function(p){
+    var got = outputs[p.id] && outputs[p.id].trim();
+    item(p.id, p.id + (got ? " \u2713" : ""), p.name, p.sub);
+  });
+
+  var l3 = document.createElement("div"); l3.className="raillabel"; l3.textContent="Finish";
+  r.appendChild(l3);
+  var n = PROMPTS.filter(function(p){ return outputs[p.id] && outputs[p.id].trim(); }).length;
+  item("pack","\u25A4","Handover pack", n + " of " + PROMPTS.length + " saved");
+}
+
+function renderDetails(m){
+  m.innerHTML = "<h2>Your details</h2><p class='lede'>Typed once, filled into every prompt. Nothing is stored — close the tab and it's gone, so copy what you need before you go.</p>";
+
+  var g = document.createElement("div"); g.className = "pgrid";
+  FIELDS.filter(function(f){ return !f.big; }).forEach(function(f){
+    var d = document.createElement("div");
+    d.innerHTML = '<label class="fl">'+esc(f.label)+'</label>';
+    var i = document.createElement("input");
+    i.type="text"; i.value = params[f.k]||""; i.placeholder = f.ph;
+    i.oninput = function(){ params[f.k] = i.value; };
+    d.appendChild(i); g.appendChild(d);
+  });
+  m.appendChild(g);
+
+  FIELDS.filter(function(f){ return f.big; }).forEach(function(f){
+    var l = document.createElement("label"); l.className="fl"; l.textContent = f.label;
+    m.appendChild(l);
+    var t = document.createElement("textarea");
+    t.rows = f.rows||3; t.value = params[f.k]||""; t.placeholder = f.ph;
+    t.oninput = function(){ params[f.k] = t.value; };
+    m.appendChild(t);
+  });
+
+  var tg = document.createElement("div"); tg.className="toggle";
+  var cb = document.createElement("input"); cb.type="checkbox"; cb.id="wr"; cb.checked = withRules;
+  cb.onchange = function(){ withRules = cb.checked; render(); };
+  var lb = document.createElement("label"); lb.setAttribute("for","wr"); lb.style.margin="0";
+  lb.innerHTML = "Put the standing rules at the top of every copied prompt <b>(recommended)</b>. Turn this off only if you've already pasted them once into a conversation you're staying in.";
+  tg.appendChild(cb); tg.appendChild(lb);
+  m.appendChild(tg);
+
+  var gate = document.createElement("div"); gate.className="gate"; gate.innerHTML = GATE;
+  m.appendChild(gate);
+}
+
+function renderRules(m){
+  m.innerHTML = "<h2>Standing rules</h2><p class='lede'>These are what stop the AI inventing evidence or declaring anyone competent. They go on top of every prompt automatically. Copy them on their own if you'd rather set them once at the start of a long conversation.</p>";
+  var r = document.createElement("div"); r.className="row";
+  r.appendChild(copyBtn(function(){ return RULES; }, "Copy rules"));
+  m.appendChild(r);
+  var pre = document.createElement("pre"); pre.textContent = RULES;
+  m.appendChild(pre);
+}
+
+function renderPrompt(m, p){
+  m.innerHTML = "";
+  var h = document.createElement("div");
+  h.innerHTML = '<div class="meta">'+p.id+'</div><h2>'+esc(p.name)+'</h2>'+
+    '<p class="lede">'+p.when+'</p>';
+  m.appendChild(h);
+
+  var n = document.createElement("div"); n.className="note";
+  n.innerHTML = "<b>What to paste in:</b> " + esc(p.paste);
+  m.appendChild(n);
+
+  var need = unfilled(p.text);
+  var r = document.createElement("div"); r.className="row";
+  r.appendChild(copyBtn(function(){ return fullText(p.text); },
+    withRules ? "Copy prompt + rules" : "Copy prompt"));
+  var b2 = document.createElement("button");
+  b2.className="act"; b2.textContent="Your details";
+  b2.onclick = function(){ cur="details"; render(); };
+  r.appendChild(b2);
+  m.appendChild(r);
+
+  if(need.length){
+    var w = document.createElement("p"); w.className="missing";
+    w.innerHTML = "<b>Not filled in yet: "+esc(need.join(", "))+".</b> The prompt will copy with the placeholder still in it. Fill it under Your details first, or the AI will invent something to put there.";
+    m.appendChild(w);
+  }
+
+  var pre = document.createElement("pre");
+  pre.innerHTML = renderPre(p.text);
+  m.appendChild(pre);
+
+  var lab = document.createElement("label");
+  lab.className = "fl";
+  lab.style.marginTop = "20px";
+  lab.innerHTML = "Paste what the AI gave you back &mdash; this builds your handover pack";
+  m.appendChild(lab);
+
+  var ta = document.createElement("textarea");
+  ta.rows = 6;
+  ta.value = outputs[p.id] || "";
+  ta.placeholder = "Read it first. If it says something you did not say, or puts your work in words you would not use, tell the AI to redo it before you paste it here.";
+  ta.oninput = function(){ outputs[p.id] = ta.value; };
+  ta.onblur = function(){ render(); };
+  m.appendChild(ta);
+
+  var nn = document.createElement("div");
+  nn.className = "note";
+  nn.innerHTML = "<b>Only paste in what you have read and agree with.</b> Everything saved here goes to the assessor with your name on it. You are responsible for it, not the AI.";
+  m.appendChild(nn);
+}
+
+
+function buildPack(){
+  var L = [];
+  var qual = (params.SOURCE_QUAL||"").trim() || "[not stated]";
+  var targ = (params.TARGET_QUAL||"").trim() || "[not stated]";
+
+  L.push("# RPL preparation pack \u2014 candidate handover");
+  L.push("");
+  L.push("**This document is not an assessment.** No determination of competency is made anywhere in it. It is material prepared by a candidate, with AI assistance, for a qualified assessor to evaluate.");
+  L.push("");
+  L.push("| | |");
+  L.push("|---|---|");
+  L.push("| Candidate reference | " + (meta.ref.trim() || "[to be completed at sign-off]") + " |");
+  L.push("| Trade qualification held | " + qual + " |");
+  L.push("| Units completed | " + ((params.SOURCE_UNITS||"").trim() || "[not stated]") + " |");
+  L.push("| Qualification sought | " + targ + " |");
+  L.push("| Assessing RTO | " + ((params.RTO||"").trim() || "[not stated]") + " |");
+  L.push("| Jurisdiction | " + ((params.JURISDICTION||"").trim() || "[not stated]") + " |");
+  L.push("| Prepared | " + meta.date + " |");
+  L.push("");
+
+  L.push("## Identity and personal information");
+  L.push("");
+  L.push("Direct identifiers were replaced before any AI was used on this material. Tokens such as `[PERSON_1]`, `[LINK_1]` or `[USI_1]`, and descriptions such as \"a large primary aluminium smelter (NSW)\", are deliberate substitutions.");
+  L.push("");
+  L.push("The re-identification key is held locally by the candidate and has not been uploaded anywhere. Re-identification is performed locally at submission. **Identity details, and the USI in particular, must be confirmed against the candidate\u2019s original documents \u2014 not against this pack.**");
+  L.push("");
+
+  L.push("## Declaration of AI use");
+  L.push("");
+  L.push("- AI service used: " + (meta.model.trim() || "[to be completed]"));
+  L.push("- Prompts run: " + (PROMPTS.filter(function(p){ return outputs[p.id] && outputs[p.id].trim(); }).map(function(p){ return p.id; }).join(", ") || "none"));
+  L.push("- Date prepared: " + meta.date);
+  L.push("- The AI worked only from reduced copies. Original documents were never given to it.");
+  L.push("- The AI was instructed under standing rules that prohibit it asserting any fact the candidate did not state, and prohibit it rendering any competency decision.");
+  L.push("- The candidate has read every output below and confirms it as an accurate record of what they said.");
+  L.push("");
+
+  L.push("## How to read the provenance tags");
+  L.push("");
+  L.push("| Tag | Meaning |");
+  L.push("|---|---|");
+  L.push("| `[S]` | Stated by the candidate |");
+  L.push("| `[D]` | Shown in a supplied document |");
+  L.push("| `[I]` | Inferred by the AI \u2014 **requires confirmation, carries no weight until confirmed** |");
+  L.push("| `[Q]` | Unknown; a question posed and not yet answered |");
+  L.push("");
+  L.push("Any statement carrying `[I]` should be treated as unverified. Any `[Q]` is an open item.");
+  L.push("");
+
+  L.push("## Document register");
+  L.push("");
+  L.push("Two versions of each document accompany this pack. **The reduced copies are what the AI was given. The originals are supplied for authenticity checking and were never sent to any AI service.**");
+  L.push("");
+  if(register.filter(function(r){ return (r.orig||r.reduced||r.shows||"").trim(); }).length){
+    L.push("| Original document | Reduced copy given to the AI | What it shows |");
+    L.push("|---|---|---|");
+    register.forEach(function(r){
+      if(!((r.orig||"")+(r.reduced||"")+(r.shows||"")).trim()) return;
+      L.push("| " + (r.orig.trim() || "_not listed_") + " | " +
+             (r.reduced.trim() || "_none_") + " | " +
+             (r.shows.trim() || "") + " |");
+    });
+  } else {
+    L.push("_No documents registered._");
+  }
+  L.push("");
+  L.push("Where an evidence claim below cites a document, it cites the **reduced** filename, because that is what the AI could see. Match it to the original in the left-hand column to verify it.");
+  L.push("");
+  L.push("---");
+  L.push("");
+
+  PROMPTS.forEach(function(p){
+    var v = (outputs[p.id]||"").trim();
+    L.push("## " + p.id + " \u2014 " + p.name);
+    L.push("");
+    L.push(v ? v : "_Not completed._");
+    L.push("");
+  });
+
+  L.push("---");
+  L.push("");
+  L.push("## For the assessor");
+  L.push("");
+  L.push("1. **Check authenticity against the originals, not this pack.** The original documents are supplied separately. Confirm issuing authority, currency, licence numbers against the relevant register, and referees by contacting them directly. None of that can be done from the reduced copies, and none of it was attempted here.");
+  L.push("2. **Do not put the original documents into an AI service.** The reduced copies exist so that AI-assisted mapping can be done without disclosing the candidate\u2019s personal information to a third party. Using the originals for that purpose would defeat it, and would disclose personal information the candidate did not consent to sharing.");
+  L.push("3. **Run the credit transfer check.** Some target units may be discharged by exact code match or superseded equivalence against the units listed above. These are credit transfer, mandatory on production of the testamur, and require no evidence and no assessor judgement. Nothing in this pack has attempted that check.");
+  L.push("4. **Deconstruct the target unit** into separately assessable requirements, including assessment conditions, before mapping anything.");
+  L.push("5. **Map the claims above** against those requirements. The candidate\u2019s claims are recorded in their own words, with weaknesses stated. Sufficiency is for you to determine.");
+  L.push("6. **Treat every `[I]` as unverified** and every `[Q]` as open.");
+  L.push("7. **Validate adversarially** before signing.");
+  L.push("");
+  L.push("The Assessor Toolbox contains prompts B0 to B5 for exactly this sequence.");
+  L.push("");
+  L.push("**Nothing in this pack constitutes a determination of competency.** No part of it should be recorded as an assessment decision without independent verification against source evidence.");
+  return L.join("\n");
+}
+
+function renderPack(m){
+  m.innerHTML = "<h2>Handover pack</h2><p class='lede'>Everything you have saved, wrapped into one document for the assessor \u2014 with the provenance tags explained, a declaration of how AI was used, and the sequence the assessor should follow.</p>";
+
+  var done = PROMPTS.filter(function(p){ return outputs[p.id] && outputs[p.id].trim(); });
+  var missing = PROMPTS.filter(function(p){ return !(outputs[p.id] && outputs[p.id].trim()); });
+
+  var st = document.createElement("div");
+  st.className = missing.length ? "gate" : "note";
+  st.innerHTML = missing.length
+    ? "<b>" + missing.length + " of " + PROMPTS.length + " prompts not yet saved: " +
+      esc(missing.map(function(p){ return p.id; }).join(", ")) +
+      ".</b> You can still build the pack \u2014 missing sections are marked <i>not completed</i> \u2014 but an assessor reading a pack with gaps in it has less to work with, and A5 in particular is where you find out what you still need to go and collect."
+    : "<b>All " + PROMPTS.length + " prompts saved.</b> Read the pack through once before you send it.";
+  m.appendChild(st);
+
+  var g = document.createElement("div"); g.className = "pgrid";
+  [["ref","Candidate reference (optional \u2014 your RTO may issue one)","leave blank if you don\u2019t have one"],
+   ["model","Which AI did you use?","e.g. ChatGPT, Claude, Copilot"],
+   ["date","Date prepared","YYYY-MM-DD"]].forEach(function(f){
+    var d = document.createElement("div");
+    d.innerHTML = '<label class="fl">'+esc(f[1])+'</label>';
+    var i = document.createElement("input");
+    i.type="text"; i.value = meta[f[0]]||""; i.placeholder = f[2];
+    i.oninput = function(){ meta[f[0]] = i.value; };
+    d.appendChild(i); g.appendChild(d);
+  });
+  m.appendChild(g);
+
+  var h3 = document.createElement("h3");
+  h3.style.cssText = "font-size:13px;font-weight:700;margin:26px 0 4px";
+  h3.textContent = "Document register";
+  m.appendChild(h3);
+  var rp = document.createElement("p"); rp.className = "lede";
+  rp.innerHTML = "Your assessor gets <b>two versions of everything</b>: the reduced copies the AI worked from, and your originals for checking they're genuine. List them side by side so the assessor can match one to the other.";
+  m.appendChild(rp);
+
+  var tbl = document.createElement("div");
+  register.forEach(function(row, i){
+    var d = document.createElement("div");
+    d.className = "regrow";
+    d.innerHTML = '<div class="regcols"></div>';
+    var cols = d.querySelector(".regcols");
+    [["orig","Original document","Certificate III testamur (PDF)"],
+     ["reduced","Reduced file sent to AI","reduced-testamur.txt"],
+     ["shows","What it shows","qualification completed 2009"]].forEach(function(f){
+      var w = document.createElement("div");
+      w.innerHTML = '<label class="fl" style="margin:0 0 3px">'+f[1]+'</label>';
+      var inp = document.createElement("input");
+      inp.type = "text"; inp.value = row[f[0]] || ""; inp.placeholder = f[2];
+      inp.oninput = function(){ row[f[0]] = inp.value; };
+      w.appendChild(inp); cols.appendChild(w);
+    });
+    var x = document.createElement("button");
+    x.className = "act"; x.textContent = "Remove"; x.style.marginTop = "8px";
+    x.onclick = function(){ register.splice(i,1); render(); };
+    d.appendChild(x);
+    tbl.appendChild(d);
+  });
+  m.appendChild(tbl);
+
+  var addr = document.createElement("div"); addr.className = "row";
+  var add = document.createElement("button");
+  add.className = "act"; add.textContent = "+ Add a document";
+  add.onclick = function(){ register.push({orig:"",reduced:"",shows:""}); render(); };
+  addr.appendChild(add);
+  m.appendChild(addr);
+
+  var r = document.createElement("div"); r.className = "row";
+  var dl = document.createElement("button");
+  dl.className = "act primary"; dl.textContent = "Download pack (.md)";
+  dl.onclick = function(){
+    var blob = new Blob([buildPack()], {type:"text/markdown;charset=utf-8"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "rpl-handover-pack-" + meta.date + ".md";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  };
+  r.appendChild(dl);
+  r.appendChild(copyBtn(buildPack, "Copy pack"));
+  m.appendChild(r);
+
+  var warn = document.createElement("div"); warn.className = "gate";
+  warn.innerHTML = "<b>This pack still has the tokens in it.</b> Re-identify it in Isolation, on your own machine, using the Restore tab and your <b>isolation-key.json</b> \u2014 then send the restored version to your assessor. Do not upload the key anywhere to do this.";
+  m.appendChild(warn);
+
+  var pre = document.createElement("pre");
+  pre.textContent = buildPack();
+  m.appendChild(pre);
+}
+
+function render(){
+  renderRail();
+  var m = $("main");
+  if(cur === "details") renderDetails(m);
+  else if(cur === "rules") renderRules(m);
+  else if(cur === "pack") renderPack(m);
+  else {
+    var p = PROMPTS.filter(function(x){ return x.id === cur; })[0];
+    if(p) renderPrompt(m, p); else renderDetails(m);
+  }
+}
+
+render();
+})();
+</script>
+</body>
+</html>
