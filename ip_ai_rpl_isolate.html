@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Isolation — personal information isolation for RPL</title>
+<style>
+:root{
+  --sky:#F2F7FA;
+  --sky-2:#E7F0F5;
+  --paper:#FFFFFF;
+  --ink:#132430;
+  --ink-2:#2C4454;
+  --muted:#607C8D;
+  --rule:#D5E3EB;
+  --rule-2:#BFD4DF;
+  --live:#A65214;
+  --live-bg:#FDF0E4;
+  --tagged:#0A6A60;
+  --tagged-bg:#E4F4F1;
+  --blade:#CBDFE9;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--sky);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+
+
+/* ---------- header mark ---------- */
+.brand{display:flex;align-items:center;gap:18px}
+.mark{width:74px;height:96px;flex:none;display:block}
+.mark .tower{fill:var(--rule-2)}
+.mark .blade{fill:var(--tagged);opacity:.9}
+.mark .hub{fill:var(--ink)}
+.rotor{transform-box:view-box;transform-origin:50px 34px;animation:spin 8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.rotor{animation:none}}
+@media(max-width:600px){.mark{width:54px;height:70px}}
+
+/* ---------- masthead ---------- */
+.masthead{
+  border-bottom:1px solid var(--rule);
+  padding:24px 28px 20px;
+  display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between;
+  background:rgba(255,255,255,.72);backdrop-filter:blur(6px);
+}
+h1{
+  margin:0;font-size:clamp(27px,4vw,40px);font-weight:750;
+  letter-spacing:-0.035em;text-transform:uppercase;line-height:0.95;color:var(--ink);
+}
+h1 span{color:var(--tagged)}
+.tagline{margin:8px 0 0;color:var(--ink-2);font-size:13.5px;max-width:54ch}
+.airgap{
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  border:1px solid var(--rule-2);background:var(--paper);color:var(--tagged);
+  padding:7px 12px;border-radius:2px;white-space:nowrap;display:flex;align-items:center;gap:9px;
+}
+.airgap b{font-weight:650}
+.pip{width:7px;height:7px;border-radius:50%;background:var(--tagged);flex:none}
+
+/* ---------- schedule ---------- */
+.schedule{display:flex;border-bottom:1px solid var(--rule);background:rgba(255,255,255,.86);overflow-x:auto}
+.step{flex:1;min-width:152px;padding:13px 20px;border-right:1px solid var(--rule);display:flex;gap:12px;align-items:center}
+.step:last-child{border-right:0}
+.step .n{
+  font-family:var(--mono);font-size:11px;width:22px;height:22px;flex:none;
+  border:1px solid var(--rule-2);color:var(--muted);background:var(--paper);
+  display:grid;place-items:center;border-radius:50%;
+}
+.step .t{font-size:12.5px;color:var(--muted)}
+.step.done .n{border-color:var(--tagged);background:var(--tagged);color:#fff}
+.step.done .t{color:var(--ink)}
+.step.active .n{border-color:var(--live);color:var(--live);background:var(--live-bg)}
+.step.active .t{color:var(--ink);font-weight:650}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;border-bottom:1px solid var(--rule);padding:0 28px;background:rgba(255,255,255,.86)}
+.tab{
+  appearance:none;background:none;border:0;border-bottom:2px solid transparent;
+  color:var(--muted);font-family:var(--sans);font-size:12px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;padding:14px 2px;margin-right:28px;cursor:pointer;
+}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--tagged)}
+.tab:focus-visible{outline:2px solid var(--live);outline-offset:3px}
+
+/* ---------- workspace ---------- */
+.work{display:grid;grid-template-columns:1fr 384px;min-height:60vh}
+@media(max-width:900px){.work{grid-template-columns:1fr}}
+.doc{border-right:1px solid var(--rule);display:flex;flex-direction:column;min-width:0;background:rgba(255,255,255,.93)}
+.side{background:rgba(247,251,253,.95);display:flex;flex-direction:column;min-width:0}
+
+.barhead{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:11px 20px;border-bottom:1px solid var(--rule);background:var(--sky-2);
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);flex-wrap:wrap;
+}
+.filetabs{display:flex;gap:6px;flex-wrap:wrap}
+.filetab{
+  appearance:none;background:var(--paper);border:1px solid var(--rule-2);color:var(--ink-2);
+  font-family:var(--mono);font-size:10.5px;padding:4px 9px;border-radius:2px;cursor:pointer;
+}
+.filetab[aria-pressed="true"]{border-color:var(--tagged);color:var(--tagged);box-shadow:inset 0 -2px 0 var(--tagged)}
+.filetab:focus-visible{outline:2px solid var(--live);outline-offset:2px}
+
+.viewer{
+  flex:1;padding:24px;font-family:var(--mono);font-size:13px;line-height:1.85;
+  white-space:pre-wrap;word-break:break-word;overflow:auto;max-height:56vh;color:var(--ink);
+}
+mark{
+  background:none;padding:1px 3px;border-radius:2px;font:inherit;
+  transition:background-color .28s ease,color .28s ease;border-bottom:1px solid transparent;
+}
+mark.live{color:var(--live);background:var(--live-bg);border-bottom-color:#E0A46E}
+mark.safe{color:var(--tagged);background:var(--tagged-bg);border-bottom-color:#8FC9C1}
+@media(prefers-reduced-motion:reduce){mark{transition:none}}
+
+.empty{padding:52px 28px;max-width:62ch}
+.empty h2{font-size:19px;font-weight:750;letter-spacing:-0.02em;margin:0 0 8px;text-transform:uppercase}
+.empty p{color:var(--ink-2);font-size:14px;margin:0 0 20px}
+.drop{border:1px dashed var(--rule-2);border-radius:4px;padding:30px 24px;text-align:center;background:var(--paper);transition:border-color .2s,background-color .2s}
+.drop.over{border-color:var(--live);background:var(--live-bg)}
+.drop p{margin:12px 0 0;font-size:12.5px;color:var(--muted)}
+
+/* ---------- side panel ---------- */
+.sect{border-bottom:1px solid var(--rule);padding:16px 20px}
+.sect h3{margin:0 0 4px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);font-weight:650}
+.sect .hint{margin:0 0 13px;font-size:12px;color:var(--muted);line-height:1.55}
+.sect .hint b{color:var(--ink)}
+.sidescroll{overflow:auto;flex:1;max-height:56vh}
+
+.tag{
+  display:flex;align-items:flex-start;gap:11px;width:100%;text-align:left;
+  background:none;border:0;border-bottom:1px solid var(--rule);padding:9px 4px;cursor:pointer;color:inherit;font:inherit;
+}
+.tag:last-child{border-bottom:0}
+.tag:hover{background:var(--paper)}
+.tag:focus-visible{outline:2px solid var(--live);outline-offset:-2px}
+.sw{width:30px;height:17px;flex:none;margin-top:3px;border-radius:9px;position:relative;border:1px solid #DDB894;background:var(--live-bg);transition:.2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:var(--live);transition:.2s}
+.tag[aria-pressed="true"] .sw{border-color:#8FC9C1;background:var(--tagged-bg)}
+.tag[aria-pressed="true"] .sw::after{left:15px;background:var(--tagged)}
+@media(prefers-reduced-motion:reduce){.sw,.sw::after{transition:none}}
+.tagbody{min-width:0;flex:1}
+.tagval{font-family:var(--mono);font-size:12px;word-break:break-all;line-height:1.4}
+.tagmeta{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.tag[aria-pressed="true"] .tagval{color:var(--tagged)}
+.tag[aria-pressed="false"] .tagval{color:var(--live)}
+
+.grouphead{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);padding:14px 4px 5px;border-bottom:1px solid var(--rule);
+}
+.grouphead .cnt{color:var(--live)}
+
+textarea,input[type=text]{
+  width:100%;background:var(--paper);border:1px solid var(--rule-2);color:var(--ink);
+  font-family:var(--mono);font-size:12px;padding:9px 10px;border-radius:3px;line-height:1.6;
+}
+textarea:focus,input:focus{outline:2px solid var(--live);outline-offset:1px;border-color:var(--live)}
+textarea{resize:vertical}
+label.fl{display:block;font-size:11.5px;color:var(--muted);margin:11px 0 5px}
+
+button.act{
+  appearance:none;font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;padding:11px 16px;border-radius:3px;cursor:pointer;
+  border:1px solid var(--rule-2);background:var(--paper);color:var(--ink);
+}
+button.act:hover{border-color:var(--muted)}
+button.act:focus-visible{outline:2px solid var(--live);outline-offset:2px}
+button.act.primary{background:var(--tagged);border-color:var(--tagged);color:#fff}
+button.act.primary:hover{filter:brightness(1.1)}
+button.act:disabled{opacity:.42;cursor:not-allowed}
+button.act.ghost{background:none;border-color:transparent;text-decoration:underline}
+
+.permit{
+  border-top:1px solid var(--rule);padding:18px 28px;display:flex;gap:18px;
+  align-items:center;justify-content:space-between;flex-wrap:wrap;background:rgba(255,255,255,.93);
+}
+.permitstat{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase}
+.permitstat.blocked{color:var(--live)}
+.permitstat.clear{color:var(--tagged)}
+.permitstat small{display:block;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11.5px;margin-top:4px;max-width:66ch}
+.permitbtns{display:flex;gap:10px;flex-wrap:wrap}
+
+.handoff{border-top:1px solid var(--rule);background:var(--tagged-bg)}
+.hoinner{padding:24px 28px 26px;max-width:82ch}
+.hostep{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--tagged);font-weight:700;margin-bottom:7px}
+.handoff h2{font-size:19px;font-weight:750;letter-spacing:-.02em;margin:0 0 10px;text-transform:uppercase;color:var(--ink)}
+.handoff p{margin:0 0 12px;font-size:13.5px;line-height:1.6;color:var(--ink-2)}
+.handoff p b,.handoff li b{color:var(--ink)}
+.handoff ul{margin:0 0 14px;padding-left:20px}
+.handoff li{font-size:13.5px;line-height:1.62;color:var(--ink-2);margin-bottom:9px}
+.hoalt{border-top:1px solid #B9DDD6;padding-top:13px;font-size:12.5px !important}
+.paths{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+@media(max-width:760px){.paths{grid-template-columns:1fr}}
+.path{background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:14px 16px}
+.path.ai{border-top:3px solid var(--tagged)}
+.path.orig{border-top:3px solid var(--live)}
+.ptag{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;font-weight:700}
+.path.ai .ptag{color:var(--tagged)}
+.path.orig .ptag{color:var(--live)}
+.ph{font-size:14.5px;font-weight:700;margin:4px 0 8px;color:var(--ink)}
+.path p{font-size:12.5px !important;line-height:1.55;margin:0 0 9px}
+.pwhy{color:var(--muted) !important;border-top:1px solid var(--rule);padding-top:9px;margin-bottom:0 !important}
+
+.horead{border-left:3px solid var(--live);background:var(--live-bg);padding:11px 14px;font-size:12.5px;line-height:1.55;color:var(--ink)}
+
+.warn{border-left:3px solid var(--live);padding:11px 14px;margin:14px 0 0;background:var(--live-bg);font-size:12.5px;color:var(--ink);line-height:1.55}
+.warn b{color:var(--live)}
+
+.transcribe{display:grid;grid-template-columns:1fr 1fr;flex:1;min-height:0}
+@media(max-width:900px){.transcribe{grid-template-columns:1fr}}
+.scanpane{border-right:1px solid var(--rule);background:var(--sky-2);overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px;max-height:56vh}
+.scanpane img{width:100%;height:auto;border:1px solid var(--rule-2);border-radius:3px;background:#fff;display:block}
+.scanpane img.zoom{width:auto;max-width:none;cursor:zoom-out}
+.scanpane img:not(.zoom){cursor:zoom-in}
+.noscan{color:var(--muted);font-size:12.5px;line-height:1.6;padding:20px;border:1px dashed var(--rule-2);border-radius:3px;background:var(--paper)}
+.typepane{display:flex;flex-direction:column;padding:16px 18px;gap:10px;min-width:0;max-height:56vh;background:var(--paper)}
+.typepane textarea{flex:1;min-height:240px;line-height:1.8}
+.typehint{font-size:12px;color:var(--muted);line-height:1.55;margin:0}
+.orgrow{border:1px solid var(--rule);border-left:3px solid var(--live);background:var(--paper);border-radius:3px;padding:9px 10px;margin-bottom:8px}
+.orgrow.ok{border-left-color:var(--tagged)}
+.orgrow.off{border-left-color:var(--rule-2);opacity:.6}
+.orghead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+.orgname{font-family:var(--mono);font-size:11.5px;color:var(--ink);word-break:break-word}
+.orgrow.ok .orgname{color:var(--tagged)}
+.orgx{appearance:none;background:none;border:0;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;padding:2px;white-space:nowrap;text-decoration:underline}
+.orgx:hover{color:var(--live)}
+.orgx:focus-visible{outline:2px solid var(--live);outline-offset:2px}
+.orgrow input{font-size:11.5px;padding:6px 8px}
+.dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--live);margin-right:6px;vertical-align:middle}
+
+.pane{display:none}
+.pane.on{display:block}
+.restore{padding:28px;max-width:760px;background:rgba(255,255,255,.93)}
+.restore h2{font-size:19px;font-weight:750;text-transform:uppercase;letter-spacing:-0.02em;margin:0 0 6px}
+.restore p.hint{color:var(--ink-2);font-size:13.5px;margin:0 0 20px;max-width:62ch}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;align-items:center}
+.filename{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 100 130" aria-hidden="true">
+      <path class="tower" d="M46.6 34 h6.8 l3.6 86 h-14 Z"/>
+      <path class="tower" d="M36 120 h28 l3 7 h-34 Z"/>
+      <g class="rotor">
+        <path class="blade" d="M50 34 C 56 26 60 12 58.5 2 C 53 9 49.5 22 47.6 32 Z"/>
+        <path class="blade" d="M50 34 C 59 36 73 43 79 51 C 70 51 57 44 48.6 37.4 Z"/>
+        <path class="blade" d="M50 34 C 41 36 27 43 21 51 C 30 51 43 44 51.4 37.4 Z"/>
+      </g>
+      <circle class="hub" cx="50" cy="34" r="4.4"/>
+    </svg>
+  <div>
+    <h1>Iso<span>lation</span></h1>
+    <p class="tagline">Before you put your documents into any AI, look at them properly. This finds the personal details in them, one at a time, so you decide what to send and what to hold back. Nothing is uploaded — this page works entirely on your machine.</p>
+  </div>
+  </div>
+  <div class="airgap"><span class="pip"></span><b>Offline</b> · no network calls</div>
+</header>
+
+<div class="schedule" id="sched">
+  <div class="step" data-step="1"><span class="n">1</span><span class="t">Load documents</span></div>
+  <div class="step" data-step="2"><span class="n">2</span><span class="t">Identify sources</span></div>
+  <div class="step" data-step="3"><span class="n">3</span><span class="t">Tag each one</span></div>
+  <div class="step" data-step="4"><span class="n">4</span><span class="t">Release reduced copy</span></div>
+  <div class="step" data-step="5"><span class="n">5</span><span class="t">Hand over to Toolbox</span></div>
+</div>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" id="t-iso" aria-selected="true" aria-controls="p-iso">Isolate</button>
+  <button class="tab" role="tab" id="t-res" aria-selected="false" aria-controls="p-res">Restore</button>
+</div>
+
+<!-- ============ ISOLATE ============ -->
+<section class="pane on" id="p-iso" role="tabpanel" aria-labelledby="t-iso">
+<div class="work">
+
+  <div class="doc">
+    <div class="barhead">
+      <div class="filetabs" id="filetabs"><span>No documents loaded</span></div>
+      <button class="filetab" id="addmore" hidden>+ Add</button>
+    </div>
+
+    <div id="emptystate" class="empty">
+      <h2>Load the documents</h2>
+      <p>Load everything at once — résumé, statements of attainment, tickets, references, emails. Word, OpenDocument, PDF and plain text are read straight away. Photos and scans have no text in them, so those come up for transcription, one at a time.</p>
+      <div class="drop" id="drop">
+        <button class="act primary" id="pick">Choose files</button>
+        <p style="color:var(--muted)">or drop them here, or <button class="act ghost" id="pastebtn" style="padding:2px 6px;font-size:11px">paste text</button></p>
+      </div>
+      <div class="warn"><b>These files never leave this machine.</b> There is no server behind this page. You can disconnect from the network and it will still work — which is a reasonable thing to do before you start.</div>
+      <div class="warn" style="border-left-color:var(--rule-2);background:var(--sky-2)"><b>What this is, and what it isn't.</b> This is a check before you upload, not a guarantee of anonymity. It finds common patterns — emails, phone numbers, licence numbers, addresses — and asks you about names and employers. It cannot make a document anonymous. Your trade, your ticket combination, your employment dates and the kind of sites you've worked on may still identify you to anyone who knows the industry. <b>Treat the result as personal information still.</b></div>
+    </div>
+
+    <div id="warnbox"></div>
+    <div class="viewer" id="viewer" hidden></div>
+    <div class="transcribe" id="transcribe" hidden>
+      <div class="scanpane" id="scanpane"></div>
+      <div class="typepane">
+        <p class="typehint" id="typehint"></p>
+        <textarea id="typebox" placeholder="Type what the document says"></textarea>
+        <p class="typehint">Type it as it reads. Don't tidy the wording or expand abbreviations — an assessor needs the document, not an improved version of it. What you type is scanned for personal information the moment you stop typing, and shows in the panel on the right.</p>
+      </div>
+    </div>
+  </div>
+
+  <aside class="side">
+    <div class="sect">
+      <h3>Sources found</h3>
+      <p class="hint">Each one is <b style="color:var(--live)">live</b> until you tag it. Tagging replaces it in the copy you take away. This finds common patterns only — it will miss things, so read the result yourself before you send it anywhere.</p>
+    </div>
+    <div class="sidescroll" id="taglist">
+      <div class="sect"><p class="hint" style="margin:0">Nothing scanned yet.</p></div>
+    </div>
+
+    <div class="sect">
+      <h3>People</h3>
+      <p class="hint">Names aren't detected automatically — pattern matching gets them wrong in both directions, and a missed name is the one failure that matters. Type every person who appears: the candidate, referees, supervisors, assessors.</p>
+      <textarea id="names" rows="3" placeholder="One name per line"></textarea>
+    </div>
+
+    <div class="sect">
+      <h3>Organisations</h3>
+      <p class="hint">Don't blank these — describe them. An assessor judging your evidence needs to know the scale and setting you worked in. <b>Tomago Aluminium</b> → <b>a large primary aluminium smelter (NSW)</b> keeps what matters and drops what identifies. Dismiss anything that isn't an organisation.</p>
+      <div id="orglist"></div>
+      <label class="fl" for="employers">Missed one? Add it here, one per line</label>
+      <textarea id="employers" rows="2" placeholder="Real name → description"></textarea>
+    </div>
+
+    <div class="sect">
+      <h3>Dates of birth</h3>
+      <p class="hint">Reduced to the year, so an assessor can still check currency. This is not reversible — identity is confirmed against your original documents, not the restored copy.</p>
+    </div>
+  </aside>
+</div>
+
+<div class="handoff" id="handoff" hidden>
+  <div class="hoinner">
+    <div class="hostep">Next</div>
+    <h2>From here, your documents travel two ways</h2>
+    <p>Your browser has downloaded one <b>reduced-&hellip;.txt</b> for each document, plus <b>isolation-key.json</b>. <b>Keep your originals.</b> They are still needed — just not for the same job.</p>
+
+    <div class="paths">
+      <div class="path ai">
+        <div class="ptag">Reduced copies</div>
+        <div class="ph">Everything involving an AI</div>
+        <p>Open the <b>Candidate Toolbox</b>, fill in your details once, and work through prompts A0 to A5, pasting these <b>reduced</b> files in where a prompt asks for your documents.</p>
+        <p class="pwhy">Why: whatever you paste into an AI goes to that company's servers, outside your control and your RTO's. The reduced copies keep your name, contact details and licence numbers out of it.</p>
+      </div>
+      <div class="path orig">
+        <div class="ptag">Originals</div>
+        <div class="ph">Your assessor, and no one else</div>
+        <p>Send your assessor the <b>original</b> testamur, licence, tickets and references — as issued, unaltered — alongside your finished handover pack.</p>
+        <p class="pwhy">Why: your assessor has to confirm your documents are genuine and yours. A reduced copy can't do that. They can't ring <b>[PERSON_1]</b> or check <b>[USI_1]</b> against the register.</p>
+      </div>
+    </div>
+
+    <p class="hoalt"><b>isolation-key.json stays on this machine.</b> Never upload it, never paste it into a chat, never email it. It is the only thing that turns the tags back into real names — and you'll need it at the end, to restore your handover pack before you send it.</p>
+
+    <div class="horead"><b>Read a reduced file before you go.</b> This tool checks for patterns; it does not understand your documents. If a name, a site, a licence number or anything else that points to you is still in there, come back and tag it.<br><br><b>They are still about you.</b> Removing a name does not make a document anonymous — your trade, tickets, dates and work history remain, and together they may well identify you. Send them only to a service you would be willing to send your CV to.</div>
+  </div>
+</div>
+
+<div class="permit">
+  <div class="permitstat blocked" id="permitstat">
+    No documents loaded
+    <small id="permitsub">Load a document to begin.</small>
+  </div>
+  <div class="permitbtns">
+    <button class="act" id="tagall" disabled>Tag all</button>
+    <button class="act primary" id="release" disabled>Release reduced copy</button>
+  </div>
+</div>
+</section>
+
+<!-- ============ RESTORE ============ -->
+<section class="pane" id="p-res" role="tabpanel" aria-labelledby="t-res" hidden>
+  <div class="restore">
+    <h2>Restore for the assessor</h2>
+    <p class="hint">When the report comes back, restore the real names and identifiers before you submit it. Do this on the same machine — the key file is the only thing that can reverse the tagging, and it was never uploaded.</p>
+
+    <label class="fl" for="keyfile">Key file (isolation-key.json)</label>
+    <div class="row">
+      <button class="act" id="pickkey">Choose key file</button>
+      <span class="filename" id="keyname">None loaded</span>
+    </div>
+
+    <label class="fl" for="restext">Report to restore</label>
+    <textarea id="restext" rows="12" placeholder="Paste the completed report here, or choose a file below"></textarea>
+    <div class="row">
+      <button class="act" id="pickreport">Choose report file</button>
+      <button class="act primary" id="dorestore" disabled>Restore and download</button>
+    </div>
+    <div id="resout"></div>
+  </div>
+</section>
+
+<input type="file" id="fileinput" multiple accept=".docx,.dotx,.docm,.odt,.pdf,.txt,.md,.rtf,.csv,.tsv,.json,.eml,.html,.htm,.log,.jpg,.jpeg,.png,.gif,.webp,.bmp,.avif,.heic,.heif,.tif,.tiff" class="sr">
+<input type="file" id="keyinput" accept=".json" class="sr">
+<input type="file" id="reportinput" accept=".txt,.md" class="sr">
+
+<script>
+(function(){
+"use strict";
+
+/* ------------------------------------------------------------------
+   Detection. Deliberately over-inclusive: the tool proposes, the
+   person disposes. Every match is reviewable before release.
+------------------------------------------------------------------ */
+var PATTERNS = [
+  {label:"EMAIL",    ci:true,  re:/[\w.+-]+@[\w-]+\.[\w.-]+/g,
+   note:"email address"},
+  {label:"PHONE",    ci:true,  re:/(?:\+?61|0)[\s-]?[2-478](?:[\s-]?\d){8}/g,
+   note:"phone number"},
+  {label:"USI",      ci:false, re:/\b(?=[A-Z0-9]{10}\b)(?=(?:[A-Z]*\d){2})[A-Z0-9]{10}\b/g,
+   note:"unique student identifier"},
+  {label:"ABN",      ci:true,  re:/\b\d{2}\s?\d{3}\s?\d{3}\s?\d{3}\b/g,
+   note:"ABN"},
+  // Only dates explicitly flagged as a birth date. Bare dates are left
+  // alone on purpose: ticket expiry and employment dates are currency
+  // evidence, and redacting them damages the assessment.
+  {label:"DOB",      ci:true,  re:/(?:d\.?o\.?b\.?|date of birth|born)\b[^\n\d]{0,12}(\d{1,2}[\/-]\d{1,2}[\/-](?:19|20)\d{2})/gi,
+   note:"date of birth — year kept"},
+  // Must stay on one line, and must contain a digit — otherwise a
+  // heading like "LICENCE" followed by a name matches the name.
+  {label:"LICENCE",  ci:true,  re:/\b(?:licence|license|lic)\.?[ \t]*(?:no\.?|number|#)?[ \t]*[:\-][ \t]*((?=[A-Z0-9\-]*\d)[A-Z0-9][A-Z0-9\-]{3,14})\b/gi,
+   note:"licence number"},
+  {label:"ADDRESS",  ci:true,  re:/\b\d+[A-Za-z]?\s+[A-Z][a-z]+\s+(?:St|Street|Rd|Road|Ave|Avenue|Dr|Drive|Cres|Crescent|Pde|Parade|Ct|Court|Pl|Place|Way|Lane|Ln|Tce|Terrace)\b/g,
+   note:"street address"},
+  {label:"LOCALITY", ci:false, re:/\b(?:NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\s+\d{4}\b/g,
+   note:"state and postcode"},
+  // A profile URL usually contains the person's name outright.
+  {label:"LINK",     ci:true,  re:/(?:https?:\/\/)?(?:www\.)?(?:linkedin\.com\/(?:in|pub)\/[\w%-]+|github\.com\/[\w-]+|(?:twitter|x)\.com\/[\w-]+|facebook\.com\/[\w.-]+|instagram\.com\/[\w.-]+)\/?/g,
+   note:"profile link — often contains the name"},
+  {label:"WEBSITE",  ci:true,  re:/(?:https?:\/\/)[\w.-]+\.[a-z]{2,}(?:\/[\w#?&=%.,\/-]*)?/g,
+   note:"web address"},
+  {label:"CITY",     ci:false, re:/\b[A-Z][a-z]+(?:\s[A-Z][a-z]+)?,\s*(?:NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\b/g,
+   note:"town and state"}
+];
+
+/* Organisations can't be detected the way a pattern is — there is no
+   reliable offline way to know that "Pixel College" is an employer and
+   "Adult Learning Principles" is not. What we can do is find the shapes
+   organisations usually take and put them in front of a person, who
+   settles it in a couple of seconds. False positives are expected and
+   are dismissed with one click. */
+var ORG_TAIL = "College|University|Universities|Institute|Academy|TAFE|Polytechnic|School|Solutions|Services|Consulting|Consultants|Technologies|Systems|Industries|Engineering|Electrical|Electrics|Energy|Renewables|Mining|Aluminium|Steel|Constructions?|Contractors?|Contracting|Maintenance|Group|Holdings|Partners|Associates|Enterprises|Corporation|Council|Authority|Commission|Department|Ministry|Hospital|Health|Centre|Center|Foundation|Trust|Society|Association|Union|Pty\\.?\\s*Ltd\\.?|Ltd\\.?|Limited|Inc\\.?|LLC|GmbH|Co\\.";
+
+var ORG_RE = new RegExp(
+  "\\b((?:[A-Z][\\w&'\u2019.-]*[ \\t]+){1,4}(?:" + ORG_TAIL + "))\\b", "g");
+
+/* "University of Melbourne" puts the keyword first, so the pattern above
+   walks straight past it. */
+var ORG_OF_RE = new RegExp(
+  "\\b((?:University|Universities|Institute|College|School|Academy|Department|Ministry|Council|Board|Office|Bureau|Faculty)[ \\t]+of[ \\t]+[A-Z][\\w-]*(?:[ \\t]+[A-Z][\\w-]*)?)\\b", "g");
+
+/* Also catches the "Employer | City, STATE" line that CVs are full of. */
+var ORG_LINE_RE = new RegExp("^([A-Z][^|\\n]{2,60}?)\\s*\\|\\s*[A-Z]", "gm");
+
+/* Training package unit and qualification codes share the shape of a
+   USI. They are never identifying, and the whole analysis depends on
+   them surviving intact. */
+var UNIT_CODE = /^[A-Z]{3,6}\d{3,5}[A-Z]?$/;
+
+/* ------------------------------------------------------------------ */
+var files = [];          // {name, text}
+var active = 0;
+var entities = new Map();// value -> {label, note, on, token}
+var counters = {};
+var names = [];
+var employers = [];      // {real, desc}
+var warnings = [];
+var orgs = new Map();   // name -> {desc, ignored}
+var released = false;
+
+var $ = function(id){ return document.getElementById(id); };
+
+function esc(s){
+  return s.replace(/[&<>"]/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];
+  });
+}
+
+function tokenFor(label,value){
+  var e = entities.get(value);
+  if(e && e.token) return e.token;
+  counters[label] = (counters[label]||0)+1;
+  return "["+label+"_"+counters[label]+"]";
+}
+
+/* ---------- scanning ---------- */
+function scanAll(){
+  var seen = new Map();
+
+  files.forEach(function(f){
+    PATTERNS.forEach(function(p){
+      var re = new RegExp(p.re.source, p.re.flags.indexOf("g")>=0 ? p.re.flags : p.re.flags+"g");
+      var m;
+      while((m = re.exec(f.text)) !== null){
+        if(m[0] === ""){ re.lastIndex++; continue; }
+        var val = (m[1] !== undefined ? m[1] : m[0]).trim();
+        if(!val || UNIT_CODE.test(val)) continue;
+        if(!seen.has(val)) seen.set(val,{label:p.label,note:p.note});
+      }
+    });
+  });
+
+  // Organisations, from both the name-shape and the "Employer | City" line.
+  var foundOrgs = new Set();
+  files.forEach(function(f){
+    [ORG_RE, ORG_OF_RE, ORG_LINE_RE].forEach(function(r){
+      var rx = new RegExp(r.source, r.flags), om;
+      while((om = rx.exec(f.text)) !== null){
+        if(om[0] === ""){ rx.lastIndex++; continue; }
+        var name = om[1].trim().replace(/[\s,|-]+$/,"");
+        if(name.length > 2 && name.length < 70) foundOrgs.add(name);
+      }
+    });
+  });
+  var nextOrgs = new Map();
+  foundOrgs.forEach(function(name){
+    var prev = orgs.get(name);
+    nextOrgs.set(name, prev || {desc:"", ignored:false});
+  });
+  orgs.forEach(function(v,k){ if(v.manual) nextOrgs.set(k,v); });
+  orgs = nextOrgs;
+
+  // Preserve on/off state across rescans; default new finds to tagged.
+  var next = new Map();
+  seen.forEach(function(meta,val){
+    var prev = entities.get(val);
+    next.set(val,{
+      label: meta.label,
+      note:  meta.note,
+      on:    prev ? prev.on : true,
+      token: prev && prev.token ? prev.token : null
+    });
+  });
+  entities = next;
+
+  counters = {};
+  entities.forEach(function(e,val){
+    if(!e.token) e.token = tokenFor(e.label,val);
+    else{
+      var n = parseInt(e.token.split("_")[1],10);
+      if(n > (counters[e.label]||0)) counters[e.label] = n;
+    }
+  });
+}
+
+/* ---------- manual entries ---------- */
+function readManual(){
+  names = $("names").value.split("\n")
+    .map(function(s){return s.trim();}).filter(Boolean);
+
+  employers = $("employers").value.split("\n")
+    .map(function(s){return s.trim();}).filter(Boolean)
+    .map(function(line){
+      var parts = line.split(/\s*(?:→|->|\|)\s*/);
+      return {real:parts[0].trim(), desc:(parts[1]||"").trim()};
+    })
+    .filter(function(e){return e.real;});
+}
+
+function nameToken(i){ return "[PERSON_"+(i+1)+"]"; }
+
+/* ---------- redaction ---------- */
+function buildReplacements(){
+  var reps = [];
+
+  orgs.forEach(function(o,name){
+    if(o.ignored || !o.desc.trim()) return;
+    reps.push({find:name, to:o.desc.trim(), ci:false, kind:"org"});
+  });
+  employers.forEach(function(e){
+    if(e.real) reps.push({find:e.real, to:e.desc || "[a workplace]", ci:false, kind:"employer"});
+  });
+  names.forEach(function(n,i){
+    reps.push({find:n, to:nameToken(i), ci:true, kind:"person"});
+  });
+  entities.forEach(function(meta,val){
+    if(!meta.on) return;
+    var to = meta.token;
+    if(meta.label === "DOB"){
+      var y = val.match(/(?:19|20)\d{2}/);
+      to = y ? "[date in "+y[0]+"]" : meta.token;
+    }
+    reps.push({find:val, to:to, ci:meta.label!=="USI", kind:"pattern"});
+  });
+
+  // Longest first, so "Bloggs Electrical Pty Ltd" goes before "Bloggs".
+  reps.sort(function(a,b){ return b.find.length - a.find.length; });
+  return reps;
+}
+
+function escRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
+
+function redact(text, reps){
+  reps.forEach(function(r){
+    text = text.replace(new RegExp(escRe(r.find), r.ci?"gi":"g"), r.to);
+  });
+  return text;
+}
+
+/* Marks every occurrence, whether tagged or not, so the reviewer can
+   see what is still live in the document itself. */
+function highlight(text){
+  readManual();
+  var marks = [];
+
+  function collect(find, ci, on){
+    if(!find) return;
+    var re = new RegExp(escRe(find), ci?"gi":"g"), m;
+    while((m = re.exec(text)) !== null){
+      if(m[0]==="") { re.lastIndex++; continue; }
+      marks.push({s:m.index, e:m.index+m[0].length, on:on});
+    }
+  }
+
+  orgs.forEach(function(o,name){
+    if(o.ignored) return;
+    collect(name, false, !!o.desc.trim());
+  });
+  employers.forEach(function(e){ collect(e.real,false,true); });
+  names.forEach(function(n){ collect(n,true,true); });
+  entities.forEach(function(meta,val){ collect(val, meta.label!=="USI", meta.on); });
+
+  marks.sort(function(a,b){ return a.s-b.s || b.e-a.e; });
+
+  var out = "", pos = 0;
+  marks.forEach(function(mk){
+    if(mk.s < pos) return;               // drop overlaps
+    out += esc(text.slice(pos, mk.s));
+    out += '<mark class="'+(mk.on?"safe":"live")+'">'+esc(text.slice(mk.s,mk.e))+"</mark>";
+    pos = mk.e;
+  });
+  out += esc(text.slice(pos));
+  return out;
+}
+
+/* ---------- rendering ---------- */
+function needsTyping(f){
+  return (f.kind === "image" || f.kind === "scan") && !f.text.trim();
+}
+
+function renderFileTabs(){
+  var w = $("filetabs");
+  if(!files.length){ w.innerHTML = "<span>No documents loaded</span>"; return; }
+  w.innerHTML = "";
+  files.forEach(function(f,i){
+    var b = document.createElement("button");
+    b.className = "filetab";
+    b.innerHTML = (needsTyping(f) ? '<span class="dot"></span>' : "") + esc(f.name);
+    b.setAttribute("aria-pressed", i===active ? "true":"false");
+    b.onclick = function(){ active = i; render(); };
+    w.appendChild(b);
+  });
+  $("addmore").hidden = false;
+}
+
+function renderTags(){
+  var box = $("taglist");
+  if(!entities.size){
+    box.innerHTML = '<div class="sect"><p class="hint" style="margin:0">No patterns matched. Names and employers still need to be entered by hand below.</p></div>';
+    return;
+  }
+  var groups = {};
+  entities.forEach(function(meta,val){
+    (groups[meta.label] = groups[meta.label] || []).push({val:val, meta:meta});
+  });
+
+  box.innerHTML = "";
+  Object.keys(groups).sort().forEach(function(label){
+    var items = groups[label];
+    var liveN = items.filter(function(x){ return !x.meta.on; }).length;
+
+    var h = document.createElement("div");
+    h.className = "grouphead";
+    h.innerHTML = "<span>"+label+" · "+esc(items[0].meta.note)+"</span>"+
+      (liveN ? '<span class="cnt">'+liveN+" live</span>" : '<span style="color:var(--safe)">tagged</span>');
+    box.appendChild(h);
+
+    items.forEach(function(x){
+      var b = document.createElement("button");
+      b.className = "tag";
+      b.setAttribute("aria-pressed", x.meta.on ? "true":"false");
+      b.innerHTML = '<span class="sw"></span><span class="tagbody">'+
+        '<span class="tagval">'+esc(x.val)+"</span>"+
+        '<span class="tagmeta">'+(x.meta.on ? "→ "+esc(x.meta.token) : "released as written")+"</span></span>";
+      b.onclick = function(){ x.meta.on = !x.meta.on; render(); };
+      box.appendChild(b);
+    });
+  });
+}
+
+function renderOrgs(){
+  var box = $("orglist");
+  box.innerHTML = "";
+  if(!orgs.size){
+    box.innerHTML = '<p class="hint" style="margin:0 0 10px">None found yet. They appear here as documents are read.</p>';
+    return;
+  }
+  orgs.forEach(function(o, name){
+    var row = document.createElement("div");
+    row.className = "orgrow" + (o.ignored ? " off" : (o.desc.trim() ? " ok" : ""));
+
+    var head = document.createElement("div");
+    head.className = "orghead";
+    head.innerHTML = '<span class="orgname">' + esc(name) + "</span>";
+
+    var dismiss = document.createElement("button");
+    dismiss.className = "orgx";
+    dismiss.type = "button";
+    dismiss.textContent = o.ignored ? "restore" : "not an organisation";
+    dismiss.title = o.ignored ? "Put this back in the list" : "Leave this text exactly as written";
+    dismiss.onclick = function(){ o.ignored = !o.ignored; render(); };
+    head.appendChild(dismiss);
+    row.appendChild(head);
+
+    if(!o.ignored){
+      var inp = document.createElement("input");
+      inp.type = "text";
+      inp.value = o.desc;
+      inp.placeholder = "describe it — e.g. a metropolitan dual-sector university";
+      inp.oninput = function(){
+        o.desc = inp.value;
+        clearTimeout(orgTimer);
+        orgTimer = setTimeout(function(){
+          var keep = document.activeElement === inp;
+          render();
+          if(keep){
+            var again = box.querySelectorAll("input");
+            for(var i=0;i<again.length;i++){
+              if(again[i].value === o.desc){ again[i].focus(); again[i].setSelectionRange(again[i].value.length, again[i].value.length); break; }
+            }
+          }
+        }, 320);
+      };
+      row.appendChild(inp);
+    }
+    box.appendChild(row);
+  });
+}
+var orgTimer = null;
+
+function renderPermit(){
+  var stat = $("permitstat"), sub = $("permitsub");
+  $("handoff").hidden = !released;
+  if(released){
+    stat.className = "permitstat clear";
+    stat.childNodes[0].nodeValue = "Released";
+    sub.textContent = "The reduced copies and the key have downloaded. Read the next step below before you go anywhere else.";
+    $("release").disabled = false;
+    $("release").textContent = "Release again";
+    $("tagall").disabled = !entities.size;
+    return;
+  }
+  $("release").textContent = "Release reduced copy";
+  var liveN = 0;
+  entities.forEach(function(m){ if(!m.on) liveN++; });
+
+  $("release").disabled = !files.length;
+  $("tagall").disabled  = !entities.size;
+
+  if(!files.length){
+    stat.className = "permitstat blocked";
+    stat.childNodes[0].nodeValue = "No documents loaded";
+    sub.textContent = "Load a document to begin.";
+    return;
+  }
+  var untyped = files.filter(needsTyping).length;
+  if(untyped){
+    stat.className = "permitstat blocked";
+    stat.childNodes[0].nodeValue = untyped + (untyped===1?" document not transcribed":" documents not transcribed");
+    sub.textContent = "Scans and photos have no text to read. Work through the ones marked in the file bar — until you do, nothing in them can be found or tagged.";
+    return;
+  }
+
+  var undesc = 0;
+  orgs.forEach(function(o){ if(!o.ignored && !o.desc.trim()) undesc++; });
+  if(undesc){
+    stat.className = "permitstat blocked";
+    stat.childNodes[0].nodeValue = undesc + (undesc===1 ? " organisation not described" : " organisations not described");
+    sub.textContent = "Each one needs either a description or a dismissal. An employer name identifies a person as surely as their own name does.";
+    return;
+  }
+
+  readManual();
+  if(!names.length){
+    stat.className = "permitstat blocked";
+    stat.childNodes[0].nodeValue = "No people entered";
+    sub.textContent = "Names are never detected automatically. Add every person who appears in these documents before you release.";
+  } else if(liveN){
+    stat.className = "permitstat blocked";
+    stat.childNodes[0].nodeValue = liveN + (liveN===1?" source still live":" sources still live");
+    sub.textContent = "You can release with these left as written — sometimes that is right, for a false match. Check each one first.";
+  } else {
+    stat.className = "permitstat clear";
+    stat.childNodes[0].nodeValue = "All sources tagged";
+    sub.textContent = "Read the document through once before you release it. This checks for common patterns and nothing more — an unusual job title, a union branch, a rare licence class or a distinctive combination of facts can still identify you.";
+  }
+}
+
+function renderSteps(){
+  var n = 1;
+  if(files.length && !files.some(needsTyping)) n = 2;
+  if(entities.size || files.length) n = 3;
+  var liveN = 0; entities.forEach(function(m){ if(!m.on) liveN++; });
+  readManual();
+  if(files.length && names.length && !liveN) n = 4;
+  if(released) n = 5;
+
+  document.querySelectorAll(".step").forEach(function(el){
+    var s = +el.dataset.step;
+    el.classList.toggle("done", s < n);
+    el.classList.toggle("active", s === n);
+  });
+}
+
+function render(){
+  renderFileTabs();
+  renderTags();
+  renderOrgs();
+  var wb = $("warnbox");
+  wb.innerHTML = warnings.map(function(w){
+    return '<div class="warn" style="margin:14px 20px 0"><b>Check this file.</b> '+esc(w)+'</div>';
+  }).join("");
+
+  if(files.length){
+    var f = files[active];
+    $("emptystate").hidden = true;
+
+    if(f.kind === "image" || f.kind === "scan"){
+      $("viewer").hidden = true;
+      $("transcribe").hidden = false;
+
+      var sp = $("scanpane");
+      if(f.dataUrl){
+        if(sp.dataset.forFile !== String(active)){
+          sp.innerHTML = "";
+          var img = document.createElement("img");
+          img.src = f.dataUrl;
+          img.alt = "Scanned document, " + f.name;
+          img.onclick = function(){ img.classList.toggle("zoom"); };
+          sp.appendChild(img);
+          sp.dataset.forFile = String(active);
+        }
+      } else {
+        sp.innerHTML = '<div class="noscan">This page can\'t display ' +
+          esc(f.name) + '. Open it in its own application and type what it says here.</div>';
+        sp.dataset.forFile = String(active);
+      }
+
+      $("typehint").textContent = f.dataUrl
+        ? "Click the image to zoom. Type what it says in the box below."
+        : "Open the original alongside and type what it says below.";
+
+      var tb = $("typebox");
+      if(document.activeElement !== tb) tb.value = f.text;
+    } else {
+      $("transcribe").hidden = true;
+      $("viewer").hidden = false;
+      $("viewer").innerHTML = highlight(f.text);
+    }
+  } else {
+    $("emptystate").hidden = false;
+    $("viewer").hidden = true;
+    $("transcribe").hidden = true;
+  }
+  renderPermit();
+  renderSteps();
+}
+
+/* ------------------------------------------------------------------
+   Document readers.
+
+   Word (.docx) and OpenDocument (.odt) files are ZIP archives. The
+   browser can inflate them natively with DecompressionStream, so we
+   read them here rather than pulling in a library — a tool whose whole
+   promise is "nothing leaves this machine" should be a single file you
+   can read end to end.
+
+   PDF is a genuinely harder format and extraction is best-effort. See
+   the warning raised in loadFiles().
+------------------------------------------------------------------ */
+
+function u16(d,o){ return d.getUint16(o,true); }
+function u32(d,o){ return d.getUint32(o,true); }
+
+async function inflateRaw(bytes, raw){
+  if(typeof DecompressionStream === "undefined") throw new Error("nodecomp");
+  var ds = new DecompressionStream(raw ? "deflate-raw" : "deflate");
+  var stream = new Blob([bytes]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/* Minimal ZIP reader — pulls one named entry out of the archive. */
+async function zipEntry(buf, wanted){
+  var d = new DataView(buf), bytes = new Uint8Array(buf);
+
+  // End of central directory: scan back from the tail for the signature.
+  var eocd = -1;
+  for(var i = bytes.length - 22; i >= 0 && i > bytes.length - 66000; i--){
+    if(u32(d,i) === 0x06054b50){ eocd = i; break; }
+  }
+  if(eocd < 0) throw new Error("notzip");
+
+  var count = u16(d, eocd + 10);
+  var off   = u32(d, eocd + 16);
+
+  for(var n = 0; n < count; n++){
+    if(u32(d,off) !== 0x02014b50) break;
+    var method = u16(d, off + 10);
+    var csize  = u32(d, off + 20);
+    var fnLen  = u16(d, off + 28);
+    var exLen  = u16(d, off + 30);
+    var cmLen  = u16(d, off + 32);
+    var lho    = u32(d, off + 42);
+    var name   = new TextDecoder().decode(bytes.subarray(off + 46, off + 46 + fnLen));
+
+    if(name === wanted || (wanted instanceof RegExp && wanted.test(name))){
+      var lfn = u16(d, lho + 26), lex = u16(d, lho + 28);
+      var start = lho + 30 + lfn + lex;
+      var data = bytes.subarray(start, start + csize);
+      if(method === 0) return new TextDecoder().decode(data);
+      if(method === 8) return new TextDecoder().decode(await inflateRaw(data, true));
+      throw new Error("compression method " + method);
+    }
+    off += 46 + fnLen + exLen + cmLen;
+  }
+  throw new Error("entry not found");
+}
+
+function decodeEntities(s){
+  return s.replace(/&#(\d+);/g, function(_,n){ return String.fromCharCode(+n); })
+          .replace(/&#x([0-9a-f]+);/gi, function(_,n){ return String.fromCharCode(parseInt(n,16)); })
+          .replace(/&lt;/g,"<").replace(/&gt;/g,">")
+          .replace(/&quot;/g,'"').replace(/&apos;/g,"'")
+          .replace(/&amp;/g,"&");
+}
+
+/* Paragraph and table structure is preserved because it carries meaning
+   in evidence documents — a résumé read as one run-on line is much
+   harder to review, and reviewing it is the point. */
+function xmlToText(xml, paraTags){
+  var t = xml;
+  t = t.replace(/<[^>]*:tab\b[^>]*\/>/g, "\t")
+       .replace(/<[^>]*:br\b[^>]*\/>/g, "\n");
+  paraTags.forEach(function(tag){
+    t = t.replace(new RegExp("</[^>]*:?"+tag+">","g"), "\n");
+  });
+  t = t.replace(/<\/[^>]*:tr>/g, "\n").replace(/<\/[^>]*:tc>/g, "\t");
+  t = t.replace(/<[^>]+>/g, "");
+  return decodeEntities(t)
+    .replace(/\t+\n/g,"\n")
+    .replace(/\n{3,}/g,"\n\n")
+    .trim();
+}
+
+async function readDocx(buf){
+  var xml = await zipEntry(buf, "word/document.xml");
+  return xmlToText(xml, ["p"]);
+}
+
+async function readOdt(buf){
+  var xml = await zipEntry(buf, "content.xml");
+  return xmlToText(xml, ["p","h"]);
+}
+
+/* PDF: best effort. Handles digitally-authored PDFs with Flate or
+   uncompressed content streams and standard text encoding. It cannot
+   read scans, and it cannot read subset fonts with custom encodings —
+   both are common in scanned certificates and tickets. */
+function pdfUnescape(s){
+  return s.replace(/\\([nrtbf()\\]|[0-7]{1,3})/g, function(_,c){
+    var map = {n:"\n",r:"\r",t:"\t",b:"\b",f:"\f","(":"(",")":")","\\":"\\"};
+    if(map[c] !== undefined) return map[c];
+    return String.fromCharCode(parseInt(c,8));
+  });
+}
+
+function ascii85Decode(str){
+  var i = str.indexOf("<~"); if(i >= 0) str = str.slice(i + 2);
+  var end = str.indexOf("~>"); if(end >= 0) str = str.slice(0, end);
+  str = str.replace(/\s/g, "");
+
+  var out = [], tuple = 0, count = 0;
+  for(var n = 0; n < str.length; n++){
+    var c = str[n];
+    if(c === "z" && count === 0){ out.push(0,0,0,0); continue; }
+    var v = str.charCodeAt(n) - 33;
+    if(v < 0 || v > 84) continue;
+    tuple = tuple * 85 + v;
+    if(++count === 5){
+      out.push((tuple>>>24)&255,(tuple>>>16)&255,(tuple>>>8)&255,tuple&255);
+      tuple = 0; count = 0;
+    }
+  }
+  if(count > 0){
+    for(var k = count; k < 5; k++) tuple = tuple * 85 + 84;
+    var bytesOut = [(tuple>>>24)&255,(tuple>>>16)&255,(tuple>>>8)&255,tuple&255];
+    for(var j = 0; j < count - 1; j++) out.push(bytesOut[j]);
+  }
+  return new Uint8Array(out);
+}
+
+function asciiHexDecode(str){
+  var hex = str.replace(/[^0-9a-fA-F]/g,"");
+  if(hex.length % 2) hex += "0";
+  var out = new Uint8Array(hex.length / 2);
+  for(var i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i*2,2),16);
+  return out;
+}
+
+/* PDF: best effort. Handles digitally-authored PDFs whose content
+   streams use Flate, ASCII85 or ASCIIHex, singly or chained — the
+   chained case is what most generators actually emit. It cannot read
+   scans, and it cannot read subset fonts with custom encodings, both
+   common in scanned certificates and tickets. */
+async function readPdf(buf){
+  var bytes = new Uint8Array(buf);
+  var latin = "";
+  for(var i = 0; i < bytes.length; i += 8192){
+    latin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+  }
+
+  var IMAGE = /\/(DCT|JPX|CCITT|JBIG2|LZW|RunLength)Decode/;
+  var chunks = [], re = /stream\r?\n?/g, m;
+
+  while((m = re.exec(latin)) !== null){
+    // "endstream" contains "stream" — skip those.
+    if(latin.slice(m.index - 3, m.index) === "end"){ re.lastIndex = m.index + 6; continue; }
+
+    var start = m.index + m[0].length;
+    var end = latin.indexOf("endstream", start);
+    if(end < 0) break;
+    re.lastIndex = end;
+
+    var head = latin.slice(Math.max(0, m.index - 500), m.index);
+    if(IMAGE.test(head)) continue;
+
+    var fmatch = head.match(/\/Filter\s*(\[[^\]]*\]|\/\w+)/);
+    var filters = fmatch ? (fmatch[1].match(/\/\w+/g) || []) : [];
+    var data = bytes.subarray(start, end);
+
+    try{
+      for(var f = 0; f < filters.length; f++){
+        var name = filters[f];
+        if(name === "/ASCII85Decode")      data = ascii85Decode(latin.slice(start, end));
+        else if(name === "/ASCIIHexDecode") data = asciiHexDecode(latin.slice(start, end));
+        else if(name === "/FlateDecode")    data = await inflateRaw(data, false);
+        else if(name === "/Crypt")          throw new Error("encrypted");
+      }
+      chunks.push(new TextDecoder("latin1").decode(data));
+    }catch(e){ /* damaged, encrypted, or a filter we don't handle */ }
+  }
+
+  var content = chunks.join("\n"), out = [];
+  var tre = /\((?:\\[\s\S]|[^\\()])*\)\s*(?:Tj|')|\[(?:[^\][]|\\.)*\]\s*TJ|T\*|TD|Td/g, t;
+  while((t = tre.exec(content)) !== null){
+    var tok = t[0];
+    if(tok === "T*" || tok === "TD" || tok === "Td"){ out.push("\n"); continue; }
+    if(/(?:Tj|')$/.test(tok)){
+      out.push(pdfUnescape(tok.slice(tok.indexOf("(") + 1, tok.lastIndexOf(")"))));
+    } else {
+      var arr = tok.slice(tok.indexOf("[") + 1, tok.lastIndexOf("]"));
+      var sre = /\((?:\\[\s\S]|[^\\()])*\)|(-?\d+(?:\.\d+)?)/g, sm;
+      while((sm = sre.exec(arr)) !== null){
+        if(sm[1] !== undefined){ if(parseFloat(sm[1]) < -180) out.push(" "); }
+        else out.push(pdfUnescape(sm[0].slice(1,-1)));
+      }
+    }
+  }
+  return out.join("")
+    .replace(/[ \t]{2,}/g," ")
+    .replace(/\n\s*\n\s*\n+/g,"\n\n")
+    .trim();
+}
+
+function dataUrl(file){
+  return new Promise(function(res,rej){
+    var r = new FileReader();
+    r.onload = function(){ res(String(r.result)); };
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function readAny(file){
+  var name = file.name.toLowerCase();
+  var isText = /\.(txt|md|csv|tsv|json|eml|html?|log|rtf)$/.test(name);
+
+  if(/\.(jpe?g|png|gif|webp|bmp|avif)$/.test(name)){
+    return {text:"", kind:"image", dataUrl: await dataUrl(file), warn:null};
+  }
+  if(/\.(heic|heif|tiff?)$/.test(name)){
+    return {text:"", kind:"scan", warn:
+      name.replace(/^.*\//,"") + " is in a format browsers can't display. Transcribe it with the original open beside you, or re-save it as JPEG or PNG."};
+  }
+
+  if(isText) return {text: await file.text(), warn:null};
+
+  var buf = await file.arrayBuffer();
+
+  if(/\.(docx|dotx|docm)$/.test(name)){
+    var t = await readDocx(buf);
+    return {text:t, warn: t.trim() ? null :
+      "No text came out of this Word file. If it is a scanned image inside a Word wrapper, there is nothing to extract — retype the details or use the original."};
+  }
+  if(/\.(odt|ott)$/.test(name)) return {text: await readOdt(buf), warn:null};
+
+  if(/\.pdf$/.test(name)){
+    var p = await readPdf(buf);
+    var thin = p.replace(/\s/g,"").length < Math.max(120, buf.byteLength / 900);
+    if(thin){
+      return {text:p, kind:"scan", warn:
+        "No usable text came out of this PDF — it is almost certainly a scan. It has been queued for transcription. This page can't display PDF pages, so open the original alongside as you type."};
+    }
+    return {text:p, warn:
+      "PDF text was extracted automatically. Read it against the original before you release — spacing, columns and tables often come out wrong, and anything the reader dropped will not be tagged."};
+  }
+  if(/\.docx?$/.test(name) && !/\.docx$/.test(name)){
+    throw new Error("Legacy .doc files can't be read here. Open it in Word and save as .docx.");
+  }
+  return {text: await file.text(), warn:
+    "This file type isn't recognised, so it was read as plain text. Check the panel makes sense before going further."};
+}
+
+function noteWarning(msg){
+  if(!msg) return;
+  if(warnings.indexOf(msg) < 0) warnings.push(msg);
+}
+
+function loadFiles(list){
+  if(!list.length) return;
+  var arr = Array.prototype.slice.call(list);
+  var errs = [];
+  Promise.all(arr.map(function(file){
+    return readAny(file).then(function(res){
+      files.push({
+        name: file.name,
+        text: res.text || "",
+        kind: res.kind || "text",
+        dataUrl: res.dataUrl || null
+      });
+      noteWarning(res.warn);
+    }).catch(function(err){
+      errs.push(file.name + " — " + (err && err.message ? err.message : "could not be read"));
+    });
+  })).then(function(){
+    if(errs.length) noteWarning("Could not read: " + errs.join("; ") + ".");
+    scanAll();
+    render();
+  });
+}
+
+function download(name, text, mime){
+  var blob = new Blob([text], {type:mime||"text/plain;charset=utf-8"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
+
+/* ---------- wiring ---------- */
+$("pick").onclick    = function(){ $("fileinput").click(); };
+$("addmore").onclick = function(){ $("fileinput").click(); };
+$("fileinput").onchange = function(e){ loadFiles(e.target.files); e.target.value=""; };
+
+$("pastebtn").onclick = function(){
+  var t = prompt("Paste the document text");
+  if(t){ files.push({name:"pasted-"+(files.length+1)+".txt", text:t}); scanAll(); render(); }
+};
+
+var drop = $("drop");
+["dragenter","dragover"].forEach(function(ev){
+  drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.add("over"); });
+});
+["dragleave","drop"].forEach(function(ev){
+  drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.remove("over"); });
+});
+drop.addEventListener("drop",function(e){ loadFiles(e.dataTransfer.files); });
+
+var typeTimer = null;
+$("typebox").addEventListener("input", function(e){
+  if(!files.length) return;
+  files[active].text = e.target.value;
+  clearTimeout(typeTimer);
+  typeTimer = setTimeout(function(){ scanAll(); render(); }, 350);
+});
+
+$("names").addEventListener("input", render);
+$("employers").addEventListener("input", render);
+
+$("tagall").onclick = function(){
+  entities.forEach(function(m){ m.on = true; });
+  render();
+};
+
+$("release").onclick = function(){
+  readManual();
+  var reps = buildReplacements();
+  var key = {};
+
+  orgs.forEach(function(o,name){ if(!o.ignored && o.desc.trim()) key[o.desc.trim()] = name; });
+  employers.forEach(function(e){ if(e.real) key[e.desc || "[a workplace]"] = e.real; });
+  names.forEach(function(n,i){ key[nameToken(i)] = n; });
+  entities.forEach(function(m,val){ if(m.on && m.label !== "DOB") key[m.token] = val; });
+
+  files.forEach(function(f){
+    if(!f.text.trim()) return;   // nothing transcribed — nothing to release
+    download("reduced-"+f.name.replace(/\.[^.]+$/,"")+".txt", redact(f.text, reps));
+  });
+  download("isolation-key.json", JSON.stringify(key,null,2), "application/json");
+
+  released = true;
+  render();
+  $("handoff").scrollIntoView({behavior:"smooth", block:"nearest"});
+};
+
+/* ---------- restore ---------- */
+var restoreKey = null;
+
+$("pickkey").onclick = function(){ $("keyinput").click(); };
+$("keyinput").onchange = function(e){
+  var f = e.target.files[0]; if(!f) return;
+  var r = new FileReader();
+  r.onload = function(){
+    try{
+      restoreKey = JSON.parse(String(r.result));
+      $("keyname").textContent = f.name+" — "+Object.keys(restoreKey).length+" entries";
+      $("dorestore").disabled = false;
+    }catch(err){
+      $("keyname").textContent = "That file isn't valid JSON. Choose the isolation-key.json produced when you released the documents.";
+      restoreKey = null; $("dorestore").disabled = true;
+    }
+  };
+  r.readAsText(f); e.target.value="";
+};
+
+$("pickreport").onclick = function(){ $("reportinput").click(); };
+$("reportinput").onchange = function(e){
+  var f = e.target.files[0]; if(!f) return;
+  var r = new FileReader();
+  r.onload = function(){ $("restext").value = String(r.result); };
+  r.readAsText(f); e.target.value="";
+};
+
+$("dorestore").onclick = function(){
+  if(!restoreKey) return;
+  var text = $("restext").value;
+  if(!text.trim()){
+    $("resout").innerHTML = '<div class="warn">There is no report to restore. Paste it above or choose a file.</div>';
+    return;
+  }
+  Object.keys(restoreKey)
+    .sort(function(a,b){ return b.length-a.length; })
+    .forEach(function(tok){
+      text = text.replace(new RegExp(escRe(tok),"g"), restoreKey[tok]);
+    });
+
+  var left = text.match(/\[(?:PERSON|EMAIL|PHONE|USI|ABN|LICENCE|ADDRESS|LOCALITY)_\d+\]/g);
+  download("restored-report.txt", text);
+
+  $("resout").innerHTML = left
+    ? '<div class="warn"><b>'+left.length+' tag'+(left.length===1?"":"s")+' could not be resolved:</b> '+
+      esc(Array.from(new Set(left)).join(", "))+
+      '. These were introduced after the documents were released, or this key is from a different run. Resolve them before you submit.</div>'
+    : '<div class="warn"><b>Restored.</b> Check the identity details against the original documents before sign-off — the USI especially. Dates of birth were reduced to the year and are not recoverable here.</div>';
+};
+
+/* ---------- tabs ---------- */
+document.querySelectorAll(".tab").forEach(function(tab){
+  tab.onclick = function(){
+    document.querySelectorAll(".tab").forEach(function(t){
+      var on = t === tab;
+      t.setAttribute("aria-selected", on?"true":"false");
+      var pane = document.getElementById(t.getAttribute("aria-controls"));
+      pane.classList.toggle("on", on);
+      pane.hidden = !on;
+    });
+  };
+});
+
+render();
+})();
+</script>
+</body>
+</html>
