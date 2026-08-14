@@ -838,9 +838,7 @@
     var cls = "r" + ratioClass(layout, swapped).replace("-","");
     var textSide = '<div class="pv-text">' + previewText() + "</div>";
     var inner = swapped ? imgSide + textSide : textSide + imgSide;
-    var third = $("thirdCol").checked
-      ? '<div style="margin-top:16px;border-top:1px dashed #d3d5cf;padding-top:10px;color:#5a5a6e"><p style="margin:0">Column 3</p></div>' : "";
-    $("preview").innerHTML = '<div class="pv-cols ' + cls + '">' + inner + "</div>" + third;
+    $("preview").innerHTML = '<div class="pv-cols ' + cls + '">' + inner + "</div>";
   }
 
   /* ---------- ui ---------- */
