@@ -72,6 +72,16 @@
       "notes": "Course Development",
       "public": true,
       "updatedAt": "2026-08-14T05:14:41.804Z"
+    },
+    "goldilocks-ledger-extractor.html": {
+      "description": "ABB Ledger Extractor",
+      "tags": [
+        "Assessment"
+      ],
+      "owner": "BAU",
+      "notes": "Assessment, Goldilocks",
+      "public": true,
+      "updatedAt": "2026-08-24T04:57:07.114Z"
     }
   }
 }
