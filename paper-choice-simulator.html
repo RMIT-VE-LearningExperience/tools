@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paper Choice Simulator | VART6492C Realise a Creative Project</title>
+<style>
+:root{
+  --navy:#000054;
+  --navy-deep:#00003a;
+  --red:#e61e2a;
+  --yellow:#fac800;
+  --grey:#e3e5e0;
+  --emble:#f2f2f2;
+  --white:#ffffff;
+  --ink:#16162e;
+  --rail:#ffffff;
+  --line:#d5d7d2;
+  --font-display:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;font-family:var(--font-body);color:var(--ink);background:var(--emble);
+  -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+
+/* ---------- masthead ---------- */
+.masthead{
+  background:var(--navy);color:#fff;padding:14px 20px 12px;
+  display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;
+  border-bottom:4px solid var(--red);
+}
+.masthead h1{
+  font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:-0.4px;
+  margin:0;line-height:1;
+}
+.masthead .course{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--yellow);margin:0;
+}
+.masthead .spacer{flex:1}
+.masthead .hint{font-size:12px;color:#c9c9e0;max-width:340px;line-height:1.4}
+
+/* ---------- layout ---------- */
+.app{display:grid;grid-template-columns:320px minmax(0,1fr) 340px;flex:1;min-height:0}
+.rail{background:var(--rail);overflow-y:auto;border-right:1px solid var(--line)}
+.rail.right{border-right:none;border-left:1px solid var(--line)}
+.stage-wrap{position:relative;background:linear-gradient(160deg,#0a0a4a 0%,#000038 55%,#000024 100%);overflow:hidden;display:flex;flex-direction:column}
+
+.sec{border-bottom:1px solid var(--line);padding:16px 18px}
+.sec:last-child{border-bottom:none}
+.sec h2{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:1.6px;text-transform:uppercase;
+  margin:0 0 12px;color:var(--navy);display:flex;align-items:center;gap:8px;
+}
+.sec h2::before{content:"";width:14px;height:3px;background:var(--red);display:block}
+.sec p.note{font-size:12.5px;line-height:1.5;color:#4a4a5e;margin:10px 0 0}
+
+/* ---------- controls ---------- */
+.btn{
+  border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:2px;
+  padding:9px 14px;font-size:13px;font-weight:600;letter-spacing:.2px;width:100%;
+  transition:background .15s,color .15s;
+}
+.btn:hover{background:#001080}
+.btn.ghost{background:transparent;color:var(--navy)}
+.btn.ghost:hover{background:var(--emble)}
+.btn.red{background:var(--red);border-color:var(--red)}
+.btn.red:hover{background:#c3121d}
+.btn+.btn{margin-top:8px}
+.btn:focus-visible,.chip:focus-visible,.paper:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:3px solid var(--yellow);outline-offset:2px
+}
+
+.paper-list{display:flex;flex-direction:column;gap:6px}
+.paper{
+  display:flex;align-items:center;gap:10px;text-align:left;width:100%;
+  border:1px solid var(--line);background:#fff;border-radius:2px;padding:8px 10px;
+}
+.paper:hover{border-color:var(--navy)}
+.paper[aria-pressed="true"]{border-color:var(--navy);background:var(--emble);box-shadow:inset 3px 0 0 var(--red)}
+.paper .sw{width:26px;height:26px;border-radius:1px;flex:none;border:1px solid rgba(0,0,0,.18)}
+.paper .nm{font-size:13px;font-weight:600;line-height:1.2}
+.paper .fam{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:#75758a;margin-top:2px}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{
+  border:1px solid var(--line);background:#fff;border-radius:2px;padding:7px 10px;font-size:12.5px;
+  flex:1 1 auto;min-width:0;text-align:center;
+}
+.chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.chip:disabled{opacity:.4;cursor:not-allowed}
+.chip .sw{display:inline-block;width:10px;height:10px;border:1px solid rgba(0,0,0,.25);margin-right:6px;vertical-align:-1px}
+
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:600;margin-bottom:5px}
+.field input[type=text],.field textarea,.field select{
+  width:100%;border:1px solid var(--line);border-radius:2px;padding:8px 9px;font-size:13px;background:#fff
+}
+.field textarea{resize:vertical;min-height:64px;line-height:1.45}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.slider{width:100%;accent-color:var(--red)}
+
+/* ---------- stage ---------- */
+.stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;padding:26px 24px 8px;min-height:0}
+.print-shell{position:relative;line-height:0}
+#stageCanvas{max-width:100%;max-height:100%;display:block}
+.dropzone{
+  position:absolute;inset:18px;border:2px dashed rgba(255,255,255,.28);border-radius:3px;
+  display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .15s
+}
+.dropzone.on{opacity:1;background:rgba(0,0,0,.35)}
+.dropzone span{color:#fff;font-family:var(--font-mono);font-size:12px;letter-spacing:1.4px;text-transform:uppercase}
+.loupe{
+  position:absolute;width:150px;height:150px;border-radius:50%;pointer-events:none;display:none;
+  box-shadow:0 0 0 2px rgba(255,255,255,.85),0 10px 30px rgba(0,0,0,.55);z-index:5;
+}
+.strip{
+  display:flex;gap:0;align-items:stretch;justify-content:center;flex-wrap:wrap;
+  padding:0 24px 16px;
+}
+.strip .cell{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:1.1px;text-transform:uppercase;
+  color:#b9b9d6;border-left:1px solid rgba(255,255,255,.18);padding:4px 14px;
+}
+.strip .cell:first-child{border-left:none}
+.strip .cell b{color:#fff;font-weight:600}
+.stage-actions{display:flex;gap:8px;justify-content:center;padding:0 24px 18px;flex-wrap:wrap}
+.stage-actions .btn{width:auto}
+.stage-actions .btn.ghost{color:#fff;border-color:rgba(255,255,255,.5)}
+.stage-actions .btn.ghost:hover{background:rgba(255,255,255,.12)}
+.stage-actions .btn.ghost[aria-pressed="true"]{background:var(--yellow);border-color:var(--yellow);color:var(--navy)}
+
+/* ---------- read out ---------- */
+.readout{background:var(--emble);border-left:3px solid var(--yellow);padding:10px 12px;font-size:12.5px;line-height:1.5}
+.readout b{display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--navy);margin-bottom:4px}
+.hintlist{margin:10px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.hintlist li{font-size:12.5px;line-height:1.45;padding-left:20px;position:relative;color:#3a3a4d}
+.hintlist li::before{content:"!";position:absolute;left:0;top:0;width:14px;height:14px;background:var(--yellow);color:var(--navy);font-family:var(--font-mono);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.hintlist li.good::before{content:"+";background:var(--navy);color:#fff}
+
+.spec{font-family:var(--font-mono);font-size:11.5px;line-height:1.7;color:#3a3a4d}
+.spec span{color:var(--navy);font-weight:600}
+
+details.checklist summary{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;
+  color:var(--navy);cursor:pointer;padding:2px 0
+}
+details.checklist ul{margin:10px 0 0;padding-left:18px;font-size:12.5px;line-height:1.6;color:#3a3a4d}
+
+.sentence{background:var(--navy);color:#fff;padding:12px;font-size:13px;line-height:1.6;border-radius:2px}
+.sentence em{color:var(--yellow);font-style:normal;font-weight:600}
+.warn{color:var(--red);font-size:12px;margin-top:8px;min-height:16px}
+
+/* ---------- compare overlay ---------- */
+.overlay{position:fixed;inset:0;background:rgba(0,0,20,.94);z-index:40;display:none;flex-direction:column}
+.overlay.on{display:flex}
+.overlay header{display:flex;align-items:center;gap:16px;padding:16px 22px;border-bottom:1px solid rgba(255,255,255,.16)}
+.overlay header h2{font-family:var(--font-display);font-size:18px;margin:0;color:#fff;font-weight:800}
+.overlay header p{margin:0;font-size:12.5px;color:#b9b9d6}
+.overlay header .spacer{flex:1}
+.overlay .grid{flex:1;overflow-y:auto;padding:20px 22px 30px;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px}
+.cmp{background:transparent;border:none;padding:0;text-align:left}
+.cmp canvas{width:100%;height:auto;display:block;box-shadow:0 10px 24px rgba(0,0,0,.5)}
+.cmp .lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#cfcfe6;margin-top:8px}
+.cmp[aria-pressed="true"] .lbl{color:var(--yellow)}
+.cmp:hover canvas{outline:2px solid var(--yellow)}
+
+.credit{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.6px;color:#7a7a8c;padding:14px 18px;line-height:1.6}
+
+@media (max-width:1180px){
+  .app{grid-template-columns:290px minmax(0,1fr);flex:none}
+  .rail.right{grid-column:1 / -1;border-left:none;border-top:1px solid var(--line)}
+  .stage-wrap{min-height:520px}
+}
+@media (max-width:780px){
+  .app{grid-template-columns:1fr}
+  .rail{border-right:none;border-bottom:1px solid var(--line)}
+  .stage-wrap{min-height:420px;order:-1}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
+</head>
+<body>
+
+<div class="masthead">
+  <div>
+    <p class="course">VART6492C &middot; Realise a Creative Project</p>
+    <h1>Paper Choice Simulator</h1>
+  </div>
+  <div class="spacer"></div>
+  <p class="hint">Load one of your project images, try each paper, then record and download your paper decision for your studio journal.</p>
+</div>
+
+<div class="app">
+
+  <!-- ======= LEFT RAIL ======= -->
+  <div class="rail left">
+
+    <div class="sec">
+      <h2>1. Your image</h2>
+      <input type="file" id="fileInput" accept="image/*" hidden>
+      <button class="btn" id="uploadBtn">Choose an image</button>
+      <button class="btn ghost" id="chartBtn">Load the print test chart</button>
+      <p class="note" id="fileName">Nothing loaded yet. You can also drag an image onto the wall.</p>
+    </div>
+
+    <div class="sec">
+      <h2>2. Paper base</h2>
+      <div class="paper-list" id="paperList"></div>
+    </div>
+
+    <div class="sec">
+      <h2>3. Paper tone</h2>
+      <div class="chips" id="toneChips"></div>
+      <p class="note" id="toneNote"></p>
+    </div>
+
+    <div class="sec">
+      <h2>4. Surface texture</h2>
+      <div class="chips" id="texChips"></div>
+      <p class="note" id="texNote"></p>
+    </div>
+
+    <div class="sec">
+      <h2>5. Print size and border</h2>
+      <div class="chips" id="sizeChips" style="margin-bottom:8px"></div>
+      <div class="chips" id="borderChips"></div>
+    </div>
+
+    <div class="sec">
+      <h2>6. Viewing conditions</h2>
+      <div class="chips" id="lightChips" style="margin-bottom:12px"></div>
+      <label for="angle" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Light direction</label>
+      <input type="range" id="angle" class="slider" min="0" max="360" value="215">
+      <p class="note">Move the light to see how reflections behave on each surface. Matte and fibre papers stay quiet. Gloss and metal will flare.</p>
+    </div>
+
+  </div>
+
+  <!-- ======= STAGE ======= -->
+  <div class="stage-wrap" id="stageWrap">
+    <div class="stage" id="stage">
+      <div class="print-shell" id="printShell">
+        <canvas id="stageCanvas" width="900" height="620"></canvas>
+      </div>
+      <canvas class="loupe" id="loupe" width="150" height="150"></canvas>
+      <div class="dropzone" id="dropzone"><span>Drop your image here</span></div>
+    </div>
+    <div class="strip" id="strip"></div>
+    <div class="stage-actions">
+      <button class="btn ghost" id="compareBtn">Compare all papers</button>
+      <button class="btn ghost" id="loupeBtn" aria-pressed="false">Inspect surface</button>
+      <button class="btn red" id="downloadPreviewBtn">Download preview image</button>
+    </div>
+  </div>
+
+  <!-- ======= RIGHT RAIL ======= -->
+  <div class="rail right">
+
+    <div class="sec">
+      <h2>What this paper does</h2>
+      <div class="readout" id="paperReadout"><b>Paper</b>Choose a paper base to see how it behaves.</div>
+      <ul class="hintlist" id="hints"></ul>
+    </div>
+
+    <div class="sec">
+      <h2>How your image reads</h2>
+      <div class="readout" id="imageReadout"><b>Image analysis</b>Load an image and this panel will describe its warmth, contrast and level of fine detail, then suggest a starting point.</div>
+    </div>
+
+    <div class="sec">
+      <h2>Your paper decision</h2>
+      <div class="field">
+        <label for="studentName">Your name (optional)</label>
+        <input type="text" id="studentName" placeholder="First and last name">
+      </div>
+      <div class="field">
+        <label for="imageTitle">Image title or file reference</label>
+        <input type="text" id="imageTitle" placeholder="e.g. Nightworks 03">
+      </div>
+      <div class="field">
+        <label>Name your image's mood or feel in three words</label>
+        <div class="row3">
+          <input type="text" id="mood1" placeholder="1">
+          <input type="text" id="mood2" placeholder="2">
+          <input type="text" id="mood3" placeholder="3">
+        </div>
+      </div>
+      <div class="field">
+        <label for="qualityIn">The photograph's quality you want to support</label>
+        <input type="text" id="qualityIn" placeholder="e.g. quiet stillness, luminous colour">
+      </div>
+      <div class="field">
+        <label for="becauseIn">How the paper supports it</label>
+        <input type="text" id="becauseIn" placeholder="e.g. lifting the blacks and softening the highlights">
+      </div>
+      <div class="sentence" id="sentence"></div>
+      <div class="warn" id="warn"></div>
+      <button class="btn red" id="downloadSheetBtn" style="margin-top:10px">Download your paper decision</button>
+      <p class="note">You get a single PNG showing your simulated print, your settings and your written reason. Keep it in your studio journal, bring it to class, or use it as the starting point for your test prints.</p>
+    </div>
+
+    <div class="sec">
+      <details class="checklist">
+        <summary>Paper choice checklist</summary>
+        <ul>
+          <li>Start with your image intention and viewing context.</li>
+          <li>Decide on a paper base: fibre based, resin coated, matte, glossy.</li>
+          <li>Fibre based papers feel tactile, refined and non reflective.</li>
+          <li>Warm white suits softness and warmth. Bright white supports crisp contrast.</li>
+          <li>Natural white is a versatile middle ground.</li>
+          <li>Match the paper's character to the subject, or break that rule on purpose.</li>
+          <li>Smaller prints usually need less texture.</li>
+          <li>A wide border helps textured paper be seen as part of the work.</li>
+          <li>Test print before committing to a final edition.</li>
+          <li>Consider cost and environmental impact.</li>
+        </ul>
+      </details>
+    </div>
+
+    <p class="credit">This is a simulation for learning and planning. A screen cannot replace a physical test print. Always view a test print under the lighting your work will live under.<br><br>Design: Learning &amp; Teaching Innovation Team - RMIT College of Vocational Education</p>
+  </div>
+</div>
+
+<!-- ======= COMPARE OVERLAY ======= -->
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Compare all papers">
+  <header>
+    <div>
+      <h2>Compare all papers</h2>
+      <p id="cmpMeta"></p>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn ghost" id="cmpDownload" style="width:auto;color:#fff;border-color:rgba(255,255,255,.5)">Download comparison sheet</button>
+    <button class="btn red" id="cmpClose" style="width:auto">Close</button>
+  </header>
+  <div class="grid" id="cmpGrid"></div>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   Data
+   ========================================================= */
+const PAPERS = [
+  {id:"inkjet", name:"Inkjet photo paper", family:"Coated all rounder", tones:["natural","bright"], texs:["smooth","light"],
+   gloss:0.42, floor:0.055, contrast:1.03, sat:1.06, bias:[1,1,1],
+   tex:{type:"grain", strength:0.06, scale:0.18},
+   why:"Everyday coated inkjet stock is made bright or natural white with a smooth finish.",
+   supports:"General project work, saturated colour and sharp detail.",
+   keep:"A safe middle path. It rarely fights the image, but it rarely adds character either."},
+
+  {id:"rcgloss", name:"Resin coated gloss", family:"Resin coated", tones:["bright"], texs:["smooth"],
+   gloss:0.88, floor:0.030, contrast:1.12, sat:1.15, bias:[1,1,1],
+   tex:{type:"none", strength:0, scale:1},
+   why:"Resin coated gloss exists as a bright white, smooth sheet. There is no textured or warm version.",
+   supports:"Luminous colour, wet surfaces, sharp graphic work, prints that will be handled.",
+   keep:"Reflections can sit right across the image under a spotlight. Fingerprints show."},
+
+  {id:"lustre", name:"Pearl, lustre, semi gloss", family:"Resin coated", tones:["natural","bright"], texs:["smooth","light"],
+   gloss:0.55, floor:0.045, contrast:1.06, sat:1.09, bias:[1,1,0.998],
+   tex:{type:"stipple", strength:0.11, scale:0.32},
+   why:"The stipple is built into the coating, so the only choice is how bright the base is.",
+   supports:"Mixed subjects, exhibition prints that need contrast without a mirror finish.",
+   keep:"The stippled surface breaks up reflections, so it forgives handling and awkward lighting."},
+
+  {id:"highgloss", name:"High gloss polyester", family:"Plastic base", tones:["bright"], texs:["smooth"],
+   gloss:1.0, floor:0.020, contrast:1.18, sat:1.22, bias:[1,1,1],
+   tex:{type:"none", strength:0, scale:1},
+   why:"A polyester base is bright white and mirror smooth by definition.",
+   supports:"Deep blacks, neon and night work, hard graphic images.",
+   keep:"A mirror finish. The viewer will see the room, and themselves, in the print."},
+
+  {id:"baryta", name:"Fibre based baryta", family:"Fibre based", tones:["warm","natural","bright"], texs:["smooth","light"],
+   gloss:0.36, floor:0.050, contrast:1.05, sat:1.02, bias:[1,0.998,0.988],
+   tex:{type:"fibre", strength:0.07, scale:0.5},
+   why:"Baryta is sold in warm tone and neutral versions, all with a fine smooth surface.",
+   supports:"Black and white work, exhibition prints, deep blacks with a paper feel.",
+   keep:"The traditional darkroom look in an inkjet paper. Substantial and expensive."},
+
+  {id:"mattesmooth", name:"Smooth matte", family:"Matte", tones:["warm","natural","bright"], texs:["smooth","light"],
+   gloss:0.04, floor:0.100, contrast:0.95, sat:0.96, bias:[1,0.999,0.994],
+   tex:{type:"grain", strength:0.08, scale:0.22},
+   why:"Smooth matte comes in all three base tones. Anything more textured becomes a fine art paper.",
+   supports:"Portraits, quiet narratives, fine detail that still needs a non reflective surface.",
+   keep:"Blacks sit lighter than on gloss. Build the file with that in mind. The surface marks easily."},
+
+  {id:"cotton", name:"Cotton rag fine art", family:"Fine art fibre", tones:["warm","natural","bright"], texs:["smooth","light","tex","heavy"],
+   gloss:0.02, floor:0.120, contrast:0.92, sat:0.93, bias:[1,0.994,0.972],
+   tex:{type:"fibre", strength:0.18, scale:1.1},
+   why:"Cotton rag is the most flexible family. It is milled in every tone and in surfaces from smooth to heavily textured.",
+   supports:"Handmade and archival feeling work, soft tonal images, gallery presentation.",
+   keep:"Narrower contrast range and visible fibre. Give it a wide border so the paper reads as part of the work."},
+
+  {id:"bamboo", name:"Bamboo", family:"Fine art fibre", tones:["warm","natural"], texs:["light","tex"],
+   gloss:0.02, floor:0.120, contrast:0.93, sat:0.95, bias:[1,0.988,0.952],
+   tex:{type:"fibre", strength:0.20, scale:1.3},
+   why:"Bamboo fibre is naturally warm. There is no bright white bamboo and no smooth version.",
+   supports:"Warm natural subjects, botanical and landscape work, sustainable choices.",
+   keep:"A naturally warm base. Cool blues will shift slightly towards green."},
+
+  {id:"hemp", name:"Hemp", family:"Fine art fibre", tones:["warm","natural"], texs:["tex","heavy"],
+   gloss:0.02, floor:0.128, contrast:0.92, sat:0.94, bias:[1,0.986,0.944],
+   tex:{type:"fibre", strength:0.26, scale:1.8},
+   why:"Hemp is warm and coarse by nature. Smooth and bright white are not available.",
+   supports:"Bold simple shapes, large prints, work that wants an obvious material presence.",
+   keep:"Coarse fibre. It will compete with fine detail unless the print is large."},
+
+  {id:"kozo", name:"Kozo and agave", family:"Fine art fibre", tones:["warm"], texs:["tex","heavy"],
+   gloss:0.02, floor:0.140, contrast:0.90, sat:0.92, bias:[1,0.982,0.930],
+   tex:{type:"fibre", strength:0.32, scale:2.4},
+   why:"Kozo and agave are handmade from unbleached fibre, so the tone and the texture come with the paper.",
+   supports:"Handmade, tactile, ceremonial or archival concepts.",
+   keep:"The most textured option here. Treat the surface as a co-author of the image."},
+
+  {id:"canvas", name:"Fabric and canvas", family:"Alternative base", tones:["natural","bright"], texs:["tex","heavy"],
+   gloss:0.08, floor:0.112, contrast:0.94, sat:0.98, bias:[1,0.995,0.980],
+   tex:{type:"weave", strength:0.28, scale:1.6},
+   why:"The weave is the surface. Canvas is made in natural and bright white only.",
+   supports:"Large stretched work, painterly images, installation pieces.",
+   keep:"The weave is always visible. Small prints will look coarse rather than tactile."},
+
+  {id:"metal", name:"Aluminium", family:"Alternative base", tones:["bright"], texs:["smooth","light"],
+   gloss:0.80, floor:0.035, contrast:1.14, sat:1.18, bias:[0.995,1,1.01],
+   tex:{type:"brushed", strength:0.07, scale:0.9},
+   why:"Aluminium is coated white, and offered as a smooth or lightly brushed panel.",
+   supports:"Industrial, hard edged and high impact work. Robust for public spaces.",
+   keep:"The surface is part of the object. It reads as manufactured rather than handmade."}
+];
+
+const TONES = [
+  {id:"warm",    name:"Warm white",    rgb:[252,244,228], supports:"Portraits, warm soft subjects, gentle mood.", keep:"Whites appear warmer, so contrast can feel reduced."},
+  {id:"natural", name:"Natural white", rgb:[250,249,243], supports:"General use, broad tonal expression.",           keep:"A useful middle ground."},
+  {id:"bright",  name:"Bright white",  rgb:[252,253,255], supports:"Crisp images, maximum tonal range, cooler subjects.", keep:"Can feel harder or more clinical."}
+];
+
+const TEXTURES = [
+  {id:"smooth", name:"Smooth",  mul:0.30, word:"Smooth"},
+  {id:"light",  name:"Light",   mul:0.65, word:"Smooth"},
+  {id:"tex",    name:"Textured",mul:1.00, word:"Textured"},
+  {id:"heavy",  name:"Heavy",   mul:1.45, word:"Textured"}
+];
+
+const SIZES = [
+  {id:"6x4", name:"6 x 4 in", long:152, short:102, scale:0.58},
+  {id:"a4",  name:"A4",       long:297, short:210, scale:0.80},
+  {id:"a3",  name:"A3",       long:420, short:297, scale:1.00},
+  {id:"a2",  name:"A2",       long:594, short:420, scale:1.14}
+];
+
+const BORDERS = [
+  {id:"none", name:"No border", f:0,     min:0},
+  {id:"thin", name:"Thin",      f:0.014, min:5},
+  {id:"wide", name:"Wide",      f:0.075, min:14}
+];
+
+const LIGHTS = [
+  {id:"daylight", name:"Diffuse daylight", exposure:1.00, tint:[1,1,1],          glare:0.35, falloff:0.05},
+  {id:"gallery",  name:"Gallery spot",     exposure:1.07, tint:[1,0.99,0.962],   glare:1.00, falloff:0.34},
+  {id:"warmroom", name:"Warm room light",  exposure:0.93, tint:[1,0.952,0.868],  glare:0.50, falloff:0.18},
+  {id:"overhead", name:"Bright overhead",  exposure:1.05, tint:[0.982,1,1.018],  glare:0.80, falloff:0.09}
+];
+
+/* =========================================================
+   State
+   ========================================================= */
+const state = {
+  img:null, imgName:"", analysis:null,
+  paper:"inkjet", tone:"natural", tex:"light", size:"a3", border:"thin",
+  light:"daylight", angle:215, loupe:false
+};
+
+const $ = (id)=>document.getElementById(id);
+const paperById = id => PAPERS.find(p=>p.id===id);
+const toneById  = id => TONES.find(t=>t.id===id);
+const texById   = id => TEXTURES.find(t=>t.id===id);
+const sizeById  = id => SIZES.find(s=>s.id===id);
+const borderById= id => BORDERS.find(b=>b.id===id);
+const lightById = id => LIGHTS.find(l=>l.id===id);
+
+function nearest(list, allowed, wantId){
+  if(allowed.includes(wantId)) return wantId;
+  const want = list.findIndex(o=>o.id===wantId);
+  let best = allowed[0], bd = 99;
+  allowed.forEach(id=>{
+    const d = Math.abs(list.findIndex(o=>o.id===id) - want);
+    if(d<bd){ bd=d; best=id; }
+  });
+  return best;
+}
+function resolveTone(paper, wantId){ return toneById(nearest(TONES, paper.tones, wantId)); }
+function resolveTex(paper, wantId){ return texById(nearest(TEXTURES, paper.texs, wantId)); }
+function activeTone(){ return resolveTone(paperById(state.paper), state.tone); }
+function activeTex(){ return resolveTex(paperById(state.paper), state.tex); }
+
+/* =========================================================
+   Seeded noise and texture generation
+   ========================================================= */
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function noiseLayer(w,h,cell,seed){
+  const cw = Math.max(2, Math.ceil(w/cell)), ch = Math.max(2, Math.ceil(h/cell));
+  const small = document.createElement("canvas");
+  small.width = cw; small.height = ch;
+  const sctx = small.getContext("2d");
+  const id = sctx.createImageData(cw,ch);
+  const rnd = mulberry32(seed);
+  for(let i=0;i<cw*ch;i++){
+    const v = Math.round(rnd()*255);
+    id.data[i*4]=v; id.data[i*4+1]=v; id.data[i*4+2]=v; id.data[i*4+3]=255;
+  }
+  sctx.putImageData(id,0,0);
+  const big = document.createElement("canvas");
+  big.width=w; big.height=h;
+  const bctx = big.getContext("2d");
+  bctx.imageSmoothingEnabled = true;
+  bctx.imageSmoothingQuality = "high";
+  bctx.drawImage(small,0,0,w,h);
+  return big;
+}
+
+const texCache = new Map();
+
+function makeTexture(type, w, h, pxPerMM, scaleMM){
+  if(type==="none") return null;
+  const key = [type,w,h,(pxPerMM*scaleMM).toFixed(2)].join("|");
+  if(texCache.has(key)) return texCache.get(key);
+
+  const c = document.createElement("canvas");
+  c.width=w; c.height=h;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle="#808080"; ctx.fillRect(0,0,w,h);
+  const base = Math.max(2, pxPerMM*scaleMM);
+
+  if(type==="grain" || type==="fibre" || type==="stipple"){
+    const octaves = type==="fibre" ? [[base,1,101],[base*0.42,0.55,202],[base*2.2,0.5,303]]
+                  : type==="stipple" ? [[base,1,404],[base*0.5,0.45,505]]
+                  : [[base,1,606],[base*0.45,0.5,707]];
+    ctx.globalCompositeOperation="source-over";
+    octaves.forEach((o,i)=>{
+      const layer = noiseLayer(w,h,o[0],o[2]);
+      ctx.globalAlpha = i===0?1:o[1]*0.6;
+      ctx.drawImage(layer,0,0);
+    });
+    ctx.globalAlpha=1;
+    if(type==="fibre"){
+      // stretch a copy horizontally to suggest fibre direction
+      const stretched = noiseLayer(Math.ceil(w/2.6), h, base*0.9, 808);
+      ctx.globalAlpha=0.45;
+      ctx.drawImage(stretched,0,0,w,h);
+      ctx.globalAlpha=1;
+    }
+  } else if(type==="weave"){
+    const layer = noiseLayer(w,h,base*1.4,909);
+    ctx.drawImage(layer,0,0);
+    ctx.globalAlpha=0.55;
+    ctx.strokeStyle="#ffffff"; ctx.lineWidth=Math.max(1,base*0.28);
+    for(let x=0;x<w;x+=base){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+    ctx.strokeStyle="#404040";
+    for(let y=0;y<h;y+=base){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+    ctx.globalAlpha=1;
+  } else if(type==="brushed"){
+    const stretched = noiseLayer(Math.max(2,Math.ceil(w/40)), h, Math.max(2,base*0.3), 1111);
+    ctx.drawImage(stretched,0,0,w,h);
+  }
+  texCache.set(key,c);
+  return c;
+}
+
+/* =========================================================
+   Image processing
+   ========================================================= */
+const procCache = new Map();
+
+function processedImage(w,h,paperId,tone,lightId){
+  if(!state.img) return null;
+  const p = paperById(paperId), t = tone, l = lightById(lightId);
+  const key = [state.imgName,p.id,t.id,l.id,w,h].join("|");
+  if(procCache.has(key)) return procCache.get(key);
+  if(procCache.size > 60) procCache.clear();
+
+  const c = document.createElement("canvas");
+  c.width=w; c.height=h;
+  const ctx = c.getContext("2d");
+  ctx.imageSmoothingQuality="high";
+  ctx.drawImage(state.img,0,0,w,h);
+  const id = ctx.getImageData(0,0,w,h), d = id.data;
+
+  const pr = (t.rgb[0]/255)*p.bias[0]*l.tint[0]*l.exposure;
+  const pg = (t.rgb[1]/255)*p.bias[1]*l.tint[1]*l.exposure;
+  const pb = (t.rgb[2]/255)*p.bias[2]*l.tint[2]*l.exposure;
+  const floor = p.floor, span = 1-p.floor, k = p.contrast, s = p.sat;
+
+  for(let i=0;i<d.length;i+=4){
+    let r=d[i]/255, g=d[i+1]/255, b=d[i+2]/255;
+    const lum = 0.2126*r + 0.7152*g + 0.0722*b;
+    r = lum + (r-lum)*s; g = lum + (g-lum)*s; b = lum + (b-lum)*s;
+    r = (r-0.5)*k + 0.5; g = (g-0.5)*k + 0.5; b = (b-0.5)*k + 0.5;
+    r = r<0?0:r>1?1:r; g = g<0?0:g>1?1:g; b = b<0?0:b>1?1:b;
+    r = floor + r*span; g = floor + g*span; b = floor + b*span;
+    d[i]   = Math.min(255, r*pr*255);
+    d[i+1] = Math.min(255, g*pg*255);
+    d[i+2] = Math.min(255, b*pb*255);
+  }
+  ctx.putImageData(id,0,0);
+  procCache.set(key,c);
+  return c;
+}
+
+/* =========================================================
+   Sheet geometry and rendering
+   ========================================================= */
+function sheetGeometry(){
+  const size = sizeById(state.size), bdef = borderById(state.border);
+  const aspect = state.img ? state.img.width/state.img.height : 3/2;
+  const border = bdef.f===0 ? 0 : Math.max(bdef.min, bdef.f*size.long);
+  const landscape = aspect >= 1;
+  const boxW = landscape ? size.long : size.short;
+  const boxH = landscape ? size.short : size.long;
+  const availW = Math.max(20, boxW - 2*border);
+  const availH = Math.max(20, boxH - 2*border);
+  let imgW = availW, imgH = availW/aspect;
+  if(imgH > availH){ imgH = availH; imgW = availH*aspect; }
+  return {
+    sheetW: imgW + 2*border, sheetH: imgH + 2*border,
+    imgW, imgH, border
+  };
+}
+
+function renderSheet(canvas, opts){
+  const g = opts.geo, W = canvas.width, H = canvas.height;
+  const ctx = canvas.getContext("2d");
+  const p = paperById(opts.paper), l = lightById(opts.light);
+  const t = opts.toneOverride || resolveTone(p, state.tone);
+  const texDef = p.tex, texMul = resolveTex(p, opts.tex).mul;
+  const pxPerMM = W / g.sheetW;
+
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.globalCompositeOperation="source-over";
+  ctx.globalAlpha=1;
+  ctx.clearRect(0,0,W,H);
+
+  // paper base
+  const pr = Math.min(255, (t.rgb[0])*p.bias[0]*l.tint[0]*l.exposure);
+  const pg = Math.min(255, (t.rgb[1])*p.bias[1]*l.tint[1]*l.exposure);
+  const pb = Math.min(255, (t.rgb[2])*p.bias[2]*l.tint[2]*l.exposure);
+  ctx.fillStyle = `rgb(${pr|0},${pg|0},${pb|0})`;
+  ctx.fillRect(0,0,W,H);
+
+  // image
+  const ix = g.border*pxPerMM, iy = g.border*pxPerMM;
+  const iw = Math.max(1, Math.round(g.imgW*pxPerMM)), ih = Math.max(1, Math.round(g.imgH*pxPerMM));
+  const proc = processedImage(Math.min(iw, 1400), Math.min(ih, 1400), p.id, t, l.id);
+  if(proc){
+    ctx.imageSmoothingQuality="high";
+    ctx.drawImage(proc, Math.round(ix), Math.round(iy), iw, ih);
+  } else {
+    ctx.fillStyle="rgba(0,0,60,0.06)";
+    ctx.fillRect(ix,iy,iw,ih);
+    ctx.fillStyle="rgba(0,0,60,0.45)";
+    ctx.font = `${Math.max(11, W*0.022)}px Menlo, Consolas, monospace`;
+    ctx.textAlign="center";
+    ctx.fillText("LOAD AN IMAGE TO BEGIN", ix+iw/2, iy+ih/2);
+    ctx.textAlign="left";
+  }
+
+  // surface texture across the whole sheet
+  const strength = texDef.strength * texMul * (1 + l.falloff*0.6);
+  if(texDef.type!=="none" && strength>0.004){
+    const tex = makeTexture(texDef.type, W, H, pxPerMM, texDef.scale);
+    if(tex){
+      ctx.globalCompositeOperation = "soft-light";
+      ctx.globalAlpha = Math.min(0.80, strength*2.2);
+      ctx.drawImage(tex,0,0);
+      ctx.globalCompositeOperation = "overlay";
+      ctx.globalAlpha = Math.min(0.35, strength*0.9);
+      ctx.drawImage(tex,0,0);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+    }
+  }
+
+  // directional falloff
+  const rad = opts.angle * Math.PI/180;
+  const lx = W/2 + Math.cos(rad)*W*0.45, ly = H/2 + Math.sin(rad)*H*0.45;
+  if(l.falloff>0.01){
+    const rg = ctx.createRadialGradient(lx,ly,Math.min(W,H)*0.08, lx,ly, Math.max(W,H)*1.05);
+    rg.addColorStop(0,"rgba(255,255,255,"+(l.falloff*0.30).toFixed(3)+")");
+    rg.addColorStop(0.45,"rgba(255,255,255,0)");
+    rg.addColorStop(1,"rgba(0,0,20,"+(l.falloff*0.42).toFixed(3)+")");
+    ctx.globalCompositeOperation="source-over";
+    ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  }
+
+  // specular behaviour
+  const gl = p.gloss * l.glare;
+  if(gl>0.05){
+    ctx.save();
+    ctx.globalCompositeOperation="screen";
+    // broad sheen
+    ctx.globalAlpha = Math.min(0.30, 0.10*gl);
+    const sg = ctx.createLinearGradient(0,0,W,H);
+    sg.addColorStop(0,"rgba(255,255,255,0.55)");
+    sg.addColorStop(1,"rgba(255,255,255,0)");
+    ctx.fillStyle=sg; ctx.fillRect(0,0,W,H);
+    // moving bands
+    const bands = p.gloss>0.7 ? [[0,1],[0.22,0.45]] : [[0,1]];
+    const diag = Math.hypot(W,H);
+    bands.forEach(b=>{
+      ctx.save();
+      ctx.translate(W/2,H/2);
+      ctx.rotate(rad + Math.PI/2);
+      const off = b[0]*diag;
+      const lgr = ctx.createLinearGradient(-diag/2, off-diag*0.16, -diag/2, off+diag*0.16);
+      lgr.addColorStop(0,"rgba(255,255,255,0)");
+      lgr.addColorStop(0.5,"rgba(255,255,255,0.9)");
+      lgr.addColorStop(1,"rgba(255,255,255,0)");
+      ctx.globalAlpha = Math.min(0.75, 0.42*gl*b[1]);
+      ctx.fillStyle = lgr;
+      ctx.fillRect(-diag/2,-diag/2,diag,diag);
+      ctx.restore();
+    });
+    ctx.restore();
+    ctx.globalAlpha=1;
+    ctx.globalCompositeOperation="source-over";
+  }
+}
+
+/* =========================================================
+   Stage drawing
+   ========================================================= */
+let sheetCanvas = document.createElement("canvas");
+let sheetRect = {x:0,y:0,w:0,h:0};
+
+function drawStage(){
+  const stage = $("stage"), canvas = $("stageCanvas");
+  const availW = Math.max(240, stage.clientWidth - 56);
+  const availH = Math.max(220, stage.clientHeight - 56);
+  const dpr = Math.min(2, window.devicePixelRatio||1);
+
+  canvas.width = Math.round(availW*dpr);
+  canvas.height = Math.round(availH*dpr);
+  canvas.style.width = availW+"px";
+  canvas.style.height = availH+"px";
+
+  const geo = sheetGeometry();
+  const size = sizeById(state.size);
+  const aspect = geo.sheetW/geo.sheetH;
+  let w = availW*0.94, h = w/aspect;
+  if(h > availH*0.92){ h = availH*0.92; w = h*aspect; }
+  w *= size.scale; h *= size.scale;
+  const maxScale = Math.min(availW*0.96/w, availH*0.95/h, 1.25);
+  if(maxScale<1){ w*=maxScale; h*=maxScale; }
+
+  sheetCanvas.width = Math.max(40, Math.round(w*dpr));
+  sheetCanvas.height = Math.max(40, Math.round(h*dpr));
+  renderSheet(sheetCanvas, {geo, paper:state.paper, tex:state.tex, light:state.light, angle:state.angle});
+
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const x = (canvas.width - sheetCanvas.width)/2;
+  const y = (canvas.height - sheetCanvas.height)/2;
+
+  const rad = state.angle*Math.PI/180;
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.55)";
+  ctx.shadowBlur = 34*dpr;
+  ctx.shadowOffsetX = -Math.cos(rad)*16*dpr;
+  ctx.shadowOffsetY = -Math.sin(rad)*16*dpr + 8*dpr;
+  ctx.fillStyle = "#000";
+  ctx.fillRect(x,y,sheetCanvas.width,sheetCanvas.height);
+  ctx.restore();
+  ctx.drawImage(sheetCanvas,x,y);
+
+  sheetRect = {x:x/dpr, y:y/dpr, w:sheetCanvas.width/dpr, h:sheetCanvas.height/dpr, dpr};
+  updateStrip(geo);
+}
+
+function updateStrip(geo){
+  const p = paperById(state.paper), t = activeTone(), sz = sizeById(state.size);
+  const l = lightById(state.light), tx = activeTex();
+  $("strip").innerHTML = [
+    ["Paper", p.name],
+    ["Tone", t.name],
+    ["Surface", tx.name],
+    ["Print", Math.round(geo.sheetW)+" x "+Math.round(geo.sheetH)+" mm ("+sz.name+")"],
+    ["Light", l.name]
+  ].map(c=>`<div class="cell">${c[0]} <b>${c[1]}</b></div>`).join("");
+}
+
+let raf = null;
+function render(){
+  if(raf) return;
+  raf = requestAnimationFrame(()=>{ raf=null; drawStage(); updatePanels(); });
+}
+
+/* =========================================================
+   Image analysis
+   ========================================================= */
+function analyseImage(img){
+  const w = 180, h = Math.max(1, Math.round(180*img.height/img.width));
+  const c = document.createElement("canvas");
+  c.width=w; c.height=h;
+  const ctx = c.getContext("2d");
+  ctx.drawImage(img,0,0,w,h);
+  const d = ctx.getImageData(0,0,w,h).data;
+  let sr=0,sg=0,sb=0,n=w*h, lums=new Float32Array(n), sat=0;
+  for(let i=0,j=0;i<d.length;i+=4,j++){
+    const r=d[i],g=d[i+1],b=d[i+2];
+    sr+=r; sg+=g; sb+=b;
+    lums[j]=0.2126*r+0.7152*g+0.0722*b;
+    const mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+    sat += mx===0?0:(mx-mn)/mx;
+  }
+  const meanL = lums.reduce((a,b)=>a+b,0)/n;
+  let varr=0; for(let i=0;i<n;i++){ const dv=lums[i]-meanL; varr+=dv*dv; }
+  const sd = Math.sqrt(varr/n);
+  let edge=0;
+  for(let y=1;y<h;y++) for(let x=1;x<w;x++){
+    const i=y*w+x;
+    edge += Math.abs(lums[i]-lums[i-1]) + Math.abs(lums[i]-lums[i-w]);
+  }
+  edge /= (2*(w-1)*(h-1));
+  return {
+    warmth:(sr-sb)/n/255,
+    contrast:sd,
+    brightness:meanL,
+    detail:edge,
+    saturation:sat/n
+  };
+}
+
+/* =========================================================
+   Panels
+   ========================================================= */
+function updatePanels(){
+  const p = paperById(state.paper), t = activeTone(), sz = sizeById(state.size);
+  const tx = activeTex(), l = lightById(state.light);
+
+  $("paperReadout").innerHTML =
+    `<b>${p.name}</b><strong>Often supports:</strong> ${p.supports}<br><br><strong>Keep in mind:</strong> ${p.keep}`;
+
+  // what this paper is actually made in
+  document.querySelectorAll("#toneChips .chip").forEach(btn=>{
+    btn.disabled = !p.tones.includes(btn.dataset.id);
+    btn.setAttribute("aria-pressed", String(btn.dataset.id===t.id));
+  });
+  document.querySelectorAll("#texChips .chip").forEach(btn=>{
+    btn.disabled = !p.texs.includes(btn.dataset.id);
+    btn.setAttribute("aria-pressed", String(btn.dataset.id===tx.id));
+  });
+  $("toneNote").innerHTML = "<strong>" + p.why + "</strong><br>" + t.supports + " " + t.keep;
+  $("texNote").textContent = p.texs.length===1
+    ? "This surface is fixed. It is what the paper is."
+    : "Greyed out options are not made in this paper. Switch paper base to reach them.";
+
+  // hints
+  const hints = [];
+  const texStrength = p.tex.strength*tx.mul;
+  if(texStrength>0.16 && (sz.id==="6x4" || sz.id==="a4")){
+    hints.push(["The smaller the print, the less texture you need. At "+sz.name+" this surface will compete with fine detail.",false]);
+  }
+  if(texStrength>0.16 && state.border!=="wide"){
+    hints.push(["A wide border helps textured paper be seen as part of the work rather than as noise.",false]);
+  }
+  if(p.gloss>0.6 && (l.id==="gallery"||l.id==="overhead")){
+    hints.push(["Reflections are sitting across the image. Move the light, or consider a lustre or matte surface for this viewing context.",false]);
+  }
+  if(p.floor>0.10){
+    hints.push(["Blacks sit lighter on this paper. Allow for the narrower contrast range when you prepare the print file.",false]);
+  }
+  if(state.analysis){
+    const a = state.analysis;
+    if(a.warmth>0.045 && t.id==="warm") hints.push(["Your warm image and this warm base agree with each other. Sympathetic, gentle, low friction.",true]);
+    if(a.warmth<-0.015 && t.id==="bright") hints.push(["A cool image on bright white reads crisp and graphic. That match is doing real work.",true]);
+    if(a.warmth<-0.015 && t.id==="warm") hints.push(["A cool image on a warm base is a deliberate mismatch. Keep it only if it strengthens your concept.",false]);
+    if(a.detail>11 && texStrength>0.2) hints.push(["Your image carries a lot of fine detail. Heavy texture will fight it.",false]);
+    if(a.contrast<34 && p.contrast<1) hints.push(["Your image is already soft. A low contrast paper will flatten it further.",false]);
+  }
+  if(!hints.length) hints.push(["No conflicts detected. Make a small test print before you commit to the edition.",true]);
+  $("hints").innerHTML = hints.map(h=>`<li class="${h[1]?"good":""}">${h[0]}</li>`).join("");
+
+  // sentence
+  const q = $("qualityIn").value.trim() || "__________";
+  const b = $("becauseIn").value.trim() || "__________";
+  $("sentence").innerHTML =
+    `I selected <em>${p.name}</em> paper type and <em>${t.name}</em> paper tone because it supports the photograph's <em>${q}</em> by <em>${b}</em>.`;
+}
+
+function updateImageReadout(){
+  const a = state.analysis;
+  if(!a){ return; }
+  const warm = a.warmth>0.045 ? "warm" : a.warmth<-0.015 ? "cool" : "close to neutral";
+  const con = a.contrast>60 ? "high in contrast" : a.contrast<34 ? "soft and low in contrast" : "moderate in contrast";
+  const det = a.detail>11 ? "carries a lot of fine detail" : a.detail<5 ? "is built from smooth tonal areas" : "has a moderate amount of detail";
+  let suggest;
+  if(a.warmth<-0.015 && a.contrast>55) suggest = "Cool and harder subjects often suit bright white and glossier materials. Try resin coated gloss or lustre on bright white.";
+  else if(a.warmth>0.045) suggest = "Warm and softer subjects often suit warmer toned, softer papers. Try cotton rag or smooth matte on warm white.";
+  else if(a.detail<5) suggest = "Smooth tonal areas give texture room to work. A fine art fibre paper is worth testing here.";
+  else suggest = "Natural white sits comfortably under mixed subjects. Test it against one warmer and one brighter option.";
+  $("imageReadout").innerHTML =
+    `<b>Image analysis</b>This image reads <strong>${warm}</strong>, is <strong>${con}</strong>, and <strong>${det}</strong>.<br><br>${suggest}<br><br>This is a starting point, not an instruction. A deliberate mismatch can be the stronger choice.`;
+}
+
+/* =========================================================
+   Controls
+   ========================================================= */
+function buildControls(){
+  $("paperList").innerHTML = PAPERS.map(p=>{
+    const t = resolveTone(p, "natural");
+    const r=Math.round(t.rgb[0]*p.bias[0]), g=Math.round(t.rgb[1]*p.bias[1]), b=Math.round(t.rgb[2]*p.bias[2]);
+    return `<button class="paper" data-id="${p.id}" aria-pressed="${p.id===state.paper}">
+      <span class="sw" style="background:rgb(${r},${g},${b})"></span>
+      <span><span class="nm">${p.name}</span><span class="fam">${p.family}</span></span>
+    </button>`;
+  }).join("");
+
+  $("toneChips").innerHTML = TONES.map(t=>
+    `<button class="chip" data-id="${t.id}" aria-pressed="${t.id===state.tone}">
+      <span class="sw" style="background:rgb(${t.rgb.join(",")})"></span>${t.name}</button>`).join("");
+
+  $("texChips").innerHTML = TEXTURES.map(t=>
+    `<button class="chip" data-id="${t.id}" aria-pressed="${t.id===state.tex}">${t.name}</button>`).join("");
+
+  $("sizeChips").innerHTML = SIZES.map(s=>
+    `<button class="chip" data-id="${s.id}" aria-pressed="${s.id===state.size}">${s.name}</button>`).join("");
+
+  $("borderChips").innerHTML = BORDERS.map(b=>
+    `<button class="chip" data-id="${b.id}" aria-pressed="${b.id===state.border}">${b.name}</button>`).join("");
+
+  $("lightChips").innerHTML = LIGHTS.map(l=>
+    `<button class="chip" data-id="${l.id}" aria-pressed="${l.id===state.light}" style="flex:1 1 45%">${l.name}</button>`).join("");
+}
+
+function wireGroup(containerId, key, selector){
+  $(containerId).addEventListener("click", e=>{
+    const btn = e.target.closest(selector);
+    if(!btn || btn.disabled) return;
+    state[key] = btn.dataset.id;
+    if(key==="paper"){
+      const np = paperById(state.paper);
+      state.tone = resolveTone(np, state.tone).id;
+      state.tex  = resolveTex(np, state.tex).id;
+      $("toneChips").querySelectorAll(".chip").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.id===state.tone)));
+      $("texChips").querySelectorAll(".chip").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.id===state.tex)));
+    }
+    $(containerId).querySelectorAll(selector).forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.id===state[key])));
+    render();
+  });
+}
+
+buildControls();
+wireGroup("paperList","paper",".paper");
+wireGroup("toneChips","tone",".chip");
+wireGroup("texChips","tex",".chip");
+wireGroup("sizeChips","size",".chip");
+wireGroup("borderChips","border",".chip");
+wireGroup("lightChips","light",".chip");
+
+$("angle").addEventListener("input", e=>{ state.angle = +e.target.value; render(); });
+["qualityIn","becauseIn"].forEach(id=>$(id).addEventListener("input", updatePanels));
+
+/* =========================================================
+   Image loading
+   ========================================================= */
+function loadImageFile(file){
+  if(!file || !file.type.startsWith("image/")) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = ()=>{
+    state.img = img;
+    state.imgName = file.name;
+    state.analysis = analyseImage(img);
+    procCache.clear();
+    $("fileName").textContent = file.name + "  (" + img.width + " x " + img.height + " px)";
+    if(!$("imageTitle").value) $("imageTitle").value = file.name.replace(/\.[^.]+$/,"");
+    updateImageReadout();
+    render();
+    URL.revokeObjectURL(url);
+  };
+  img.onerror = ()=>{ $("fileName").textContent = "That file could not be read. Try a JPEG or PNG."; };
+  img.src = url;
+}
+
+$("uploadBtn").addEventListener("click", ()=>$("fileInput").click());
+$("fileInput").addEventListener("change", e=>loadImageFile(e.target.files[0]));
+
+const stageWrap = $("stageWrap"), dz = $("dropzone");
+["dragenter","dragover"].forEach(ev=>stageWrap.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("on");}));
+["dragleave","drop"].forEach(ev=>stageWrap.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("on");}));
+stageWrap.addEventListener("drop", e=>{ if(e.dataTransfer.files.length) loadImageFile(e.dataTransfer.files[0]); });
+
+/* ---- test chart ---- */
+function buildTestChart(){
+  const w=1500,h=1000;
+  const c=document.createElement("canvas"); c.width=w; c.height=h;
+  const x=c.getContext("2d");
+  x.fillStyle="#f2f2f2"; x.fillRect(0,0,w,h);
+
+  // smooth sky gradient panel
+  const sky=x.createLinearGradient(0,0,0,h*0.42);
+  sky.addColorStop(0,"#12325e"); sky.addColorStop(0.6,"#7fa3c9"); sky.addColorStop(1,"#e6dfcf");
+  x.fillStyle=sky; x.fillRect(0,0,w,h*0.42);
+
+  // silhouette shapes for shadow detail
+  x.fillStyle="#0d0d12";
+  x.beginPath(); x.moveTo(0,h*0.42); x.lineTo(w*0.18,h*0.24); x.lineTo(w*0.34,h*0.42); x.closePath(); x.fill();
+  x.fillStyle="#1c1c24";
+  x.beginPath(); x.moveTo(w*0.26,h*0.42); x.lineTo(w*0.44,h*0.29); x.lineTo(w*0.62,h*0.42); x.closePath(); x.fill();
+
+  // 11 step wedge
+  const sw=w/11, sy=h*0.42, sh=h*0.14;
+  for(let i=0;i<11;i++){
+    const v=Math.round(255*i/10);
+    x.fillStyle=`rgb(${v},${v},${v})`;
+    x.fillRect(i*sw,sy,sw+1,sh);
+  }
+  // near black and near white patches inside the darkest and lightest steps
+  x.fillStyle="rgb(16,16,16)"; x.fillRect(sw*0.25, sy+sh*0.3, sw*0.5, sh*0.4);
+  x.fillStyle="rgb(240,240,240)"; x.fillRect(w-sw*0.75, sy+sh*0.3, sw*0.5, sh*0.4);
+
+  // colour patches
+  const cols=["#e61e2a","#fac800","#00954b","#0d5bd6","#8b2fa0","#e08a4c","#7cc6d9","#3a3a3a"];
+  const cw=w/cols.length, cy=sy+sh, ch=h*0.13;
+  cols.forEach((col,i)=>{ x.fillStyle=col; x.fillRect(i*cw,cy,cw+1,ch); });
+
+  // fine detail line pairs
+  const dy=cy+ch, dh=h-dy;
+  x.fillStyle="#ffffff"; x.fillRect(0,dy,w,dh);
+  x.fillStyle="#101010";
+  let px=w*0.02;
+  for(let group=0;group<9;group++){
+    const lw=1+group*0.9;
+    for(let i=0;i<14;i++){ x.fillRect(px,dy+dh*0.12,lw,dh*0.34); px+=lw*2; }
+    px+=w*0.014;
+  }
+  // soft skin-like tonal gradient block
+  const sg=x.createLinearGradient(w*0.55,0,w,0);
+  sg.addColorStop(0,"#f2d3bd"); sg.addColorStop(0.5,"#d8a888"); sg.addColorStop(1,"#8d5a3f");
+  x.fillStyle=sg; x.fillRect(w*0.55,dy+dh*0.55,w*0.43,dh*0.34);
+  x.fillStyle="#101024";
+  x.font="600 26px Menlo, Consolas, monospace";
+  x.fillText("PRINT TEST CHART", w*0.03, dy+dh*0.82);
+  x.font="18px Menlo, Consolas, monospace";
+  x.fillText("shadow detail / step wedge / colour / fine line pairs / soft tone", w*0.03, dy+dh*0.93);
+  return c;
+}
+
+$("chartBtn").addEventListener("click", ()=>{
+  const chart = buildTestChart();
+  const img = new Image();
+  img.onload = ()=>{
+    state.img = img; state.imgName = "test-chart";
+    state.analysis = analyseImage(img);
+    procCache.clear();
+    $("fileName").textContent = "Print test chart loaded (1500 x 1000 px)";
+    if(!$("imageTitle").value) $("imageTitle").value = "Print test chart";
+    updateImageReadout();
+    render();
+  };
+  img.src = chart.toDataURL("image/png");
+});
+
+/* =========================================================
+   Loupe
+   ========================================================= */
+const loupe = $("loupe");
+$("loupeBtn").addEventListener("click", e=>{
+  state.loupe = !state.loupe;
+  e.currentTarget.setAttribute("aria-pressed", String(state.loupe));
+  if(!state.loupe) loupe.style.display="none";
+});
+$("stage").addEventListener("pointermove", e=>{
+  if(!state.loupe || !sheetRect.w) return;
+  const stageBox = $("stage").getBoundingClientRect();
+  const canvasBox = $("stageCanvas").getBoundingClientRect();
+  const rx = e.clientX - canvasBox.left - sheetRect.x;
+  const ry = e.clientY - canvasBox.top - sheetRect.y;
+  if(rx<0||ry<0||rx>sheetRect.w||ry>sheetRect.h){ loupe.style.display="none"; return; }
+  const zoom = 3.2, size = 150;
+  const dpr = sheetRect.dpr;
+  const lctx = loupe.getContext("2d");
+  lctx.save();
+  lctx.clearRect(0,0,size,size);
+  lctx.beginPath(); lctx.arc(size/2,size/2,size/2,0,Math.PI*2); lctx.clip();
+  const srcW = size/zoom*dpr, srcH = size/zoom*dpr;
+  lctx.imageSmoothingEnabled=false;
+  lctx.drawImage(sheetCanvas, rx*dpr-srcW/2, ry*dpr-srcH/2, srcW, srcH, 0,0,size,size);
+  lctx.restore();
+  loupe.style.display="block";
+  loupe.style.left = (e.clientX - stageBox.left - size/2) + "px";
+  loupe.style.top  = (e.clientY - stageBox.top - size - 16) + "px";
+});
+$("stage").addEventListener("pointerleave", ()=>{ loupe.style.display="none"; });
+
+/* =========================================================
+   Compare
+   ========================================================= */
+$("compareBtn").addEventListener("click", openCompare);
+$("cmpClose").addEventListener("click", ()=>$("overlay").classList.remove("on"));
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") $("overlay").classList.remove("on"); });
+
+function openCompare(){
+  const t = toneById(state.tone), l = lightById(state.light);
+  $("cmpMeta").textContent = "Same image, same light (" + l.name + "), same size (" + sizeById(state.size).name + "). Each paper is shown in the tone and surface it is actually made in, closest to your current choice. Click a paper to select it.";
+  const geo = sheetGeometry();
+  const aspect = geo.sheetW/geo.sheetH;
+  const W = 380, H = Math.round(W/aspect);
+  $("cmpGrid").innerHTML = PAPERS.map(p=>
+    `<button class="cmp" data-id="${p.id}" aria-pressed="${p.id===state.paper}">
+      <canvas data-canvas="${p.id}" width="${W}" height="${H}"></canvas>
+      <div class="lbl">${p.name}${p.id===state.paper?" &middot; selected":""}</div>
+    </button>`).join("");
+  PAPERS.forEach(p=>{
+    const c = $("cmpGrid").querySelector(`canvas[data-canvas="${p.id}"]`);
+    renderSheet(c, {geo, paper:p.id, tex:state.tex, light:state.light, angle:state.angle,
+                    toneOverride: resolveTone(p, state.tone)});
+  });
+  $("overlay").classList.add("on");
+}
+
+$("cmpGrid").addEventListener("click", e=>{
+  const btn = e.target.closest(".cmp");
+  if(!btn) return;
+  state.paper = btn.dataset.id;
+  document.querySelectorAll("#paperList .paper").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.id===state.paper)));
+  $("overlay").classList.remove("on");
+  render();
+});
+
+/* =========================================================
+   Export helpers
+   ========================================================= */
+function wrapText(ctx, text, maxW){
+  const words = String(text).split(/\s+/), lines=[]; let line="";
+  words.forEach(w=>{
+    const test = line ? line+" "+w : w;
+    if(ctx.measureText(test).width > maxW && line){ lines.push(line); line=w; }
+    else line = test;
+  });
+  if(line) lines.push(line);
+  return lines;
+}
+
+function drawWrapped(ctx, text, x, y, maxW, lh){
+  const lines = wrapText(ctx, text, maxW);
+  lines.forEach((l,i)=>ctx.fillText(l, x, y + i*lh));
+  return y + lines.length*lh;
+}
+
+function downloadCanvas(canvas, filename){
+  canvas.toBlob(blob=>{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  }, "image/png");
+}
+
+function safeName(s){ return (s||"student").trim().replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"") || "student"; }
+function today(){
+  const d = new Date();
+  return d.getDate().toString().padStart(2,"0")+"/"+(d.getMonth()+1).toString().padStart(2,"0")+"/"+d.getFullYear();
+}
+
+function highResSheet(maxW){
+  const geo = sheetGeometry();
+  const aspect = geo.sheetW/geo.sheetH;
+  const W = maxW, H = Math.round(W/aspect);
+  const c = document.createElement("canvas"); c.width=W; c.height=H;
+  renderSheet(c, {geo, paper:state.paper, tex:state.tex, light:state.light, angle:state.angle});
+  return {canvas:c, geo};
+}
+
+/* ---- preview only ---- */
+$("downloadPreviewBtn").addEventListener("click", ()=>{
+  if(!state.img){ flashWarn("Load an image before downloading a preview."); return; }
+  const {canvas} = highResSheet(1600);
+  downloadCanvas(canvas, "paper-preview-"+state.paper+"-"+activeTone().id+".png");
+});
+
+function flashWarn(msg){
+  $("warn").textContent = msg;
+  setTimeout(()=>{ if($("warn").textContent===msg) $("warn").textContent=""; }, 6000);
+}
+
+/* ---- paper decision sheet ---- */
+$("downloadSheetBtn").addEventListener("click", ()=>{
+  if(!state.img) return flashWarn("Load an image before building your paper decision.");
+  const name = $("studentName").value.trim();
+  const moods = [$("mood1").value.trim(), $("mood2").value.trim(), $("mood3").value.trim()];
+  const q = $("qualityIn").value.trim() || "__________";
+  const b = $("becauseIn").value.trim() || "__________";
+  const blanks = [];
+  if(moods.some(m=>!m)) blanks.push("the three mood words");
+  if(!$("qualityIn").value.trim() || !$("becauseIn").value.trim()) blanks.push("your reason sentence");
+  $("warn").textContent = blanks.length ? "Downloading with blanks left in " + blanks.join(" and ") + "." : "";
+
+  const W=2000, H=1414;
+  const c=document.createElement("canvas"); c.width=W; c.height=H;
+  const x=c.getContext("2d");
+  x.fillStyle="#ffffff"; x.fillRect(0,0,W,H);
+
+  // header
+  x.fillStyle="#000054"; x.fillRect(0,0,W,168);
+  x.fillStyle="#e61e2a"; x.fillRect(0,168,W,8);
+  x.fillStyle="#fac800";
+  x.font="600 22px Menlo, Consolas, monospace";
+  x.fillText("VART6492C  REALISE A CREATIVE PROJECT", 70, 66);
+  x.fillStyle="#ffffff";
+  x.font="800 54px 'Helvetica Neue', Helvetica, Arial, sans-serif";
+  x.fillText("Paper decision", 70, 128);
+  x.font="500 24px 'Helvetica Neue', Helvetica, Arial, sans-serif";
+  x.textAlign="right";
+  if(name) x.fillText(name, W-70, 92);
+  x.font="400 20px Menlo, Consolas, monospace";
+  x.fillStyle="#c9c9e0";
+  x.fillText(today(), W-70, 128);
+  x.textAlign="left";
+
+  // print
+  const boxX=70, boxY=230, boxW=980, boxH=1000;
+  const {canvas:sheet} = highResSheet(1400);
+  let sw = boxW, sh = sw*sheet.height/sheet.width;
+  if(sh>boxH){ sh=boxH; sw=sh*sheet.width/sheet.height; }
+  const sx = boxX + (boxW-sw)/2, sy = boxY + (boxH-sh)/2;
+  x.save();
+  x.shadowColor="rgba(0,0,40,0.35)"; x.shadowBlur=40; x.shadowOffsetY=14;
+  x.fillStyle="#fff"; x.fillRect(sx,sy,sw,sh);
+  x.restore();
+  x.drawImage(sheet, sx, sy, sw, sh);
+  x.strokeStyle="rgba(0,0,60,0.18)"; x.lineWidth=1; x.strokeRect(sx+.5,sy+.5,sw-1,sh-1);
+
+  x.fillStyle="#75758a";
+  x.font="400 19px Menlo, Consolas, monospace";
+  x.fillText("SIMULATED PREVIEW  \u00b7  NOT A SUBSTITUTE FOR A TEST PRINT", boxX, boxY+boxH+46);
+
+  // right column
+  const p=paperById(state.paper), t=activeTone(), tx=activeTex(), sz=sizeById(state.size);
+  const l=lightById(state.light), bd=borderById(state.border);
+  let cx=1130, cy=250, colW=800;
+
+  function heading(txt){
+    x.fillStyle="#e61e2a"; x.fillRect(cx,cy-26,34,5);
+    x.fillStyle="#000054";
+    x.font="600 20px Menlo, Consolas, monospace";
+    x.fillText(txt.toUpperCase(), cx, cy);
+    cy+=38;
+  }
+  function body(txt,size=27,color="#16162e",lh=38){
+    x.fillStyle=color;
+    x.font="400 "+size+"px 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    cy = drawWrapped(x, txt, cx, cy, colW, lh);
+    cy+=18;
+  }
+
+  heading("Image");
+  body($("imageTitle").value.trim() || state.imgName || "Untitled", 30, "#16162e", 40);
+
+  heading("Mood in three words");
+  x.fillStyle="#000054";
+  x.font="700 34px 'Helvetica Neue', Helvetica, Arial, sans-serif";
+  let mx=cx;
+  moods.forEach((m,i)=>{
+    m = m || "__________";
+    const wdt = x.measureText(m).width;
+    x.fillStyle="#f2f2f2"; x.fillRect(mx-14, cy-34, wdt+28, 50);
+    x.fillStyle="#000054"; x.fillText(m, mx, cy);
+    mx += wdt + 46;
+  });
+  cy+=74;
+
+  heading("Paper decision");
+  const rows = [
+    ["Paper type", p.name+"  ("+p.family+")"],
+    ["Paper tone", t.name],
+    ["Surface", tx.word+"  ("+tx.name.toLowerCase()+" setting)"],
+    ["Print size", sz.name+"  "+Math.round(sheetGeometry().sheetW)+" x "+Math.round(sheetGeometry().sheetH)+" mm"],
+    ["Border", bd.name],
+    ["Viewed under", l.name]
+  ];
+  rows.forEach(r=>{
+    x.fillStyle="#75758a";
+    x.font="400 21px Menlo, Consolas, monospace";
+    x.fillText(r[0].toUpperCase(), cx, cy);
+    x.fillStyle="#16162e";
+    x.font="600 27px 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    x.fillText(r[1], cx+250, cy);
+    cy+=44;
+  });
+  cy+=22;
+
+  heading("Why this paper");
+  x.fillStyle="#000054"; x.fillRect(cx, cy-30, colW, 4);
+  cy+=24;
+  body("I selected "+p.name+" paper type and "+t.name+" paper tone because it supports the photograph's "+q+" by "+b+".", 28, "#16162e", 40);
+
+  // footer
+  x.fillStyle="#f2f2f2"; x.fillRect(0,H-92,W,92);
+  x.fillStyle="#000054"; x.fillRect(0,H-92,W,4);
+  x.fillStyle="#5a5a70";
+  x.font="400 19px Menlo, Consolas, monospace";
+  x.fillText("Paper Choice Simulator  \u00b7  Studio activity  \u00b7  Cert IV Photography and Digital Imaging", 70, H-40);
+  x.textAlign="right";
+  x.fillText("Design: Learning & Teaching Innovation Team - RMIT College of Vocational Education", W-70, H-40);
+  x.textAlign="left";
+
+  downloadCanvas(c, "Paper-decision-"+safeName(name)+".png");
+});
+
+/* ---- comparison sheet ---- */
+$("cmpDownload").addEventListener("click", ()=>{
+  if(!state.img){ flashWarn("Load an image before downloading a comparison sheet."); return; }
+  const geo = sheetGeometry();
+  const aspect = geo.sheetW/geo.sheetH;
+  const cols=4, rows=Math.ceil(PAPERS.length/cols);
+  const cellW=440, gap=34, pad=70, headH=180, labH=52;
+  const cellH=Math.round(cellW/aspect);
+  const W = pad*2 + cols*cellW + (cols-1)*gap;
+  const H = headH + pad + rows*(cellH+labH) + (rows-1)*gap + 96;
+  const c=document.createElement("canvas"); c.width=W; c.height=H;
+  const x=c.getContext("2d");
+  x.fillStyle="#ffffff"; x.fillRect(0,0,W,H);
+  x.fillStyle="#000054"; x.fillRect(0,0,W,headH-24);
+  x.fillStyle="#e61e2a"; x.fillRect(0,headH-24,W,8);
+  x.fillStyle="#fac800"; x.font="600 22px Menlo, Consolas, monospace";
+  x.fillText("VART6492C  PAPER COMPARISON", pad, 62);
+  x.fillStyle="#ffffff"; x.font="800 46px 'Helvetica Neue', Helvetica, Arial, sans-serif";
+  x.fillText($("imageTitle").value.trim() || state.imgName || "Untitled image", pad, 118);
+  x.fillStyle="#c9c9e0"; x.font="400 20px Menlo, Consolas, monospace";
+  x.textAlign="right";
+  x.fillText(activeTone().name+"  /  "+activeTex().name+"  /  "+sizeById(state.size).name+"  /  "+lightById(state.light).name, W-pad, 118);
+  x.textAlign="left";
+
+  PAPERS.forEach((p,i)=>{
+    const col=i%cols, row=Math.floor(i/cols);
+    const cxp = pad + col*(cellW+gap);
+    const cyp = headH + pad + row*(cellH+labH+gap);
+    const cell=document.createElement("canvas");
+    cell.width=cellW; cell.height=cellH;
+    renderSheet(cell, {geo, paper:p.id, tex:state.tex, light:state.light, angle:state.angle,
+                       toneOverride: resolveTone(p, state.tone)});
+    x.save();
+    x.shadowColor="rgba(0,0,40,0.28)"; x.shadowBlur=22; x.shadowOffsetY=8;
+    x.fillStyle="#fff"; x.fillRect(cxp,cyp,cellW,cellH);
+    x.restore();
+    x.drawImage(cell,cxp,cyp);
+    x.strokeStyle="rgba(0,0,60,0.15)"; x.strokeRect(cxp+.5,cyp+.5,cellW-1,cellH-1);
+    x.fillStyle = p.id===state.paper ? "#e61e2a" : "#000054";
+    x.font="600 21px 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    x.fillText(p.name + (p.id===state.paper ? "  (selected)" : ""), cxp, cyp+cellH+32);
+  });
+
+  x.fillStyle="#5a5a70"; x.font="400 18px Menlo, Consolas, monospace";
+  x.fillText("Simulated previews. Design: Learning & Teaching Innovation Team - RMIT College of Vocational Education", pad, H-38);
+  downloadCanvas(c, "Paper-comparison-"+safeName($("studentName").value)+".png");
+});
+
+/* =========================================================
+   Start
+   ========================================================= */
+let rz;
+window.addEventListener("resize", ()=>{ clearTimeout(rz); rz=setTimeout(render, 120); });
+render();
+</script>
+</body>
+</html>
