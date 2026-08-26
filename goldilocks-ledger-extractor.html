@@ -25,7 +25,7 @@
   .wrap{max-width:960px;margin:0 auto;padding:0 24px;}
 
   header.top{background:var(--blue);color:var(--white);padding:44px 0 34px;margin-bottom:34px;border-bottom:6px solid var(--red);}
-  .eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
+  .eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#fff; margin:0 0 12px; display:flex; align-items:center; gap:8px;}
   .eyebrow .dot{width:7px;height:7px;background:var(--red);display:inline-block;}
   h1{font-family:var(--display); font-weight:800; font-size:36px; line-height:1.05; margin:0 0 14px; letter-spacing:-0.01em;}
   .lede{font-size:15.5px; line-height:1.6; color:#C6C6DA; max-width:64ch; margin:0;}
@@ -90,8 +90,8 @@
   .hr-picker{display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:13px;}
   .hr-picker label{font-family:var(--mono); font-size:11px; color:var(--grey-text); text-transform:uppercase;}
 
-  .btn{font-family:var(--sans); font-size:13.5px; font-weight:600; padding:11px 20px; border-radius:3px; border:2px solid var(--red); background:var(--red); color:#fff; cursor:pointer;}
-  .btn:hover{background:var(--red-dark); border-color:var(--red-dark);}
+  .btn{font-family:var(--sans); font-size:13.5px; font-weight:600; padding:11px 20px; border-radius:3px; border:2px solid var(--red-dark); background:var(--red-dark); color:#fff; cursor:pointer;}
+  .btn:hover{background:#8F1018; border-color:#8F1018;}
   .btn.secondary{background:#fff; color:var(--black); border-color:var(--grey-dark);}
   .btn.secondary:hover{border-color:var(--black);}
   .btn.small{padding:6px 12px; font-size:12.5px;}
@@ -122,6 +122,23 @@
   .ledger-scroll{max-height:480px; overflow:auto; border:1px solid var(--grey); border-radius:4px;}
 
   .exportbox{background:var(--ember); border:1.5px solid var(--grey); border-radius:4px; padding:16px 18px; margin-top:18px;}
+  .export-label{font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--grey-text); margin-bottom:12px;}
+  .slice-btns{display:flex; flex-wrap:wrap; gap:8px;}
+  .slice-btn{font-family:var(--mono); font-size:12.5px; font-weight:500; padding:8px 14px; border-radius:3px; border:1.5px solid var(--grey-dark); background:#fff; color:var(--black); cursor:pointer;}
+  .slice-btn:hover{border-color:var(--red); color:var(--red-dark);}
+  .slice-btn .cnt{color:var(--grey-text);}
+  .slice-btn.unalloc{border-color:var(--yellow); background:var(--yellow-tint);}
+  .dz-small{padding:14px 18px; margin-top:4px;}
+  .scopeq{margin-bottom:10px;}
+  .scopeq label{display:block; font-size:12.5px; color:var(--grey-text); margin-bottom:4px; line-height:1.45;}
+  .scopeq textarea{width:100%; font-family:var(--sans); font-size:13px; padding:8px 10px; border:1.5px solid var(--grey-dark); border-radius:3px; resize:vertical; box-sizing:border-box;}
+  .scopeq textarea:focus{outline:none; border-color:var(--red);}
+  .bench-pill{display:inline-block; font-family:var(--mono); font-size:11px; border-radius:3px; padding:2px 8px; margin:2px 6px 2px 0; background:var(--blue-tint); color:var(--blue); font-weight:600;}
+  .bench-pill.warn{background:var(--yellow-tint); color:#7a6200;}
+  .bench-pill.bad{background:var(--red-tint); color:var(--red-dark);}
+  table.bench-review{border-collapse:collapse; width:100%; font-size:11.5px;}
+  table.bench-review td{padding:3px 8px; border-bottom:1px solid var(--grey); vertical-align:top;}
+  table.bench-review td:first-child{font-family:var(--mono); white-space:nowrap;}
   .copied-msg{font-family:var(--mono); font-size:12px; color:var(--red-dark); margin-left:10px; font-weight:600;}
 
   footer.foot{max-width:960px;margin:60px auto 0;padding:24px; border-top:1px solid var(--grey); font-family:var(--mono); font-size:11.5px; color:var(--grey-dark);}
@@ -151,7 +168,7 @@
   <div class="wrap">
     <p class="eyebrow"><span class="dot"></span>CoVE Assessment Toolkit — Goldilocks companion</p>
     <h1>Ledger Extractor</h1>
-    <p class="lede">Upload the competency map — it finds the claim tables, works out the columns, and builds the ledger itself. <strong>You check it, not build it.</strong> Then paste it into Prompt 1 instead of asking Copilot to transcribe the map by hand.</p>
+    <p class="lede">Upload the competency map (and optionally the Unit of Competency) — it finds the claim tables, works out the columns, and builds the ledger itself. <strong>You check it, not build it.</strong> Export the full ledger, or per-task slices for single-task Copilot sessions — one slice, one task document, one fresh chat.</p>
   </div>
 </header>
 
@@ -168,6 +185,15 @@
       </div>
       <div id="filepillWrap"></div>
       <div id="spinnerWrap"></div>
+      <div class="unit-uc-upload">
+        <div class="export-label" style="margin-top:18px;">Unit of Competency (optional) — enables the benchmark file export</div>
+        <p class="helptext" style="margin-bottom:10px;">Add the unit .docx as well and Step 3 will also build the <strong>benchmark file</strong> mechanically — verbatim requirement text, computed tacit triggers, and the ledger crosswalk. Only the four scope questions need a human.</p>
+        <div class="dropzone dz-small" id="unitDropzone" tabindex="0">
+          <input type="file" id="unitFileInput" accept=".docx">
+          <div class="dz-label">Click to add the Unit of Competency (.docx)</div>
+        </div>
+        <div id="unitPillWrap"></div>
+      </div>
     </div>
   </div>
 
@@ -202,23 +228,46 @@
       </div>
       <div class="btnrow"><button class="btn secondary" id="addRow">+ Add row</button></div>
       <div class="exportbox">
+        <div class="export-label">Full ledger — for a single-session run, or as the master record</div>
         <div class="btnrow" style="margin-top:0;">
           <button class="btn" id="copyMd">Copy as markdown table</button>
           <button class="btn secondary" id="downloadMd">Download .md</button>
           <span class="copied-msg" id="copiedMsg" style="display:none;">Copied.</span>
         </div>
       </div>
+      <div class="exportbox" id="benchBox" style="display:none;">
+        <div class="export-label">Benchmark file — verbatim from the unit, mechanically</div>
+        <div id="benchSummary"></div>
+        <details class="other-tables" style="margin:10px 0;"><summary>Review the extracted requirements &amp; tacit triggers</summary><div id="benchReview" style="padding:10px 4px;"></div></details>
+        <p class="helptext" style="margin-bottom:8px;">Answer the four scope questions — they need a human reading the map, not a Copilot session. They're saved into the file's SCOPE section.</p>
+        <div class="scopeq"><label>1. Cluster — do any documents refer to a cluster or co-assessed units, and does the number of units supplied match?</label><textarea id="scopeQ1" rows="2" placeholder="e.g. No — map states cluster N/A; one unit supplied, one implied."></textarea></div>
+        <div class="scopeq"><label>2. Absent components — does the map name or tick an assessment instrument that doesn't exist in the set it describes? (Instruments only.)</label><textarea id="scopeQ2" rows="2"></textarea></div>
+        <div class="scopeq"><label>3. Linked resources — every template, portal, LMS site, case study or instrument the documents link to.</label><textarea id="scopeQ3" rows="2"></textarea></div>
+        <div class="scopeq"><label>4. Student versions — do student-facing documents exist separately from assessor guides?</label><textarea id="scopeQ4" rows="2"></textarea></div>
+        <div class="btnrow">
+          <button class="btn" id="downloadBench">Download benchmark .md</button>
+          <span class="copied-msg" id="benchWarnMsg" style="display:none;"></span>
+        </div>
+      </div>
+      <div class="exportbox" id="sliceBox">
+        <div class="export-label">Per-task slices — one file per assessment task, for single-task Copilot sessions</div>
+        <p class="helptext" style="margin-bottom:12px;">Each slice keeps its rows' <strong>master ledger row numbers</strong>, so results from separate sessions reconcile back against the full ledger. Rows whose task reference carries no recognisable task identifier land in an <strong>UNALLOCATED</strong> slice — fix the reference in the table above and rebuild before using it.</p>
+        <div class="slice-btns" id="sliceButtons"></div>
+        <div class="btnrow"><button class="btn secondary" id="downloadAllSlices">Download all slices</button></div>
+      </div>
     </div>
   </div>
 </div>
 
-<footer class="foot">Runs entirely in this browser tab — nothing uploaded anywhere. Mechanical transcription only; judging whether a claim is genuinely met stays with Copilot and the assessor.</footer>
+<footer class="foot">Goldilocks Extractor v3.0 — ledger, per-task slices, and mechanical benchmark file (verbatim unit text, computed tacit triggers, computed crosswalk). Runs entirely in this browser tab — nothing uploaded anywhere. Mechanical transcription only; judging whether a claim is genuinely met stays with Copilot and the assessor.</footer>
 
 <script>
 (function(){
   let allTables = [];      // {grid, name, prefix, headerRow, codeCol, refCols:[{idx,label}], matched}
   let ledgerRows = [];
   let rowCounter = 0;
+  let mapItems = [];       // {code, text, family} — one per map requirement row, for benchmark crosswalk alignment
+  let unitModel = null;    // parsed Unit of Competency, when supplied
 
   const $ = id => document.getElementById(id);
   const activate = n => { $('step'+n).dataset.inactive='false'; $('num'+n).classList.add('done'); };
@@ -285,11 +334,18 @@
   }
 
   function guessTableName(grid){
+    // ◆ Order matters, and 'performance criteria' must be tested LAST. The PE and KE
+    // tables' own header rows say "…satisfy all of the requirements of the elements and
+    // performance criteria…" — testing PC first classifies BOTH of them as PC tables,
+    // which is the confirmed root cause of malformed "PCapplying relevant work health
+    // and safety…" codes: the PE table wearing the PC prefix. The specific families
+    // (FS, PE, KE) can only match their own tables, so they go first; anything left
+    // that mentions performance criteria is genuinely the PC table.
     const flat = grid.slice(0,2).flat().join(' ').toLowerCase();
-    if(flat.includes('performance criteria')) return {name:'Performance Criteria', prefix:'PC', matched:true};
     if(flat.includes('foundation skill')) return {name:'Foundation Skills', prefix:'FS-', matched:true};
     if(flat.includes('performance evidence')) return {name:'Performance Evidence', prefix:'PE-', matched:true};
     if(flat.includes('knowledge evidence')) return {name:'Knowledge Evidence', prefix:'KE-', matched:true};
+    if(flat.includes('performance criteria')) return {name:'Performance Criteria', prefix:'PC', matched:true};
     return {name:'Table', prefix:'', matched:false};
   }
 
@@ -325,8 +381,22 @@
       s.avgLen = vals.length ? vals.reduce((a,v)=>a+v.length,0)/vals.length : 999;
     });
 
-    // code column: exclude header text containing "element" or "description"
-    const eligible = stats.filter(s => !/element/i.test(header[s.col]||'') && !/description/i.test(header[s.col]||''));
+    // code column: exclude header text containing "element" or "description", AND exclude
+    // any column already identifiable as a task-reference column by its header ("Task 1",
+    // "AT1:"). Without this, a reference column whose cells are bare item numbers ("12",
+    // "4, 5, 6") can out-score the real code column on the numeric-pattern test below —
+    // the code column may have zero inline codes at all, while a reference column full of
+    // plain numbers looks, to a naive pattern match, exactly like one.
+    const TASK_LABEL_RE = /(task\s*[:\-]?\s*\d+|\bAT\s*\d+)/i;
+    // ◆ Anchored to the START of the header, not "contains anywhere". A genuine "Element"
+    // or "Description" label column is short and begins with that word. A requirement-text
+    // column can legitimately mention "element" mid-sentence while describing what a
+    // performance criterion is ("...achievement of the element") — an unanchored match
+    // wrongly excludes that column too, and can leave nothing eligible at all.
+    const eligible = stats.filter(s => {
+      const h = header[s.col]||'';
+      return !/^element/i.test(h) && !/^description/i.test(h) && !TASK_LABEL_RE.test(h);
+    });
     let codeCol = 0;
     if(eligible.length){
       const withCodes = eligible.filter(s=>s.codeMatches>0);
@@ -358,20 +428,76 @@
     stats.forEach(s=>{
       if(s.col === codeCol) return;
       const h = header[s.col] || '';
-      if(/element/i.test(h)) return;
-      if(/description/i.test(h)) return;
-      const m = h.match(/task\s*[:\-]?\s*(\d+)/i);
+      if(/^element/i.test(h)) return;
+      if(/^description/i.test(h)) return;
+      // Column headers name the task either as "Task 1" or directly as "AT1:" —
+      // maps vary, and both need to produce the same "AT1" label.
+      const m = h.match(/task\s*[:\-]?\s*(\d+)/i) || h.match(/\bAT\s*(\d+)/i);
       const label = m ? ('AT'+m[1]) : null;
       refCols.push({idx: s.col, label});
     });
-    return {headerRow, codeCol, refCols};
+
+    // ◆ POSITIONAL CODING — some units never write "1.1" or "K.E.1.1" into the cell at all;
+    // the code exists only as the row's position (which Element it sits under, which position
+    // within that group). If the chosen code column has zero numeric-code matches AND its values
+    // read as full sentences rather than short labels (Foundation Skills' "Reading", "Writing" —
+    // real code-column text — stay well under this), generating a code by gluing the family
+    // prefix onto the raw sentence produces garbage like "PCWork area access permits are
+    // obtained..." — a confirmed real failure. Detect this case and switch to positional numbering.
+    const codeStats = stats.find(s=>s.col===codeCol);
+    const positional = !!(codeStats && codeStats.codeMatches===0 && codeStats.avgLen>40);
+    const groupCol = positional ? detectGroupCol(grid, headerRow, codeCol) : -1;
+
+    return {headerRow, codeCol, refCols, positional, groupCol};
   }
 
-  // A bare item token: "7", "19a", "3" — a number with an optional single trailing letter.
-  function isItemToken(t){ return /^\d+[A-Za-z]?$/.test(t); }
+  // Looks for a column to the left of the code column whose values form contiguous
+  // blocks — the same text repeated for 2+ rows in a row, then a different value repeated
+  // again — the classic shape of an "Element" column that several Performance Criteria sit
+  // under. Banner/section-header rows (every cell identical) are excluded from the scan so a
+  // mid-table heading can't be mistaken for a repeated group value. Returns -1 if no such
+  // column exists, in which case codes fall back to flat sequential numbering.
+  function detectGroupCol(grid, headerRow, codeCol){
+    const dataRows = grid.slice(headerRow+1).filter(r => !isMergedTitleRow(r));
+    for(let c = 0; c < codeCol; c++){
+      const vals = dataRows.map(r=>r[c]||'');
+      if(vals.every(v=>!v)) continue;
+      let chunks = 0, i = 0, sawRepeatBlock = false, allSame = true, prev = null;
+      while(i < vals.length){
+        if(!vals[i]){ i++; continue; }
+        let j = i;
+        while(j < vals.length && vals[j] === vals[i]) j++;
+        if(j - i >= 2) sawRepeatBlock = true;
+        if(prev !== null && vals[i] !== prev) allSame = false;
+        prev = vals[i];
+        chunks++;
+        i = j;
+      }
+      if(sawRepeatBlock && chunks >= 2 && !allSame) return c;
+    }
+    return -1;
+  }
+
+  // A bare item token: "7", "19a", "3" — a number with an optional single trailing letter —
+  // or a short lettered reference like "OQ2" (oral question), "Q4". Maps mix both freely.
+  function isItemToken(t){ return /^(?:[A-Za-z]{1,3})?\d+[A-Za-z]?$/.test(t); }
 
   function splitLine(line){
-    return line.split(/\s*(?:,|;|\/|&| and )\s*/i).map(t=>t.trim()).filter(Boolean);
+    const primary = line.split(/\s*(?:,|;|\/|&| and )\s*/i).map(t=>t.trim()).filter(Boolean);
+    // Second pass: a token like "7 OQ2 OQ3 OQ6" is several space-separated references in
+    // one — real map cells append oral-question codes with spaces, not commas. Split on
+    // whitespace ONLY when every resulting piece is itself a reference token, so a label
+    // like "Role plays 1–3" (where "Role" is not a reference) stays intact.
+    const out = [];
+    primary.forEach(tok=>{
+      const pieces = tok.split(/\s+/);
+      if(pieces.length > 1 && pieces.every(isItemToken)){
+        pieces.forEach(p=>out.push(p));
+      } else {
+        out.push(tok);
+      }
+    });
+    return out;
   }
 
   // Splits one raw cell into individual references, respecting paragraph breaks.
@@ -437,7 +563,14 @@
       return {
         grid, name: guess.name, prefix: guess.prefix, matched: guess.matched,
         headerRow: analysis.headerRow, codeCol: analysis.codeCol, refCols: analysis.refCols,
-        included: guess.matched
+        positional: analysis.positional, groupCol: analysis.groupCol,
+        // A matched table with no reference columns has no claims to extract — most
+        // commonly the Foundation Skills note stating FS are explicit in the performance
+        // criteria (a narrative row, not a mapping table). Auto-including it just trips
+        // the zero-row warning at build time for a table that legitimately has nothing.
+        // Leave it unticked; the user can still tick it after fixing roles in Adjust if
+        // the column detection was actually wrong.
+        included: guess.matched && analysis.refCols.length > 0
       };
     });
 
@@ -473,14 +606,18 @@
       }
 
       const card = document.createElement('div');
-      card.className = 'detected-card';
+      card.className = 'detected-card' + (tbl.included ? '' : ' excluded');
       card.dataset.idx = idx;
+      const noRefs = !tbl.refCols || tbl.refCols.length === 0;
+      const summaryHtml = noRefs
+        ? 'No reference columns — nothing to extract. Usually a narrative note (e.g. "Foundation Skills are explicit in the performance criteria"), not a mapping table. If that\'s wrong, open <b>Adjust</b> and set the column roles, then tick it.'
+        : summariseTable(tbl);
       card.innerHTML =
         '<div class="dc-row">' +
-          '<input type="checkbox" class="includeToggle" data-idx="'+idx+'" checked>' +
+          '<input type="checkbox" class="includeToggle" data-idx="'+idx+'"' + (tbl.included ? ' checked' : '') + '>' +
           '<div style="flex:1;min-width:0;">' +
             '<div class="dc-title">'+escapeHtml(tbl.name)+'</div>' +
-            '<div class="dc-summary" data-summary>'+summariseTable(tbl)+'</div>' +
+            '<div class="dc-summary" data-summary>'+summaryHtml+'</div>' +
           '</div>' +
           '<div class="dc-actions"><button class="link-btn" data-act="adjust">Adjust</button></div>' +
         '</div>' +
@@ -609,6 +746,7 @@
     const unit = $('unitCode').value.trim();
     ledgerRows = [];
     rowCounter = 0;
+    mapItems = [];
     let cellsExamined = 0, cellsSplit = 0;
     const silentTables = [];
 
@@ -616,11 +754,76 @@
       if(!tbl.included) return;
       if(!tbl.refCols || tbl.refCols.length === 0){ silentTables.push(tbl.name + ' (no reference columns detected)'); return; }
       const before = ledgerRows.length;
+      let groupIdx = 0, withinIdx = 0, flatIdx = 0, lastGroupVal = null;
+      // ◆ Umbrella tracking — Performance Evidence only, per the kit's stable code
+      // scheme (G-CODES): PE preserves umbrella/sub-bullet structure as PE-1 → PE-1a,
+      // PE-1b…, while KE stays flat (an umbrella row simply consumes the next number,
+      // which matches how the benchmark numbers KE in unit order). An umbrella row is
+      // one whose code-cell text ends in a colon ("…including:") AND whose reference
+      // cells are all empty — a heading over the bullets beneath it, carrying no claims
+      // of its own. Without this, the umbrella eats PE-1 and every sub-bullet's code
+      // shifts off the unit's structure by one.
+      let umbrellaIdx = 0, subIdx = 0;
+      const subLetter = n => {
+        let s = ''; while(n > 0){ n--; s = String.fromCharCode(97 + (n % 26)) + s; n = Math.floor(n/26); }
+        return s;
+      };
       for(let r = tbl.headerRow+1; r < tbl.grid.length; r++){
         const row = tbl.grid[r];
+        // A banner/section-header row (every non-empty cell identical) is a mid-table
+        // heading, not a claim row — its "code" would just be its own label repeated,
+        // and its "references" would be that same label leaking into every task column.
+        // It never emits claim rows. BUT if its text ends in a colon ("…, including:")
+        // it is an UMBRELLA over the bullets beneath it, and it consumes a code so the
+        // numbering matches the unit's own structure: in PE it takes the next number and
+        // starts a lettered sub-series (PE-1 → PE-1a, PE-1b…, per G-CODES); in KE and
+        // other flat families it takes the next flat number (KE-2 = the umbrella itself,
+        // KE-3 = its first sub-item — matching how the benchmark numbers KE in unit order).
+        if(isMergedTitleRow(row)){
+          const bannerText = (row.find(c=>c) || '').trim();
+          if(tbl.positional && tbl.groupCol < 0 && /:\s*$/.test(bannerText)){
+            if(tbl.prefix === 'PE-'){
+              umbrellaIdx = flatIdx + umbrellaIdx + 1; flatIdx = 0; subIdx = 0;
+              mapItems.push({ code: tbl.prefix + umbrellaIdx, text: bannerText, family: tbl.prefix || '?' });
+            } else {
+              flatIdx++;
+              mapItems.push({ code: tbl.prefix + flatIdx, text: bannerText, family: tbl.prefix || '?' });
+            }
+          }
+          continue;
+        }
         const rawCode = (row[tbl.codeCol] || '').trim();
         if(!rawCode) continue;
-        const code = cleanCode(rawCode, tbl.prefix);
+
+        let code;
+        if(tbl.positional){
+          // No inline code exists in this cell — derive one from position instead.
+          if(tbl.groupCol >= 0){
+            const groupVal = row[tbl.groupCol] || '';
+            if(groupVal && groupVal !== lastGroupVal){ groupIdx++; withinIdx = 0; lastGroupVal = groupVal; }
+            withinIdx++;
+            code = tbl.prefix + groupIdx + '.' + withinIdx;
+          } else if(tbl.prefix === 'PE-'){
+            const refsAllEmpty = tbl.refCols.every(({idx:cIdx}) => !((row[cIdx]||'').trim()));
+            const isUmbrella = /:\s*$/.test(rawCode) && refsAllEmpty;
+            if(isUmbrella){
+              umbrellaIdx = flatIdx + umbrellaIdx + 1; flatIdx = 0; subIdx = 0;
+              code = tbl.prefix + umbrellaIdx;   // e.g. PE-1 — the umbrella itself; no refs, so no claim rows
+            } else if(umbrellaIdx > 0){
+              subIdx++;
+              code = tbl.prefix + umbrellaIdx + subLetter(subIdx);   // PE-1a, PE-1b …
+            } else {
+              flatIdx++;
+              code = tbl.prefix + flatIdx;       // no umbrella seen yet — flat numbering
+            }
+          } else {
+            flatIdx++;
+            code = tbl.prefix + flatIdx;
+          }
+        } else {
+          code = cleanCode(rawCode, tbl.prefix);
+        }
+        mapItems.push({ code: code, text: rawCode, family: tbl.prefix || '?' });
         tbl.refCols.forEach(({idx:cIdx, label})=>{
           const raw = (row[cIdx] || '').trim();
           if(!raw) return;
@@ -660,6 +863,8 @@
     $('statSplit').textContent = cellsSplit;
     $('statTotal').textContent = ledgerRows.length;
     renderLedgerBody();
+    renderSliceButtons();
+    renderBenchBox();
     activate(3);
     document.getElementById('step3').scrollIntoView({behavior:'smooth', block:'start'});
   }
@@ -678,13 +883,17 @@
         '<td contenteditable="true" data-f="verbatim">'+escapeHtml(row.verbatim)+'</td>' +
         '<td><button class="del-btn" title="Remove row">×</button></td>';
       tr.querySelectorAll('[contenteditable]').forEach(td=>{
-        td.addEventListener('input', ()=>{ ledgerRows[i][td.dataset.f] = td.textContent; });
+        td.addEventListener('input', ()=>{
+          ledgerRows[i][td.dataset.f] = td.textContent;
+          if(td.dataset.f === 'ref') renderSliceButtons();   // task allocation may have changed
+        });
       });
       tr.querySelector('.del-btn').addEventListener('click', ()=>{
         ledgerRows.splice(i,1);
         ledgerRows.forEach((r,j)=>r.n=j+1);
         rowCounter = ledgerRows.length;
         renderLedgerBody();
+        renderSliceButtons();
         $('statTotal').textContent = ledgerRows.length;
       });
       body.appendChild(tr);
@@ -714,8 +923,432 @@
     const flagged = ledgerRows.filter(r=>r.ambiguous).length;
     md += '\nTotal claim rows: ' + ledgerRows.length;
     md += flagged ? (' (' + flagged + ' flagged AMBIGUOUS — check these before treating the ledger as final)\n') : '\n';
+    // Slice manifest — lets the merge tool (and a human) confirm every task's slice is
+    // accounted for: a task listed here with no results file is NOT SUPPLIED, mechanically.
+    const slices = computeSlices();
+    md += 'Slices: ' + slices.map(s=>s.task + ' (' + s.rows.length + ')').join(', ') + '\n';
     return md;
   }
+
+  // ---------- per-task slices ----------
+  // The task identifier is read from the reference itself — "AT3: 5" → AT3. This is the
+  // same identifier the kit makes mandatory on every claimed reference (G-CITE), which is
+  // why slicing on it is safe: a reference the slicer can't allocate is a reference a
+  // Copilot session couldn't cite properly either, and belongs in UNALLOCATED for fixing.
+  function taskOf(ref){
+    const s = String(ref||'');
+    const m = s.match(/^\s*(AT\s*\d+)\s*:/i) || s.match(/^\s*(Task\s*\d+)\s*:/i) || s.match(/\b(AT\s*\d+)\b/i);
+    return m ? m[1].toUpperCase().replace(/\s+/g,'') : 'UNALLOCATED';
+  }
+
+  function computeSlices(){
+    const map = new Map();
+    ledgerRows.forEach(r=>{
+      const t = taskOf(r.ref);
+      if(!map.has(t)) map.set(t, []);
+      map.get(t).push(r);
+    });
+    // stable order: AT1, AT2 … numerically, UNALLOCATED last
+    const keys = Array.from(map.keys()).sort((a,b)=>{
+      if(a==='UNALLOCATED') return 1;
+      if(b==='UNALLOCATED') return -1;
+      const na = parseInt((a.match(/\d+/)||['0'])[0]), nb = parseInt((b.match(/\d+/)||['0'])[0]);
+      return (na-nb) || a.localeCompare(b);
+    });
+    return keys.map(k=>({task:k, rows:map.get(k)}));
+  }
+
+  function sliceToMarkdown(task, rows){
+    const unit = ($('unitCode').value || '').trim();
+    const flagged = rows.filter(r=>r.ambiguous).length;
+    let md = 'GOLDILOCKS-LEDGER-SLICE v1\n';
+    md += 'unit: ' + (unit || '(not stated)') + '\n';
+    md += 'task: ' + task + '\n';
+    md += 'master_ledger_total: ' + ledgerRows.length + '\n';
+    md += 'slice_rows: ' + rows.length + '\n\n';
+    md += 'Row numbers are MASTER ledger row numbers, preserved so separate per-task sessions reconcile against the full ledger. Judge every row in this slice; the slice is this session\'s complete workload.\n\n';
+    md += '# | Unit | Requirement code | Task reference claimed | Verbatim cell text\n';
+    md += '---|---|---|---|---\n';
+    rows.forEach(r=>{
+      const ref = r.ambiguous ? (r.ref + ' [AMBIGUOUS — check before use]') : r.ref;
+      md += [r.n, mdSafe(r.unit), mdSafe(r.code), mdSafe(ref), mdSafe(r.verbatim)].join(' | ') + '\n';
+    });
+    md += '\nTotal claim rows in this slice: ' + rows.length;
+    md += flagged ? (' (' + flagged + ' flagged AMBIGUOUS — check these before treating the slice as final)\n') : '\n';
+    return md;
+  }
+
+  function sliceFilename(task){
+    const unit = ($('unitCode').value || '').trim();
+    return (unit ? unit + '-' : '') + 'claim-ledger-' + task + '.md';
+  }
+
+  function downloadText(filename, text){
+    const blob = new Blob([text], {type:'text/markdown'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  }
+
+  // ============================================================
+  // BENCHMARK MODULE — builds the benchmark file mechanically from the unit.
+  // Verbatim by construction, triggers by word-list method, crosswalk by
+  // text alignment. Only the four scope questions are human-answered.
+  // ============================================================
+
+  // --- tacit triggers, by method (G-TACIT categories, inflected forms count) ---
+  function computeTrigger(text){
+    const t = String(text||'');
+    const tests = [
+      [/\b(select(?:s|ed|ing|ion)?|adjust(?:s|ed|ing|ment)?|adapt(?:s|ed|ing|ation)?|determin(?:e|es|ed|ing|ation)|respond(?:s|ed|ing)?|resolv(?:e|es|ed|ing)|resolution|monitor(?:s|ed|ing)?|evaluat(?:e|es|ed|ing|ion)|interpret(?:s|ed|ing|ation)?|troubleshoot(?:s|ing)?)\b/i, '(a) judgement verb'],
+      [/\b(appropriate|as required|according to|suitable for|to meet)\b/i, '(b) conditional phrasing'],
+      [/\b(new and emerging|complex|non-routine)\b/i, '(c) contingency/non-routine'],
+      [/\b(check(?:s|ed|ing)?|fit\/finish|fit and finish|tolerances?|acceptab(?:le|ility)|performance|usab(?:le|ility))\b/i, '(d) quality-decision language']
+    ];
+    for(const [re, cat] of tests){
+      const m = t.match(re);
+      if(m) return { trigger: m[0], category: cat };
+    }
+    return null;
+  }
+
+  // --- unit docx → token list (thin DOM walk; everything after is pure) ---
+  const UNIT_STYLE_MAP = [
+    "p[style-name='List Bullet'] => p.lb1:fresh",
+    "p[style-name='List Bullet 2'] => p.lb2:fresh",
+    "p[style-name='List Bullet 3'] => p.lb3:fresh",
+    "p[style-name='Body Text'] => p.bt:fresh"
+  ];
+  function unitHtmlToTokens(html){
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    const tokens = [];
+    Array.from(div.children).forEach(el=>{
+      const tag = el.tagName.toLowerCase();
+      if(/^h[1-3]$/.test(tag)){ tokens.push({k:'h1', text: el.textContent.trim()}); return; }
+      if(tag === 'table'){
+        const grid = tableToGrid(el);
+        const cellParas = [];
+        el.querySelectorAll('td p, th p').forEach(p=>{
+          const txt = p.textContent.replace(/[ \t]+/g,' ').trim();
+          if(!txt) return;
+          const cls = p.className || '';
+          cellParas.push({ cls: /lb3/.test(cls)?'lb3':/lb2/.test(cls)?'lb2':/lb1/.test(cls)?'lb1':/bt/.test(cls)?'bt':'p', text: txt });
+        });
+        tokens.push({k:'table', grid: grid, cellParas: cellParas});
+        return;
+      }
+      const txt = el.textContent.replace(/[ \t]+/g,' ').trim();
+      if(!txt) return;
+      const cls = el.className || '';
+      tokens.push({k: /lb3/.test(cls)?'lb3':/lb2/.test(cls)?'lb2':/lb1/.test(cls)?'lb1':/bt/.test(cls)?'bt':'p', text: txt});
+    });
+    return tokens;
+  }
+
+  // --- tokens → unit model (pure) ---
+  function buildUnitModel(tokens){
+    const u = { code:'', title:'', pc:[], ke:[], pe:[], ac:[], fsNote:'', vol:[], warnings:[] };
+    const secOf = t => {
+      const s = t.toLowerCase();
+      if(s.includes('elements and performance criteria')) return 'pc';
+      if(s.includes('performance evidence')) return 'pe';
+      if(s.includes('knowledge evidence')) return 'ke';
+      if(s.includes('assessment conditions')) return 'ac';
+      if(s.includes('foundation skills')) return 'fs';
+      return 'other';
+    };
+    // unit code + title from the first code-shaped heading/paragraph
+    for(const tok of tokens){
+      if(tok.text){
+        const m = tok.text.match(/^([A-Z]{2,6}\d{3,5}[A-Z]?)\s+(.{5,})/);
+        if(m){ u.code = m[1]; u.title = m[2].replace(/\s+/g,' ').trim(); break; }
+      }
+    }
+    let section = 'other';
+    const bySection = { pc:[], pe:[], ke:[], ac:[], fs:[] };
+    tokens.forEach(tok=>{
+      if(tok.k === 'h1'){ section = secOf(tok.text); return; }
+      if(bySection[section]) bySection[section].push(tok);
+    });
+    const leadins = [];
+
+    // PC — from the first table in the PC section: cells matching N.N are codes, next cell is text
+    const pcTable = bySection.pc.find(t=>t.k==='table');
+    if(pcTable){
+      pcTable.grid.forEach(row=>{
+        for(let c=0; c<row.length-1; c++){
+          const m = (row[c]||'').trim().match(/^(\d+)\.(\d+)$/);
+          if(m){
+            let txt = '';
+            for(let d=c+1; d<row.length; d++){ const v=(row[d]||'').trim(); if(v && v!==row[c]){ txt=v; break; } }
+            if(txt) u.pc.push({ code:'PC '+m[0], text: txt });
+            break;
+          }
+        }
+      });
+    } else u.warnings.push('No Elements/Performance Criteria table found in the unit.');
+
+    // PE — umbrella/sub-bullet structure preserved exactly as the unit nests it
+    const peTable = bySection.pe.find(t=>t.k==='table');
+    if(peTable){
+      let n=0, sub=0, inUmbrella=false;
+      const subLetter = k => { let s=''; while(k>0){ k--; s=String.fromCharCode(97+(k%26))+s; k=Math.floor(k/26);} return s; };
+      peTable.cellParas.forEach(p=>{
+        if(p.cls==='bt'){ leadins.push(p.text); return; }
+        if(p.cls==='lb1'){
+          n++;
+          if(/:\s*$/.test(p.text)){ inUmbrella=true; sub=0; u.pe.push({code:'PE-'+n, text:p.text, umbrella:true}); }
+          else { inUmbrella=false; u.pe.push({code:'PE-'+n, text:p.text}); }
+          return;
+        }
+        if(p.cls==='lb2' || p.cls==='lb3'){
+          if(inUmbrella){ sub++; u.pe.push({code:'PE-'+n+subLetter(sub), text:p.text}); }
+          else { n++; u.pe.push({code:'PE-'+n, text:p.text}); u.warnings.push('PE sub-bullet with no umbrella above it — coded PE-'+n+'; check the unit\'s nesting: "'+p.text.slice(0,50)+'"'); }
+        }
+      });
+    } else u.warnings.push('No Performance Evidence table found in the unit.');
+
+    // KE — flat numbering in listed order; umbrellas take their own number (G-CODES)
+    const keTable = bySection.ke.find(t=>t.k==='table');
+    if(keTable){
+      let n=0;
+      keTable.cellParas.forEach(p=>{
+        if(p.cls==='bt'){ leadins.push(p.text); return; }
+        if(p.cls==='lb1'||p.cls==='lb2'||p.cls==='lb3'){
+          n++;
+          u.ke.push({code:'KE-'+n, text:p.text, umbrella:/:\s*$/.test(p.text)});
+        }
+      });
+    } else u.warnings.push('No Knowledge Evidence table found in the unit.');
+
+    // AC — one code per stated condition; a stem ending ":" distributes over its bullets
+    const acTable = bySection.ac.find(t=>t.k==='table');
+    if(acTable){
+      let stem = null, n=0;
+      acTable.cellParas.forEach(p=>{
+        if(p.cls==='bt' || p.cls==='p'){
+          if(/:\s*$/.test(p.text)){ stem = p.text.replace(/:\s*$/,':'); }
+          else { stem = null; n++; u.ac.push({code:'AC-'+n, text:p.text}); }
+          return;
+        }
+        if(p.cls==='lb1'||p.cls==='lb2'){
+          n++;
+          u.ac.push({code:'AC-'+n, text: stem ? (stem+' '+p.text) : p.text});
+          if(!stem) u.warnings.push('AC bullet with no stem sentence above it: "'+p.text.slice(0,50)+'"');
+        }
+      });
+    } else u.warnings.push('No Assessment Conditions table found in the unit.');
+
+    // FS
+    const fsTable = bySection.fs.find(t=>t.k==='table');
+    if(fsTable){
+      const txt = fsTable.cellParas.map(p=>p.text).join(' ');
+      if(/explicit in the performance criteria/i.test(txt)) u.fsNote = fsTable.cellParas[0].text;
+      else { u.fsNote = txt; u.warnings.push('Foundation Skills section is not the explicit-in-PC form — FS items need a hand check; the raw text has been placed in FS-NOTE.'); }
+    }
+
+    // VOL — from lead-in sentences carrying an occasions requirement
+    leadins.forEach(l=>{
+      if(/at least[^.]*occasions?/i.test(l)){
+        u.vol.push({ code:'VOL-'+(u.vol.length+1), text: l });
+      }
+    });
+    if(u.vol.length===0) u.warnings.push('No volume/frequency requirement detected in the PE/KE lead-ins — confirm the unit states none.');
+
+    // triggers
+    [u.pc, u.ke, u.pe].forEach(fam=>fam.forEach(item=>{
+      const tr = computeTrigger(item.text);
+      if(tr){ item.trigger = tr.trigger; item.category = tr.category; }
+    }));
+    return u;
+  }
+
+  // --- alignment: map items ↔ unit items, by normalised prefix similarity (pure) ---
+  function normText(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim(); }
+  function canonCode(s){ return String(s||'').toUpperCase().replace(/[\s\-\u2010-\u2015]+/g,''); }
+  function alignFamily(mapList, unitList){
+    const used = new Set(); const pairs = [];
+    mapList.forEach(m=>{
+      const nm = normText(m.text);
+      let best=-1, bestScore=0;
+      unitList.forEach((utm,i)=>{
+        if(used.has(i)) return;
+        const nu = normText(utm.text);
+        let l=0; const lim = Math.min(nm.length, nu.length);
+        while(l<lim && nm[l]===nu[l]) l++;
+        const score = l / Math.max(1, Math.min(nm.length, nu.length));
+        if(score>bestScore){ bestScore=score; best=i; }
+      });
+      if(best>=0 && bestScore>0.6){ used.add(best); pairs.push({map:m, unit:unitList[best]}); }
+      else pairs.push({map:m, unit:null});
+    });
+    const omitted = unitList.filter((_,i)=>!used.has(i));
+    return { pairs, omitted };
+  }
+
+  // --- benchmark builder (pure) ---
+  function buildBenchmark(unit, ledgerRowsIn, mapItemsIn, scope){
+    const warnings = unit.warnings.slice();
+    const dedup = {}; const mapDedup = [];
+    mapItemsIn.forEach(m=>{ if(!dedup[m.code]){ dedup[m.code]=true; mapDedup.push(m); } });
+    const mapKE = mapDedup.filter(m=>/^KE/.test(canonCode(m.code)));
+    const mapPE = mapDedup.filter(m=>/^PE/.test(canonCode(m.code)));
+    const keAl = alignFamily(mapKE, unit.ke);
+    const peAl = alignFamily(mapPE, unit.pe);
+    const crosswalk = []; const orphanItems = [];
+    const omittedAll = keAl.omitted.concat(peAl.omitted).filter(o=>!o.umbrella);
+    const omitNote = omittedAll.length ? ('map omits ' + omittedAll.map(o=>o.code).join(', ')) : '';
+    [keAl, peAl].forEach(al=>{
+      al.pairs.forEach(p=>{
+        if(!p.unit){ orphanItems.push(p.map); return; }
+        if(canonCode(p.map.code) !== canonCode(p.unit.code)){
+          crosswalk.push({ from:p.map.code, to:p.unit.code, note: crosswalk.length===0 && omitNote ? omitNote : 'numbering shift' });
+        }
+      });
+    });
+    // orphan ledger rows: every claim row carrying an unmatched map code
+    const orphanCodes = {}; orphanItems.forEach(o=>{ orphanCodes[canonCode(o.code)] = o; });
+    const orphanRows = ledgerRowsIn.filter(r=>orphanCodes[canonCode(r.code)]).map(r=>({row:r.n, code:r.code}));
+    orphanItems.forEach(o=>warnings.push('Map item "'+o.text.slice(0,60)+'" ('+o.code+') matches no unit requirement — its '+ledgerRowsIn.filter(r=>canonCode(r.code)===canonCode(o.code)).length+' claim rows are ORPHAN CLAIMS.'));
+    omittedAll.forEach(o=>warnings.push('Map omits unit requirement '+o.code+' ("'+o.text.slice(0,60)+'") — it will surface as a GAP because the map never claims it.'));
+
+    const sanitize = s => String(s||'').replace(/\|/g,'/').replace(/\s+/g,' ').trim();
+    const L = [];
+    L.push('GOLDILOCKS-BENCHMARK v1');
+    L.push('unit: ' + (unit.code || '(not detected)'));
+    L.push('title: ' + (unit.title || '(not detected)'));
+    L.push('ledger_total: ' + ledgerRowsIn.length);
+    L.push('SCOPE');
+    ['q1','q2','q3','q4'].forEach((q,i)=>{
+      L.push(q+': ' + (scope[i] && scope[i].trim() ? sanitize(scope[i]) : 'PENDING \u2014 answer before use'));
+    });
+    L.push('REQUIREMENTS');
+    unit.pc.concat(unit.ke, unit.pe).forEach(item=>{
+      L.push([item.code, sanitize(item.text), item.trigger?sanitize(item.trigger):'\u2014', item.category||'\u2014'].join('|'));
+    });
+    L.push('VOLUME');
+    if(unit.vol.length) unit.vol.forEach(v=>L.push(v.code+'|'+sanitize(v.text)));
+    else L.push('none');
+    L.push('CONDITIONS');
+    unit.ac.forEach(a=>L.push(a.code+'|'+sanitize(a.text)));
+    L.push('FS-NOTE');
+    L.push(sanitize(unit.fsNote) || 'FS table extracted above');
+    L.push('CROSSWALK');
+    if(crosswalk.length) crosswalk.forEach(x=>L.push([x.from, x.to, x.note].join('|')));
+    else L.push('none');
+    L.push('ORPHANS');
+    if(orphanRows.length) orphanRows.forEach(o=>L.push([o.row, o.code, 'matches no unit requirement'].join('|')));
+    else L.push('none');
+    L.push('END');
+    return { md: L.join('\n'), crosswalk, omitted: omittedAll, orphanRows, warnings,
+             counts: { pc:unit.pc.length, ke:unit.ke.length, pe:unit.pe.length, ac:unit.ac.length, vol:unit.vol.length,
+                       flagged: unit.pc.concat(unit.ke,unit.pe).filter(i=>i.trigger).length } };
+  }
+
+  // --- unit intake wiring ---
+  const udz = $('unitDropzone'), unitFileInput = $('unitFileInput');
+  udz.addEventListener('click', ()=>unitFileInput.click());
+  udz.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' ') unitFileInput.click(); });
+  ['dragenter','dragover'].forEach(ev=>udz.addEventListener(ev, e=>{e.preventDefault(); udz.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>udz.addEventListener(ev, e=>{e.preventDefault(); udz.classList.remove('drag');}));
+  udz.addEventListener('drop', e=>{ if(e.dataTransfer.files.length) handleUnitFile(e.dataTransfer.files[0]); });
+  unitFileInput.addEventListener('change', e=>{ if(e.target.files.length) handleUnitFile(e.target.files[0]); });
+
+  function handleUnitFile(file){
+    if(!file.name.toLowerCase().endsWith('.docx')){ alert('Please choose a .docx file.'); return; }
+    $('unitPillWrap').innerHTML = '<div class="filepill">'+escapeHtml(file.name)+' <span style="color:var(--grey-dark);">reading\u2026</span></div>';
+    const reader = new FileReader();
+    reader.onload = e => mammoth.convertToHtml({arrayBuffer: e.target.result}, {styleMap: UNIT_STYLE_MAP})
+      .then(result => {
+        unitModel = buildUnitModel(unitHtmlToTokens(result.value));
+        $('unitPillWrap').innerHTML = '<div class="filepill">'+escapeHtml(file.name)+' <button id="clearUnit">remove</button></div>';
+        $('clearUnit').addEventListener('click', ()=>{ unitModel=null; $('unitPillWrap').innerHTML=''; unitFileInput.value=''; renderBenchBox(); });
+        if(unitModel.code && !$('unitCode').value.trim()) $('unitCode').value = unitModel.code;
+        renderBenchBox();
+      })
+      .catch(err => { $('unitPillWrap').innerHTML=''; alert('Could not read the unit: ' + err.message); });
+    reader.readAsArrayBuffer(file);
+  }
+
+  function renderBenchBox(){
+    const box = $('benchBox');
+    if(!unitModel || ledgerRows.length===0){ box.style.display='none'; return; }
+    box.style.display='block';
+    const scope = [$('scopeQ1').value, $('scopeQ2').value, $('scopeQ3').value, $('scopeQ4').value];
+    const b = buildBenchmark(unitModel, ledgerRows, mapItems, scope);
+    const c = b.counts;
+    let html = '<div style="margin-bottom:8px;">'
+      + '<span class="bench-pill">'+c.pc+' PC</span>'
+      + '<span class="bench-pill">'+c.ke+' KE</span>'
+      + '<span class="bench-pill">'+c.pe+' PE</span>'
+      + '<span class="bench-pill">'+c.ac+' AC</span>'
+      + '<span class="bench-pill">'+c.vol+' VOL</span>'
+      + '<span class="bench-pill">'+c.flagged+' tacit-flagged</span>'
+      + '<span class="bench-pill'+(b.crosswalk.length?' warn':'')+'">'+b.crosswalk.length+' crosswalk rows</span>'
+      + '<span class="bench-pill'+(b.omitted.length?' bad':'')+'">'+b.omitted.length+' unit items the map omits</span>'
+      + '<span class="bench-pill'+(b.orphanRows.length?' bad':'')+'">'+b.orphanRows.length+' orphan claim rows</span>'
+      + '</div>';
+    if(b.warnings.length){
+      html += '<ul class="helptext" style="margin:0 0 8px; padding-left:18px;">' + b.warnings.map(w=>'<li>'+escapeHtml(w)+'</li>').join('') + '</ul>';
+    }
+    $('benchSummary').innerHTML = html;
+    $('benchReview').innerHTML = '<table class="bench-review">' +
+      unitModel.pc.concat(unitModel.ke, unitModel.pe).map(i=>
+        '<tr><td>'+escapeHtml(i.code)+'</td><td>'+escapeHtml(i.text)+'</td><td>'+
+        (i.trigger ? '<b>'+escapeHtml(i.trigger)+'</b> '+escapeHtml(i.category) : '\u2014')+'</td></tr>').join('') +
+      '</table>';
+  }
+
+  $('downloadBench').addEventListener('click', ()=>{
+    if(!unitModel || ledgerRows.length===0) return;
+    const scope = [$('scopeQ1').value, $('scopeQ2').value, $('scopeQ3').value, $('scopeQ4').value];
+    const pendingCount = scope.filter(s=>!s.trim()).length;
+    const b = buildBenchmark(unitModel, ledgerRows, mapItems, scope);
+    const unitCode = ($('unitCode').value || unitModel.code || 'unit').trim();
+    const blob = new Blob([b.md], {type:'text/markdown'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = unitCode + '-benchmark.md';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+    if(pendingCount){
+      const msg = $('benchWarnMsg');
+      msg.textContent = pendingCount + ' scope question' + (pendingCount===1?'':'s') + ' still PENDING in the file \u2014 answer and re-download before running Prompt T.';
+      msg.style.display='inline';
+      setTimeout(()=>{ msg.style.display='none'; }, 6000);
+    }
+  });
+
+  ['scopeQ1','scopeQ2','scopeQ3','scopeQ4'].forEach(id=>{
+    $(id).addEventListener('input', ()=>{ /* answers are read at download time; no re-render needed */ });
+  });
+
+  function renderSliceButtons(){
+    const wrap = $('sliceButtons');
+    wrap.innerHTML = '';
+    const slices = computeSlices();
+    slices.forEach(({task, rows})=>{
+      const btn = document.createElement('button');
+      btn.className = 'slice-btn' + (task==='UNALLOCATED' ? ' unalloc' : '');
+      btn.innerHTML = escapeHtml(task) + ' <span class="cnt">(' + rows.length + ' row' + (rows.length===1?'':'s') + ')</span>';
+      btn.title = 'Download ' + sliceFilename(task);
+      btn.addEventListener('click', ()=>downloadText(sliceFilename(task), sliceToMarkdown(task, rows)));
+      wrap.appendChild(btn);
+    });
+    // Rows can be edited or deleted after building — recompute at download time too,
+    // by re-rendering whenever the ledger body re-renders (hooked below).
+  }
+
+  $('downloadAllSlices').addEventListener('click', ()=>{
+    const slices = computeSlices();
+    // Staggered so the browser treats each as a distinct user-initiated download.
+    slices.forEach(({task, rows}, i)=>{
+      setTimeout(()=>downloadText(sliceFilename(task), sliceToMarkdown(task, rows)), i*300);
+    });
+  });
 
   $('copyMd').addEventListener('click', ()=>{
     navigator.clipboard.writeText(toMarkdown()).then(()=>{
@@ -725,11 +1358,8 @@
   });
 
   $('downloadMd').addEventListener('click', ()=>{
-    const blob = new Blob([toMarkdown()], {type:'text/markdown'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'claim-ledger.md';
-    a.click();
+    const unit = ($('unitCode').value || '').trim();
+    downloadText((unit ? unit + '-' : '') + 'claim-ledger.md', toMarkdown());
   });
 })();
 </script>
