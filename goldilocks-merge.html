@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Goldilocks Merge — CoVE Assessment Toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#E61E2A; --red-dark:#B8151F; --red-tint:#FCE7E8;
+    --blue:#000054; --blue-tint:#E6E6EF;
+    --black:#000000; --white:#FFFFFF;
+    --grey:#E3E5E0; --grey-dark:#8C8F89; --grey-text:#5C5F5A;
+    --ember:#F2F2F2;
+    --yellow:#FAC800; --yellow-tint:#FFF6D6;
+    --green:#008550; --green-tint:#E2F2EA;
+    --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --sans:"Inter", -apple-system, "Segoe UI", sans-serif;
+    --display:"Archivo", var(--sans);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--ember);color:var(--black);font-family:var(--sans);}
+  body{padding:0 0 6rem;}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 24px;}
+
+  header.top{background:var(--blue);color:var(--white);padding:44px 0 34px;margin-bottom:34px;border-bottom:6px solid var(--red);}
+  .eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#fff; margin:0 0 12px; display:flex; align-items:center; gap:8px;}
+  .eyebrow .dot{width:7px;height:7px;background:var(--red);display:inline-block;}
+  h1{font-family:var(--display); font-weight:800; font-size:36px; line-height:1.05; margin:0 0 14px; letter-spacing:-0.01em;}
+  .lede{font-size:15.5px; line-height:1.6; color:#C6C6DA; max-width:66ch; margin:0;}
+  .lede strong{color:#fff;}
+
+  .step{margin-bottom:40px;}
+  .step-head{display:flex; align-items:baseline; gap:12px; margin-bottom:16px;}
+  .step-num{font-family:var(--mono); font-size:13px; font-weight:600; color:var(--grey-text); border:1.5px solid var(--grey-dark); border-radius:100px; width:27px;height:27px; display:flex;align-items:center;justify-content:center; flex-shrink:0; background:var(--white);}
+  .step-num.done{background:var(--red); color:#fff; border-color:var(--red);}
+  .step-title{font-family:var(--display); font-size:20px; font-weight:700; margin:0;}
+  .step-body{margin-left:39px;}
+  .step[data-inactive="true"] .step-body{opacity:0.35; pointer-events:none;}
+  .step[data-inactive="true"] .step-title{color:var(--grey-dark);}
+
+  .helptext{font-size:13.5px;color:var(--grey-text);line-height:1.55;margin:0 0 14px;max-width:70ch;}
+  .helptext strong{color:var(--black);}
+
+  .dropzone{border:2px dashed var(--grey-dark); border-radius:4px; background:#fff; padding:30px 24px; text-align:center; cursor:pointer; transition:border-color .15s, background .15s;}
+  .dropzone:hover, .dropzone.drag{border-color:var(--red); background:var(--red-tint);}
+  .dropzone input{display:none;}
+  .dropzone .dz-label{font-family:var(--mono); font-size:13px; color:var(--red-dark); font-weight:500;}
+  .dropzone .dz-sub{font-size:12.5px;color:var(--grey-text);margin-top:6px;}
+  .dropzone:focus-within{outline:2px solid var(--red); outline-offset:1px;}
+
+  .filelist{margin-top:14px; display:flex; flex-direction:column; gap:8px;}
+  .filepill{display:flex;align-items:center;gap:10px; font-family:var(--mono);font-size:12.5px; background:#fff;border:1.5px solid var(--grey); border-radius:4px;padding:9px 12px;}
+  .filepill .kind{font-size:10px; text-transform:uppercase; letter-spacing:.05em; font-weight:600; border-radius:3px; padding:2px 7px; flex-shrink:0;}
+  .kind.ledger{background:var(--blue-tint); color:var(--blue);}
+  .kind.benchmark{background:var(--green-tint); color:var(--green);}
+  .kind.results{background:var(--yellow-tint); color:#7a6200;}
+  .kind.unknown{background:var(--red-tint); color:var(--red-dark);}
+  .filepill .fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .filepill .fsub{color:var(--grey-text); font-size:11px; flex-shrink:0; margin-left:auto;}
+  .filepill button{background:none;border:none;color:var(--red-dark);cursor:pointer;font-family:var(--mono);font-size:12px;padding:0 0 0 8px;font-weight:600;}
+
+  .btn{font-family:var(--sans); font-size:13.5px; font-weight:600; padding:11px 20px; border-radius:3px; border:2px solid var(--red-dark); background:var(--red-dark); color:#fff; cursor:pointer;}
+  .btn:hover{background:#8F1018; border-color:#8F1018;}
+  .btn.secondary{background:#fff; color:var(--black); border-color:var(--grey-dark);}
+  .btn.secondary:hover{border-color:var(--black);}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .btnrow{display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; align-items:center;}
+  .copied-msg{font-family:var(--mono); font-size:12px; color:var(--red-dark); font-weight:600;}
+
+  .gate{border-radius:6px; padding:18px 22px; margin-bottom:20px; font-size:14px; line-height:1.55; border-left:6px solid;}
+  .gate .gate-title{font-family:var(--display); font-weight:800; font-size:17px; margin:0 0 6px;}
+  .gate.passed{background:var(--green-tint); border-color:var(--green);}
+  .gate.passed .gate-title{color:var(--green);}
+  .gate.triggered{background:var(--yellow-tint); border-color:var(--yellow);}
+  .gate.triggered .gate-title{color:#7a6200;}
+
+  .integrity{background:#fff; border:1.5px solid var(--grey); border-left:6px solid var(--red); border-radius:6px; padding:16px 20px; margin-bottom:20px;}
+  .integrity.clean{border-left-color:var(--green);}
+  .integrity h3{font-family:var(--display); font-size:15px; margin:0 0 8px;}
+  .integrity ul{margin:0; padding-left:18px; font-size:13px; line-height:1.6;}
+  .integrity li{margin-bottom:4px;}
+
+  .stamp{background:var(--blue); color:#fff; border-radius:6px; padding:22px 26px; display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:22px; border-left:6px solid var(--red);}
+  .stamp .cell{border-left:1px solid rgba(255,255,255,.15); padding-left:18px;}
+  .stamp .cell:first-child{border-left:none; padding-left:0;}
+  .stamp .num{font-family:var(--mono); font-size:26px; font-weight:600; line-height:1; color:var(--red);}
+  .stamp .num.ok{color:#7ED9A7;}
+  .stamp .lbl{font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:#AEAEC4; margin-top:7px;}
+
+  h3.blockhead{font-family:var(--display); font-size:16px; font-weight:700; margin:26px 0 10px;}
+  table.data{border-collapse:collapse; width:100%; font-size:12.5px; background:#fff;}
+  table.data th{font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--grey-text); text-align:left; padding:8px 10px; border-bottom:2px solid var(--black); position:sticky; top:0; background:#fff;}
+  table.data td{padding:7px 10px; border-bottom:1px solid var(--grey); vertical-align:top;}
+  .tbl-scroll{max-height:420px; overflow:auto; border:1px solid var(--grey); border-radius:4px;}
+  td.mono, .mono{font-family:var(--mono); font-size:11.5px;}
+  .pill{font-family:var(--mono); font-size:10px; text-transform:uppercase; border-radius:3px; padding:1px 6px; font-weight:600; white-space:nowrap;}
+  .pill.good{background:var(--green-tint); color:var(--green);}
+  .pill.bad{background:var(--red-tint); color:var(--red-dark);}
+  .pill.warnp{background:var(--yellow-tint); color:#7a6200;}
+  .pill.neutral{background:var(--blue-tint); color:var(--blue);}
+  tr.rowgap{background:var(--red-tint);}
+  tr.rowwarn{background:var(--yellow-tint);}
+  .flagchips span{display:inline-block; font-family:var(--mono); font-size:10px; background:var(--ember); border:1px solid var(--grey); border-radius:3px; padding:1px 5px; margin:1px 3px 1px 0;}
+
+  details.reg{background:#fff; border:1.5px solid var(--grey); border-radius:5px; margin-bottom:10px;}
+  details.reg summary{font-family:var(--mono); font-size:12.5px; padding:10px 14px; cursor:pointer;}
+  details.reg .reg-body{padding:0 14px 14px;}
+
+  .exportbox{background:var(--ember); border:1.5px solid var(--grey); border-radius:4px; padding:16px 18px; margin-top:18px;}
+  footer.foot{max-width:1060px;margin:60px auto 0;padding:24px; border-top:1px solid var(--grey); font-family:var(--mono); font-size:11.5px; color:var(--grey-text);}
+  @media (max-width:680px){ .stamp{grid-template-columns:repeat(2,1fr);} }
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span>CoVE Assessment Toolkit — Goldilocks companion</p>
+    <h1>Goldilocks Merge</h1>
+    <p class="lede">Drop in the full ledger, the benchmark file, and every per-task results file. It reconciles every claim, derives every count, runs the gate, and builds the provisional traffic light — <strong>deterministically, nothing judged, nothing sampled.</strong> Fix problems at their source file and re-merge; this tool never edits.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="step" id="step1">
+    <div class="step-head"><div class="step-num" id="num1">1</div><h2 class="step-title">Upload the files</h2></div>
+    <div class="step-body">
+      <p class="helptext">One <strong>full ledger</strong> and one <strong>benchmark file</strong> (both produced by the Extractor), and one <strong>results file per task</strong> (the Task Judgement Prompt, Prompt T). A task with no results file is reported NOT SUPPLIED — that is a finding, not an error. Files are recognised by their contents, not their names.</p>
+      <div class="dropzone" id="dropzone" tabindex="0">
+        <input type="file" id="fileInput" accept=".md,.txt" multiple>
+        <div class="dz-label">Click to choose files, or drag them here</div>
+        <div class="dz-sub">.md files — add them in any order, all at once or one at a time</div>
+      </div>
+      <div class="filelist" id="filelist"></div>
+      <details class="reg" style="margin-top:12px;"><summary>Or paste a block instead of saving a file</summary>
+        <div class="reg-body">
+          <p class="helptext" style="margin:8px 0;">Copy the fenced block straight out of Copilot and paste it here — no need to save a .md first. Works for results blocks and the benchmark block.</p>
+          <textarea id="pasteBox" rows="6" style="width:100%; font-family:var(--mono); font-size:11.5px; border:1.5px solid var(--grey-dark); border-radius:3px; padding:8px; box-sizing:border-box;" placeholder="GOLDILOCKS-RESULTS v1.1&#10;unit: ...&#10;task: ...&#10;..."></textarea>
+          <div class="btnrow" style="margin-top:8px;"><button class="btn secondary" id="addPasted">Add pasted block</button><span class="helptext" id="pasteMsg" style="margin:0;"></span></div>
+        </div>
+      </details>
+      <div class="btnrow"><button class="btn" id="runMerge" disabled>Merge</button><span class="helptext" id="mergeHint" style="margin:0;"></span></div>
+    </div>
+  </div>
+
+  <div class="step" id="step2" data-inactive="true">
+    <div class="step-head"><div class="step-num" id="num2">2</div><h2 class="step-title">Read the reconciliation</h2></div>
+    <div class="step-body">
+      <div id="gateBanner"></div>
+      <div id="integrityBox"></div>
+      <div class="stamp" id="stamp"></div>
+
+      <h3 class="blockhead">Per-task reconciliation</h3>
+      <div class="tbl-scroll" style="max-height:260px;"><table class="data" id="taskTable">
+        <thead><tr><th>Task</th><th>Ledger rows</th><th>Results file</th><th>Rows judged</th><th>Reconciliation</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+
+      <h3 class="blockhead">Requirement statuses &amp; provisional traffic light</h3>
+      <p class="helptext">Statuses are derived from claim results — GAP, JUST RIGHT, CANNOT DETERMINE, UMBRELLA. RED here is provisional: Prompt R may add a suggested-coverage entry, which moves a gap to REVIEW. Over-assessment candidates stay PENDING TEST until Prompt R's constraint test.</p>
+      <div class="tbl-scroll"><table class="data" id="statusTable">
+        <thead><tr><th></th><th>Code</th><th>Status</th><th>Flags</th><th>Note</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+
+      <h3 class="blockhead">Over-assessment candidates (PENDING TEST)</h3>
+      <div id="candidates" class="helptext"></div>
+
+      <h3 class="blockhead">Consolidated registers</h3>
+      <div id="registers"></div>
+    </div>
+  </div>
+
+  <div class="step" id="step3" data-inactive="true">
+    <div class="step-head"><div class="step-num" id="num3">3</div><h2 class="step-title">Export for Prompt R</h2></div>
+    <div class="step-body">
+      <p class="helptext">The merged file is the single source of truth for the coverage-report session (Prompt R). If integrity warnings are showing above, fix the named source file, re-run that session if needed, and re-merge before exporting — the warnings are stamped into the file either way, so nothing travels silently.</p>
+      <div class="exportbox">
+        <div class="btnrow" style="margin-top:0;">
+          <button class="btn" id="downloadMerged">Download merged .md</button>
+          <button class="btn secondary" id="copyMerged">Copy to clipboard</button>
+          <span class="copied-msg" id="copiedMsg" style="display:none;">Copied.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="foot">Goldilocks Merge v1.0 — reads GOLDILOCKS-BENCHMARK v1 and GOLDILOCKS-RESULTS v1/v1.1. Runs entirely in this browser tab — nothing uploaded anywhere. Every number here is counted, never judged; judgement lives in the per-task sessions and the report session.</footer>
+
+<script>
+/* Goldilocks Merge core — pure logic, no DOM. Embedded verbatim into the merge tool HTML.
+   Parses: full ledger .md, GOLDILOCKS-BENCHMARK v1, GOLDILOCKS-RESULTS v1 / v1.1.
+   Produces: reconciled model + integrity warnings + merged.md text.
+   Everything here COUNTS; nothing here JUDGES. */
+
+var GoldilocksMerge = (function(){
+
+  // ---------- shared helpers ----------
+  function canon(code){
+    return String(code||'').toUpperCase().replace(/[\s\-\u2010-\u2015]+/g,'');
+  }
+  function normResult(s){
+    var t = String(s||'').toUpperCase().replace(/[\u2010-\u2015]/g,'-').trim();
+    if(/^VERIFIED-?NARROW$/.test(t) || t==='NARROW') return 'VERIFIED\u2013NARROW';
+    if(t==='VERIFIED') return 'VERIFIED';
+    if(t==='MISMATCH') return 'MISMATCH';
+    if(t==='UNLOCATABLE') return 'UNLOCATABLE';
+    return t; // caller validates
+  }
+  function normFlags(s){
+    var out = [];
+    String(s||'').split(/[,;]+/).forEach(function(f){
+      var t = f.toUpperCase().replace(/[\s\u2010-\u2015_]+/g,'-').replace(/^-+|-+$/g,'');
+      if(!t || t==='\u2014' || t==='-' || t==='NONE') return;
+      if(/^IMPLICIT-?MATCH$/.test(t)) out.push('IMPLICIT MATCH');
+      else if(/^WRITTEN-?ONLY$/.test(t)) out.push('WRITTEN-ONLY');
+      else if(/^NOMINAL(-IN-ACTION)?$/.test(t)) out.push('NOMINAL IN-ACTION');
+      else out.push(t);
+    });
+    return out;
+  }
+  function splitRow(line){
+    // pipe-delimited; tolerate leading/trailing pipes from markdown-style tables
+    var s = line.replace(/^\s*\|/,'').replace(/\|\s*$/,'');
+    return s.split('|').map(function(c){ return c.trim(); });
+  }
+  function isNoneLine(line){
+    return /^(none|\u2014|-)\s*$/i.test(line.trim());
+  }
+  function stripFences(text){
+    // results/benchmark blocks may arrive still wrapped in ``` fences
+    var t = String(text||'').replace(/^\s*```[a-z]*\s*$/gmi,'');
+    // Copilot appends SharePoint citation links to lines it grounds in an uploaded file:
+    //   [[UEECD0007_...omplete_R1 | Word]](https://rmiteduau-my.sharepoint.com/...)
+    // The citation text contains a PIPE, so one leaking into a pipe-delimited block row
+    // silently shifts every column after it. Strip both the double-bracket citation form
+    // and any plain markdown hyperlink before parsing.
+    t = t.replace(/\[\[[^\]]*\]\]\([^)]*\)/g, '');
+    t = t.replace(/\[[^\]]*\]\(https?:\/\/[^)]*\)/g, '');
+    return t;
+  }
+  function mdSafe(s){
+    return String(s||'').replace(/\|/g,'/').replace(/\r?\n+/g,' \u23CE ').trim();
+  }
+  function taskOf(ref){
+    var s = String(ref||'');
+    var m = s.match(/^\s*(AT\s*\d+)\s*:/i) || s.match(/^\s*(Task\s*\d+)\s*:/i) || s.match(/\b(AT\s*\d+)\b/i);
+    return m ? m[1].toUpperCase().replace(/\s+/g,'') : 'UNALLOCATED';
+  }
+
+  // ---------- ledger parser ----------
+  function parseLedger(text){
+    var warnings = [];
+    var rows = [];
+    var total = null;
+    var manifest = null;
+    var badRows = [];
+    text.split(/\r?\n/).forEach(function(line){
+      var t = line.trim();
+      if(!t) return;
+      var mTotal = t.match(/^Total claim rows:\s*(\d+)/i);
+      if(mTotal){ total = parseInt(mTotal[1],10); return; }
+      var mSl = t.match(/^Slices:\s*(.+)$/i);
+      if(mSl){
+        manifest = {};
+        mSl[1].split(',').forEach(function(p){
+          var m = p.trim().match(/^(\S+)\s*\((\d+)\)$/);
+          if(m) manifest[m[1].toUpperCase()] = parseInt(m[2],10);
+        });
+        return;
+      }
+      if(/^#\s*\|/.test(t) || /^-{2,}\s*\|/.test(t) || /^\|?\s*-{2,}/.test(t)) return;
+      var m = t.match(/^(\d+)\s*\|(.*)$/);
+      if(!m) return;
+      var cells = splitRow(m[2]);
+      if(cells.length < 4) { badRows.push({n:m[1], line:t}); return; }
+      var ref = cells[2];
+      var ambiguous = /\[AMBIGUOUS/i.test(ref);
+      ref = ref.replace(/\s*\[AMBIGUOUS[^\]]*\]\s*/i,'').trim();
+      rows.push({ n: parseInt(m[1],10), unit: cells[0], code: cells[1], ref: ref, verbatim: cells[3]||'', ambiguous: ambiguous });
+    });
+    if(badRows.length){
+      badRows.slice(0,3).forEach(function(b){
+        warnings.push('Ledger row '+b.n+' has fewer than 4 columns \u2014 skipped. The line reads: "'+b.line.slice(0,80)+'"');
+      });
+      if(badRows.length > 3) warnings.push((badRows.length-3)+' more ledger rows skipped with the same problem. The column separators (pipes) are missing or damaged \u2014 the file has been reformatted since the Extractor produced it (Word and copy-paste both do this). Re-export the full ledger from the Extractor and upload it untouched.');
+    }
+    if(rows.length === 0) warnings.push('Ledger: no claim rows parsed \u2014 is this the full ledger .md from the Extractor, unmodified?');
+    if(total === null){ warnings.push('Ledger: no "Total claim rows" line found; using parsed row count.'); total = rows.length; }
+    if(total !== rows.length) warnings.push('Ledger states '+total+' claim rows but '+rows.length+' rows parsed \u2014 the file may be truncated or edited.');
+    var seen = {};
+    rows.forEach(function(r){ if(seen[r.n]) warnings.push('Ledger row number '+r.n+' appears more than once.'); seen[r.n]=true; });
+    return { rows: rows, total: total, manifest: manifest, warnings: warnings };
+  }
+
+  // ---------- fenced-block section parser (benchmark + results share the shape) ----------
+  function parseSectioned(text, magicRe, knownSections){
+    var lines = stripFences(text).split(/\r?\n/);
+    var i = 0, header = {}, sections = {}, warnings = [];
+    var magic = null;
+    for(; i<lines.length; i++){
+      var t = lines[i].trim();
+      if(magicRe.test(t)){ magic = t; i++; break; }
+    }
+    if(!magic) return { ok:false, warnings:['Header line not found \u2014 expected a line matching '+magicRe+'.'] };
+    var current = null;
+    for(; i<lines.length; i++){
+      var t2 = lines[i].trim();
+      if(!t2) continue;
+      if(/^END\s*$/.test(t2)){ break; }
+      var kv = current===null ? t2.match(/^([a-z_]+):\s*(.*)$/) : null;
+      if(kv){ header[kv[1]] = kv[2].trim(); continue; }
+      if(knownSections.indexOf(t2) !== -1){ current = t2; if(!sections[current]) sections[current] = []; continue; }  // repeated header (stitched chunk) appends, never wipes
+      if(current === null){
+        // tolerate key: value lines appearing before the first section even after unknown lines
+        var kv2 = t2.match(/^([a-z_]+):\s*(.*)$/);
+        if(kv2){ header[kv2[1]] = kv2[2].trim(); continue; }
+        warnings.push('Unrecognised line before first section: "'+t2.slice(0,60)+'"');
+        continue;
+      }
+      if(isNoneLine(t2)) continue;
+      // Every real data line in every section is pipe-delimited. Narration that leaks in
+      // ("Reconciliation update \u2014 resuming at row 118") carries no pipe \u2014 drop it
+      // silently rather than warning row by row.
+      if(t2.indexOf('|') === -1) continue;
+      sections[current].push(t2);
+    }
+    return { ok:true, magic:magic, header:header, sections:sections, warnings:warnings };
+  }
+
+  // ---------- benchmark parser ----------
+  var BENCH_SECTIONS = ['SCOPE','REQUIREMENTS','VOLUME','CONDITIONS','FS-NOTE','CROSSWALK','ORPHANS'];
+  function parseBenchmark(text){
+    var p = parseSectioned(text, /^GOLDILOCKS-BENCHMARK v1(\.\d+)?$/, BENCH_SECTIONS);
+    if(!p.ok) return { warnings: ['Benchmark: '+p.warnings.join(' ')] , requirements:[], volume:[], conditions:[], crosswalk:[], orphans:[] };
+    var warnings = p.warnings.map(function(w){ return 'Benchmark: '+w; });
+    var reqs = [], volume = [], conditions = [], crosswalk = [], orphans = [];
+    (p.sections['REQUIREMENTS']||[]).forEach(function(l){
+      var c = splitRow(l);
+      if(c.length < 2){ warnings.push('Benchmark REQUIREMENTS row malformed: "'+l.slice(0,50)+'"'); return; }
+      reqs.push({ code:c[0], text:c[1], trigger:(c[2]&&c[2]!=='\u2014')?c[2]:null, category:(c[3]&&c[3]!=='\u2014')?c[3]:null });
+    });
+    (p.sections['VOLUME']||[]).forEach(function(l){ var c=splitRow(l); if(c.length>=2) volume.push({code:c[0], text:c[1]}); });
+    (p.sections['CONDITIONS']||[]).forEach(function(l){ var c=splitRow(l); if(c.length>=2) conditions.push({code:c[0], text:c[1]}); });
+    (p.sections['CROSSWALK']||[]).forEach(function(l){ var c=splitRow(l); if(c.length>=2) crosswalk.push({from:c[0], to:c[1], note:c[2]||''}); });
+    (p.sections['ORPHANS']||[]).forEach(function(l){ var c=splitRow(l);
+      var rowNum = parseInt(c[0],10);
+      orphans.push({ row: isNaN(rowNum)?null:rowNum, code:c[1]||'', note:c[2]||'' });
+      if(isNaN(rowNum)) warnings.push('Benchmark ORPHANS row has no numeric ledger row: "'+l.slice(0,50)+'" \u2014 it cannot be matched to a ledger row and will be listed only.');
+    });
+    if(reqs.length===0) warnings.push('Benchmark: REQUIREMENTS section is empty.');
+    return {
+      unit: p.header.unit||'', title: p.header.title||'',
+      ledgerTotal: p.header.ledger_total ? parseInt(p.header.ledger_total,10) : null,
+      scope: (function(){
+        var sc = { q1:p.header.q1, q2:p.header.q2, q3:p.header.q3, q4:p.header.q4,
+                   fromSection: p.sections['SCOPE']||[] };
+        // q1..q4 normally sit inside the SCOPE section, not the header — lift them out
+        sc.fromSection.forEach(function(l){
+          var m = l.match(/^(q[1-4]):\s*(.*)$/);
+          if(m && !sc[m[1]]) sc[m[1]] = m[2].trim();
+        });
+        return sc;
+      })(),
+      requirements: reqs, volume: volume, conditions: conditions,
+      fsNote: (p.sections['FS-NOTE']||[]).join(' '),
+      crosswalk: crosswalk, orphans: orphans, warnings: warnings
+    };
+  }
+
+  // ---------- results parser ----------
+  var RES_SECTIONS = ['CLAIMS','INDEPENDENT','UNMAPPED','UNDERCLAIMED','TACIT-CHANNEL','AC-EVIDENCE','DEFECTS','COPIED-BENCHMARK'];
+  function parseResults(text, filename){
+    var p = parseSectioned(text, /^GOLDILOCKS-RESULTS v1(\.\d+)?$/, RES_SECTIONS);
+    var label = filename ? (filename+': ') : 'Results: ';
+    if(!p.ok) return { warnings:[label+p.warnings.join(' ')], claims:[] };
+    var warnings = p.warnings.map(function(w){ return label+w; });
+    var out = {
+      file: filename||'', unit: p.header.unit||'', task: (p.header.task||'').toUpperCase().replace(/\s+/g,''),
+      rowsAssigned: p.header.rows_assigned ? parseInt(p.header.rows_assigned,10) : null,
+      rowsJudged: (p.header.rows_judged && /^\d+$/.test(p.header.rows_judged.trim())) ? parseInt(p.header.rows_judged,10) : null,
+      claims: [], independent: [], unmapped: [], underclaimed: [],
+      tacit: [], acEvidence: [], defects: [], copied: [], warnings: warnings
+    };
+    // Sessions sometimes echo the format-spec lines into the block; drop them silently.
+    var TEMPLATE_ECHO = {};
+    ['row|requirement|reference|result|flags|quote|reason','requirement|reference|channel|note',
+     'reference|what the student must do','requirement|reference',
+     'requirement|channel|genuine / nominal / written-only','ac code|reference|what the document shows',
+     'document|defect','requirement|reference|benchmark excerpt|unit wording echoed'
+    ].forEach(function(t){ TEMPLATE_ECHO[t] = true; });
+    function isTemplateEcho(l){ return !!TEMPLATE_ECHO[l.toLowerCase().replace(/\s*\|\s*/g,'|').trim()]; }
+    Object.keys(p.sections).forEach(function(sec){
+      p.sections[sec] = p.sections[sec].filter(function(l){ return !isTemplateEcho(l); });
+    });
+    var nonNumeric = [];
+    out.unnumbered = [];
+    (p.sections['CLAIMS']||[]).forEach(function(l){
+      var c = splitRow(l);
+      if(c.length < 4){ warnings.push(label+'CLAIMS row malformed (needs at least row|requirement|reference|result): "'+l.slice(0,60)+'"'); return; }
+      var rowNum = parseInt(c[0],10);
+      if(isNaN(rowNum)){
+        nonNumeric.push(c[0]+'|'+(c[1]||''));
+        // Keep the cells: if this is a judgement written without its master row number,
+        // merge() can recover the row mechanically from code + reference.
+        out.unnumbered.push(c);
+        return;
+      }
+      out.claims.push({ row:rowNum, requirement:c[1], reference:c[2], result:normResult(c[3]),
+                        flags:normFlags(c[4]), quote:c[5]||'', reason:c[6]||'' });
+    });
+    if(nonNumeric.length){
+      warnings.push(label+nonNumeric.length+' CLAIMS line'+(nonNumeric.length===1?'':'s')+' had no master row number \u2014 the merge will try to recover each from its code and reference against the ledger.');
+    }
+    (p.sections['INDEPENDENT']||[]).forEach(function(l){ var c=splitRow(l); if(c.length>=3) out.independent.push({requirement:c[0],reference:c[1],channel:c[2],note:c[3]||''}); });
+    (p.sections['UNMAPPED']||[]).forEach(function(l){ var c=splitRow(l); if(c.length>=2) out.unmapped.push({reference:c[0],note:c[1]}); });
+    (p.sections['UNDERCLAIMED']||[]).forEach(function(l){ var c=splitRow(l); if(c.length>=2) out.underclaimed.push({requirement:c[0],reference:c[1]}); });
+    (p.sections['TACIT-CHANNEL']||[]).forEach(function(l){ var c=splitRow(l); if(c.length>=3) out.tacit.push({requirement:c[0],channel:c[1],genuine:c[2].toLowerCase()}); });
+    (p.sections['AC-EVIDENCE']||[]).forEach(function(l){ var c=splitRow(l); if(c.length>=3) out.acEvidence.push({code:c[0],reference:c[1],note:c[2]}); });
+    (p.sections['DEFECTS']||[]).forEach(function(l){ var c=splitRow(l); if(c.length>=2) out.defects.push({document:c[0],defect:c[1]}); });
+    (p.sections['COPIED-BENCHMARK']||[]).forEach(function(l){ var c=splitRow(l); if(c.length>=3) out.copied.push({requirement:c[0],reference:c[1],excerpt:c[2],echoes:c[3]||''}); });
+    return out;
+  }
+
+  // ---------- merge ----------
+  var VALID_RESULTS = ['VERIFIED','VERIFIED\u2013NARROW','MISMATCH','UNLOCATABLE'];
+
+  function merge(ledger, benchmark, resultsList){
+    var W = []; // integrity warnings
+    function warn(s){ W.push(s); }
+
+    // benchmark code lookup, crosswalk, umbrella detection
+    var benchByCanon = {};
+    benchmark.requirements.forEach(function(r){ benchByCanon[canon(r.code)] = r; });
+    var xwalk = {};
+    benchmark.crosswalk.forEach(function(x){ xwalk[canon(x.from)] = x.to; });
+    function toBench(code){
+      var c = canon(code);
+      // ◆ Crosswalk FIRST, direct match second. A crosswalk entry is an explicit
+      // allocation and always wins. When the ledger and benchmark numbering schemes
+      // are shifted but overlapping (both contain a "KE-38" that names different
+      // requirements), a direct-match-first rule silently attaches claims to the
+      // wrong requirement — the worst possible failure, because every count still
+      // reconciles perfectly while every allocation is wrong.
+      if(xwalk[c] && benchByCanon[canon(xwalk[c])]) return benchByCanon[canon(xwalk[c])].code;
+      if(benchByCanon[c]) return benchByCanon[c].code;
+      return null;
+    }
+    // Analyst-authored sections (INDEPENDENT, UNDERCLAIMED, COPIED-BENCHMARK,
+    // TACIT-CHANNEL) are written in the BENCHMARK's own codes per Prompt T, so they
+    // resolve direct-first — applying the ledger crosswalk to them would double-shift
+    // (benchmark KE-47 wrongly landing on KE-49). Only slice-derived codes go
+    // crosswalk-first.
+    function toBenchDirect(code){
+      var c = canon(code);
+      if(benchByCanon[c]) return benchByCanon[c].code;
+      if(xwalk[c] && benchByCanon[canon(xwalk[c])]) return benchByCanon[canon(xwalk[c])].code;
+      return null;
+    }
+    var childOf = {}; // canon parent -> true
+    benchmark.requirements.forEach(function(r){
+      var m = r.code.match(/^(.*?)([a-z])$/); // PE-1a -> PE-1
+      if(m && benchByCanon[canon(m[1])]) childOf[canon(m[1])] = true;
+    });
+    function isUmbrella(r){
+      return /:\s*$/.test(r.text||'') || !!childOf[canon(r.code)];
+    }
+    function familyOf(code){
+      var c = canon(code);
+      if(c.indexOf('PC')===0) return 'PC';
+      if(c.indexOf('KE')===0) return 'KE';
+      if(c.indexOf('PE')===0) return 'PE';
+      if(c.indexOf('FS')===0) return 'FS';
+      if(c.indexOf('VOL')===0) return 'VOL';
+      if(c.indexOf('AC')===0) return 'AC';
+      return '?';
+    }
+
+    // orphan ledger rows
+    var orphanRows = {};
+    benchmark.orphans.forEach(function(o){ if(o.row!==null) orphanRows[o.row] = o; });
+
+    // ledger rows by task
+    var ledgerByRow = {}, tasks = {}, taskRows = {};
+    ledger.rows.forEach(function(r){
+      ledgerByRow[r.n] = r;
+      var t = taskOf(r.ref);
+      tasks[t] = true;
+      (taskRows[t] = taskRows[t] || []).push(r.n);
+    });
+    if(tasks['UNALLOCATED']) warn(taskRows['UNALLOCATED'].length+' ledger rows have no recognisable task identifier (UNALLOCATED). Fix these in the Extractor and rebuild \u2014 they cannot be judged or reconciled.');
+    if(ledger.manifest){
+      Object.keys(ledger.manifest).forEach(function(t){
+        var actual = (taskRows[t]||[]).length;
+        if(actual !== ledger.manifest[t]) warn('Ledger manifest says '+t+' has '+ledger.manifest[t]+' rows but '+actual+' were parsed for it.');
+      });
+    }
+    ['q1','q2','q3','q4'].forEach(function(q){
+      if(benchmark.scope && /PENDING/i.test(benchmark.scope[q]||''))
+        warn('Benchmark scope question '+q+' is still PENDING \u2014 answer it in the Extractor and re-download the benchmark before the report session.');
+    });
+    if(benchmark.ledgerTotal !== null && benchmark.ledgerTotal !== ledger.total)
+      warn('Benchmark records ledger_total '+benchmark.ledgerTotal+' but the ledger file states '+ledger.total+'. The benchmark may have been produced against a different ledger build.');
+
+    // results files by task
+    var resByTask = {};
+    resultsList.forEach(function(res){
+      if(!res.task){ warn((res.file||'A results file')+' has no task in its header \u2014 ignored.'); return; }
+      if(res.unit && benchmark.unit && canon(res.unit)!==canon(benchmark.unit))
+        warn(res.file+' is for unit '+res.unit+' but the benchmark is '+benchmark.unit+'.');
+      if(resByTask[res.task]){
+        // ◆ Supplementary block: a second results block for the same task ADDS to the
+        // first \u2014 built for patching a missed row without editing any file. Rows the
+        // first block already judged keep their first judgement; register entries append.
+        var base = resByTask[res.task];
+        var baseRows = {}; base.claims.forEach(function(cl){ baseRows[cl.row]=true; });
+        var added=0, dup=0;
+        res.claims.forEach(function(cl){
+          var lr = ledgerByRow[cl.row];
+          if(!lr){ warn(res.task+' supplement: row '+cl.row+' does not exist in the ledger \u2014 skipped.'); return; }
+          if(taskOf(lr.ref) !== res.task){ warn(res.task+' supplement: row '+cl.row+' belongs to '+taskOf(lr.ref)+' \u2014 skipped.'); return; }
+          if(baseRows[cl.row]){ dup++; return; }
+          base.claims.push(cl); baseRows[cl.row]=true; added++;
+        });
+        ['independent','unmapped','underclaimed','tacit','acEvidence','defects','copied'].forEach(function(k){
+          base[k] = (base[k]||[]).concat(res[k]||[]);
+        });
+        base.unnumbered = (base.unnumbered||[]).concat(res.unnumbered||[]);
+        warn(res.task+': supplementary block merged'+(res.file?(' from '+res.file):'')+' \u2014 '+added+' claim row'+(added===1?'':'s')+' added'+(dup? (', '+dup+' duplicate'+(dup===1?'':'s')+' ignored (first judgement stands)') : '')+'.');
+        return;
+      }
+      if(!taskRows[res.task]){ warn(res.file+' is for task '+res.task+', which has no rows in the ledger.'); return; }
+      resByTask[res.task] = res;
+      res.warnings.forEach(warn);
+      var assigned = taskRows[res.task].length;
+      if(res.rowsAssigned !== null && res.rowsAssigned !== assigned)
+        warn(res.task+': results file states rows_assigned '+res.rowsAssigned+' but the ledger assigns '+assigned+' rows to this task \u2014 the session may have run against a different slice build.');
+      // v1.5 sanctions '?' in the header with the count stated after END; a null here is fine.
+      if(res.rowsJudged !== null && res.rowsJudged !== res.claims.length)
+        warn(res.task+': results file states rows_judged '+res.rowsJudged+' but its CLAIMS section contains '+res.claims.length+' rows.');
+      var seen = {};
+      res.claims.forEach(function(c){
+        if(seen[c.row]) warn(res.task+': master row '+c.row+' judged twice \u2014 a claim carries exactly one result. Resolve in the results file and re-merge.');
+        seen[c.row] = true;
+        var lr = ledgerByRow[c.row];
+        if(!lr){ warn(res.task+': judged row '+c.row+' does not exist in the ledger.'); return; }
+        if(taskOf(lr.ref) !== res.task) warn(res.task+': judged row '+c.row+' belongs to '+taskOf(lr.ref)+"'s slice, not this task's.");
+        if(VALID_RESULTS.indexOf(c.result)===-1 && !orphanRows[c.row])
+          warn(res.task+' row '+c.row+': result "'+c.result+'" is not one of VERIFIED / VERIFIED\u2013NARROW / MISMATCH / UNLOCATABLE.');
+      });
+    });
+
+    // ◆ Recovery of un-numbered judgement lines. A judgement written without its master
+    // row number still names its requirement code and reference; that pair maps to at
+    // most one ledger row in this task's slice. Recover it mechanically rather than
+    // losing the judgement \u2014 and say so, per row, so nothing happens silently.
+    var canonRef = function(s){ return String(s||'').toUpperCase().replace(/\s+/g,''); };
+    Object.keys(resByTask).forEach(function(t){
+      var res = resByTask[t];
+      if(!res.unnumbered || !res.unnumbered.length) return;
+      var judged = {}; res.claims.forEach(function(cl){ judged[cl.row]=true; });
+      var reclassified = 0;
+      res.unnumbered.forEach(function(cells){
+        // interpret as code|reference|result|flags|quote|reason (row number absent)
+        var code=cells[0], ref=cells[1], result=normResult(cells[2]);
+        if(VALID_RESULTS.indexOf(result)===-1){
+          // Not a judgement. If it reads as code|reference|channel|note \u2014 the INDEPENDENT
+          // shape \u2014 reclassify it there mechanically instead of losing it: analysis
+          // observations leaking into CLAIMS is a known session habit, and the register
+          // data matters (it feeds the report). Anything else stays a warning.
+          if(/^(written|in-action|observation|nominal|oral|verbal|documented|practical|simulated)/i.test(String(cells[2]||''))){
+            res.independent.push({ requirement: code, reference: ref, channel: cells[2], note: cells[3]||'' });
+            reclassified++;
+            return;
+          }
+          warn(t+': un-numbered CLAIMS line starting "'+String(code).slice(0,20)+'" does not read as a judgement (no valid result in position 3) \u2014 if it is a coverage note, move it to UNDERCLAIMED in the file.');
+          return;
+        }
+        var matches = (taskRows[t]||[]).map(function(n){ return ledgerByRow[n]; }).filter(function(lr){
+          return canon(lr.code)===canon(code) && canonRef(lr.ref)===canonRef(ref) && !judged[lr.n];
+        });
+        if(matches.length===1){
+          var lr = matches[0];
+          res.claims.push({ row: lr.n, requirement: code, reference: ref, result: result,
+                            flags: normFlags(cells[3]), quote: cells[4]||'', reason: cells[5]||'' });
+          judged[lr.n]=true;
+          warn(t+': recovered master row '+lr.n+' ('+lr.code+' \u2192 '+lr.ref+') from an un-numbered judgement line.');
+        } else if(matches.length===0){
+          warn(t+': un-numbered judgement "'+code+' \u2192 '+ref+'" matches no unjudged ledger row in this task \u2014 check the code and reference in the file.');
+        } else {
+          warn(t+': un-numbered judgement "'+code+' \u2192 '+ref+'" matches '+matches.length+' ledger rows \u2014 add the master row number in the file to disambiguate.');
+        }
+      });
+      if(reclassified) warn(t+': '+reclassified+' analysis line'+(reclassified===1?'':'s')+' found in CLAIMS were moved to the INDEPENDENT register (they read as code|reference|channel|note). Review whether any belong in UNDERCLAIMED \u2014 that register feeds suggested coverage.');
+    });
+
+    var suppliedTasks = Object.keys(resByTask).sort();
+    var missingTasks = Object.keys(tasks).filter(function(t){ return t!=='UNALLOCATED' && !resByTask[t]; }).sort();
+
+    // Part A — every ledger row resolved
+    var partA = ledger.rows.map(function(r){
+      var t = taskOf(r.ref);
+      var benchCode = toBench(r.code);
+      var entry = { row:r.n, unit:r.unit, code:r.code, benchCode:benchCode, ref:r.ref, task:t,
+                    result:null, flags:[], quote:'', reason:'', ambiguous:r.ambiguous };
+      if(orphanRows[r.n]){ entry.result = 'ORPHAN CLAIM'; entry.reason = orphanRows[r.n].note||'matches no benchmark requirement'; return entry; }
+      if(t==='UNALLOCATED'){ entry.result = 'UNALLOCATED'; return entry; }
+      var res = resByTask[t];
+      if(!res){ entry.result = 'NOT SUPPLIED'; entry.reason = 'no results file for '+t; return entry; }
+      var claim = null;
+      for(var i=0;i<res.claims.length;i++){ if(res.claims[i].row===r.n){ claim=res.claims[i]; break; } }
+      if(!claim){ entry.result = 'NOT JUDGED'; warn(t+': ledger row '+r.n+' ('+r.code+' \u2192 '+r.ref+') was never judged in its results file. Return to the '+t+' session.'); return entry; }
+      entry.result = claim.result; entry.flags = claim.flags; entry.quote = claim.quote; entry.reason = claim.reason;
+      if(benchCode===null && VALID_RESULTS.indexOf(claim.result)!==-1)
+        warn(t+' row '+r.n+': code "'+r.code+'" matches no benchmark requirement and no crosswalk entry, and is not listed as an orphan \u2014 its result cannot be allocated to a requirement.');
+      return entry;
+    });
+
+    // Part B — counts
+    var count = function(pred){ return partA.filter(pred).length; };
+    var counts = {
+      total: partA.length,
+      orphan: count(function(e){return e.result==='ORPHAN CLAIM';}),
+      notSupplied: count(function(e){return e.result==='NOT SUPPLIED';}),
+      notJudged: count(function(e){return e.result==='NOT JUDGED';}),
+      unallocated: count(function(e){return e.result==='UNALLOCATED';}),
+      verified: count(function(e){return e.result==='VERIFIED';}),
+      narrow: count(function(e){return e.result==='VERIFIED\u2013NARROW';}),
+      mismatch: count(function(e){return e.result==='MISMATCH';}),
+      unlocatable: count(function(e){return e.result==='UNLOCATABLE';})
+    };
+    counts.eligible = counts.total - counts.orphan - counts.notSupplied - counts.notJudged - counts.unallocated;
+    counts.fourWay = counts.verified + counts.narrow + counts.mismatch + counts.unlocatable;
+    if(counts.fourWay !== counts.eligible)
+      warn('Four-way reconciliation failed: VERIFIED+NARROW+MISMATCH+UNLOCATABLE = '+counts.fourWay+' but eligible rows = '+counts.eligible+'. A result value was invalid or a row was double-resolved.');
+
+    // Part C — per-result row lists
+    var rowLists = {};
+    ['VERIFIED','VERIFIED\u2013NARROW','MISMATCH','UNLOCATABLE','NOT SUPPLIED','NOT JUDGED','ORPHAN CLAIM','UNALLOCATED'].forEach(function(k){
+      rowLists[k] = partA.filter(function(e){return e.result===k;}).map(function(e){return e.row;});
+    });
+
+    // consolidate registers
+    var reg = { implicit:[], tacitChannel:{}, acEvidence:[], defects:[], copied:[], unmapped:[], underclaimed:[], independent:[] };
+    suppliedTasks.forEach(function(t){
+      var res = resByTask[t];
+      res.claims.forEach(function(c){
+        if(c.flags.indexOf('IMPLICIT MATCH')!==-1)
+          reg.implicit.push({ requirement: (ledgerByRow[c.row] && toBench(ledgerByRow[c.row].code)) || c.requirement, reference:c.reference, inference:c.reason });
+      });
+      res.tacit.forEach(function(x){ (reg.tacitChannel[canon(x.requirement)] = reg.tacitChannel[canon(x.requirement)] || []).push({task:t, channel:x.channel, genuine:x.genuine}); });
+      res.acEvidence.forEach(function(x){ reg.acEvidence.push({task:t, code:x.code, reference:x.reference, note:x.note}); });
+      res.defects.forEach(function(x){ reg.defects.push({task:t, document:x.document, defect:x.defect}); });
+      res.copied.forEach(function(x){ reg.copied.push({task:t, requirement:x.requirement, reference:x.reference, excerpt:x.excerpt, echoes:x.echoes}); });
+      res.unmapped.forEach(function(x){ reg.unmapped.push({task:t, reference:x.reference, note:x.note}); });
+      res.underclaimed.forEach(function(x){ reg.underclaimed.push({task:t, requirement:x.requirement, reference:x.reference}); });
+      res.independent.forEach(function(x){ reg.independent.push({task:t, requirement:x.requirement, reference:x.reference, channel:x.channel, note:x.note}); });
+    });
+
+    // statuses per PC/KE/PE/FS requirement
+    var claimsByBench = {};
+    partA.forEach(function(e){
+      if(!e.benchCode) return;
+      (claimsByBench[canon(e.benchCode)] = claimsByBench[canon(e.benchCode)] || []).push(e);
+    });
+    var underclaimedByBench = {};
+    reg.underclaimed.forEach(function(u){
+      var bc = toBenchDirect(u.requirement);
+      if(bc) (underclaimedByBench[canon(bc)] = underclaimedByBench[canon(bc)] || []).push(u);
+    });
+
+    var statuses = [];
+    benchmark.requirements.forEach(function(r){
+      var fam = familyOf(r.code);
+      if(['PC','KE','PE','FS'].indexOf(fam)===-1) return;
+      var cs = claimsByBench[canon(r.code)] || [];
+      var uc = underclaimedByBench[canon(r.code)] || [];
+      var vs = cs.filter(function(e){return e.result==='VERIFIED';});
+      var ns = cs.filter(function(e){return e.result==='VERIFIED\u2013NARROW';});
+      var fails = cs.filter(function(e){return e.result==='MISMATCH'||e.result==='UNLOCATABLE';});
+      var notSup = cs.filter(function(e){return e.result==='NOT SUPPLIED';});
+      var unresolved = cs.filter(function(e){return e.result==='NOT JUDGED'||e.result==='UNALLOCATED';});
+      var st = { code:r.code, family:fam, text:r.text, tacit:!!r.trigger, trigger:r.trigger, category:r.category,
+                 claims:cs, status:null, statusNote:'', flags:[], umbrella:false };
+
+      if(isUmbrella(r) && cs.length===0){ st.status='UMBRELLA'; st.umbrella=true; st.statusNote='heading over its sub-items; coverage is judged at the sub-items'; statuses.push(st); return; }
+
+      var hasCoverage = vs.length>0 || ns.length>0;
+      if(unresolved.length>0 && !hasCoverage){ st.status='UNRESOLVED'; st.statusNote='claims not judged or unallocated \u2014 see integrity warnings'; }
+      else if(hasCoverage){
+        st.status='JUST RIGHT';
+        if(vs.length===0 && ns.length>0){ st.flags.push('NARROW-ONLY'); st.statusNote='coverage is VERIFIED\u2013NARROW only'; }
+        if(fails.length>0) st.statusNote = (st.statusNote?st.statusNote+'; ':'')+'a claimed reference also failed \u2014 see map hygiene; review whether assessor action is needed';
+      }
+      else if(uc.length>0){
+        st.status='JUST RIGHT'; st.flags.push('UNDER-CLAIMED');
+        st.statusNote='coverage found by independent analysis at '+uc.map(function(u){return u.reference;}).join(', ')+' \u2014 the map does not claim it; correct the map';
+      }
+      else if(notSup.length>0){ st.status='CANNOT DETERMINE \u2014 DOCUMENT NOT SUPPLIED'; st.statusNote='only claimed coverage sits in an unsupplied document ('+notSup.map(function(e){return e.task;}).filter(function(v,i,a){return a.indexOf(v)===i;}).join(', ')+')'; }
+      else if(cs.length>0){ st.status='GAP'; st.statusNote='claimed at '+cs.map(function(e){return e.ref;}).join(', ')+' but every claim failed'; }
+      else { st.status='GAP'; st.statusNote='the map never claims this requirement'; }
+
+      // flags
+      cs.forEach(function(e){ e.flags.forEach(function(f){ if(st.flags.indexOf(f)===-1) st.flags.push(f); }); });
+      if(reg.copied.some(function(x){ return toBenchDirect(x.requirement)===r.code; }) && st.flags.indexOf('COPIED BENCHMARK')===-1) st.flags.push('COPIED BENCHMARK');
+      if(st.tacit){
+        var ch = reg.tacitChannel[canon(r.code)] || [];
+        var genuine = ch.some(function(x){ return /genuine/.test(x.genuine); });
+        var nominal = ch.some(function(x){ return /nominal/.test(x.genuine); });
+        if(nominal && st.flags.indexOf('NOMINAL IN-ACTION')===-1) st.flags.push('NOMINAL IN-ACTION');
+        if(!genuine && hasCoverage && st.flags.indexOf('WRITTEN-ONLY')===-1) st.flags.push('WRITTEN-ONLY');
+      }
+      statuses.push(st);
+    });
+
+    // coherence checks (mechanical)
+    statuses.forEach(function(st){
+      if(st.status==='GAP' && st.claims.some(function(e){return e.result==='VERIFIED'||e.result==='VERIFIED\u2013NARROW';}))
+        warn('Coherence: '+st.code+' is statused GAP but carries a VERIFIED/NARROW claim \u2014 impossible; check the results files.');
+    });
+    reg.underclaimed.forEach(function(u){
+      var bc = toBenchDirect(u.requirement);
+      if(!bc) return;
+      var cs = claimsByBench[canon(bc)] || [];
+      var judged = cs.filter(function(e){ return VALID_RESULTS.indexOf(e.result)!==-1; });
+      if(judged.length>0 && !judged.some(function(e){return e.result==='MISMATCH'||e.result==='VERIFIED\u2013NARROW';}))
+        warn('Coherence: '+bc+' is reported UNDER-CLAIMED at '+u.reference+' but no claimed reference on it recorded MISMATCH or NARROW \u2014 review whether the under-claim note or a claim result is wrong.');
+    });
+
+    // over-assessment candidates: 2+ VERIFIED at different tasks
+    var candidates = [];
+    statuses.forEach(function(st){
+      var vTasks = {};
+      st.claims.forEach(function(e){ if(e.result==='VERIFIED') vTasks[e.task] = (vTasks[e.task]||[]).concat([e.ref]); });
+      if(Object.keys(vTasks).length >= 2)
+        candidates.push({ code:st.code, locations:Object.keys(vTasks).sort().map(function(t){return t+' ('+vTasks[t].join('; ')+')';}) });
+    });
+
+    // gate
+    var noLedger = ledger.rows.length === 0;
+    var noResults = suppliedTasks.length === 0;
+    // An empty universe must never pass: a ledger that parsed no rows, or a merge with
+    // no results files at all, has verified nothing \u2014 "PASSED" would be a false pass.
+    var gate = { triggered: missingTasks.length>0 || counts.unallocated>0 || counts.notJudged>0 || noLedger || noResults,
+                 missingTasks:missingTasks, noLedger:noLedger, noResults:noResults };
+    if(noLedger) warn('The ledger parsed no claim rows \u2014 nothing in this merge is meaningful. Fix the ledger file and re-merge.');
+    var notAssessable = statuses.filter(function(s){return s.status==='CANNOT DETERMINE \u2014 DOCUMENT NOT SUPPLIED';}).map(function(s){return s.code;});
+
+    // traffic light (provisional)
+    var traffic = statuses.filter(function(s){return !s.umbrella;}).map(function(st){
+      var colour, label, reason='';
+      if(st.status==='GAP'){
+        var partial = st.claims.some(function(e){return e.result==='MISMATCH'||e.result==='VERIFIED\u2013NARROW';});
+        if(partial){ colour='\uD83D\uDFE0'; label='REVIEW'; reason='gap with failed/partial claims to weigh: '+st.statusNote; }
+        else { colour='\uD83D\uDD34'; label='CERTAIN GAP'; reason=st.statusNote+' (provisional \u2014 Prompt R may add a suggested-coverage entry, which moves this to REVIEW)'; }
+      } else if(st.status==='CANNOT DETERMINE \u2014 DOCUMENT NOT SUPPLIED' || st.status==='UNRESOLVED'){
+        colour='\uD83D\uDFE0'; label='REVIEW'; reason=st.statusNote;
+      } else if(st.status==='JUST RIGHT'){
+        var isCandidate = candidates.some(function(c){return c.code===st.code;});
+        if(st.flags.length===0 && !isCandidate && !st.claims.some(function(e){return e.result==='MISMATCH'||e.result==='UNLOCATABLE';})){
+          colour='\uD83D\uDFE2'; label='GOOD'; reason='';
+        } else {
+          colour='\uD83D\uDFE0'; label='REVIEW';
+          var bits = [];
+          if(isCandidate) bits.push('over-assessment candidate (PENDING TEST)');
+          if(st.flags.length) bits.push(st.flags.join(', '));
+          if(st.statusNote) bits.push(st.statusNote);
+          reason = bits.join('; ');
+        }
+      }
+      return { code:st.code, family:st.family, status:st.status, colour:colour, label:label, reason:reason };
+    });
+
+    return {
+      warnings: W, partA: partA, counts: counts, rowLists: rowLists,
+      statuses: statuses, candidates: candidates, registers: reg,
+      gate: gate, notAssessable: notAssessable, traffic: traffic,
+      suppliedTasks: suppliedTasks, missingTasks: missingTasks,
+      taskRows: taskRows, resByTask: resByTask, benchmark: benchmark, ledger: ledger
+    };
+  }
+
+  // ---------- merged.md ----------
+  function toMergedMd(m){
+    var b = m.benchmark, L = [];
+    function push(s){ L.push(s); }
+    push('GOLDILOCKS-MERGED v1');
+    push('unit: ' + (b.unit||'(not stated)'));
+    push('generated: ' + new Date().toISOString().slice(0,10));
+    push('ledger_total: ' + m.ledger.total);
+    push('results_files: ' + (m.suppliedTasks.join(', ')||'none'));
+    push('tasks_not_supplied: ' + (m.missingTasks.join(', ')||'none'));
+    push('gate: ' + (m.gate.triggered
+      ? (m.gate.noLedger ? 'TRIGGERED \u2014 the ledger parsed no claim rows; this merge verified nothing. See INTEGRITY.'
+        : m.gate.noResults ? 'TRIGGERED \u2014 no results files supplied; every claim is NOT SUPPLIED. Overall verdict must be INCOMPLETE \u2014 CANNOT VERIFY.'
+        : ('TRIGGERED \u2014 ' + (m.missingTasks.length? m.missingTasks.join(', ')+' not supplied; ':'')
+         + m.counts.notSupplied + ' claims NOT SUPPLIED; '
+         + (m.counts.notJudged? m.counts.notJudged+' claims NOT JUDGED; ':'')
+         + m.notAssessable.length + ' requirements not assessable. Overall verdict must be INCOMPLETE \u2014 CANNOT VERIFY.'))
+      : 'PASSED \u2014 all referenced task documents supplied and judged'));
+    push('');
+    push('INTEGRITY');
+    if(m.warnings.length) m.warnings.forEach(function(w){ push('\u26A0 ' + mdSafe(w)); });
+    else push('none \u2014 all counts reconcile');
+    push('');
+    push('PART A \u2014 CLAIM RESULTS (single source of truth)');
+    push('row|requirement (ledger)|benchmark code|task|reference|result|flags|quote|reason');
+    m.partA.forEach(function(e){
+      push([e.row, mdSafe(e.code), e.benchCode||'\u2014', e.task, mdSafe(e.ref), e.result,
+            e.flags.join(', ')||'\u2014', mdSafe(e.quote)||'\u2014', mdSafe(e.reason)||'\u2014'].join('|'));
+    });
+    push('');
+    push('PART B \u2014 DERIVED COUNTS');
+    push('Claim total (ledger): ' + m.counts.total);
+    push('Rows in Part A: ' + m.partA.length + ' (equal by construction)');
+    push('less ORPHAN CLAIM rows: \u2212' + m.counts.orphan);
+    push('less NOT SUPPLIED rows: \u2212' + m.counts.notSupplied);
+    if(m.counts.notJudged) push('less NOT JUDGED rows (integrity failure): \u2212' + m.counts.notJudged);
+    if(m.counts.unallocated) push('less UNALLOCATED rows (integrity failure): \u2212' + m.counts.unallocated);
+    push('= Rows eligible for a result: ' + m.counts.eligible);
+    push('VERIFIED: ' + m.counts.verified);
+    push('VERIFIED\u2013NARROW: ' + m.counts.narrow);
+    push('MISMATCH: ' + m.counts.mismatch);
+    push('UNLOCATABLE: ' + m.counts.unlocatable);
+    push('Sum of four results: ' + m.counts.fourWay + (m.counts.fourWay===m.counts.eligible ? ' \u2014 reconciles' : ' \u2014 DOES NOT RECONCILE, see INTEGRITY'));
+    push('');
+    push('PART C \u2014 PER-RESULT ROW LISTS');
+    Object.keys(m.rowLists).forEach(function(k){
+      if(m.rowLists[k].length===0) return;
+      push(k + ' (' + m.rowLists[k].length + '): ' + m.rowLists[k].join(', '));
+    });
+    push('');
+    push('STATUSES (PC/KE/PE/FS)');
+    push('code|family|status|flags|note');
+    m.statuses.forEach(function(s){
+      push([s.code, s.family, s.status, s.flags.join(', ')||'\u2014', mdSafe(s.statusNote)||'\u2014'].join('|'));
+    });
+    push('');
+    push('OVER-ASSESSMENT CANDIDATES (PENDING TEST \u2014 resolved only by Prompt R\u2019s constraint test)');
+    if(m.candidates.length) m.candidates.forEach(function(c){ push(c.code + '|' + c.locations.join(' + ')); });
+    else push('none');
+    push('');
+    push('GAP LIST (' + m.statuses.filter(function(s){return s.status==='GAP';}).length + '): ' +
+      (m.statuses.filter(function(s){return s.status==='GAP';}).map(function(s){return s.code;}).join(', ')||'none'));
+    push('NOT ASSESSABLE (' + m.notAssessable.length + '): ' + (m.notAssessable.join(', ')||'none'));
+    push('');
+    function reg(title, rows, fmt){
+      push('REGISTER \u2014 ' + title);
+      if(rows.length) rows.forEach(function(r){ push(fmt(r)); });
+      else push('none');
+      push('');
+    }
+    reg('IMPLICIT MATCH', m.registers.implicit, function(r){ return [mdSafe(r.requirement), mdSafe(r.reference), mdSafe(r.inference)].join('|'); });
+    push('REGISTER \u2014 TACIT (benchmark register with consolidated channels)');
+    var anyTacit=false;
+    m.statuses.filter(function(s){return s.tacit;}).forEach(function(s){
+      anyTacit=true;
+      var ch = m.registers.tacitChannel[canon(s.code)] || [];
+      var chTxt = ch.length ? ch.map(function(x){return x.task+': '+x.channel+' ('+x.genuine+')';}).join('; ') : 'not located in any supplied task';
+      push([s.code, mdSafe(s.trigger), s.category, mdSafe(chTxt)].join('|'));
+    });
+    if(!anyTacit) push('none');
+    push('');
+    reg('AC EVIDENCE (notes only \u2014 verdicts are issued at Prompt R)', m.registers.acEvidence, function(r){ return [r.code, r.task, mdSafe(r.reference), mdSafe(r.note)].join('|'); });
+    reg('DOCUMENT DEFECTS', m.registers.defects, function(r){ return [r.task, mdSafe(r.document), mdSafe(r.defect)].join('|'); });
+    reg('COPIED BENCHMARK', m.registers.copied, function(r){ return [mdSafe(r.requirement), mdSafe(r.reference), mdSafe(r.excerpt), mdSafe(r.echoes)].join('|'); });
+    reg('UNMAPPED CONTENT (tested for suggested coverage at Prompt R)', m.registers.unmapped, function(r){ return [r.task, mdSafe(r.reference), mdSafe(r.note)].join('|'); });
+    reg('UNDER-CLAIMED COVERAGE', m.registers.underclaimed, function(r){ return [mdSafe(r.requirement), mdSafe(r.reference)].join('|'); });
+    reg('ORPHAN CLAIMS', m.benchmark.orphans, function(r){ return [(r.row===null?'?':r.row), mdSafe(r.code), mdSafe(r.note)].join('|'); });
+    reg('AMBIGUOUS LEDGER ROWS', m.partA.filter(function(e){return e.ambiguous;}), function(r){ return [r.row, mdSafe(r.code), mdSafe(r.ref)].join('|'); });
+    push('SCOPE (reproduced from the benchmark file)');
+    ['q1','q2','q3','q4'].forEach(function(q){ if(m.benchmark.scope[q]) push(q+': '+m.benchmark.scope[q]); });
+    (m.benchmark.scope.fromSection||[]).forEach(function(l){ push(l); });
+    push('');
+    push('TRAFFIC-LIGHT (provisional \u2014 Prompt R lists amendments only, never reproduces this table)');
+    push('code|family|status|colour|label|reason');
+    m.traffic.forEach(function(t){
+      push([t.code, t.family, t.status, t.colour, t.label, mdSafe(t.reason)||'\u2014'].join('|'));
+    });
+    push('END');
+    return L.join('\n');
+  }
+
+  return { canon:canon, taskOf:taskOf, parseLedger:parseLedger, parseBenchmark:parseBenchmark,
+           parseResults:parseResults, merge:merge, toMergedMd:toMergedMd };
+})();
+
+if(typeof module!=='undefined') module.exports = GoldilocksMerge;
+
+
+(function(){
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const activate = n => { $('step'+n).dataset.inactive='false'; $('num'+n).classList.add('done'); };
+
+  // ---------- file intake ----------
+  let files = []; // {name, text, kind, sub}
+  const dz = $('dropzone'), fileInput = $('fileInput');
+  dz.addEventListener('click', ()=>fileInput.click());
+  dz.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' ') fileInput.click(); });
+  ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault(); dz.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault(); dz.classList.remove('drag');}));
+  dz.addEventListener('drop', e=>{ addFiles(e.dataTransfer.files); });
+  fileInput.addEventListener('change', e=>{ addFiles(e.target.files); fileInput.value=''; });
+
+  function detectKind(text){
+    // BOM and Windows line endings first — files that have been through Notepad or
+    // OneDrive often carry both, and they must never be the reason a file is rejected.
+    const t = String(text||'').replace(/^\uFEFF/,'').replace(/\r/g,'');
+    if(/^\s*(```[a-z]*\s*)?GOLDILOCKS-LEDGER-SLICE/m.test(t)) return 'slice';
+    if(/^\s*(```[a-z]*\s*)?GOLDILOCKS-BENCHMARK v1/m.test(t)) return 'benchmark';
+    if(/^\s*(```[a-z]*\s*)?GOLDILOCKS-RESULTS v1/m.test(t)) return 'results';
+    if(/Total claim rows:\s*\d+/.test(t) && /^\s*\d+\s*\|/m.test(t)) return 'ledger';
+    // Fallback: the Extractor's own header row plus numbered pipe rows is a ledger
+    // even if the totals line was lost to editing.
+    if(/Requirement code\s*\|\s*Task reference/i.test(t) && /^\s*\d+\s*\|/m.test(t)) return 'ledger';
+    return 'unknown';
+  }
+  function subLabel(kind, text){
+    if(kind==='ledger'){ const m=text.match(/^Total claim rows:\s*(\d+)/m); return m? m[1]+' rows' : ''; }
+    if(kind==='benchmark'){ const m=text.match(/^unit:\s*(.+)$/m); return m? m[1].trim() : ''; }
+    if(kind==='results'){ const m=text.match(/^task:\s*(.+)$/m); return m? m[1].trim() : ''; }
+    if(kind==='slice') return 'slice — upload the FULL ledger instead';
+    // Say what the file actually looks like, so a mangled ledger is diagnosable
+    const first = String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).find(l=>l.trim()) || '(empty file)';
+    return 'not recognised — starts: "' + first.trim().slice(0,45) + '"';
+  }
+  function addFiles(list){
+    Array.from(list).forEach(f=>{
+      const reader = new FileReader();
+      reader.onload = e=>{
+        const text = e.target.result;
+        const kind = detectKind(text);
+        files.push({name:f.name, text, kind, sub: subLabel(kind, text)});
+        renderFiles();
+      };
+      reader.readAsText(f);
+    });
+  }
+  // ---------- paste stitcher ----------
+  // Sessions that pause mid-block produce chunks: header+first rows, middle rows,
+  // then the rest ending in END. The stitcher accepts them in order and says what
+  // it is still waiting for, so a missing middle chunk can never vanish silently.
+  let openPartial = null; // {text, name}
+  let lastShort = null;   // {unit, task} of the most recent results block finalized short of rows_assigned
+  function pasteStatus(msg){ $('pasteMsg').textContent = msg; }
+  function finalizeBlock(text){
+    const kind = detectKind(text);
+    if(kind!=='results' && kind!=='benchmark') return null;
+    let name = 'pasted-'+kind+'.md';
+    const mu = text.match(/^unit:\s*(.+)$/m), mt = text.match(/^task:\s*(.+)$/m);
+    if(kind==='results' && mt) name = ((mu?mu[1].trim()+'-':'')+'results-'+mt[1].trim()+'.md');
+    if(kind==='benchmark' && mu) name = mu[1].trim()+'-benchmark.md';
+    files.push({name, text, kind, sub: subLabel(kind, text) + ' (pasted)'});
+    // early completeness check: CLAIMS lines vs rows_assigned, so a lost chunk is
+    // visible at paste time, not at merge time
+    if(kind==='results'){
+      const assigned = parseInt((text.match(/^rows_assigned:\s*(\d+)/m)||[])[1]||'0',10);
+      const claimLines = (text.match(/^\s*\d+\s*\|/gm)||[]).length;
+      if(assigned && claimLines < assigned){
+        lastShort = { unit: mu?mu[1].trim():'', task: mt?mt[1].trim():'' };
+        return name+' added — ⚠ only '+claimLines+' of '+assigned+' CLAIMS rows present. If the rest is in another chunk, just paste that chunk next — it will be attached to this task automatically.';
+      }
+      lastShort = null;
+    }
+    return name+' added.';
+  }
+  function stripJunk(t){
+    return String(t||'').replace(/^\s*```[a-z]*\s*$/gmi,'');
+  }
+  $('addPasted').addEventListener('click', ()=>{
+    const raw = stripJunk($('pasteBox').value);
+    if(!raw.trim()){ pasteStatus('Nothing pasted yet.'); return; }
+    let work = raw, msgs = [];
+    // 1. complete blocks (header … END) — add directly
+    const complete = work.match(/GOLDILOCKS-(?:RESULTS|BENCHMARK)[\s\S]*?\nEND\b/g) || [];
+    complete.forEach(b=>{ const m = finalizeBlock(b); if(m) msgs.push(m); });
+    complete.forEach(b=>{ work = work.replace(b,''); });
+    // 2. a header without END starts (or restarts) an open partial
+    const hdrIdx = work.search(/GOLDILOCKS-(?:RESULTS|BENCHMARK)/);
+    if(hdrIdx !== -1){
+      if(openPartial) msgs.push('Previous unfinished partial discarded (a new block header was pasted).');
+      openPartial = { text: work.slice(hdrIdx) };
+      work = '';
+      const mt = openPartial.text.match(/^task:\s*(.+)$/m);
+      const n = (openPartial.text.match(/^\s*\d+\s*\|/gm)||[]).length;
+      msgs.push('Partial block open'+(mt?' for '+mt[1].trim():'')+' — '+n+' CLAIMS row'+(n===1?'':'s')+' so far, no END yet. Paste the next chunk.');
+    } else if(work.trim()){
+      // 3. no header in the remainder: continuation of the open partial, or orphan
+      if(openPartial){
+        openPartial.text += '\n' + work.trim();
+        if(/\nEND\b/.test(openPartial.text)){
+          const m = finalizeBlock(openPartial.text.match(/GOLDILOCKS-(?:RESULTS|BENCHMARK)[\s\S]*?\nEND\b/)[0]);
+          openPartial = null;
+          if(m) msgs.push('Partial complete — '+m);
+        } else {
+          const n = (openPartial.text.match(/^\s*\d+\s*\|/gm)||[]).length;
+          msgs.push('Chunk added to the open partial — '+n+' CLAIMS rows so far, still no END. Paste the next chunk.');
+        }
+      } else if(lastShort && /\|/.test(work)){
+        // Continuation chunk pasted after a block that finalized short (a stray END cut it
+        // off). Wrap it as a supplement for that task — the merge unions the rows.
+        const synth = 'GOLDILOCKS-RESULTS v1.1\nunit: '+lastShort.unit+'\ntask: '+lastShort.task+'\nCLAIMS\n'+work.trim()+(/\nEND\b/.test(work)?'':'\nEND');
+        const m = finalizeBlock(synth.match(/GOLDILOCKS-RESULTS[\s\S]*?\nEND\b/)[0]);
+        msgs.push('Treated as a continuation of '+lastShort.task+' — added as a supplementary block'+(m?(' ('+m+')'):'')+'. The merge will union its rows with the earlier chunk.');
+      } else if(detectKind(raw)==='slice'){
+        msgs.push('That is a ledger slice — the merge needs the FULL ledger file, results blocks, and the benchmark.');
+      } else {
+        msgs.push('This looks like a continuation chunk, but no partial block is open — paste the chunk that starts with the GOLDILOCKS header first, then this one.');
+      }
+    }
+    if(!msgs.length) msgs.push('No block content found — each block starts with GOLDILOCKS-RESULTS or GOLDILOCKS-BENCHMARK and ends with END. Fences are fine.');
+    $('pasteBox').value='';
+    pasteStatus(msgs.join(' '));
+    renderFiles();
+  });
+
+  function renderFiles(){
+    const wrap = $('filelist');
+    wrap.innerHTML = '';
+    files.forEach((f,i)=>{
+      const div = document.createElement('div');
+      div.className = 'filepill';
+      const kindClass = (f.kind==='ledger'||f.kind==='benchmark'||f.kind==='results') ? f.kind : 'unknown';
+      div.innerHTML = '<span class="kind '+kindClass+'">'+esc(f.kind)+'</span>'
+        + '<span class="fname">'+esc(f.name)+'</span>'
+        + '<span class="fsub">'+esc(f.sub)+'</span>'
+        + '<button data-i="'+i+'">remove</button>';
+      div.querySelector('button').addEventListener('click', ()=>{ files.splice(i,1); renderFiles(); });
+      wrap.appendChild(div);
+    });
+    const ledgers = files.filter(f=>f.kind==='ledger').length;
+    const benches = files.filter(f=>f.kind==='benchmark').length;
+    const results = files.filter(f=>f.kind==='results').length;
+    const ok = ledgers===1 && benches===1;
+    $('runMerge').disabled = !ok;
+    $('mergeHint').textContent = ok
+      ? (results + ' results file' + (results===1?'':'s') + ' — tasks without one will be reported NOT SUPPLIED')
+      : (ledgers!==1 ? 'Need exactly one full ledger ('+ledgers+' present). ' : '') + (benches!==1 ? 'Need exactly one benchmark file ('+benches+' present).' : '');
+  }
+
+  // ---------- merge ----------
+  let mergedModel = null, mergedText = '';
+  $('runMerge').addEventListener('click', ()=>{
+    const ledgerFile = files.find(f=>f.kind==='ledger');
+    const benchFile = files.find(f=>f.kind==='benchmark');
+    const ledger = GoldilocksMerge.parseLedger(ledgerFile.text);
+    const bench = GoldilocksMerge.parseBenchmark(benchFile.text);
+    const results = files.filter(f=>f.kind==='results').map(f=>GoldilocksMerge.parseResults(f.text, f.name));
+    ledger.warnings.forEach(w=>{}); // carried into merge output below
+    mergedModel = GoldilocksMerge.merge(ledger, bench, results);
+    // ledger + benchmark parse warnings belong in the integrity list too
+    mergedModel.warnings = ledger.warnings.concat(bench.warnings).concat(mergedModel.warnings);
+    mergedText = GoldilocksMerge.toMergedMd(mergedModel);
+    renderDashboard(mergedModel);
+    activate(2); activate(3);
+    $('num1').classList.add('done');
+    document.getElementById('step2').scrollIntoView({behavior:'smooth', block:'start'});
+  });
+
+  function renderDashboard(m){
+    // gate
+    const g = $('gateBanner');
+    if(m.gate.noLedger){
+      g.innerHTML = '<div class="gate triggered" style="border-color:var(--red); background:var(--red-tint);"><div class="gate-title" style="color:var(--red-dark);">Ledger unreadable — this merge verified nothing</div>'
+        + '<div>The ledger file parsed no claim rows — its column separators are missing or damaged, usually from being opened and saved in Word, or pasted through something that reformatted it. Re-export the full ledger from the Extractor and upload it untouched. See the integrity warnings for what the broken lines contain.</div></div>';
+    } else if(m.gate.triggered){
+      g.innerHTML = '<div class="gate triggered"><div class="gate-title">Gate triggered — INCOMPLETE, CANNOT VERIFY</div>'
+        + (m.gate.noResults ? '<div>No results files supplied — every claim is NOT SUPPLIED.</div>' : '')
+        + (m.missingTasks.length ? '<div>No results file for: <b>'+esc(m.missingTasks.join(', '))+'</b> — '+m.counts.notSupplied+' claims NOT SUPPLIED, '+m.notAssessable.length+' requirements not assessable from the documents supplied.</div>' : '')
+        + (m.counts.notJudged ? '<div>'+m.counts.notJudged+' claims were never judged in their session — see integrity warnings.</div>' : '')
+        + (m.counts.unallocated ? '<div>'+m.counts.unallocated+' ledger rows carry no task identifier — fix in the Extractor.</div>' : '')
+        + '<div style="margin-top:6px;">The overall verdict at Prompt R must be <b>INCOMPLETE — CANNOT VERIFY</b>. A partial set supports assertions about the analysis, never about the assessment.</div></div>';
+    } else {
+      g.innerHTML = '<div class="gate passed"><div class="gate-title">Gate passed</div><div>All ledger tasks have a results file and every claim carries a result. The four verdict families are available to Prompt R.</div></div>';
+    }
+    // integrity
+    const ib = $('integrityBox');
+    if(m.warnings.length){
+      ib.className=''; ib.innerHTML = '<div class="integrity"><h3>Integrity warnings ('+m.warnings.length+') — fix at the named source and re-merge</h3><ul>'
+        + m.warnings.map(w=>'<li>'+esc(w)+'</li>').join('') + '</ul></div>';
+    } else {
+      ib.innerHTML = '<div class="integrity clean"><h3>Integrity: clean</h3><ul><li>Every count reconciles; every claim traces to a ledger row and a results file.</li></ul></div>';
+    }
+    // stamp
+    const c = m.counts;
+    $('stamp').innerHTML = [
+      ['Total claims', c.total, ''],
+      ['Judged', c.fourWay, c.fourWay===c.eligible?'ok':''],
+      ['Verified', c.verified, 'ok'],
+      ['Narrow', c.narrow, ''],
+      ['Mismatch', c.mismatch, ''],
+      ['Unlocatable', c.unlocatable, ''],
+      ['Not supplied', c.notSupplied, ''],
+      ['Orphans', c.orphan, '']
+    ].map(x=>'<div class="cell"><div class="num '+x[2]+'">'+x[1]+'</div><div class="lbl">'+x[0]+'</div></div>').join('');
+    // per-task table
+    const tb = $('taskTable').querySelector('tbody');
+    tb.innerHTML = '';
+    Object.keys(m.taskRows).sort().forEach(t=>{
+      const assigned = m.taskRows[t].length;
+      const res = m.resByTask[t];
+      const judged = res ? res.claims.length : 0;
+      let pill, cls='';
+      if(t==='UNALLOCATED'){ pill='<span class="pill bad">fix in extractor</span>'; cls='rowgap'; }
+      else if(!res){ pill='<span class="pill warnp">NOT SUPPLIED</span>'; cls='rowwarn'; }
+      else if(judged===assigned){ pill='<span class="pill good">reconciles</span>'; }
+      else { pill='<span class="pill bad">'+(assigned-judged)+' rows unjudged</span>'; cls='rowgap'; }
+      const tr = document.createElement('tr');
+      if(cls) tr.className = cls;
+      tr.innerHTML = '<td class="mono">'+esc(t)+'</td><td class="mono">'+assigned+'</td><td class="mono">'+esc(res?res.file:'—')+'</td><td class="mono">'+(res?judged:'—')+'</td><td>'+pill+'</td>';
+      tb.appendChild(tr);
+    });
+    // statuses + traffic
+    const sb = $('statusTable').querySelector('tbody');
+    sb.innerHTML = '';
+    const trafficByCode = {};
+    m.traffic.forEach(t=>{ trafficByCode[t.code]=t; });
+    m.statuses.forEach(st=>{
+      const tr = document.createElement('tr');
+      const t = trafficByCode[st.code];
+      const icon = st.umbrella ? '<span class="pill neutral">umbrella</span>'
+        : (t ? t.colour+' <b>'+esc(t.label)+'</b>' : '');
+      if(t && t.label==='CERTAIN GAP') tr.className='rowgap';
+      else if(t && t.label==='REVIEW') tr.className='rowwarn';
+      tr.innerHTML = '<td style="white-space:nowrap;">'+icon+'</td>'
+        + '<td class="mono">'+esc(st.code)+'</td>'
+        + '<td>'+esc(st.status)+'</td>'
+        + '<td class="flagchips">'+ (st.flags.length? st.flags.map(f=>'<span>'+esc(f)+'</span>').join('') : '—') +'</td>'
+        + '<td style="font-size:12px;">'+esc(st.statusNote||'')+'</td>';
+      sb.appendChild(tr);
+    });
+    // candidates
+    $('candidates').innerHTML = m.candidates.length
+      ? '<ul style="margin:0;padding-left:18px;">'+m.candidates.map(cd=>'<li><span class="mono">'+esc(cd.code)+'</span> — VERIFIED at '+esc(cd.locations.join(' + '))+'</li>').join('')+'</ul>'
+      : 'No over-assessment candidates — no requirement carries two full VERIFIED claims at different tasks.';
+    // registers
+    const regs = [
+      ['Implicit match ('+m.registers.implicit.length+')', m.registers.implicit, r=>[r.requirement,r.reference,r.inference]],
+      ['AC evidence ('+m.registers.acEvidence.length+')', m.registers.acEvidence, r=>[r.code, r.task, r.reference, r.note]],
+      ['Document defects ('+m.registers.defects.length+')', m.registers.defects, r=>[r.task, r.document, r.defect]],
+      ['Copied benchmark ('+m.registers.copied.length+')', m.registers.copied, r=>[r.requirement, r.reference, r.excerpt]],
+      ['Unmapped content ('+m.registers.unmapped.length+')', m.registers.unmapped, r=>[r.task, r.reference, r.note]],
+      ['Under-claimed coverage ('+m.registers.underclaimed.length+')', m.registers.underclaimed, r=>[r.requirement, r.reference]],
+      ['Orphan claims ('+m.benchmark.orphans.length+')', m.benchmark.orphans, r=>[(r.row===null?'?':r.row), r.code, r.note]],
+      ['Ambiguous ledger rows ('+m.partA.filter(e=>e.ambiguous).length+')', m.partA.filter(e=>e.ambiguous), r=>[r.row, r.code, r.ref]]
+    ];
+    $('registers').innerHTML = '';
+    regs.forEach(([title, rows, fmt])=>{
+      const d = document.createElement('details');
+      d.className = 'reg';
+      d.innerHTML = '<summary>'+esc(title)+'</summary><div class="reg-body">'
+        + (rows.length
+          ? '<table class="data"><tbody>'+rows.map(r=>'<tr>'+fmt(r).map(cell=>'<td>'+esc(cell)+'</td>').join('')+'</tr>').join('')+'</tbody></table>'
+          : '<p class="helptext" style="margin:8px 0 0;">none</p>')
+        + '</div>';
+      $('registers').appendChild(d);
+    });
+  }
+
+  // ---------- export ----------
+  function mergedFilename(){
+    const u = mergedModel && mergedModel.benchmark.unit ? mergedModel.benchmark.unit + '-' : '';
+    return u + 'merged.md';
+  }
+  $('downloadMerged').addEventListener('click', ()=>{
+    const blob = new Blob([mergedText], {type:'text/markdown'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = mergedFilename();
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  });
+  $('copyMerged').addEventListener('click', ()=>{
+    navigator.clipboard.writeText(mergedText).then(()=>{
+      const msg = $('copiedMsg'); msg.style.display='inline';
+      setTimeout(()=>{ msg.style.display='none'; }, 1800);
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
