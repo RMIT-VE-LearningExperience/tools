@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Goldilocks Report Viewer — CoVE Assessment Toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#E61E2A; --red-dark:#B8151F; --red-tint:#FCE7E8;
+    --blue:#000054; --blue-tint:#E6E6EF;
+    --black:#000; --white:#fff;
+    --grey:#E3E5E0; --grey-dark:#8C8F89; --grey-text:#5C5F5A;
+    --ember:#F2F2F2; --yellow:#FAC800; --yellow-tint:#FFF6D6;
+    --green:#008550; --green-tint:#E2F2EA;
+    --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --sans:"Inter", -apple-system, "Segoe UI", sans-serif;
+    --display:"Archivo", var(--sans);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--ember);color:var(--black);font-family:var(--sans);}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 24px 80px;}
+  header.top{background:var(--blue);color:#fff;padding:40px 0 30px;border-bottom:6px solid var(--red);margin-bottom:30px;}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#fff;margin:0 0 10px;display:flex;align-items:center;gap:8px;}
+  .eyebrow .dot{width:7px;height:7px;background:var(--red);display:inline-block;}
+  h1{font-family:var(--display);font-weight:800;font-size:34px;margin:0 0 10px;letter-spacing:-.01em;}
+  .lede{font-size:15px;line-height:1.6;color:#C6C6DA;max-width:64ch;margin:0;}
+  .dropzone{border:2px dashed var(--grey-dark);border-radius:4px;background:#fff;padding:26px;text-align:center;cursor:pointer;}
+  .dropzone:hover,.dropzone.drag{border-color:var(--red);background:var(--red-tint);}
+  .dropzone input{display:none;}
+  .dz-label{font-family:var(--mono);font-size:13px;color:var(--red-dark);font-weight:500;}
+  .btn{font-family:var(--sans);font-size:13.5px;font-weight:600;padding:11px 20px;border-radius:3px;border:2px solid var(--red-dark);background:var(--red-dark);color:#fff;cursor:pointer;}
+  .btn.secondary{background:#fff;color:var(--black);border-color:var(--grey-dark);}
+  .btnrow{display:flex;gap:10px;margin:16px 0;flex-wrap:wrap;align-items:center;}
+  .field{margin:14px 0;}
+  .field label{display:block;font-size:12.5px;color:var(--grey-text);margin-bottom:4px;}
+  .field input{width:100%;max-width:520px;font-family:var(--sans);font-size:13.5px;padding:9px 11px;border:1.5px solid var(--grey-dark);border-radius:3px;}
+
+  #report{display:none;}
+  .verdict{border-radius:6px;padding:20px 24px;margin-bottom:22px;border-left:8px solid;background:#fff;}
+  .verdict h2{font-family:var(--display);font-size:22px;margin:0 0 6px;}
+  .verdict.passed{border-color:var(--green);} .verdict.passed h2{color:var(--green);}
+  .verdict.triggered{border-color:var(--yellow);} .verdict.triggered h2{color:#7a6200;}
+  .stamp{background:var(--blue);color:#fff;border-radius:6px;padding:20px 24px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;border-left:6px solid var(--red);}
+  .stamp .cell{border-left:1px solid rgba(255,255,255,.15);padding-left:16px;}
+  .stamp .cell:first-child{border-left:none;padding-left:0;}
+  .stamp .num{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--red);}
+  .stamp .num.ok{color:#7ED9A7;}
+  .stamp .lbl{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#AEAEC4;margin-top:6px;}
+  h2.sec{font-family:var(--display);font-size:19px;margin:30px 0 10px;border-bottom:2.5px solid var(--black);padding-bottom:6px;}
+  table.tl{border-collapse:collapse;width:100%;font-size:12.5px;background:#fff;}
+  table.tl th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:8px 10px;border-bottom:2px solid var(--black);background:#fff;}
+  table.tl td{padding:7px 10px;border-bottom:1px solid var(--grey);vertical-align:top;}
+  td.mono{font-family:var(--mono);font-size:11.5px;white-space:nowrap;}
+  tr.g{background:var(--green-tint);} tr.o{background:var(--yellow-tint);} tr.r{background:var(--red-tint);}
+  .tlword{font-family:var(--mono);font-size:10.5px;font-weight:600;white-space:nowrap;}
+  .famhead td{font-family:var(--display);font-weight:700;font-size:13px;background:var(--blue-tint);color:var(--blue);border-bottom:2px solid var(--blue);}
+  details.reg{background:#fff;border:1.5px solid var(--grey);border-radius:5px;margin-bottom:10px;}
+  details.reg summary{font-family:var(--mono);font-size:12.5px;padding:10px 14px;cursor:pointer;}
+  details.reg .body{padding:0 14px 14px;overflow-x:auto;}
+  table.plain{border-collapse:collapse;width:100%;font-size:12px;}
+  table.plain td{padding:5px 8px;border-bottom:1px solid var(--grey);vertical-align:top;}
+  .note{font-size:13px;color:var(--grey-text);line-height:1.55;max-width:75ch;}
+  ul.integrity{background:#fff;border:1.5px solid var(--grey);border-left:6px solid var(--green);border-radius:5px;margin:0 0 22px;padding:12px 16px 12px 32px;font-size:13px;line-height:1.6;}
+  ul.integrity.warn{border-left-color:var(--yellow);}
+  footer.foot{font-family:var(--mono);font-size:11px;color:var(--grey-text);border-top:1px solid var(--grey);margin-top:50px;padding-top:18px;}
+
+  @media print{
+    header.top,.intake,.btnrow,.noprint{display:none !important;}
+    body{background:#fff;}
+    #report{display:block !important;}
+    .wrap{max-width:100%;padding:0;}
+    details.reg{page-break-inside:avoid;} details.reg[open] summary{font-weight:700;}
+    tr.g{background:#e9f5ee !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    tr.o{background:#fdf6d9 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    tr.r{background:#fbe9ea !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .stamp{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  }
+  @media (max-width:680px){ .stamp{grid-template-columns:repeat(2,1fr);} }
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
+</head>
+<body>
+
+<header class="top"><div class="wrap" style="padding-bottom:0;">
+  <p class="eyebrow"><span class="dot"></span>CoVE Assessment Toolkit — Goldilocks companion</p>
+  <h1>Goldilocks Report Viewer</h1>
+  <p class="lede">Drop in the merged file and get the readable version: verdict, counts, the coloured traffic-light board, and every register — printable straight to PDF for Q&amp;C. <strong>Display only: nothing here is recomputed.</strong></p>
+</div></header>
+
+<div class="wrap">
+  <div class="intake">
+    <div class="dropzone" id="dz" tabindex="0">
+      <input type="file" id="fileInput" accept=".md,.txt">
+      <div class="dz-label">Click or drop the merged file (&lt;unit&gt;-merged.md)</div>
+    </div>
+    <div class="field"><label>Overall verdict from the coverage report (optional — e.g. "MIXED — under-assessing with narrow coverage; no over-assessment")</label><input type="text" id="verdictInput" placeholder="Paste the Section 7 overall verdict here"></div>
+    <div class="field"><label>Report title line (optional)</label><input type="text" id="titleInput" placeholder="e.g. UEECD0007 — Goldilocks Coverage Verification, August 2026"></div>
+  </div>
+
+  <div id="report">
+    <div class="btnrow noprint">
+      <button class="btn" onclick="window.print()">Print / save as PDF</button>
+      <button class="btn secondary" id="downloadHtml">Download report (HTML)</button>
+      <button class="btn secondary" id="expandAll">Expand all</button>
+      <span class="note">Colours print and download; every colour is paired with its word label.</span>
+    </div>
+    <h1 id="rTitle" style="color:var(--black);font-size:26px;"></h1>
+    <div id="rVerdict"></div>
+    <div class="stamp" id="rStamp"></div>
+    <div id="rIntegrity"></div>
+    <h2 class="sec">Traffic light — every PC, KE, PE and FS requirement</h2>
+    <p class="note">🟢 GOOD — genuinely covered, no flags. 🟠 REVIEW — needs a human look (flags, narrow-only coverage, over-assessment candidates, suggested fixes). 🔴 CERTAIN GAP — nothing claimed and nothing found. Word labels always accompany colour.</p>
+    <table class="tl"><thead><tr><th style="width:110px;">Status</th><th style="width:90px;">Code</th><th>Finding</th></tr></thead><tbody id="rTL"></tbody></table>
+    <h2 class="sec">Gaps &amp; candidates</h2>
+    <div id="rGaps" class="note" style="margin-bottom:10px;"></div>
+    <div id="rCands" class="note"></div>
+    <h2 class="sec">Registers</h2>
+    <div id="rRegs"></div>
+    <h2 class="sec">Every claim, every result</h2>
+    <details class="reg"><summary id="rPartASummary">Full claim table</summary><div class="body"><table class="plain" id="rPartA"></table></div></details>
+    <footer class="foot" id="rFoot"></footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  function parseMerged(text){
+    const lines = String(text||'').replace(/^\uFEFF/,'').replace(/\r/g,'').split('\n');
+    const m = { header:{}, integrity:[], partA:[], countsLines:[], statuses:[], candidates:[], gapList:'', notAssessable:'', registers:[], scope:[], traffic:[] };
+    let sec = 'header', reg = null;
+    lines.forEach(l=>{
+      const t = l.trim();
+      if(!t) return;
+      if(/^INTEGRITY$/.test(t)){ sec='integrity'; return; }
+      if(/^PART A /.test(t)){ sec='partA'; return; }
+      if(/^PART B /.test(t)){ sec='counts'; return; }
+      if(/^PART C /.test(t)){ sec='partC'; return; }
+      if(/^STATUSES/.test(t)){ sec='statuses'; return; }
+      if(/^OVER-ASSESSMENT CANDIDATES/.test(t)){ sec='cands'; return; }
+      if(/^GAP LIST/.test(t)){ m.gapList=t; sec='gapline'; return; }
+      if(/^NOT ASSESSABLE/.test(t)){ m.notAssessable=t; return; }
+      if(/^REGISTER \u2014 /.test(t)){ reg={title:t.replace(/^REGISTER \u2014 /,''), rows:[]}; m.registers.push(reg); sec='register'; return; }
+      if(/^SCOPE/.test(t)){ sec='scope'; return; }
+      if(/^TRAFFIC-LIGHT/.test(t)){ sec='traffic'; return; }
+      if(/^END$/.test(t)){ sec='done'; return; }
+      switch(sec){
+        case 'header': { const kv=t.match(/^([a-z_]+):\s*(.*)$/); if(kv) m.header[kv[1]]=kv[2]; break; }
+        case 'integrity': if(!/^none/.test(t)) m.integrity.push(t.replace(/^\u26A0\s*/,'')); break;
+        case 'partA': if(!/^row\|/.test(t)) m.partA.push(t.split('|')); break;
+        case 'counts': m.countsLines.push(t); break;
+        case 'statuses': if(!/^code\|/.test(t)) m.statuses.push(t.split('|')); break;
+        case 'cands': if(!/^none$/i.test(t)) m.candidates.push(t.split('|')); break;
+        case 'register': if(reg && !/^none$/i.test(t)) reg.rows.push(t.split('|')); break;
+        case 'scope': m.scope.push(t); break;
+        case 'traffic': if(!/^code\|/.test(t)) m.traffic.push(t.split('|')); break;
+      }
+    });
+    return m;
+  }
+
+  function countFromPartA(m, result){ return m.partA.filter(r=>r[5]===result).length; }
+
+  function render(m){
+    const unit = m.header.unit||'';
+    $('rTitle').textContent = $('titleInput').value.trim() || (unit + ' \u2014 Goldilocks Coverage Verification');
+    const gate = m.header.gate||'';
+    const passed = /^PASSED/.test(gate);
+    const verdict = $('verdictInput').value.trim();
+    $('rVerdict').innerHTML = '<div class="verdict '+(passed?'passed':'triggered')+'">'
+      + '<h2>'+(passed ? 'Gate passed \u2014 complete verification' : 'Gate triggered \u2014 incomplete')+'</h2>'
+      + '<div class="note" style="max-width:none;">'+esc(gate)+'</div>'
+      + (verdict? '<div style="margin-top:8px;font-weight:600;">Overall verdict: '+esc(verdict)+'</div>':'')
+      + '</div>';
+    const g=c=>{const s=m.countsLines.find(l=>l.startsWith(c));return s? s.split(':')[1].trim():'';};
+    const tl = { good:m.traffic.filter(r=>r[4]==='GOOD').length, rev:m.traffic.filter(r=>r[4]==='REVIEW').length, gap:m.traffic.filter(r=>r[4]==='CERTAIN GAP').length };
+    $('rStamp').innerHTML = [
+      ['Claims', g('Claim total (ledger)'), ''],
+      ['Verified', g('VERIFIED'), 'ok'],
+      ['Narrow', g('VERIFIED\u2013NARROW'), ''],
+      ['Mismatch', g('MISMATCH'), ''],
+      ['\uD83D\uDFE2 Good', tl.good, 'ok'],
+      ['\uD83D\uDFE0 Review', tl.rev, ''],
+      ['\uD83D\uDD34 Certain gap', tl.gap, ''],
+      ['Tasks', (m.header.results_files||'').split(',').filter(Boolean).length, '']
+    ].map(x=>'<div class="cell"><div class="num '+x[2]+'">'+esc(String(x[1]))+'</div><div class="lbl">'+esc(x[0])+'</div></div>').join('');
+    $('rIntegrity').innerHTML = m.integrity.length
+      ? '<ul class="integrity warn">'+m.integrity.map(w=>'<li>'+esc(w)+'</li>').join('')+'</ul>'
+      : '<ul class="integrity"><li>Integrity clean \u2014 every count reconciles; every claim traces to a ledger row and a results file.</li></ul>';
+    // traffic light grouped by family
+    const tb = $('rTL'); tb.innerHTML='';
+    let lastFam = null;
+    const famName = {PC:'Performance Criteria',KE:'Knowledge Evidence',PE:'Performance Evidence',FS:'Foundation Skills'};
+    m.traffic.forEach(r=>{
+      const [code,fam,status,colour,label,reason] = r;
+      if(fam!==lastFam){ lastFam=fam; const h=document.createElement('tr'); h.className='famhead'; h.innerHTML='<td colspan="3">'+esc(famName[fam]||fam)+'</td>'; tb.appendChild(h); }
+      const tr=document.createElement('tr');
+      tr.className = label==='GOOD'?'g':label==='CERTAIN GAP'?'r':'o';
+      tr.innerHTML = '<td class="tlword">'+colour+' '+esc(label)+'</td><td class="mono">'+esc(code)+'</td><td>'+esc(reason==='\u2014'?'':reason)+'</td>';
+      tb.appendChild(tr);
+    });
+    $('rGaps').innerHTML = '<b>'+esc(m.gapList||'GAP LIST: none')+'</b>' + (m.notAssessable && !/\(0\)/.test(m.notAssessable) ? '<br>'+esc(m.notAssessable):'');
+    $('rCands').innerHTML = m.candidates.length
+      ? '<b>Over-assessment candidates ('+m.candidates.length+'), resolved by the report\u2019s constraint test:</b><ul>'+m.candidates.map(c=>'<li><span class="mono">'+esc(c[0])+'</span> \u2014 '+esc(c[1]||'')+'</li>').join('')+'</ul>'
+      : '<b>No over-assessment candidates.</b>';
+    // registers
+    $('rRegs').innerHTML='';
+    m.registers.forEach(r=>{
+      const d=document.createElement('details'); d.className='reg';
+      d.innerHTML='<summary>'+esc(r.title)+' ('+r.rows.length+')</summary><div class="body">'
+        + (r.rows.length? '<table class="plain"><tbody>'+r.rows.map(row=>'<tr>'+row.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table>' : '<p class="note">none</p>')
+        + '</div>';
+      $('rRegs').appendChild(d);
+    });
+    // part A
+    $('rPartASummary').textContent = 'Full claim table \u2014 '+m.partA.length+' rows (row \u00B7 map code \u00B7 benchmark code \u00B7 task \u00B7 reference \u00B7 result \u00B7 flags \u00B7 quote \u00B7 reason)';
+    $('rPartA').innerHTML = m.partA.map(r=>'<tr><td class="mono">'+r.slice(0,6).map(esc).join('</td><td class="mono">')+'</td><td>'+esc(r[6]||'')+'</td><td>'+esc(r[7]||'')+'</td><td>'+esc(r[8]||'')+'</td></tr>').join('');
+    $('rFoot').textContent = 'Generated from '+(unit?unit+'-':'')+'merged.md ('+(m.header.generated||'')+') by the Goldilocks Report Viewer \u2014 display only; the merged file remains the record. Every finding traces: report line \u2192 merged row \u2192 results file \u2192 ledger slice \u2192 competency map cell.';
+    $('report').style.display='block';
+    document.getElementById('report').scrollIntoView({behavior:'smooth'});
+  }
+
+  let lastText = null;
+  const dz=$('dz'), fi=$('fileInput');
+  dz.addEventListener('click',()=>fi.click());
+  dz.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')fi.click();});
+  ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));
+  dz.addEventListener('drop',e=>{ if(e.dataTransfer.files.length) read(e.dataTransfer.files[0]); });
+  fi.addEventListener('change',e=>{ if(e.target.files.length) read(e.target.files[0]); });
+  function read(f){
+    const r=new FileReader();
+    r.onload=e=>{
+      lastText=e.target.result;
+      if(!/^GOLDILOCKS-MERGED v1/m.test(lastText)){ alert('That does not look like a merged file \u2014 it should start with GOLDILOCKS-MERGED v1.'); return; }
+      render(parseMerged(lastText));
+    };
+    r.readAsText(f);
+  }
+  ['verdictInput','titleInput'].forEach(id=>$(id).addEventListener('input',()=>{ if(lastText) render(parseMerged(lastText)); }));
+
+  // expand / collapse all registers and the claim table
+  let expanded=false;
+  $('expandAll').addEventListener('click',()=>{
+    expanded=!expanded;
+    document.querySelectorAll('#report details').forEach(d=>{ d.open=expanded; });
+    $('expandAll').textContent = expanded? 'Collapse all' : 'Expand all';
+  });
+  // printing always opens everything, then restores
+  let printState=[];
+  window.addEventListener('beforeprint',()=>{
+    printState=[...document.querySelectorAll('#report details')].map(d=>d.open);
+    document.querySelectorAll('#report details').forEach(d=>d.open=true);
+  });
+  window.addEventListener('afterprint',()=>{
+    [...document.querySelectorAll('#report details')].forEach((d,i)=>{ d.open=printState[i]; });
+  });
+  // standalone HTML download — everything open, buttons stripped, styles inlined
+  $('downloadHtml').addEventListener('click',()=>{
+    if(!lastText) return;
+    const clone=$('report').cloneNode(true);
+    clone.style.display='block';
+    clone.querySelectorAll('.noprint').forEach(el=>el.remove());
+    clone.querySelectorAll('details').forEach(d=>d.setAttribute('open',''));
+    const css=[...document.querySelectorAll('style')].map(st=>st.textContent).join('\n');
+    const fonts=[...document.querySelectorAll('link[href*="fonts"]')].map(l=>l.outerHTML).join('\n');
+    const title=$('rTitle').textContent;
+    const html='<!DOCTYPE html>\n<html lang="en-AU"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>'+title.replace(/</g,'&lt;')+'</title>'+fonts+'<style>'+css+'\nbody{background:#fff;} .wrap{max-width:1100px;margin:0 auto;padding:24px;}</style></head><body><div class="wrap">'+clone.outerHTML+'</div></body></html>';
+    const unit=(lastText.match(/^unit:\s*(.+)$/m)||[])[1];
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));
+    a.download=((unit?unit.trim()+'-':'')+'goldilocks-report.html');
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  });
+})();
+</script>
+</body>
+</html>
