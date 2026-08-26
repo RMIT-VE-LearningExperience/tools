@@ -103,6 +103,16 @@
       "notes": "Assessment, Goldilocks",
       "public": true,
       "updatedAt": "2026-08-26T03:08:38.880Z"
+    },
+    "goldilocks-report-viewer.html": {
+      "description": "ABB Report Viewer",
+      "tags": [
+        "Assessment"
+      ],
+      "owner": "BAU",
+      "notes": "Assessment, Goldilocks",
+      "public": true,
+      "updatedAt": "2026-08-26T03:09:26.616Z"
     }
   }
 }
