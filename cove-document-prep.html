@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoVE Document Prep — Goldilocks upload preparation</title>
+<style>
+  :root{
+    --navy:#000054;
+    --red:#E61E2A;
+    --keel:#C8102E;
+    --paper:#F4F5F7;
+    --ember:#F2F2F2;
+    --ink:#111116;
+    --muted:#4A4A57;
+    --line:#D6D6DE;
+    --yellow:#FAC800;
+    --ok:#0B6E3B;
+    --white:#fff;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+    font-size:16px;
+    line-height:1.5;
+  }
+  header.app{
+    background:var(--navy);
+    color:var(--white);
+    border-bottom:4px solid var(--keel);
+    padding:22px 28px 20px;
+  }
+  header.app h1{
+    margin:0;
+    font-size:1.35rem;
+    font-weight:600;
+    letter-spacing:.01em;
+  }
+  .eyebrow{display:flex;align-items:center;gap:11px;margin:0 0 12px;
+    font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;
+    font-size:.72rem;font-weight:600;letter-spacing:.17em;text-transform:uppercase;color:var(--white);}
+  .eyebrow::before{content:"";width:11px;height:11px;background:var(--red);flex:none;}
+  header.app p{
+    margin:6px 0 0;
+    font-size:.9rem;
+    color:#C9C9DA;
+    max-width:70ch;
+  }
+  main{padding:28px;max-width:1080px;margin:0 auto;}
+  section{margin-bottom:28px;}
+  h2{
+    font-size:1rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin:0 0 12px;
+    color:var(--navy);
+  }
+  .panel{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px;
+  }
+  #drop{
+    border:2px dashed var(--line);
+    background:var(--white);
+    border-radius:var(--radius);
+    padding:34px 20px;
+    text-align:center;
+    transition:border-color .12s, background .12s;
+  }
+  #drop.over{border-color:var(--red);background:#FFF4F5;}
+  #drop p{margin:0 0 14px;color:var(--muted);}
+  button{
+    font:inherit;
+    font-weight:600;
+    background:var(--navy);
+    color:var(--white);
+    border:1px solid var(--navy);
+    border-radius:var(--radius);
+    padding:9px 16px;
+    cursor:pointer;
+  }
+  button:hover{background:#1A1A6E;}
+  button.secondary{background:var(--white);color:var(--navy);}
+  button.secondary:hover{background:var(--ember);}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+  button:focus-visible, a:focus-visible, [tabindex]:focus-visible{
+    outline:3px solid var(--yellow);
+    outline-offset:2px;
+  }
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+  .doc{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-left:5px solid var(--navy);
+    border-radius:var(--radius);
+    padding:18px 20px;
+    margin-bottom:16px;
+  }
+  .doc.warn{border-left-color:var(--red);}
+  .doc h3{margin:0 0 4px;font-size:1.02rem;}
+  .doc .sub{color:var(--muted);font-size:.85rem;margin:0 0 14px;}
+  dl.stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:12px 20px;
+    margin:0 0 16px;
+  }
+  dl.stats div{border-top:1px solid var(--line);padding-top:8px;}
+  dl.stats dt{
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--muted);
+    margin:0;
+  }
+  dl.stats dd{
+    margin:2px 0 0;
+    font-size:1.02rem;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+  }
+  .tail{
+    background:var(--ember);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    margin-bottom:16px;
+    font-size:.9rem;
+  }
+  .tail strong{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:4px;}
+  .tail code{
+    font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;
+    font-size:.86rem;
+    word-break:break-word;
+  }
+  .note{
+    font-size:.86rem;
+    color:var(--muted);
+    border-left:3px solid var(--yellow);
+    padding:6px 0 6px 12px;
+    margin:0 0 16px;
+  }
+  .note.alert{border-left-color:var(--red);color:#8A1119;}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .status{font-size:.9rem;color:var(--muted);min-height:1.4em;}
+  ul.plain{margin:0;padding-left:18px;font-size:.9rem;color:var(--muted);}
+  ul.plain li{margin-bottom:4px;}
+  footer.app{
+    padding:20px 28px 48px;
+    max-width:1080px;
+    margin:0 auto;
+    color:var(--muted);
+    font-size:.82rem;
+  }
+  .visually-hidden{
+    position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
+</head>
+<body>
+<header class="app">
+  <p class="eyebrow">CoVE Assessment Toolkit — Goldilocks companion</p>
+  <h1>CoVE Document Prep</h1>
+  <p>Prepares Word assessment documents for a Goldilocks session. Resolves Word automatic numbering into literal numbers that survive upload, and reports how much document there is — so you can tell whether Copilot read all of it.</p>
+</header>
+
+<main>
+  <section aria-labelledby="add-heading">
+    <h2 id="add-heading">Add documents</h2>
+    <div id="drop" tabindex="0" role="button" aria-describedby="drop-help">
+      <p id="drop-help">Drop .docx files here, or choose them below. Units of competency, assessor guides, competency maps — anything headed for a Copilot session.</p>
+      <button type="button" id="pick">Choose files</button>
+      <input type="file" id="file" accept=".docx" multiple class="visually-hidden">
+    </div>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+  </section>
+
+  <section aria-labelledby="results-heading" id="results-section" hidden>
+    <h2 id="results-heading">Prepared documents</h2>
+    <div class="toolbar">
+      <button type="button" id="dl-all">Download all flattened files</button>
+      <button type="button" class="secondary" id="dl-report">Download prep report</button>
+      <button type="button" class="secondary" id="clear">Clear</button>
+    </div>
+    <div id="results"></div>
+  </section>
+
+  <section aria-labelledby="how-heading">
+    <h2 id="how-heading">How to use what this produces</h2>
+    <div class="panel">
+      <ul class="plain">
+        <li><strong>Upload the flattened .md file</strong> in place of the .docx. Question and item numbers are written into the text, so they cannot be lost on extraction.</li>
+        <li><strong>Keep the reference card on screen</strong> while the session runs. When the prompt states the last item it can see, compare it with the last item listed here. If they differ, the upload was truncated — start a fresh chat.</li>
+        <li><strong>Flattening is not a substitute for the guard.</strong> It removes the most common cause of a bad read; the extent check is what catches the rest.</li>
+        <li>Formatting, colour and page layout are deliberately dropped. Goldilocks judges instructions and evidence, not appearance.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="app">
+  RMIT College of Vocational Education — CoVE Assessment Toolkit. Runs entirely in this browser; no document leaves your machine.
+</footer>
+
+<script>
+"use strict";
+
+/* ---------- ZIP reading (no libraries) ---------- */
+
+async function inflateRaw(bytes){
+  const ds = new DecompressionStream("deflate-raw");
+  const stream = new Blob([bytes]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+async function readZip(buffer){
+  const dv = new DataView(buffer);
+  const bytes = new Uint8Array(buffer);
+  let eocd = -1;
+  for(let i = bytes.length - 22; i >= Math.max(0, bytes.length - 66000); i--){
+    if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  }
+  if(eocd < 0) throw new Error("Not a valid .docx file (no zip directory).");
+  const count = dv.getUint16(eocd + 10, true);
+  let ptr = dv.getUint32(eocd + 16, true);
+  const files = new Map();
+  for(let i = 0; i < count; i++){
+    if(dv.getUint32(ptr, true) !== 0x02014b50) break;
+    const method = dv.getUint16(ptr + 10, true);
+    const compSize = dv.getUint32(ptr + 20, true);
+    const nameLen = dv.getUint16(ptr + 28, true);
+    const extraLen = dv.getUint16(ptr + 30, true);
+    const commentLen = dv.getUint16(ptr + 32, true);
+    const localOff = dv.getUint32(ptr + 42, true);
+    const name = new TextDecoder().decode(bytes.subarray(ptr + 46, ptr + 46 + nameLen));
+    const lNameLen = dv.getUint16(localOff + 26, true);
+    const lExtraLen = dv.getUint16(localOff + 28, true);
+    const dataStart = localOff + 30 + lNameLen + lExtraLen;
+    files.set(name, { method, data: bytes.subarray(dataStart, dataStart + compSize) });
+    ptr += 46 + nameLen + extraLen + commentLen;
+  }
+  return {
+    async text(name){
+      const entry = files.get(name);
+      if(!entry) return null;
+      const raw = entry.method === 0 ? entry.data : await inflateRaw(entry.data);
+      return new TextDecoder("utf-8").decode(raw);
+    },
+    has(name){ return files.has(name); }
+  };
+}
+
+/* ---------- OOXML helpers ---------- */
+
+const W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const W14 = "http://schemas.microsoft.com/office/word/2010/wordml";
+
+function wEls(node, name){ return Array.from(node.getElementsByTagNameNS(W, name)); }
+function wChild(node, name){
+  for(const c of node.children){ if(c.localName === name && c.namespaceURI === W) return c; }
+  return null;
+}
+function wChildren(node, name){
+  return Array.from(node.children).filter(c => c.localName === name && c.namespaceURI === W);
+}
+function wVal(node){ return node ? node.getAttributeNS(W, "val") : null; }
+function descend(node, path){
+  let cur = node;
+  for(const step of path){ cur = wChild(cur, step); if(!cur) return null; }
+  return cur;
+}
+
+/* ---------- number formatting ---------- */
+
+function toRoman(n){
+  if(n < 1) return String(n);
+  const map = [[1000,"m"],[900,"cm"],[500,"d"],[400,"cd"],[100,"c"],[90,"xc"],
+               [50,"l"],[40,"xl"],[10,"x"],[9,"ix"],[5,"v"],[4,"iv"],[1,"i"]];
+  let out = "";
+  for(const [v,s] of map){ while(n >= v){ out += s; n -= v; } }
+  return out;
+}
+function toLetter(n){
+  let out = "";
+  while(n > 0){ n--; out = String.fromCharCode(97 + (n % 26)) + out; n = Math.floor(n / 26); }
+  return out;
+}
+function formatCounter(n, fmt){
+  switch(fmt){
+    case "decimalZero": return n < 10 ? "0" + n : String(n);
+    case "lowerLetter": return toLetter(n);
+    case "upperLetter": return toLetter(n).toUpperCase();
+    case "lowerRoman":  return toRoman(n);
+    case "upperRoman":  return toRoman(n).toUpperCase();
+    case "bullet":      return "\u2022";
+    case "none":        return "";
+    default:            return String(n);
+  }
+}
+
+/* ---------- numbering.xml ---------- */
+
+function parseNumbering(xml){
+  const abstract = new Map();   // abstractNumId -> [{fmt, text, start}]
+  const nums = new Map();       // numId -> {abstractId, overrides:Map(ilvl->start)}
+  if(!xml) return { abstract, nums };
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  for(const an of wEls(doc, "abstractNum")){
+    const id = an.getAttributeNS(W, "abstractNumId");
+    const levels = [];
+    for(const lvl of wChildren(an, "lvl")){
+      const i = parseInt(lvl.getAttributeNS(W, "ilvl"), 10) || 0;
+      levels[i] = {
+        fmt:   wVal(wChild(lvl, "numFmt")) || "decimal",
+        text:  wVal(wChild(lvl, "lvlText")) || "%1.",
+        start: parseInt(wVal(wChild(lvl, "start")) || "1", 10)
+      };
+    }
+    abstract.set(id, levels);
+  }
+  for(const nm of wEls(doc, "num")){
+    const id = nm.getAttributeNS(W, "numId");
+    const absId = wVal(wChild(nm, "abstractNumId"));
+    const overrides = new Map();
+    for(const ov of wChildren(nm, "lvlOverride")){
+      const i = parseInt(ov.getAttributeNS(W, "ilvl"), 10) || 0;
+      const so = wChild(ov, "startOverride");
+      if(so) overrides.set(i, parseInt(wVal(so) || "1", 10));
+    }
+    nums.set(id, { absId, overrides });
+  }
+  return { abstract, nums };
+}
+
+/* ---------- styles.xml ---------- */
+
+function parseStyles(xml){
+  const names = new Map();      // styleId -> display name
+  const styleNum = new Map();   // styleId -> {numId, ilvl}
+  const outline = new Map();    // styleId -> outline level
+  if(!xml) return { names, styleNum, outline };
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  for(const st of wEls(doc, "style")){
+    const id = st.getAttributeNS(W, "styleId");
+    if(!id) continue;
+    const nm = wVal(wChild(st, "name"));
+    if(nm) names.set(id, nm);
+    const pPr = wChild(st, "pPr");
+    if(pPr){
+      const numPr = wChild(pPr, "numPr");
+      if(numPr){
+        const numId = wVal(wChild(numPr, "numId"));
+        const ilvl = parseInt(wVal(wChild(numPr, "ilvl")) || "0", 10);
+        if(numId) styleNum.set(id, { numId, ilvl });
+      }
+      const ol = wChild(pPr, "outlineLvl");
+      if(ol) outline.set(id, parseInt(wVal(ol) || "9", 10));
+    }
+  }
+  return { names, styleNum, outline };
+}
+
+/* ---------- run text, including checkboxes ---------- */
+
+const CHECKED_SYMBOLS = new Set(["F0FE","F052","F0FC","2612","2611","F06FE"]);
+const UNCHECKED_SYMBOLS = new Set(["F0A8","F06F","2610","F0A1"]);
+
+function paragraphText(p){
+  let out = "";
+  const walk = (node) => {
+    for(const c of node.children){
+      if(c.namespaceURI === W){
+        switch(c.localName){
+          case "t":    out += c.textContent; continue;
+          case "tab":  out += "\t"; continue;
+          case "br":   out += "\n"; continue;
+          case "noBreakHyphen": out += "-"; continue;
+          case "sym": {
+            const ch = (c.getAttributeNS(W, "char") || "").toUpperCase();
+            if(CHECKED_SYMBOLS.has(ch)) out += "[x]";
+            else if(UNCHECKED_SYMBOLS.has(ch)) out += "[ ]";
+            continue;
+          }
+          case "checkBox": {
+            const checked = wChild(c, "checked");
+            const dflt = wChild(c, "default");
+            const on = (checked && wVal(checked) !== "0") ||
+                       (!checked && dflt && wVal(dflt) === "1");
+            out += on ? "[x]" : "[ ]";
+            continue;
+          }
+          case "instrText": continue;
+          case "delText":   continue;
+        }
+      }
+      if(c.namespaceURI === W14 && c.localName === "checkbox"){
+        const ck = c.getElementsByTagNameNS(W14, "checked")[0];
+        const on = ck && ck.getAttributeNS(W14, "val") === "1";
+        out += on ? "[x]" : "[ ]";
+        continue;
+      }
+      walk(c);
+    }
+  };
+  walk(p);
+  return out.replace(/\u00a0/g, " ").replace(/[ \t]+/g, " ").trim();
+}
+
+/* ---------- document walk ---------- */
+
+function makeNumberer(numbering){
+  const counters = new Map(); // absId -> array of counts
+  return function label(numId, ilvl){
+    const num = numbering.nums.get(numId);
+    if(!num) return null;
+    const levels = numbering.abstract.get(num.absId);
+    if(!levels || !levels[ilvl]) return null;
+    if(!counters.has(num.absId)) counters.set(num.absId, []);
+    const c = counters.get(num.absId);
+    for(let i = 0; i <= ilvl; i++){
+      if(c[i] === undefined){
+        const startOv = num.overrides.get(i);
+        c[i] = (startOv !== undefined ? startOv : (levels[i] ? levels[i].start : 1)) - 1;
+      }
+    }
+    c[ilvl] += 1;
+    for(let i = ilvl + 1; i < c.length; i++) c[i] = undefined;
+    const lvl = levels[ilvl];
+    if(lvl.fmt === "bullet") return { text: "-", numeric: null };
+    let text = lvl.text || "%1.";
+    for(let i = 0; i < 9; i++){
+      const token = "%" + (i + 1);
+      if(text.includes(token)){
+        const src = levels[i] || lvl;
+        text = text.split(token).join(formatCounter(c[i] || 0, src.fmt));
+      }
+    }
+    return { text, numeric: c[0], level: ilvl, raw: c.slice(0, ilvl + 1) };
+  };
+}
+
+function cleanCell(text){
+  return text.replace(/\s*\n\s*/g, " ").replace(/\|/g, "\\|").trim();
+}
+
+async function processDocx(file){
+  const zip = await readZip(await file.arrayBuffer());
+  const docXml = await zip.text("word/document.xml");
+  if(!docXml) throw new Error("No document body found — is this a Word file?");
+  const numbering = parseNumbering(await zip.text("word/numbering.xml"));
+  const styles = parseStyles(await zip.text("word/styles.xml"));
+  const doc = new DOMParser().parseFromString(docXml, "application/xml");
+  const body = doc.getElementsByTagNameNS(W, "body")[0];
+  if(!body) throw new Error("No document body found.");
+
+  const label = makeNumberer(numbering);
+  const lines = [];
+  const headings = [];
+  const numbered = [];
+  let paraCount = 0, tableCount = 0, wordCount = 0, lastText = "";
+  let checkboxes = 0;
+
+  const styleInfo = (p) => {
+    const id = wVal(descend(p, ["pPr", "pStyle"]));
+    if(!id) return { id: null, name: null, heading: 0 };
+    const name = styles.names.get(id) || id;
+    let heading = 0;
+    const m = /^heading\s*([1-9])$/i.exec(name) || /^Heading([1-9])$/.exec(id);
+    if(m) heading = parseInt(m[1], 10);
+    else if(styles.outline.has(id) && styles.outline.get(id) < 9) heading = styles.outline.get(id) + 1;
+    return { id, name, heading };
+  };
+
+  const numberingFor = (p, sty) => {
+    const numPr = descend(p, ["pPr", "numPr"]);
+    if(numPr){
+      const numId = wVal(wChild(numPr, "numId"));
+      const ilvl = parseInt(wVal(wChild(numPr, "ilvl")) || "0", 10);
+      if(numId && numId !== "0") return { numId, ilvl };
+      return null;
+    }
+    if(sty.id && styles.styleNum.has(sty.id)) return styles.styleNum.get(sty.id);
+    return null;
+  };
+
+  const renderParagraph = (p, inTable) => {
+    const sty = styleInfo(p);
+    let text = paragraphText(p);
+    const np = numberingFor(p, sty);
+    let marker = null;
+    if(np){
+      const l = label(np.numId, np.ilvl);
+      if(l){
+        marker = l.text;
+        if(l.numeric !== null && text){
+          numbered.push({ label: l.text, level: l.level, numeric: l.numeric, text });
+        }
+      }
+    }
+    if(!text && !marker) return null;
+    checkboxes += (text.match(/\[[ x]\]/g) || []).length;
+    if(text){
+      wordCount += text.split(/\s+/).filter(Boolean).length;
+      lastText = text;
+    }
+    if(!inTable) paraCount++;
+    if(sty.heading){
+      headings.push({ level: sty.heading, text });
+      return "\n" + "#".repeat(Math.min(6, sty.heading)) + " " + text;
+    }
+    if(marker){
+      const indent = "  ".repeat(np ? np.ilvl : 0);
+      return indent + marker + " " + text;
+    }
+    return text;
+  };
+
+  const renderTable = (tbl) => {
+    tableCount++;
+    const rows = [];
+    for(const tr of wChildren(tbl, "tr")){
+      const cells = [];
+      for(const tc of wChildren(tr, "tc")){
+        const parts = [];
+        for(const child of tc.children){
+          if(child.namespaceURI !== W) continue;
+          if(child.localName === "p"){
+            const t = renderParagraph(child, true);
+            if(t) parts.push(t.trim());
+          } else if(child.localName === "tbl"){
+            parts.push("(nested table)");
+            renderTable(child);
+          }
+        }
+        cells.push(cleanCell(parts.join(" / ")));
+      }
+      if(cells.length) rows.push(cells);
+    }
+    if(!rows.length) return [];
+    const width = Math.max(...rows.map(r => r.length));
+    const pad = r => { const c = r.slice(); while(c.length < width) c.push(""); return c; };
+    const out = ["", "| " + pad(rows[0]).join(" | ") + " |",
+                     "| " + Array(width).fill("---").join(" | ") + " |"];
+    for(let i = 1; i < rows.length; i++) out.push("| " + pad(rows[i]).join(" | ") + " |");
+    out.push("");
+    return out;
+  };
+
+  for(const node of body.children){
+    if(node.namespaceURI !== W) continue;
+    if(node.localName === "p"){
+      const t = renderParagraph(node, false);
+      if(t !== null) lines.push(t);
+    } else if(node.localName === "tbl"){
+      lines.push(...renderTable(node));
+    } else if(node.localName === "sdt"){
+      const content = wChild(node, "sdtContent");
+      if(content){
+        for(const child of content.children){
+          if(child.namespaceURI !== W) continue;
+          if(child.localName === "p"){
+            const t = renderParagraph(child, false);
+            if(t !== null) lines.push(t);
+          } else if(child.localName === "tbl"){
+            lines.push(...renderTable(child));
+          }
+        }
+      }
+    }
+  }
+
+  const topLevel = numbered.filter(n => n.level === 0);
+  const highest = topLevel.length ? Math.max(...topLevel.map(n => n.numeric)) : null;
+  const lastNumbered = numbered.length ? numbered[numbered.length - 1] : null;
+  const lastHeading = headings.length ? headings[headings.length - 1].text : null;
+
+  const flat = lines.join("\n");
+  const findField = (labels) => {
+    for(const label of labels){
+      const re = new RegExp("\\|\\s*" + label + "\\s*\\|\\s*([^|]+?)\\s*\\|", "i");
+      const m = flat.match(re);
+      if(m && m[1].trim()) return m[1].trim();
+    }
+    return null;
+  };
+  const taskNumberRaw = findField(["Task Number", "Task No\\.?", "Assessment Task Number"]);
+  const taskName = findField(["Task Name", "Assessment Task Name"]);
+  const unitCode = findField(["National unit/s code", "Unit code", "National unit code"]);
+  let taskId = null;
+  if(taskNumberRaw){
+    const n = taskNumberRaw.match(/(\d+)/);
+    if(n) taskId = "AT" + n[1];
+  }
+  const totalTasks = taskNumberRaw ? (taskNumberRaw.match(/of\s*(\d+)/i) || [])[1] || null : null;
+
+  const header = [
+    "<!-- Flattened for Goldilocks upload by CoVE Document Prep -->",
+    "<!-- Source: " + file.name + " -->",
+    "<!-- Word automatic numbering has been resolved to literal numbers. -->",
+    "<!-- Last numbered item: " + (lastNumbered ? lastNumbered.label + " " + lastNumbered.text.slice(0, 60) : "none") + " -->",
+    "<!-- Last heading: " + (lastHeading || "none") + " -->",
+    ""
+  ];
+  if(taskId || taskName || unitCode){
+    header.splice(5, 0,
+      "",
+      "DOCUMENT IDENTIFIERS — use these exactly.",
+      unitCode ? "Unit code: " + unitCode : null,
+      taskId ? "Task identifier: " + taskId + (totalTasks ? " (of " + totalTasks + " tasks in this unit)" : "") : null,
+      taskName ? "Task name: " + taskName : null,
+      taskId ? "Refer to this task as " + taskId + " throughout. Do not use the task name as its identifier." : null
+    );
+  }
+  const cleanHeader = header.filter(l => l !== null);
+
+  const markdown = cleanHeader.concat(lines).join("\n")
+    .replace(/\n{3,}/g, "\n\n").trim() + "\n";
+
+  return {
+    name: file.name,
+    base: file.name.replace(/\.docx$/i, ""),
+    size: file.size,
+    markdown,
+    taskId, taskName, unitCode, totalTasks,
+    stats: {
+      paragraphs: paraCount,
+      tables: tableCount,
+      words: wordCount,
+      numberedItems: numbered.length,
+      topLevelItems: topLevel.length,
+      highest,
+      checkboxes,
+      headings: headings.length
+    },
+    lastNumbered,
+    lastHeading,
+    lastText: lastText.slice(-160)
+  };
+}
+
+/* ---------- reference card ---------- */
+
+function referenceCard(r){
+  const L = [];
+  L.push("STEP 0 REFERENCE — " + r.name);
+  if(r.taskId) L.push("Task identifier: " + r.taskId + (r.totalTasks ? " of " + r.totalTasks : "") + (r.taskName ? " — " + r.taskName : ""));
+  if(r.unitCode) L.push("Unit code: " + r.unitCode);
+  L.push("Compare these against what the Copilot session reports it can see.");
+  L.push("");
+  L.push("Last numbered item:  " + (r.lastNumbered ? r.lastNumbered.label + " " + r.lastNumbered.text.slice(0, 80) : "document has no automatic numbering"));
+  L.push("Highest top-level number: " + (r.stats.highest !== null ? r.stats.highest : "n/a"));
+  L.push("Last heading:        " + (r.lastHeading || "none found"));
+  L.push("Last text in file:   " + (r.lastText || "(empty)"));
+  L.push("Tables:              " + r.stats.tables);
+  L.push("Words:               " + r.stats.words.toLocaleString("en-AU"));
+  L.push("");
+  L.push("If the session reports a lower last item than this, the upload was truncated.");
+  L.push("Start a fresh chat and re-attach the flattened file.");
+  return L.join("\n");
+}
+
+/* ---------- UI ---------- */
+
+const results = [];
+const $ = id => document.getElementById(id);
+const statusEl = $("status");
+const resultsEl = $("results");
+
+function setStatus(msg){ statusEl.textContent = msg; }
+
+function download(filename, text){
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function render(){
+  resultsEl.innerHTML = "";
+  $("results-section").hidden = results.length === 0;
+  results.forEach((r, i) => {
+    const card = document.createElement("div");
+    card.className = "doc" + (r.error || r.stats.numberedItems === 0 ? " warn" : "");
+    if(r.error){
+      card.innerHTML = "<h3></h3><p class='note alert'></p>";
+      card.querySelector("h3").textContent = r.name;
+      card.querySelector(".note").textContent = r.error;
+      resultsEl.appendChild(card);
+      return;
+    }
+    const s = r.stats;
+    const h3 = document.createElement("h3");
+    h3.textContent = r.name;
+    const sub = document.createElement("p");
+    sub.className = "sub";
+    const bits = [];
+    if(r.unitCode) bits.push(r.unitCode);
+    if(r.taskId) bits.push(r.taskId + (r.totalTasks ? " of " + r.totalTasks : ""));
+    if(r.taskName) bits.push(r.taskName);
+    bits.push((r.size / 1024).toFixed(0) + " KB source");
+    sub.textContent = bits.join(" · ");
+    card.append(h3, sub);
+
+    if(!r.taskId && /assessor|task/i.test(r.name)){
+      const n = document.createElement("p");
+      n.className = "note";
+      n.textContent = "No Task Number field found in this document's header table. The Quick Check will have nothing to take its task identifier from, so you'll be asked for it when you save the read.";
+      card.appendChild(n);
+    }
+
+    const dl = document.createElement("dl");
+    dl.className = "stats";
+    const stat = (label, value) => {
+      const d = document.createElement("div");
+      const dt = document.createElement("dt"); dt.textContent = label;
+      const dd = document.createElement("dd"); dd.textContent = value;
+      d.append(dt, dd); dl.appendChild(d);
+    };
+    stat("Numbered items", s.numberedItems);
+    stat("Highest number", s.highest !== null ? s.highest : "—");
+    stat("Headings", s.headings);
+    stat("Tables", s.tables);
+    stat("Checkboxes", s.checkboxes);
+    stat("Words", s.words.toLocaleString("en-AU"));
+    card.appendChild(dl);
+
+    const tail = document.createElement("div");
+    tail.className = "tail";
+    const strong = document.createElement("strong");
+    strong.textContent = "Last item in this document";
+    const code = document.createElement("code");
+    code.textContent = r.lastNumbered
+      ? r.lastNumbered.label + " " + r.lastNumbered.text.slice(0, 120)
+      : (r.lastHeading ? "(no numbering) last heading: " + r.lastHeading : "(no numbering found)");
+    tail.append(strong, code);
+    card.appendChild(tail);
+
+    if(s.numberedItems === 0){
+      const n = document.createElement("p");
+      n.className = "note";
+      n.textContent = "No automatic numbering found. If this document has numbered questions, they were typed as plain text and already survive upload — use the extent figures above for the STEP 0 check.";
+      card.appendChild(n);
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const b1 = document.createElement("button");
+    b1.type = "button";
+    b1.textContent = "Download flattened file";
+    b1.addEventListener("click", () => download(r.base + "-flat.md", r.markdown));
+    const b2 = document.createElement("button");
+    b2.type = "button";
+    b2.className = "secondary";
+    b2.textContent = "Copy reference card";
+    b2.addEventListener("click", async () => {
+      try{
+        await navigator.clipboard.writeText(referenceCard(r));
+        b2.textContent = "Copied";
+        setTimeout(() => { b2.textContent = "Copy reference card"; }, 1600);
+      }catch(e){
+        download(r.base + "-reference.txt", referenceCard(r));
+      }
+    });
+    actions.append(b1, b2);
+    card.appendChild(actions);
+    resultsEl.appendChild(card);
+  });
+}
+
+async function handleFiles(fileList){
+  const files = Array.from(fileList).filter(f => /\.docx$/i.test(f.name));
+  const skipped = fileList.length - files.length;
+  if(!files.length){
+    setStatus("No .docx files found." + (skipped ? " .doc and .pdf files are not supported — save as .docx first." : ""));
+    return;
+  }
+  setStatus("Preparing " + files.length + " document" + (files.length > 1 ? "s" : "") + "…");
+  for(const f of files){
+    try{
+      results.push(await processDocx(f));
+    }catch(err){
+      results.push({ name: f.name, error: err.message || String(err) });
+    }
+    render();
+  }
+  const ok = results.filter(r => !r.error).length;
+  setStatus(ok + " of " + results.length + " prepared." +
+    (skipped ? " " + skipped + " non-.docx file(s) skipped." : ""));
+}
+
+$("pick").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", e => { handleFiles(e.target.files); e.target.value = ""; });
+
+const drop = $("drop");
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", e => {
+  e.preventDefault(); drop.classList.remove("over");
+  handleFiles(e.dataTransfer.files);
+});
+drop.addEventListener("keydown", e => {
+  if(e.key === "Enter" || e.key === " "){ e.preventDefault(); $("file").click(); }
+});
+
+$("dl-all").addEventListener("click", () => {
+  const good = results.filter(r => !r.error);
+  good.forEach((r, i) => setTimeout(() => download(r.base + "-flat.md", r.markdown), i * 400));
+  setStatus("Downloading " + good.length + " file(s). Your browser may ask to allow multiple downloads.");
+});
+
+$("dl-report").addEventListener("click", () => {
+  const good = results.filter(r => !r.error);
+  const stamp = new Date().toLocaleString("en-AU");
+  const text = ["CoVE DOCUMENT PREP — UPLOAD REFERENCE", "Generated " + stamp, ""]
+    .concat(good.map(referenceCard))
+    .join("\n\n" + "-".repeat(60) + "\n\n");
+  download("cove-upload-reference.txt", text);
+});
+
+$("clear").addEventListener("click", () => {
+  results.length = 0;
+  render();
+  setStatus("Cleared.");
+});
+
+if(typeof DecompressionStream === "undefined"){
+  setStatus("This browser cannot unpack .docx files. Use Edge or Chrome.");
+  $("pick").disabled = true;
+}
+</script>
+</body>
+</html>
