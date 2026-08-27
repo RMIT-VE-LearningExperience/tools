@@ -123,6 +123,16 @@
       "notes": "Assessment, Goldilocks, Program Team",
       "public": true,
       "updatedAt": "2026-08-27T02:54:33.165Z"
+    },
+    "cove-quick-check-collector.html": {
+      "description": "ABB consolidates the task reports into a single txt file",
+      "tags": [
+        "Assessment"
+      ],
+      "owner": "BAU",
+      "notes": "Assessment, Goldilocks, Program Team",
+      "public": true,
+      "updatedAt": "2026-08-27T03:01:05.728Z"
     }
   }
 }
