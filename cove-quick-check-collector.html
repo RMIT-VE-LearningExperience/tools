@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quick Check Collector — CoVE Assessment Toolkit</title>
+<style>
+  :root{
+    --navy:#000054; --red:#E61E2A; --keel:#C8102E;
+    --paper:#F4F5F7; --ember:#F2F2F2; --ink:#111116;
+    --muted:#4A4A57; --line:#D6D6DE; --yellow:#FAC800;
+    --ok:#0B6E3B; --white:#fff;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;font-size:16px;line-height:1.5;}
+  header.app{background:var(--navy);color:#fff;border-bottom:4px solid var(--keel);padding:22px 28px 20px;}
+  .eyebrow{display:flex;align-items:center;gap:11px;margin:0 0 12px;
+    font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;
+    font-size:.72rem;font-weight:600;letter-spacing:.17em;text-transform:uppercase;color:#fff;}
+  .eyebrow::before{content:"";width:11px;height:11px;background:var(--red);flex:none;}
+  header.app h1{margin:0;font-size:1.35rem;font-weight:600;}
+  header.app p{margin:6px 0 0;font-size:.9rem;color:#C9C9DA;max-width:72ch;}
+  main{padding:26px;max-width:1120px;margin:0 auto;}
+  section{margin-bottom:26px;}
+  h2{font-size:1rem;text-transform:uppercase;letter-spacing:.06em;margin:0 0 12px;color:var(--navy);}
+  .panel{background:#fff;border:1px solid var(--line);padding:20px;}
+  label{display:block;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--muted);font-weight:700;margin-bottom:5px;}
+  input[type=text],input[type=number],textarea{
+    font:inherit;width:100%;padding:9px 11px;border:1px solid var(--line);background:#fff;color:var(--ink);}
+  textarea{min-height:150px;font-family:ui-monospace,Consolas,monospace;font-size:.84rem;resize:vertical;}
+  .row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;}
+  .row>div{flex:1 1 200px;}
+  button{font:inherit;font-weight:600;background:var(--navy);color:#fff;
+    border:1px solid var(--navy);padding:9px 16px;cursor:pointer;}
+  button:hover{background:#1A1A6E;}
+  button.secondary{background:#fff;color:var(--navy);}
+  button.secondary:hover{background:var(--ember);}
+  button.danger{background:#fff;color:#8A1119;border-color:#C9A3A6;}
+  button.danger:hover{background:#FFF4F5;}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+  button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  .status{font-size:.9rem;color:var(--muted);min-height:1.4em;}
+  .progress{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .chip{border:1px solid var(--line);background:#fff;padding:7px 12px;font-size:.86rem;}
+  .chip.have{border-left:4px solid var(--ok);}
+  .chip.missing{border-left:4px solid var(--line);color:var(--muted);}
+  .task{background:#fff;border:1px solid var(--line);border-left:5px solid var(--navy);
+    padding:14px 18px;margin-bottom:12px;display:flex;justify-content:space-between;
+    gap:16px;align-items:flex-start;flex-wrap:wrap;}
+  .task.prose{border-left-color:var(--yellow);}
+  .task h3{margin:0 0 2px;font-size:1rem;}
+  .task p{margin:0;font-size:.86rem;color:var(--muted);}
+  table{border-collapse:collapse;width:100%;font-size:.84rem;background:#fff;}
+  th,td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top;}
+  th{background:var(--ember);font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;}
+  td.cell{text-align:center;font-weight:700;font-variant-numeric:tabular-nums;}
+  td.none{color:var(--line);}
+  tr.uncovered td{background:#FFF4F5;}
+  .fam{background:var(--navy);color:#fff;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;}
+  sup{font-size:.7em;color:var(--keel);}
+  .note{font-size:.86rem;color:var(--muted);border-left:3px solid var(--yellow);padding:6px 0 6px 12px;margin:14px 0 0;}
+  .note.alert{border-left-color:var(--red);color:#8A1119;}
+  ul.plain{margin:0;padding-left:18px;font-size:.9rem;color:var(--muted);}
+  ul.plain li{margin-bottom:4px;}
+  footer.app{padding:20px 28px 48px;max-width:1120px;margin:0 auto;color:var(--muted);font-size:.82rem;}
+  .scroll{overflow-x:auto;}
+  .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+  #print-head{display:none;}
+
+  @media print{
+    @page{size:A4 landscape;margin:12mm;}
+    body{background:#fff;font-size:10pt;}
+    header.app{background:#fff;color:var(--navy);border-bottom:2px solid var(--keel);padding:0 0 8px;}
+    header.app p{display:none;}
+    header.app .eyebrow{display:flex;color:var(--navy);font-size:7.5pt;margin-bottom:6px;}
+    header.app h1{font-size:12pt;}
+    main{padding:0;max-width:none;}
+    footer.app{padding:12px 0 0;font-size:8pt;border-top:1px solid var(--line);}
+    section{margin-bottom:0;page-break-inside:avoid;}
+    #grid-section{display:block!important;}
+    section:not(#grid-section):not(:first-of-type){display:none;}
+    section[aria-labelledby="unit-h"]{display:none;}
+    #grid-section h2,.toolbar,button{display:none!important;}
+    #print-head{display:block;margin-bottom:10px;}
+    #print-head h1{font-size:13pt;margin:0 0 2px;color:var(--navy);}
+    #print-head p{margin:0;font-size:9pt;color:var(--muted);}
+    .scroll{overflow:visible;}
+    table{font-size:8.5pt;}
+    th,td{padding:2px 5px;}
+    thead{display:table-header-group;}
+    tr{page-break-inside:avoid;}
+    tr.uncovered td{background:#F0F0F0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .fam{background:#E8E8EE!important;color:var(--navy)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    sup{color:#000;}
+    .note{border-left:2px solid #999;font-size:8.5pt;margin-top:8px;}
+  }
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
+</head>
+<body>
+<header class="app">
+  <p class="eyebrow">CoVE Assessment Toolkit — Goldilocks companion</p>
+  <h1>Quick Check Collector</h1>
+  <p>Somewhere to put each Quick Check read as you finish it. Keeps them together until every task is done, shows what's still outstanding, and hands you one block of text to paste into the roll-up session.</p>
+</header>
+
+<main>
+  <section aria-labelledby="unit-h">
+    <h2 id="unit-h">This unit</h2>
+    <div class="panel">
+      <div class="row">
+        <div>
+          <label for="unit">Unit code</label>
+          <input type="text" id="unit" placeholder="VU23737" autocomplete="off">
+        </div>
+        <div>
+          <label for="expected">How many assessment tasks does the unit have?</label>
+          <input type="number" id="expected" min="1" max="30" placeholder="7">
+        </div>
+      </div>
+      <div class="progress" id="progress"></div>
+      <p class="status" id="unit-status" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section aria-labelledby="paste-h">
+    <h2 id="paste-h">Add a read</h2>
+    <div class="panel">
+      <label for="paste">Paste the whole Quick Check output — everything from STEP 0 to the end</label>
+      <textarea id="paste" placeholder="Paste here straight after running a Quick Check…"></textarea>
+      <div class="toolbar" style="margin-top:14px">
+        <button type="button" id="add">Save this read</button>
+        <button type="button" class="secondary" id="clear-paste">Clear box</button>
+      </div>
+      <p class="status" id="paste-status" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section aria-labelledby="have-h" id="have-section" hidden>
+    <h2 id="have-h">Reads collected</h2>
+    <div id="tasks"></div>
+    <div class="toolbar" style="margin-top:16px">
+      <button type="button" id="copy-all">Copy everything for the roll-up</button>
+      <button type="button" class="secondary" id="download-all">Download as a file</button>
+      <button type="button" class="danger" id="wipe">Delete all reads for this unit</button>
+    </div>
+    <p class="status" id="have-status" role="status" aria-live="polite"></p>
+  </section>
+
+  <section aria-labelledby="grid-h" id="grid-section" hidden>
+    <h2 id="grid-h">Where things stand so far</h2>
+    <div class="toolbar">
+      <button type="button" id="print-grid">Print or save as PDF</button>
+    </div>
+    <div id="print-head" aria-hidden="true">
+      <h1 id="print-title"></h1>
+      <p id="print-meta"></p>
+    </div>
+    <div class="scroll" id="grid"></div>
+    <p class="note" id="grid-note">Provisional. This is assembled from the reads collected so far, and a requirement showing nothing may simply belong to a task you haven't checked yet. The roll-up session is what produces the real picture.</p>
+  </section>
+
+  <section aria-labelledby="next-h">
+    <h2 id="next-h">What to do when every task is in</h2>
+    <div class="panel">
+      <ul class="plain">
+        <li>Open a <strong>new Copilot chat</strong> — nothing else Goldilocks in it.</li>
+        <li>Attach the <strong>Unit of Competency</strong> (flattened or PDF).</li>
+        <li>Press <strong>Copy everything for the roll-up</strong> above, paste it in, and paste the roll-up prompt in the same message.</li>
+        <li>Don't attach the assessor guides or the competency map. The roll-up works from the reads.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="app">
+  RMIT College of Vocational Education — CoVE Assessment Toolkit. Reads are saved in this browser on this computer only. Clearing your browsing data will remove them, so download the file if you need to keep or share them.
+</footer>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const KEY = "cove-quickcheck-v1";
+const FAM_ORDER = ["performance criteria","knowledge evidence","performance evidence","volume","foundation skills","other"];
+
+let store = load();
+let unit = "";
+
+function load(){
+  try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(store)); return true; }
+  catch(e){ return false; }
+}
+
+/* ---- parse a pasted read ---- */
+function parseRead(text){
+  const out = { raw: text.trim(), unit: "", task: "", taskName: "", read: "", requirements: [], hasBlock: false, complete: false };
+  const m = text.match(/QUICK-CHECK-SUMMARY[\s\S]*?(?:\nEND\b|$)/i);
+  if(m){
+    out.hasBlock = true;
+    const block = m[0];
+    out.complete = /\nEND\s*$/i.test(block.trimEnd() + "\n");
+    const grab = re => { const g = block.match(re); return g ? g[1].trim() : ""; };
+    out.unit = grab(/^\s*unit:\s*(.+)$/mi);
+    out.task = grab(/^\s*task:\s*(.+)$/mi);
+    out.read = grab(/^\s*read:\s*(.+)$/mi);
+    let reqSec = block.match(/^\s*REQUIREMENTS\s*$([\s\S]*?)^\s*(?:BEYOND|CONDITIONS|WHOLE-SET-ITEMS|QC-ITEMS|END)\s*$/mi);
+    if(!reqSec) reqSec = block.match(/^\s*REQUIREMENTS\s*$([\s\S]*)$/mi);
+    if(reqSec){
+      reqSec[1].split(/\n/).forEach(line => {
+        const p = line.split("|").map(s => s.trim());
+        if(p.length >= 4 && p[0] && !/^code$/i.test(p[0])){
+          out.requirements.push({
+            code: p[0], family: (p[1] || "other").toLowerCase(),
+            short: p[2] || "", verdict: (p[3] || "").toUpperCase(),
+            where: p[4] || "", flag: (p[5] || "").toUpperCase()
+          });
+        }
+      });
+    }
+  }
+  if(!out.unit){
+    const u = text.match(/\b([A-Z]{2,6}\d{4,6}[A-Z]?)\b/);
+    if(u) out.unit = u[1];
+  }
+  out.taskName = out.task;
+  let id = "";
+  const fromField = out.task.match(/\b(?:AT|Task|Assessment Task)\s*(\d+)\b/i);
+  if(fromField) id = "AT" + fromField[1];
+  if(!id){
+    const fromText = text.match(/\b(?:Task|Assessment Task)\s*(\d+)\s*(?:of|–|-)/i) ||
+                     text.match(/\bAT\s?(\d+)\b/i);
+    if(fromText) id = "AT" + fromText[1];
+  }
+  out.task = id;
+  if(!out.read){
+    const r = text.match(/\b(ABOUT RIGHT FOR ITS SCOPE|LEANS UNDER-ASSESSING|LEANS OVER-ASSESSING|MIXED)\b/i);
+    if(r) out.read = r[1].toUpperCase();
+  }
+  return out;
+}
+
+/* ---- rendering ---- */
+function currentUnit(){ return ($("unit").value || "").trim().toUpperCase(); }
+function tasksFor(u){ return (store[u] && store[u].tasks) || {}; }
+
+function renderProgress(){
+  const u = currentUnit();
+  const wrap = $("progress");
+  wrap.innerHTML = "";
+  if(!u){ $("unit-status").textContent = "Enter the unit code to begin."; return; }
+  const t = tasksFor(u);
+  const have = Object.keys(t).sort((a,b) => a.localeCompare(b, "en", {numeric:true}));
+  const expected = parseInt($("expected").value, 10) || (store[u] && store[u].expected) || 0;
+  have.forEach(name => {
+    const c = document.createElement("span");
+    c.className = "chip have";
+    c.textContent = name + (t[name].read ? " · " + t[name].read.toLowerCase() : "");
+    wrap.appendChild(c);
+  });
+  if(expected && have.length < expected){
+    for(let i = have.length; i < expected; i++){
+      const c = document.createElement("span");
+      c.className = "chip missing";
+      c.textContent = "still to check";
+      wrap.appendChild(c);
+    }
+  }
+  if(!have.length){
+    $("unit-status").textContent = "No reads saved for " + u + " yet.";
+  } else if(expected && have.length < expected){
+    $("unit-status").textContent = have.length + " of " + expected + " tasks collected. " +
+      (expected - have.length) + " to go before the roll-up.";
+  } else if(expected && have.length >= expected){
+    $("unit-status").textContent = "All " + expected + " tasks collected — ready for the roll-up session.";
+  } else {
+    $("unit-status").textContent = have.length + " read(s) collected. Set the task count above to track what's outstanding.";
+  }
+}
+
+function renderTasks(){
+  const u = currentUnit();
+  const t = tasksFor(u);
+  const names = Object.keys(t).sort((a,b) => a.localeCompare(b, "en", {numeric:true}));
+  $("have-section").hidden = names.length === 0;
+  const wrap = $("tasks");
+  wrap.innerHTML = "";
+  names.forEach(name => {
+    const d = t[name];
+    const card = document.createElement("div");
+    card.className = "task" + (d.hasBlock && d.complete !== false ? "" : " prose");
+    const left = document.createElement("div");
+    const h = document.createElement("h3");
+    h.textContent = name + (d.taskName ? " · " + d.taskName : "") + (d.read ? " — " + d.read.toLowerCase() : "");
+    const p = document.createElement("p");
+    if(!d.hasBlock){
+      p.textContent = "No summary block found — the roll-up will read this one as prose · saved " + d.saved;
+    } else if(d.complete === false){
+      p.textContent = "Block is cut off — " + d.requirements.length +
+        " rows read, but there's no END line, so rows are missing. Reply 'continue' in that Copilot chat, then paste the whole read again · saved " + d.saved;
+    } else {
+      p.textContent = d.requirements.length + " requirement rows · saved " + d.saved;
+    }
+    left.append(h, p);
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "danger"; btn.textContent = "Remove";
+    btn.addEventListener("click", () => {
+      if(!confirm("Remove the read for " + name + "?")) return;
+      delete store[u].tasks[name]; save(); renderAll();
+      $("have-status").textContent = name + " removed.";
+    });
+    card.append(left, btn);
+    wrap.appendChild(card);
+  });
+}
+
+function renderGrid(){
+  const u = currentUnit();
+  const t = tasksFor(u);
+  const names = Object.keys(t).sort((a,b) => a.localeCompare(b, "en", {numeric:true}));
+  const withBlocks = names.filter(n => t[n].hasBlock);
+  $("grid-section").hidden = withBlocks.length === 0;
+  if(!withBlocks.length) return;
+
+  const rows = new Map();
+  withBlocks.forEach(n => {
+    t[n].requirements.forEach(r => {
+      if(!rows.has(r.code)) rows.set(r.code, { code:r.code, family:r.family, short:r.short, cells:{} });
+      const row = rows.get(r.code);
+      if(!row.short && r.short) row.short = r.short;
+      row.cells[n] = r;
+    });
+  });
+
+  const famIndex = f => {
+    const i = FAM_ORDER.findIndex(x => (f || "").includes(x.split(" ")[0]));
+    return i < 0 ? FAM_ORDER.length : i;
+  };
+  const all = Array.from(rows.values()).sort((a,b) =>
+    famIndex(a.family) - famIndex(b.family) ||
+    a.code.localeCompare(b.code, "en", {numeric:true}));
+
+  const table = document.createElement("table");
+  const thead = document.createElement("thead");
+  const hr = document.createElement("tr");
+  ["Requirement", ""].forEach((x,i) => { const th=document.createElement("th"); th.textContent = i===0?"Code":"Requirement"; hr.appendChild(th); });
+  withBlocks.forEach(n => { const th=document.createElement("th"); th.textContent = n; hr.appendChild(th); });
+  thead.appendChild(hr); table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  let lastFam = null;
+  all.forEach(row => {
+    if(row.family !== lastFam){
+      lastFam = row.family;
+      const fr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.className = "fam"; td.colSpan = withBlocks.length + 2;
+      td.textContent = row.family || "other";
+      fr.appendChild(td); tbody.appendChild(fr);
+    }
+    const tr = document.createElement("tr");
+    let covered = false;
+    const c1 = document.createElement("td"); c1.textContent = row.code;
+    const c2 = document.createElement("td"); c2.textContent = row.short;
+    tr.append(c1, c2);
+    withBlocks.forEach(n => {
+      const cell = document.createElement("td");
+      cell.className = "cell";
+      const r = row.cells[n];
+      let mark = "—";
+      if(r){
+        if(r.verdict.startsWith("FULL")) { mark = "F"; covered = true; }
+        else if(r.verdict.startsWith("PART")) { mark = "P"; covered = true; }
+        else if(r.verdict.startsWith("NEAR")) mark = "N";
+      }
+      cell.textContent = mark;
+      if(mark === "—") cell.classList.add("none");
+      if(r && /WRITTEN/.test(r.flag)){ const s=document.createElement("sup"); s.textContent="w"; cell.appendChild(s); }
+      if(r && /TICK/.test(r.flag)){ const s=document.createElement("sup"); s.textContent="t"; cell.appendChild(s); }
+      tr.appendChild(cell);
+    });
+    if(!covered) tr.className = "uncovered";
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+
+  const key = document.createElement("p");
+  key.className = "note";
+  key.textContent = "F fully assessed · P partially assessed · N near miss · — nothing. w written only, t tick only. Shaded rows have no full or partial coverage in the reads collected so far.";
+
+  $("grid").innerHTML = "";
+  $("grid").append(table, key);
+
+  const expected = parseInt($("expected").value, 10) || (store[u] && store[u].expected) || 0;
+  const allNames = Object.keys(t).sort((a,b) => a.localeCompare(b, "en", {numeric:true}));
+  const uncovered = all.filter(r => !withBlocks.some(n => {
+    const c = r.cells[n]; return c && (c.verdict.startsWith("FULL") || c.verdict.startsWith("PART"));
+  })).length;
+  $("print-title").textContent = u + " — coverage across assessment tasks";
+  const meta = [
+    "Reads included: " + withBlocks.join(", "),
+    expected ? (allNames.length + " of " + expected + " tasks collected") : (allNames.length + " tasks collected"),
+    uncovered + " requirement" + (uncovered === 1 ? "" : "s") + " with no full or partial coverage in these reads",
+    "Printed " + new Date().toLocaleDateString("en-AU")
+  ];
+  if(expected && allNames.length < expected){
+    meta.push("PROVISIONAL — " + (expected - allNames.length) + " task(s) not yet checked. A requirement showing nothing may be covered there.");
+  }
+  $("print-meta").textContent = meta.join(" · ");
+}
+
+function renderAll(){ renderProgress(); renderTasks(); renderGrid(); }
+
+/* ---- assemble for the roll-up ---- */
+function assemble(){
+  const u = currentUnit();
+  const t = tasksFor(u);
+  const names = Object.keys(t).sort((a,b) => a.localeCompare(b, "en", {numeric:true}));
+  const expected = parseInt($("expected").value, 10) || 0;
+  const head = [
+    "Unit: " + u,
+    expected ? ("This unit has " + expected + " assessment tasks.")
+             : "The number of assessment tasks in this unit has not been stated.",
+    "Quick Check reads supplied: " + names.length + " (" + names.join(", ") + ")",
+    ""
+  ];
+  const body = names.map(n => "--- " + n + " ---\n\n" + t[n].raw);
+  return head.join("\n") + "\n" + body.join("\n\n");
+}
+
+/* ---- events ---- */
+$("add").addEventListener("click", () => {
+  const text = $("paste").value.trim();
+  if(!text){ $("paste-status").textContent = "Nothing pasted yet."; return; }
+  const parsed = parseRead(text);
+  let u = currentUnit();
+  if(!u && parsed.unit){ $("unit").value = parsed.unit; u = parsed.unit.toUpperCase(); }
+  if(!u){ $("paste-status").textContent = "Enter the unit code above first — this read doesn't name one."; return; }
+  if(parsed.unit && parsed.unit.toUpperCase() !== u){
+    if(!confirm("This read names " + parsed.unit + " but you're collecting " + u + ". Save it anyway?")) return;
+  }
+  let task = parsed.task;
+  if(!task){
+    const suggestion = parsed.taskName ? " (this read calls it: " + parsed.taskName + ")" : "";
+    task = (prompt("Which task number is this?" + suggestion + "\n\nUse AT1, AT2, AT3 … so the same task can't be saved twice under different titles.") || "").trim().toUpperCase();
+    if(!/^AT\d+$/.test(task)){
+      $("paste-status").textContent = "Not saved — task must be AT1, AT2, AT3 and so on.";
+      return;
+    }
+  }
+  if(!store[u]) store[u] = { tasks:{} };
+  if(store[u].tasks[task] && !confirm(task + " is already saved. Replace it?")) return;
+  store[u].expected = parseInt($("expected").value, 10) || store[u].expected || 0;
+  store[u].tasks[task] = {
+    raw: parsed.raw, read: parsed.read, hasBlock: parsed.hasBlock, complete: parsed.complete,
+    taskName: parsed.taskName, requirements: parsed.requirements,
+    saved: new Date().toLocaleDateString("en-AU")
+  };
+  const ok = save();
+  $("paste").value = "";
+  renderAll();
+  let msg;
+  if(!parsed.hasBlock) msg = task + " saved — no summary block found, so it'll be read as prose.";
+  else if(!parsed.complete) msg = task + " saved, but the block is cut off after " + parsed.requirements.length +
+    " rows — no END line. Go back to that Copilot chat, reply 'continue', then paste the whole read again.";
+  else msg = task + " saved with " + parsed.requirements.length + " requirement rows.";
+  $("paste-status").textContent = ok ? msg :
+    (msg + " Note: this browser wouldn't let the tool store it, so download the file before closing.");
+});
+
+$("clear-paste").addEventListener("click", () => { $("paste").value = ""; $("paste-status").textContent = ""; });
+
+$("copy-all").addEventListener("click", async () => {
+  try{
+    await navigator.clipboard.writeText(assemble());
+    $("have-status").textContent = "Copied. Paste it into a new Copilot chat with the unit attached and the roll-up prompt.";
+  }catch(e){
+    $("have-status").textContent = "Couldn't reach the clipboard — use Download as a file instead.";
+  }
+});
+
+$("download-all").addEventListener("click", () => {
+  const u = currentUnit();
+  const blob = new Blob([assemble()], {type:"text/plain;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = u + "-quick-check-reads.txt";
+  document.body.appendChild(a); a.click(); a.remove();
+  $("have-status").textContent = "Downloaded.";
+});
+
+$("wipe").addEventListener("click", () => {
+  const u = currentUnit();
+  if(!u || !store[u]) return;
+  if(!confirm("Delete every saved read for " + u + "? This can't be undone.")) return;
+  delete store[u]; save(); renderAll();
+  $("have-status").textContent = "All reads for " + u + " deleted.";
+});
+
+$("print-grid").addEventListener("click", () => window.print());
+
+$("unit").addEventListener("input", () => {
+  const u = currentUnit();
+  if(store[u] && store[u].expected) $("expected").value = store[u].expected;
+  renderAll();
+});
+$("expected").addEventListener("input", () => {
+  const u = currentUnit();
+  if(u && store[u]){ store[u].expected = parseInt($("expected").value,10) || 0; save(); }
+  renderProgress();
+});
+
+/* restore last unit */
+const units = Object.keys(store);
+if(units.length){
+  $("unit").value = units[units.length - 1];
+  if(store[units[units.length-1]].expected) $("expected").value = store[units[units.length-1]].expected;
+}
+renderAll();
+</script>
+</body>
+</html>
