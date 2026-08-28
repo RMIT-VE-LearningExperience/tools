@@ -16,6 +16,7 @@
   --ink:#16162e;
   --rail:#ffffff;
   --line:#d5d7d2;
+  --line-strong:#8c8f89;
   --font-display:"Helvetica Neue",Helvetica,Arial,sans-serif;
   --font-body:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --font-mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
@@ -73,34 +74,53 @@ button{cursor:pointer}
 .btn.red{background:var(--red);border-color:var(--red)}
 .btn.red:hover{background:#c3121d}
 .btn+.btn{margin-top:8px}
-.btn:focus-visible,.chip:focus-visible,.paper:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
-  outline:3px solid var(--yellow);outline-offset:2px
+.btn:focus-visible,.chip:focus-visible,.paper:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,
+summary:focus-visible,#stageCanvas:focus-visible,.cmp:focus-visible{
+  outline:3px solid var(--navy);outline-offset:2px
+}
+.stage-actions .btn:focus-visible,.overlay .btn:focus-visible,.cmp:focus-visible,#stageCanvas:focus-visible{
+  outline:3px solid var(--yellow);outline-offset:3px
+}
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0
 }
 
 .paper-list{display:flex;flex-direction:column;gap:6px}
 .paper{
   display:flex;align-items:center;gap:10px;text-align:left;width:100%;
-  border:1px solid var(--line);background:#fff;border-radius:2px;padding:8px 10px;
+  border:1px solid var(--line-strong);background:#fff;border-radius:2px;padding:8px 10px;
 }
 .paper:hover{border-color:var(--navy)}
 .paper[aria-pressed="true"]{border-color:var(--navy);background:var(--emble);box-shadow:inset 3px 0 0 var(--red)}
 .paper .sw{width:26px;height:26px;border-radius:1px;flex:none;border:1px solid rgba(0,0,0,.18)}
-.paper .nm{font-size:13px;font-weight:600;line-height:1.2}
-.paper .fam{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:#75758a;margin-top:2px}
+.paper .nm{display:block;font-size:12.5px;font-weight:600;line-height:1.25}
+.paper .fam{display:block;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:#5f5f70;margin-top:3px;line-height:1.2}
+.paper-desc{
+  background:var(--emble);border-left:3px solid var(--red);padding:9px 11px 10px;
+  font-size:11.5px;line-height:1.5;color:#3a3a4d;margin:-2px 0 2px;
+}
+.paper-desc b{
+  display:block;font-family:var(--font-mono);font-size:9px;letter-spacing:1.1px;
+  text-transform:uppercase;color:var(--navy);margin:0 0 2px;
+}
+.paper-desc p{margin:0 0 8px}
+.paper-desc p:last-child{margin-bottom:0}
 
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{
-  border:1px solid var(--line);background:#fff;border-radius:2px;padding:7px 10px;font-size:12.5px;
+  border:1px solid var(--line-strong);background:#fff;border-radius:2px;padding:7px 10px;font-size:12.5px;
   flex:1 1 auto;min-width:0;text-align:center;
 }
 .chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
-.chip:disabled{opacity:.4;cursor:not-allowed}
+.chip[aria-disabled="true"]{color:#5f5f70;background:repeating-linear-gradient(135deg,#fff,#fff 5px,#eceee9 5px,#eceee9 10px);border-color:var(--line);cursor:not-allowed}
+.chip[aria-disabled="true"] .sw{opacity:.35}
 .chip .sw{display:inline-block;width:10px;height:10px;border:1px solid rgba(0,0,0,.25);margin-right:6px;vertical-align:-1px}
 
 .field{margin-bottom:12px}
 .field label{display:block;font-size:12px;font-weight:600;margin-bottom:5px}
 .field input[type=text],.field textarea,.field select{
-  width:100%;border:1px solid var(--line);border-radius:2px;padding:8px 9px;font-size:13px;background:#fff
+  width:100%;border:1px solid var(--line-strong);border-radius:2px;padding:8px 9px;font-size:13px;background:#fff
 }
 .field textarea{resize:vertical;min-height:64px;line-height:1.45}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
@@ -171,7 +191,7 @@ details.checklist ul{margin:10px 0 0;padding-left:18px;font-size:12.5px;line-hei
 .cmp[aria-pressed="true"] .lbl{color:var(--yellow)}
 .cmp:hover canvas{outline:2px solid var(--yellow)}
 
-.credit{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.6px;color:#7a7a8c;padding:14px 18px;line-height:1.6}
+.credit{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.6px;color:#5a5a6b;padding:14px 18px;line-height:1.6}
 
 @media (max-width:1180px){
   .app{grid-template-columns:290px minmax(0,1fr);flex:none}
@@ -197,26 +217,26 @@ details.checklist ul{margin:10px 0 0;padding-left:18px;font-size:12.5px;line-hei
 </head>
 <body>
 
-<div class="masthead">
+<header class="masthead">
   <div>
     <p class="course">VART6492C &middot; Realise a Creative Project</p>
     <h1>Paper Choice Simulator</h1>
   </div>
   <div class="spacer"></div>
   <p class="hint">Load one of your project images, try each paper, then record and download your paper decision for your studio journal.</p>
-</div>
+</header>
 
 <div class="app">
 
   <!-- ======= LEFT RAIL ======= -->
-  <div class="rail left">
+  <aside class="rail left" aria-label="Paper, print and viewing controls">
 
     <div class="sec">
       <h2>1. Your image</h2>
       <input type="file" id="fileInput" accept="image/*" hidden>
       <button class="btn" id="uploadBtn">Choose an image</button>
       <button class="btn ghost" id="chartBtn">Load the print test chart</button>
-      <p class="note" id="fileName">Nothing loaded yet. You can also drag an image onto the wall.</p>
+      <p class="note" id="fileName" role="status" aria-live="polite">Nothing loaded yet. You can also drag an image onto the wall.</p>
     </div>
 
     <div class="sec">
@@ -246,41 +266,41 @@ details.checklist ul{margin:10px 0 0;padding-left:18px;font-size:12.5px;line-hei
       <h2>6. Viewing conditions</h2>
       <div class="chips" id="lightChips" style="margin-bottom:12px"></div>
       <label for="angle" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Light direction</label>
-      <input type="range" id="angle" class="slider" min="0" max="360" value="215">
+      <input type="range" id="angle" class="slider" min="0" max="360" step="5" value="215" aria-valuetext="Light from the upper left">
       <p class="note">Move the light to see how reflections behave on each surface. Matte and fibre papers stay quiet. Gloss and metal will flare.</p>
+      <p class="note">Turn on Inspect surface below the print, then move the pointer over the print, or focus the print and use the arrow keys, to magnify the paper surface. Press Escape to turn it off.</p>
     </div>
 
-  </div>
+  </aside>
 
   <!-- ======= STAGE ======= -->
-  <div class="stage-wrap" id="stageWrap">
+  <main class="stage-wrap" id="stageWrap">
     <div class="stage" id="stage">
       <div class="print-shell" id="printShell">
-        <canvas id="stageCanvas" width="900" height="620"></canvas>
+        <canvas id="stageCanvas" width="900" height="620" tabindex="0" role="img" aria-label="Simulated print preview. Load an image to begin."></canvas>
       </div>
-      <canvas class="loupe" id="loupe" width="150" height="150"></canvas>
-      <div class="dropzone" id="dropzone"><span>Drop your image here</span></div>
+      <canvas class="loupe" id="loupe" width="150" height="150" aria-hidden="true"></canvas>
+      <div class="dropzone" id="dropzone" aria-hidden="true"><span>Drop your image here</span></div>
     </div>
-    <div class="strip" id="strip"></div>
+    <div class="strip" id="strip" role="status" aria-live="polite"></div>
     <div class="stage-actions">
       <button class="btn ghost" id="compareBtn">Compare all papers</button>
       <button class="btn ghost" id="loupeBtn" aria-pressed="false">Inspect surface</button>
       <button class="btn red" id="downloadPreviewBtn">Download preview image</button>
     </div>
-  </div>
+  </main>
 
   <!-- ======= RIGHT RAIL ======= -->
-  <div class="rail right">
+  <aside class="rail right" aria-label="Guidance and your paper decision">
 
     <div class="sec">
-      <h2>What this paper does</h2>
-      <div class="readout" id="paperReadout"><b>Paper</b>Choose a paper base to see how it behaves.</div>
-      <ul class="hintlist" id="hints"></ul>
+      <h2>Things to watch</h2>
+      <ul class="hintlist" id="hints" aria-live="polite"></ul>
     </div>
 
     <div class="sec">
       <h2>How your image reads</h2>
-      <div class="readout" id="imageReadout"><b>Image analysis</b>Load an image and this panel will describe its warmth, contrast and level of fine detail, then suggest a starting point.</div>
+      <div class="readout" id="imageReadout" role="status" aria-live="polite"><b>Image analysis</b>Load an image and this panel will describe its warmth, contrast and level of fine detail, then suggest a starting point.</div>
     </div>
 
     <div class="sec">
@@ -294,11 +314,11 @@ details.checklist ul{margin:10px 0 0;padding-left:18px;font-size:12.5px;line-hei
         <input type="text" id="imageTitle" placeholder="e.g. Nightworks 03">
       </div>
       <div class="field">
-        <label>Name your image's mood or feel in three words</label>
+        <span class="lbl-group" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px" id="moodLabel">Name your image's mood or feel in three words</span>
         <div class="row3">
-          <input type="text" id="mood1" placeholder="1">
-          <input type="text" id="mood2" placeholder="2">
-          <input type="text" id="mood3" placeholder="3">
+          <input type="text" id="mood1" placeholder="1" aria-label="Mood word one">
+          <input type="text" id="mood2" placeholder="2" aria-label="Mood word two">
+          <input type="text" id="mood3" placeholder="3" aria-label="Mood word three">
         </div>
       </div>
       <div class="field">
@@ -310,8 +330,9 @@ details.checklist ul{margin:10px 0 0;padding-left:18px;font-size:12.5px;line-hei
         <input type="text" id="becauseIn" placeholder="e.g. lifting the blacks and softening the highlights">
       </div>
       <div class="sentence" id="sentence"></div>
-      <div class="warn" id="warn"></div>
+      <div class="warn" id="warn" role="alert"></div>
       <button class="btn red" id="downloadSheetBtn" style="margin-top:10px">Download your paper decision</button>
+      <button class="btn ghost" id="downloadTextBtn">Download the same details as text</button>
       <p class="note">You get a single PNG showing your simulated print, your settings and your written reason. Keep it in your studio journal, bring it to class, or use it as the starting point for your test prints.</p>
     </div>
 
@@ -334,7 +355,7 @@ details.checklist ul{margin:10px 0 0;padding-left:18px;font-size:12.5px;line-hei
     </div>
 
     <p class="credit">This is a simulation for learning and planning. A screen cannot replace a physical test print. Always view a test print under the lighting your work will live under.<br><br>Design: Learning &amp; Teaching Innovation Team - RMIT College of Vocational Education</p>
-  </div>
+  </aside>
 </div>
 
 <!-- ======= COMPARE OVERLAY ======= -->
@@ -799,6 +820,22 @@ function drawStage(){
   updateStrip(geo);
 }
 
+function compass(a){
+  const dirs=["right","lower right","below","lower left","left","upper left","above","upper right"];
+  return dirs[Math.round(((a%360)+360)%360/45)%8];
+}
+
+function describePreview(geo){
+  if(!state.img) return "Simulated print preview. Load an image to begin.";
+  const p=paperById(state.paper), t=activeTone(), tx=activeTex();
+  const sz=sizeById(state.size), l=lightById(state.light), bd=borderById(state.border);
+  return "Simulated print preview: " + (state.imgName||"your image") + " on " + p.name +
+    ", " + t.name.toLowerCase() + ", " + tx.name.toLowerCase() + " surface, " +
+    Math.round(geo.sheetW) + " by " + Math.round(geo.sheetH) + " millimetres with a " +
+    bd.name.toLowerCase() + ", viewed under " + l.name.toLowerCase() +
+    " coming from the " + compass(state.angle) + ".";
+}
+
 function updateStrip(geo){
   const p = paperById(state.paper), t = activeTone(), sz = sizeById(state.size);
   const l = lightById(state.light), tx = activeTex();
@@ -809,6 +846,10 @@ function updateStrip(geo){
     ["Print", Math.round(geo.sheetW)+" x "+Math.round(geo.sheetH)+" mm ("+sz.name+")"],
     ["Light", l.name]
   ].map(c=>`<div class="cell">${c[0]} <b>${c[1]}</b></div>`).join("");
+  const cv = $("stageCanvas");
+  cv.setAttribute("aria-label", describePreview(geo));
+  const ang = $("angle");
+  ang.setAttribute("aria-valuetext", "Light from the " + compass(state.angle));
 }
 
 let raf = null;
@@ -860,19 +901,36 @@ function updatePanels(){
   const p = paperById(state.paper), t = activeTone(), sz = sizeById(state.size);
   const tx = activeTex(), l = lightById(state.light);
 
-  $("paperReadout").innerHTML =
-    `<b>${p.name}</b><strong>Often supports:</strong> ${p.supports}<br><br><strong>Keep in mind:</strong> ${p.keep}`;
+  let desc = $("paperDesc");
+  if(!desc){
+    desc = document.createElement("div");
+    desc.className = "paper-desc";
+    desc.id = "paperDesc";
+    desc.setAttribute("role","status");
+    desc.setAttribute("aria-live","polite");
+  }
+  const selBtn = $("paperList").querySelector(`.paper[data-id="${p.id}"]`);
+  if(selBtn && desc.previousElementSibling !== selBtn) selBtn.after(desc);
+  desc.innerHTML =
+    `<p><b>Often supports</b>${p.supports}</p>
+     <p><b>Keep in mind</b>${p.keep}</p>
+     <p><b>What it comes in</b>${p.why}</p>`;
 
   // what this paper is actually made in
   document.querySelectorAll("#toneChips .chip").forEach(btn=>{
-    btn.disabled = !p.tones.includes(btn.dataset.id);
+    const ok = p.tones.includes(btn.dataset.id);
+    btn.setAttribute("aria-disabled", String(!ok));
+    btn.setAttribute("aria-label", toneById(btn.dataset.id).name + (ok ? "" : ", not made in " + p.name));
     btn.setAttribute("aria-pressed", String(btn.dataset.id===t.id));
   });
   document.querySelectorAll("#texChips .chip").forEach(btn=>{
-    btn.disabled = !p.texs.includes(btn.dataset.id);
+    const ok = p.texs.includes(btn.dataset.id);
+    btn.setAttribute("aria-disabled", String(!ok));
+    btn.setAttribute("aria-label", texById(btn.dataset.id).name + (ok ? "" : ", not made in " + p.name));
     btn.setAttribute("aria-pressed", String(btn.dataset.id===tx.id));
   });
-  $("toneNote").innerHTML = "<strong>" + p.why + "</strong><br>" + t.supports + " " + t.keep;
+  $("toneNote").textContent = t.supports + " " + t.keep +
+    (p.tones.length===1 ? " " + p.name + " is only made in this tone." : "");
   $("texNote").textContent = p.texs.length===1
     ? "This surface is fixed. It is what the paper is."
     : "Greyed out options are not made in this paper. Switch paper base to reach them.";
@@ -958,7 +1016,7 @@ function buildControls(){
 function wireGroup(containerId, key, selector){
   $(containerId).addEventListener("click", e=>{
     const btn = e.target.closest(selector);
-    if(!btn || btn.disabled) return;
+    if(!btn || btn.disabled || btn.getAttribute("aria-disabled")==="true") return;
     state[key] = btn.dataset.id;
     if(key==="paper"){
       const np = paperById(state.paper);
@@ -1088,40 +1146,91 @@ $("chartBtn").addEventListener("click", ()=>{
    Loupe
    ========================================================= */
 const loupe = $("loupe");
+state.loupeAt = {fx:0.5, fy:0.5};
+
 $("loupeBtn").addEventListener("click", e=>{
   state.loupe = !state.loupe;
   e.currentTarget.setAttribute("aria-pressed", String(state.loupe));
-  if(!state.loupe) loupe.style.display="none";
+  if(state.loupe){
+    drawLoupeAt(state.loupeAt.fx, state.loupeAt.fy);
+    $("stageCanvas").focus();
+  } else {
+    loupe.style.display="none";
+  }
 });
-$("stage").addEventListener("pointermove", e=>{
-  if(!state.loupe || !sheetRect.w) return;
-  const stageBox = $("stage").getBoundingClientRect();
-  const canvasBox = $("stageCanvas").getBoundingClientRect();
-  const rx = e.clientX - canvasBox.left - sheetRect.x;
-  const ry = e.clientY - canvasBox.top - sheetRect.y;
-  if(rx<0||ry<0||rx>sheetRect.w||ry>sheetRect.h){ loupe.style.display="none"; return; }
-  const zoom = 3.2, size = 150;
-  const dpr = sheetRect.dpr;
+
+function drawLoupeAt(fx, fy){
+  if(!sheetRect.w) return;
+  state.loupeAt = {fx:Math.min(1,Math.max(0,fx)), fy:Math.min(1,Math.max(0,fy))};
+  const rx = state.loupeAt.fx*sheetRect.w, ry = state.loupeAt.fy*sheetRect.h;
+  const zoom=3.2, size=150, dpr=sheetRect.dpr;
   const lctx = loupe.getContext("2d");
   lctx.save();
   lctx.clearRect(0,0,size,size);
   lctx.beginPath(); lctx.arc(size/2,size/2,size/2,0,Math.PI*2); lctx.clip();
-  const srcW = size/zoom*dpr, srcH = size/zoom*dpr;
+  const srcW=size/zoom*dpr, srcH=size/zoom*dpr;
   lctx.imageSmoothingEnabled=false;
   lctx.drawImage(sheetCanvas, rx*dpr-srcW/2, ry*dpr-srcH/2, srcW, srcH, 0,0,size,size);
   lctx.restore();
+  const stageBox = $("stage").getBoundingClientRect();
+  const canvasBox = $("stageCanvas").getBoundingClientRect();
   loupe.style.display="block";
-  loupe.style.left = (e.clientX - stageBox.left - size/2) + "px";
-  loupe.style.top  = (e.clientY - stageBox.top - size - 16) + "px";
+  loupe.style.left = (canvasBox.left - stageBox.left + sheetRect.x + rx - size/2) + "px";
+  loupe.style.top  = Math.max(4, canvasBox.top - stageBox.top + sheetRect.y + ry - size - 16) + "px";
+}
+
+$("stageCanvas").addEventListener("keydown", e=>{
+  const step = e.shiftKey ? 0.02 : 0.08;
+  const map = {ArrowLeft:[-step,0], ArrowRight:[step,0], ArrowUp:[0,-step], ArrowDown:[0,step]};
+  if(map[e.key]){
+    if(!state.loupe){
+      state.loupe = true;
+      $("loupeBtn").setAttribute("aria-pressed","true");
+    }
+    e.preventDefault();
+    drawLoupeAt(state.loupeAt.fx + map[e.key][0], state.loupeAt.fy + map[e.key][1]);
+  }
+  if(e.key==="Escape" && state.loupe){
+    state.loupe=false; loupe.style.display="none";
+    $("loupeBtn").setAttribute("aria-pressed","false");
+  }
 });
-$("stage").addEventListener("pointerleave", ()=>{ loupe.style.display="none"; });
+$("stageCanvas").addEventListener("blur", ()=>{ if(state.loupe) loupe.style.display="none"; });
+$("stage").addEventListener("pointermove", e=>{
+  if(!state.loupe || !sheetRect.w) return;
+  const canvasBox = $("stageCanvas").getBoundingClientRect();
+  const rx = e.clientX - canvasBox.left - sheetRect.x;
+  const ry = e.clientY - canvasBox.top - sheetRect.y;
+  if(rx<0||ry<0||rx>sheetRect.w||ry>sheetRect.h){ loupe.style.display="none"; return; }
+  drawLoupeAt(rx/sheetRect.w, ry/sheetRect.h);
+});
+$("stage").addEventListener("pointerleave", ()=>{ if(document.activeElement!==$("stageCanvas")) loupe.style.display="none"; });
 
 /* =========================================================
    Compare
    ========================================================= */
-$("compareBtn").addEventListener("click", openCompare);
-$("cmpClose").addEventListener("click", ()=>$("overlay").classList.remove("on"));
-document.addEventListener("keydown", e=>{ if(e.key==="Escape") $("overlay").classList.remove("on"); });
+let compareOpener = null;
+
+function closeCompare(){
+  if(!$("overlay").classList.contains("on")) return;
+  $("overlay").classList.remove("on");
+  const app = document.querySelector(".app");
+  app.removeAttribute("inert");
+  app.removeAttribute("aria-hidden");
+  if(compareOpener) compareOpener.focus();
+}
+
+$("compareBtn").addEventListener("click", e=>{ compareOpener = e.currentTarget; openCompare(); });
+$("cmpClose").addEventListener("click", closeCompare);
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeCompare(); });
+
+$("overlay").addEventListener("keydown", e=>{
+  if(e.key!=="Tab") return;
+  const items = $("overlay").querySelectorAll("button");
+  const first = items[0], last = items[items.length-1];
+  if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+});
 
 function openCompare(){
   const t = toneById(state.tone), l = lightById(state.light);
@@ -1131,7 +1240,7 @@ function openCompare(){
   const W = 380, H = Math.round(W/aspect);
   $("cmpGrid").innerHTML = PAPERS.map(p=>
     `<button class="cmp" data-id="${p.id}" aria-pressed="${p.id===state.paper}">
-      <canvas data-canvas="${p.id}" width="${W}" height="${H}"></canvas>
+      <canvas data-canvas="${p.id}" width="${W}" height="${H}" aria-hidden="true"></canvas>
       <div class="lbl">${p.name}${p.id===state.paper?" &middot; selected":""}</div>
     </button>`).join("");
   PAPERS.forEach(p=>{
@@ -1139,15 +1248,24 @@ function openCompare(){
     renderSheet(c, {geo, paper:p.id, tex:state.tex, light:state.light, angle:state.angle,
                     toneOverride: resolveTone(p, state.tone)});
   });
+  const app = document.querySelector(".app");
+  app.setAttribute("inert","");
+  app.setAttribute("aria-hidden","true");
   $("overlay").classList.add("on");
+  $("cmpClose").focus();
 }
 
 $("cmpGrid").addEventListener("click", e=>{
   const btn = e.target.closest(".cmp");
   if(!btn) return;
   state.paper = btn.dataset.id;
+  const np = paperById(state.paper);
+  state.tone = resolveTone(np, state.tone).id;
+  state.tex  = resolveTex(np, state.tex).id;
   document.querySelectorAll("#paperList .paper").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.id===state.paper)));
-  $("overlay").classList.remove("on");
+  $("toneChips").querySelectorAll(".chip").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.id===state.tone)));
+  $("texChips").querySelectorAll(".chip").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.id===state.tex)));
+  closeCompare();
   render();
 });
 
@@ -1330,6 +1448,51 @@ $("downloadSheetBtn").addEventListener("click", ()=>{
   x.textAlign="left";
 
   downloadCanvas(c, "Paper-decision-"+safeName(name)+".png");
+});
+
+/* ---- plain text version, for screen readers, note taking or pasting into a journal ---- */
+$("downloadTextBtn").addEventListener("click", ()=>{
+  const p=paperById(state.paper), t=activeTone(), tx=activeTex();
+  const sz=sizeById(state.size), bd=borderById(state.border), l=lightById(state.light);
+  const geo=sheetGeometry();
+  const moods=[$("mood1").value.trim()||"__________", $("mood2").value.trim()||"__________", $("mood3").value.trim()||"__________"];
+  const q=$("qualityIn").value.trim()||"__________", b=$("becauseIn").value.trim()||"__________";
+  const name=$("studentName").value.trim();
+  const lines = [
+    "PAPER DECISION",
+    "VART6492C Realise a Creative Project, Cert IV Photography and Digital Imaging",
+    "Studio activity, not an assessment task",
+    "",
+    name ? "Name: "+name : null,
+    "Date: "+today(),
+    "Image: "+($("imageTitle").value.trim() || state.imgName || "Untitled"),
+    "",
+    "Mood in three words: "+moods.join(", "),
+    "",
+    "Paper type: "+p.name+" ("+p.family+")",
+    "Paper tone: "+t.name,
+    "Surface: "+tx.word+" ("+tx.name.toLowerCase()+" setting)",
+    "Print size: "+sz.name+", "+Math.round(geo.sheetW)+" x "+Math.round(geo.sheetH)+" mm",
+    "Border: "+bd.name,
+    "Viewed under: "+l.name+", light from the "+compass(state.angle),
+    "",
+    "Why this paper:",
+    "I selected "+p.name+" paper type and "+t.name+" paper tone because it supports the photograph's "+q+" by "+b+".",
+    "",
+    "What this paper does:",
+    "Often supports: "+p.supports,
+    "Keep in mind: "+p.keep,
+    "Availability: "+p.why,
+    "",
+    "This is a simulation. A screen cannot replace a physical test print."
+  ].filter(x=>x!==null);
+  const blob = new Blob([lines.join("\n")], {type:"text/plain"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url; a.download="Paper-decision-"+safeName(name)+".txt";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  flashWarn("Text version downloaded.");
 });
 
 /* ---- comparison sheet ---- */
