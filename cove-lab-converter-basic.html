@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoVE Copilot → Canvas Lab Activities Converter (Basic) - RMIT</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+        .main-wrapper{flex:1;padding:20px}
+        .container{max-width:1600px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+        .header{background:#000054;color:#fff;padding:30px;text-align:center}
+        .header h1{font-size:2.2rem;margin-bottom:10px;font-weight:700}
+        .header p{font-size:1.1rem;opacity:.9}
+        .workflow-steps{display:flex;justify-content:center;padding:20px 30px;background:#f2f2f2;border-bottom:3px solid #fac800;flex-wrap:wrap;gap:10px}
+        .step{display:flex;align-items:center;margin:0 15px;font-weight:600;color:#000054;font-size:.95rem}
+        .step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+        .step.active .step-number{background:#e61e2a}
+        .step.completed .step-number{background:#28a745}
+        .main-layout{display:grid;grid-template-columns:420px 1fr;min-height:70vh}
+        .sidebar{background:#f2f2f2;padding:30px;border-right:1px solid #e3e5e0;display:flex;flex-direction:column}
+        .content-area{padding:30px;overflow-y:auto}
+        .paste-area{border:3px dashed #000054;border-radius:8px;padding:20px;text-align:center;transition:all .3s;cursor:pointer;background:#fff;margin-bottom:20px}
+        .paste-area:hover{border-color:#e61e2a;background:#f8f9fa}
+        .paste-icon{font-size:2.5rem;color:#000054;margin-bottom:10px}
+        .paste-text{font-size:1.05rem;color:#000054;margin-bottom:8px;font-weight:600}
+        .paste-subtext{font-size:.85rem;color:#666}
+        textarea#copilotInput{width:100%;min-height:300px;padding:15px;border:2px solid #e3e5e0;border-radius:6px;font-size:.9rem;font-family:'Monaco','Menlo',monospace;resize:vertical;background:#fff;line-height:1.5;display:none}
+        textarea#copilotInput:focus{outline:none;border-color:#000054}
+        .extraction-status{display:none;background:#fff;border:2px solid #fac800;border-radius:6px;padding:20px;margin-top:15px}
+        .extraction-status h3{color:#000054;margin-bottom:12px;font-size:1.1rem}
+        .status-item{display:flex;align-items:center;margin-bottom:8px;font-size:.9rem}
+        .status-icon{width:20px;height:20px;border-radius:50%;margin-right:10px;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700;flex-shrink:0}
+        .status-icon.found{background:#28a745}.status-icon.missing{background:#e61e2a}.status-icon.partial{background:#fac800;color:#000054}
+        .btn{padding:12px 28px;border:none;border-radius:4px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s}
+        .btn-primary{background:#e61e2a;color:#fff}.btn-primary:hover{background:#c51923;transform:translateY(-1px)}
+        .btn-secondary{background:#000054;color:#fff}.btn-secondary:hover{background:#000043;transform:translateY(-1px)}
+        .btn-outline{background:#fff;color:#000054;border:2px solid #000054}.btn-outline:hover{background:#f2f2f2}
+        .btn:disabled{background:#999;cursor:not-allowed;transform:none}
+        .button-group{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+        .edit-form{display:none}
+        .form-section{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:25px;margin-bottom:25px}
+        .form-section h3{color:#000054;margin-bottom:18px;font-size:1.2rem;border-bottom:2px solid #fac800;padding-bottom:10px}
+        .form-group{margin-bottom:18px}
+        .form-group label{display:block;font-weight:600;color:#000054;margin-bottom:6px;font-size:.9rem}
+        .form-group input[type="text"],.form-group textarea,.form-group select{width:100%;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.9rem;font-family:inherit;transition:border-color .3s;background:#fafbfc}
+        .form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:#000054}
+        .form-group textarea{min-height:100px;resize:vertical}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+        .help-text{font-size:.8rem;color:#666;margin-top:4px}
+        .output-mode{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+        .mode-option{flex:1;min-width:260px;border:2px solid #e3e5e0;border-radius:6px;padding:14px 16px;cursor:pointer;background:#fafbfc;transition:all .2s}
+        .mode-option:hover{border-color:#000054}
+        .mode-option.selected{border-color:#e61e2a;background:#fff}
+        .mode-option label{display:flex;align-items:center;gap:8px;font-weight:700;color:#000054;cursor:pointer;margin-bottom:4px}
+        .mode-option input[type="radio"]{width:18px;height:18px;cursor:pointer}
+        .mode-option .help-text{margin-top:0}
+        .activity-card{background:#f8f9fa;border:1px solid #e3e5e0;border-left:4px solid #000054;border-radius:6px;padding:18px;margin-bottom:18px}
+        .activity-card .activity-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+        .activity-card .activity-head h4{color:#000054;font-size:1rem;margin:0}
+        .activity-card .form-group{margin-bottom:12px}
+        .activity-card textarea{font-family:'Monaco','Menlo',monospace;font-size:.82rem}
+        .remove-btn{background:none;border:none;color:#e61e2a;cursor:pointer;font-size:1.1rem}
+        .add-remove-btns{display:flex;gap:8px;margin-top:8px}
+        .add-remove-btns button{padding:4px 12px;font-size:.8rem;border-radius:3px;border:1px solid #ddd;cursor:pointer;background:#fff}
+        .add-remove-btns button:hover{background:#f2f2f2}
+        .output-section{display:none}
+        .output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+        .output-header{background:#000054;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+        .output-content{padding:20px;font-family:'Monaco','Menlo',monospace;font-size:.8rem;line-height:1.5;max-height:500px;overflow-y:auto;white-space:pre-wrap;background:#f8f9fa}
+        .preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:30px;margin-top:20px}
+        .preview-container h3{color:#000054;margin-bottom:20px}
+        .preview-container ol{margin-left:22px}
+        .alert{padding:15px;border-radius:4px;margin-bottom:20px;display:flex;align-items:flex-start}
+        .alert-info{background:#e6f3ff;border:1px solid #0066cc;color:#004085}
+        .alert-warning{background:#fff9e6;border:1px solid #fac800;color:#856404}
+        .alert-icon{font-size:1.4rem;margin-right:12px;flex-shrink:0}
+        .check-panel{background:#fff;border:2px solid #fac800;border-radius:6px;padding:18px;margin-bottom:20px}
+        .check-panel h3{color:#000054;font-size:1.05rem;margin-bottom:10px}
+        .footer{background:#000054;color:#fff;text-align:center;padding:20px;font-size:.9rem}
+        .footer a{color:#fac800;text-decoration:none}.footer a:hover{text-decoration:underline}
+        .debug-panel{display:none;background:#1e1e2e;color:#cdd6f4;border:2px solid #fac800;border-radius:6px;padding:15px;margin-top:15px;font-family:'Monaco','Menlo',monospace;font-size:.7rem;max-height:300px;overflow-y:auto;white-space:pre-wrap}
+        .debug-toggle{font-size:.8rem;color:#666;cursor:pointer;margin-top:8px;text-decoration:underline}
+        .debug-toggle:hover{color:#000054}
+        @media(max-width:1200px){.main-layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid #e3e5e0}.form-row{grid-template-columns:1fr}}
+    </style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
+</head>
+<body>
+<div class="main-wrapper">
+<div class="container">
+    <div class="header">
+        <h1>CoVE Lab Activities Converter <span style="font-weight:400;opacity:.8;">Basic</span></h1>
+        <p>Full lab content open in the colour block. Paste → Review &amp; Edit → Generate Emble HTML</p>
+    </div>
+    <div class="workflow-steps">
+        <div class="step active" id="step1"><div class="step-number">1</div><span>Paste Copilot Output</span></div>
+        <div class="step" id="step2"><div class="step-number">2</div><span>Review &amp; Edit</span></div>
+        <div class="step" id="step3"><div class="step-number">3</div><span>Generate HTML</span></div>
+    </div>
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="paste-area" id="pasteArea" onclick="showTextarea()">
+                <div class="paste-icon">📋</div>
+                <div class="paste-text">Paste Copilot Output</div>
+                <div class="paste-subtext">Click here, then paste your lab activity content</div>
+            </div>
+            <textarea id="copilotInput" placeholder="Paste your Copilot output here..."></textarea>
+            <div class="button-group">
+                <button class="btn btn-primary" id="parseBtn" onclick="parseCopilotOutput()" disabled>Parse Content</button>
+                <button class="btn btn-outline" onclick="loadSample()">Load Sample</button>
+            </div>
+            <div class="extraction-status" id="extractionStatus"><h3>📊 Documents Found</h3><div id="statusList"></div></div>
+            <div class="debug-toggle" onclick="toggleDebug()">Toggle debug info</div>
+            <div class="debug-panel" id="debugPanel"></div>
+        </div>
+        <div class="content-area">
+            <div id="initialInstructions">
+                <h2 style="color:#000054;margin-bottom:20px;">How to Use This Tool</h2>
+                <ol style="font-size:1.05rem;line-height:2;">
+                    <li><strong>Paste</strong> the Part B output from the lab activities prompt</li>
+                    <li><strong>Review</strong> the parsed activities, steps and image markers</li>
+                    <li><strong>Edit</strong> any fields that need correction</li>
+                    <li><strong>Check</strong> the counts in the output panel</li>
+                    <li><strong>Generate</strong> your Canvas-ready Emble HTML</li>
+                </ol>
+                <div class="alert alert-warning" style="margin-top:25px;"><div class="alert-icon">💡</div><div><strong>Tip:</strong> The parser reads <code>──── Activity 1: Title ────</code> sections. Numbered lines become steps, <code>[IMAGE: ...]</code> lines become teacher placeholders, and a <code>Download:</code> line becomes a yellow file placeholder. Use "Load Sample" to test.</div></div>
+            </div>
+
+            <div class="edit-form" id="editForm">
+                <div class="form-section">
+                    <h3>📄 Page Header</h3>
+                    <div class="form-group"><label>Page Heading</label><input type="text" id="fPageTitle" value="Lab Activities"></div>
+                    <div class="form-group"><label>Standing Instructions</label><textarea id="fInstructions" rows="4"></textarea><p class="help-text">One instruction per line. Each becomes its own paragraph.</p></div>
+                    <div class="form-group"><label>Integrity Statement</label><textarea id="fIntegrity" rows="3"></textarea><p class="help-text">Appears under a bold "Important:" label. Leave blank to omit.</p></div>
+                    <div class="form-group"><label>Call to Action Heading</label><input type="text" id="fCta" value="Please complete the following"><p class="help-text">Sits beside the yellow target icon.</p></div>
+                </div>
+
+                <div class="form-section">
+                    <h3>📝 Lab Activities</h3>
+                    <p class="help-text" style="margin-bottom:15px;">Each activity becomes one Emble colour block. Steps and image markers keep the order you enter them in.</p>
+                    <div id="activityBlocks"></div>
+                    <div class="add-remove-btns"><button onclick="addActivity()">+ Add Activity</button><button onclick="removeLastActivity()">− Remove Last</button></div>
+                </div>
+
+                <div class="button-group" style="padding-top:20px;border-top:2px solid #e3e5e0;"><button class="btn btn-primary" onclick="generateHTML()">Generate Canvas HTML</button><button class="btn btn-secondary" onclick="resetAll()">Start Over</button></div>
+            </div>
+
+            <div class="output-section" id="outputSection">
+                <h2 style="color:#000054;margin-bottom:20px;">Generated Canvas HTML</h2>
+                <div class="check-panel" id="checkPanel"></div>
+                <div class="output-container"><div class="output-header"><span>Emble HTML Code</span><button class="btn btn-primary" style="padding:8px 20px;font-size:.9rem;" onclick="copyHTML(event)">Copy HTML</button></div><div class="output-content" id="outputContent"></div></div>
+                <div class="preview-container"><h3>Preview</h3><div id="previewContent"></div></div>
+                <div class="button-group"><button class="btn btn-secondary" onclick="backToEdit()">Back to Edit</button><button class="btn btn-primary" onclick="resetAll()">New Content</button></div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team — RMIT College of Vocational Education</p></footer>
+<script>
+let parsedData={},activityCount=0,debugLog=[];
+
+const DEFAULT_INSTRUCTIONS="In person attendance is required\nWork individually or in small groups as directed\nRead the lab instructions carefully";
+const DEFAULT_INTEGRITY="All work must be your own. Do not copy from other students, online sources or AI tools. Any use of external assistance must be acknowledged.";
+const HL='#FAC800';
+
+function dbg(l,v){debugLog.push(`[${l}] ${typeof v==='string'?v:JSON.stringify(v,null,1)}`)}
+function toggleDebug(){const p=document.getElementById('debugPanel');p.style.display=p.style.display==='none'?'block':'none';p.textContent=debugLog.join('\n')}
+function showTextarea(){document.getElementById('copilotInput').style.display='block';document.getElementById('pasteArea').style.display='none';document.getElementById('copilotInput').focus();document.getElementById('parseBtn').disabled=false}
+function updateStep(n,s){const e=document.getElementById('step'+n);e.classList.remove('active','completed');if(s)e.classList.add(s)}
+function genId(){return 'emble-customise-'+Math.random().toString(16).slice(2,10)}
+function escH(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+// ═══════════════════════════════════════════════════════
+// LAB PARSER — delimited (──── Activity N: Title ────)
+// ═══════════════════════════════════════════════════════
+function parseCopilotOutput(){
+    debugLog=[];
+    const raw=document.getElementById('copilotInput').value.trim();
+    if(!raw)return alert('Please paste Copilot output first.');
+    dbg('INPUT',raw.length+' chars, '+raw.split('\n').length+' lines');
+
+    parsedData={pageTitle:'',instructions:'',integrity:'',cta:'',activities:[]};
+    const lines=raw.split('\n');
+
+    // Strip a Part A overview if the teacher pasted the whole response
+    let startIdx=0;
+    for(let i=0;i<lines.length;i++){
+        if(/^PART\s*B\b/i.test(lines[i].trim())){startIdx=i+1;dbg('PART_B','found at line '+i);break}
+    }
+
+    const sections=[];let cur=null;
+    for(let i=startIdx;i<lines.length;i++){
+        const line=lines[i];
+        const m=line.match(/^─{2,}\s*(.+?)\s*─*$/);
+        if(m){
+            const name=m[1].replace(/─/g,'').trim();
+            cur={name:name,lines:[]};sections.push(cur);
+            dbg('DELIM_SECTION',name);
+        } else if(cur){
+            cur.lines.push(line);
+        }
+    }
+
+    if(!sections.length){
+        dbg('FALLBACK','no ──── delimiters found, trying Activity headings');
+        let c=null;
+        for(let i=startIdx;i<lines.length;i++){
+            const t=lines[i].trim();
+            if(/^activity\s*\d*\s*[:.\-]?/i.test(t)&&t.length<120){c={name:t,lines:[]};sections.push(c)}
+            else if(c){c.lines.push(lines[i])}
+        }
+    }
+
+    for(const s of sections){
+        const n=s.name.toLowerCase();
+        if(/^activity/i.test(s.name)){
+            parsedData.activities.push(parseActivity(s));
+        } else if(/page\s*title|lab\s*title|page\s*heading/.test(n)){
+            parsedData.pageTitle=s.lines.map(l=>l.trim()).filter(Boolean)[0]||'';
+        } else if(/instruction/.test(n)&&!/lab\s*step/.test(n)){
+            const keep=[],integ=[];let inInteg=false;
+            for(const l of s.lines){
+                const t=l.trim();if(!t)continue;
+                if(/^important\b/i.test(t.replace(/[*:]/g,''))){inInteg=true;continue}
+                (inInteg?integ:keep).push(t.replace(/^[-•*]\s*/,''));
+            }
+            parsedData.instructions=keep.join('\n');
+            if(integ.length)parsedData.integrity=integ.join(' ');
+        } else if(/complete the following|call to action/.test(n)){
+            parsedData.cta=s.lines.map(l=>l.trim()).filter(Boolean)[0]||'';
+        } else {
+            dbg('SECTION_UNUSED',s.name);
+        }
+    }
+
+    dbg('ACTIVITIES',parsedData.activities.length+' parsed');
+    document.getElementById('debugPanel').textContent=debugLog.join('\n');
+    populateForm();showExtractionStatus();showEditForm();
+}
+
+function parseActivity(section){
+    const a={title:section.name.trim(),intro:[],body:[],dlLabel:'',accLabel:'Lab instructions',steps:0,images:0};
+    const buf=[];
+    for(const rawLine of section.lines){
+        const t=rawLine.trim();
+        if(!t)continue;
+
+        const dl=t.match(/^(?:download|source\s*document|attach)\s*:\s*(.*)$/i);
+        if(dl){
+            const label=(dl[1].split('|')[0]||'').trim();
+            if(!/^none$/i.test(label))a.dlLabel=label;
+            continue;
+        }
+        const acc=t.match(/^(?:accordion|collapsible)\s*(?:label|title)\s*:\s*(.+)$/i);
+        if(acc){a.accLabel=acc[1].trim();continue}
+
+        if(/^\[?\s*IMAGE\s*:/i.test(t))a.images++;
+        if(/^\d{1,3}[.)]\s+/.test(t))a.steps++;
+        buf.push(t);
+    }
+    a.body=buf;
+    dbg('ACTIVITY',`${a.title} → ${buf.length} lines, ${a.steps} steps, ${a.images} images, file: ${a.dlLabel||'none'}`);
+    return a;
+}
+
+// ═══════════════════════════════════════════════════════
+// FORM
+// ═══════════════════════════════════════════════════════
+function addActivity(data){
+    activityCount++;
+    const n=activityCount;
+    const d=data||{title:'',intro:[],body:[],dlLabel:'',accLabel:'Lab instructions'};
+    const bodyText=Array.isArray(d.body)?d.body.join('\n'):'';
+    const el=document.createElement('div');
+    el.className='activity-card';el.id='activityCard'+n;
+    el.innerHTML=`
+        <div class="activity-head"><h4>Activity ${n}</h4><button class="remove-btn" onclick="this.closest('.activity-card').remove()">✕</button></div>
+        <div class="form-group"><label>Activity Title</label><input type="text" id="actTitle${n}" value="${escH(d.title||'')}" placeholder="e.g. Activity 1: Configure a virtual switch"></div>
+        <div class="form-group"><label>Lead-in Above the Content (optional)</label><textarea id="actIntro${n}" rows="2" placeholder="Leave blank to run straight into the document content">${escH((d.intro||[]).join('\n'))}</textarea></div>
+        <div class="form-group"><label>Full Activity Content</label><textarea id="actSteps${n}" rows="16" placeholder="Heading: Before you start&#10;Everything from the source document, in order.&#10;1. First step&#10;[IMAGE: what the screenshot shows]&#10;2. Second step&#10;> show vlan brief&#10;Note: something to watch for">${escH(bodyText)}</textarea><p class="help-text">Reproduced in full inside the colour block. Numbered lines become an ordered list, dashes become bullets, <code>Heading:</code> becomes a subheading, <code>Note:</code> and <code>Warning:</code> become labelled paragraphs, lines starting <code>&gt;</code> render as commands, pipe rows build a table, <code>&lt;strong&gt;</code> <code>&lt;em&gt;</code> <code>&lt;u&gt;</code> are kept, and <code>[IMAGE: ...]</code> or <code>[TEACHER: ...]</code> become yellow placeholders in position.</p></div>
+        <div class="form-group"><label>Download File Name</label><input type="text" id="actDlLabel${n}" value="${escH(d.dlLabel||'')}" placeholder="e.g. Lab 1 worksheet (Word)"><p class="help-text">Outputs a yellow placeholder. The teacher uploads the file and inserts the Canvas link in Emble.</p></div>`;
+    document.getElementById('activityBlocks').appendChild(el);
+}
+function countStepsBefore(body,idx){let c=0;for(let i=0;i<=idx;i++){if(body[i].type==='step')c++}return c}
+function removeLastActivity(){const cards=document.querySelectorAll('.activity-card');if(cards.length)cards[cards.length-1].remove()}
+
+function populateForm(){
+    document.getElementById('fPageTitle').value=parsedData.pageTitle||'Lab Activities';
+    document.getElementById('fInstructions').value=parsedData.instructions||DEFAULT_INSTRUCTIONS;
+    document.getElementById('fIntegrity').value=parsedData.integrity||DEFAULT_INTEGRITY;
+    document.getElementById('fCta').value=parsedData.cta||'Please complete the following';
+    document.getElementById('activityBlocks').innerHTML='';activityCount=0;
+    (parsedData.activities||[]).forEach(a=>addActivity(a));
+    if(!activityCount)addActivity();
+}
+
+function showExtractionStatus(){
+    const box=document.getElementById('extractionStatus'),list=document.getElementById('statusList');
+    let h='';
+    (parsedData.activities||[]).forEach(a=>{
+        h+=`<div class="status-item"><div class="status-icon found">✓</div><div>${esc(a.title)}${a.dlLabel?` <span style="color:#666;">— ${esc(a.dlLabel)}</span>`:''}</div></div>`;
+    });
+    if(!parsedData.activities.length)h='<div class="status-item"><div class="status-icon missing">✕</div><div>No activities detected. Check the ──── delimiters.</div></div>';
+    list.innerHTML=h;box.style.display='block';
+}
+function showEditForm(){updateStep(1,'completed');updateStep(2,'active');document.getElementById('initialInstructions').style.display='none';document.getElementById('editForm').style.display='block';document.getElementById('outputSection').style.display='none';}
+
+// ═══════════════════════════════════════════════════════
+// HTML GENERATION
+// ═══════════════════════════════════════════════════════
+const CBLOCK_OPEN=id=>`<div id="${id}" class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" data-context-menu="customise delete" data-customise="color-block-shadow color-block-theme cblock-fullwidth dsc-cblock-border-colour dsc-cblock-border-style" data-emble-version="2.0">`;
+const SPACER=`<p class="narrow-p">&nbsp;</p>`;
+
+function inl(t){
+    let x=esc(t);
+    x=x.replace(/&lt;(\/?)(strong|b|em|i|u|sub|sup|code)&gt;/gi,'<$1$2>');
+    return x;
+}
+function renderTable(rows){
+    let t=`<table style="border-collapse: collapse; width: 100%;">\n<tbody>\n`;
+    rows.forEach((r,i)=>{
+        const cell=(i===0)?'th':'td';
+        t+=`<tr>\n`+r.map(c=>`<${cell} style="border: 1px solid #cccccc; padding: 6px 10px; text-align: left; vertical-align: top;">${inl(c)}</${cell}>`).join('\n')+`\n</tr>\n`;
+    });
+    return t+`</tbody>\n</table>\n`;
+}
+function buildBody(rawBody){
+    const lines=rawBody.split('\n').filter(l=>l.trim());
+    let h='',stack=[],stepNo=0,steps=0,images=0,highlights=0,tables=0,tbl=null;
+
+    const closeTo=d=>{
+        while(stack.length>d){
+            const it=stack.pop();
+            h+=`</${it.tag}>\n`;
+            if(stack.length>0)h+=`</li>\n`;
+        }
+    };
+    const flushTable=()=>{if(tbl){h+=renderTable(tbl);tbl=null;tables++}};
+    const openList=(depth,tag,attr)=>{
+        if(stack.length>=depth&&stack[depth-1]&&stack[depth-1].tag!==tag)closeTo(depth-1);
+        while(stack.length<depth){
+            if(stack.length>0)h=h.replace(/<\/li>\n$/,'\n');
+            h+=`<${tag}${stack.length===depth-1?(attr||''):''}>\n`;
+            stack.push({tag:tag});
+        }
+        closeTo(depth);
+    };
+
+    for(const raw of lines){
+        const indent=(raw.match(/^[ \t]*/)[0]||'').replace(/\t/g,'  ').length;
+        const line=raw.trim();
+
+        // ── table rows ──
+        if(/^\|.*\|$/.test(line)){
+            const cells=line.slice(1,-1).split('|').map(c=>c.trim());
+            if(cells.every(c=>/^:?-{2,}:?$/.test(c)))continue;
+            closeTo(0);
+            if(!tbl)tbl=[];
+            tbl.push(cells);
+            continue;
+        }
+        flushTable();
+
+        const img=line.match(/^\[?\s*IMAGE\s*:\s*(.+?)\s*\]?$/i);
+        if(img){closeTo(0);h+=`<p><span style="background-color: ${HL};">TEACHER: insert screenshot — ${esc(img[1])}</span></p>\n`;images++;continue}
+
+        const tch=line.match(/^\[?\s*TEACHER\s*:\s*(.+?)\s*\]?$/i);
+        if(tch){closeTo(0);h+=`<p><span style="background-color: ${HL};">TEACHER: ${esc(tch[1])}</span></p>\n`;highlights++;continue}
+
+        const hd=line.match(/^(?:heading|subheading)\s*:\s*(.+)$/i);
+        if(hd){closeTo(0);h+=`<h4>${inl(hd[1])}</h4>\n`;continue}
+
+        const note=line.match(/^(note|warning|caution|important|tip)\s*:\s*(.+)$/i);
+        if(note){
+            closeTo(0);
+            const lbl=note[1].charAt(0).toUpperCase()+note[1].slice(1).toLowerCase();
+            h+=`<p><strong>${esc(lbl)}:</strong> ${inl(note[2])}</p>\n`;
+            continue;
+        }
+
+        if(/^>\s?/.test(line)){
+            closeTo(0);
+            h+=`<p><span style="font-family: 'Courier New', monospace; font-size: 11pt;">${inl(line.replace(/^>\s?/,''))}</span></p>\n`;
+            continue;
+        }
+
+        // ── lettered sub-steps ──
+        const sub=line.match(/^([a-z])[.)]\s+(.*)$/);
+        if(sub&&(indent>0||(stack.length&&stack[0].tag==='ol'))){
+            openList(Math.max(2,1),'ol',' type="a"');
+            h+=`<li>${inl(sub[2].trim())}</li>\n`;
+            continue;
+        }
+
+        const bul=line.match(/^[-•*]\s+(.*)$/);
+        if(bul){
+            openList(indent>=2?2:1,'ul');
+            h+=`<li>${inl(bul[1].trim())}</li>\n`;
+            continue;
+        }
+
+        const st=line.match(/^(\d{1,3})[.)]\s+(.*)$/);
+        if(st){
+            const depth=indent>=2?2:1;
+            if(depth===1){
+                if(stack.length&&stack[0].tag==='ol'){closeTo(1)}
+                else{closeTo(0);h+=stepNo===0?`<ol>\n`:`<ol start="${stepNo+1}">\n`;stack.push({tag:'ol'})}
+                h+=`<li>${inl(st[2].trim())}</li>\n`;stepNo++;steps++;
+            } else {
+                openList(2,'ol');
+                h+=`<li>${inl(st[2].trim())}</li>\n`;
+            }
+            continue;
+        }
+
+        // continuation of the previous list item
+        if(stack.length){
+            const idx=h.lastIndexOf('</li>');
+            if(idx>-1){h=h.slice(0,idx)+' '+inl(line)+h.slice(idx);continue}
+        }
+        closeTo(0);
+        h+=`<p>${inl(line)}</p>\n`;
+    }
+    flushTable();closeTo(0);
+    return {html:h,steps:steps,images:images,highlights:highlights,tables:tables};
+}
+
+function generateHTML(){
+    const pageTitle=document.getElementById('fPageTitle').value.trim()||'Lab Activities';
+    const instructions=document.getElementById('fInstructions').value.split('\n').map(l=>l.trim()).filter(Boolean);
+    const integrity=document.getElementById('fIntegrity').value.trim();
+    const cta=document.getElementById('fCta').value.trim();
+
+    let h=`<h2>${esc(pageTitle)}</h2>\n`;
+    h+=`<hr class="emble heading-rule rmit-blue border-medium width-full" data-context-menu="customise delete" data-customise="hr-border-style hr-line-width hr-line-color" data-emble-name="Horizontal Line" data-emble-version="2.0" />\n`;
+    h+=`${SPACER}\n<h3>Instructions</h3>\n`;
+    instructions.forEach(i=>{h+=`<p>${inl(i)}</p>\n`});
+    if(integrity){h+=`<p><strong>Important:</strong></p>\n<p>${inl(integrity)}</p>\n`}
+    h+=`<p>&nbsp;</p>\n`;
+    if(cta){
+        h+=`<div id="${genId()}" class="emble customise title-with-icon" data-customise="icon icon-colour-options" data-context-menu="customise delete">\n<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-icon="icon-circle-arrow-down icon-image icon-courses icon-attach-media icon-video icon-edit icon-document icon-pdf icon-audio icon-arrow-end icon-assignment icon-calendar-month icon-chat icon-group icon-flag" data-emble-version="2.0"><i class="icon-target">&nbsp;</i></div>\n<div class="title-with-icon-title">\n<h3>${esc(cta)}</h3>\n</div>\n</div>\n${SPACER}\n`;
+    }
+
+    let count=0;const blocks=[];
+    document.querySelectorAll('.activity-card').forEach(card=>{
+        const n=card.id.replace('activityCard','');
+        const title=(document.getElementById('actTitle'+n)?.value||'').trim();
+        const intro=(document.getElementById('actIntro'+n)?.value||'').split('\n').map(l=>l.trim()).filter(Boolean);
+        const rawSteps=(document.getElementById('actSteps'+n)?.value||'');
+        const dlLabel=(document.getElementById('actDlLabel'+n)?.value||'').trim();
+        if(!title&&!intro.length&&!rawSteps.trim())return;
+        count++;
+
+        const body=buildBody(rawSteps);
+        blocks.push({title:title||('Activity '+count),file:dlLabel});
+
+        h+=`${CBLOCK_OPEN(genId())}\n`;
+        h+=`<h3>${inl(title||('Activity '+count))}</h3>\n`;
+        intro.forEach(p=>{h+=`<p>${inl(p)}</p>\n`});
+
+        if(body.html){
+            h+=body.html;
+        }
+
+        if(dlLabel){
+            h+=`<p><strong>Download:</strong> ${esc(dlLabel)}</p>\n`;
+            h+=`<p><span style="background-color: ${HL};">TEACHER: upload ${esc(dlLabel)} to Canvas Files and link it here</span></p>\n`;
+        }
+        h+=`</div>\n${SPACER}\n`;
+    });
+
+    document.getElementById('outputContent').textContent=h;
+    document.getElementById('previewContent').innerHTML=h;
+    document.getElementById('checkPanel').innerHTML=
+        `<h3>Documents on this page</h3>`+
+        blocks.map(b=>`<div class="status-item"><div class="status-icon found">✓</div><div>${esc(b.title)}${b.file?` <span style="color:#666;">— ${esc(b.file)}</span>`:''}</div></div>`).join('')+
+        `<p class="help-text" style="margin-top:8px;">${count} activity block${count===1?'':'s'} generated. Attach each file in Canvas where the yellow placeholder sits.</p>`;
+    updateStep(2,'completed');updateStep(3,'active');
+    document.getElementById('editForm').style.display='none';
+    document.getElementById('outputSection').style.display='block';
+    document.querySelector('.content-area').scrollTop=0;
+}
+
+function copyHTML(ev){
+    const c=document.getElementById('outputContent').textContent,ta=document.createElement('textarea');
+    ta.value=c;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');const b=ev.target,o=b.textContent;b.textContent='Copied!';b.style.background='#28a745';setTimeout(()=>{b.textContent=o;b.style.background=''},2000)}catch(e){alert('Please copy manually')}
+    document.body.removeChild(ta);
+}
+function backToEdit(){updateStep(3,'');updateStep(2,'active');document.getElementById('editForm').style.display='block';document.getElementById('outputSection').style.display='none'}
+function resetAll(){if(confirm('Start over with new content?'))location.reload()}
+
+function loadSample(){
+    document.getElementById('copilotInput').value=`PART B: PAGE CONTENT
+──── Activity 1: Build a virtual switch ────
+Accordion label: Lab instructions
+Heading: Purpose
+You are setting up a test network for a small accounting practice that has outgrown its single flat network. You will produce a working virtual switch with two VLANs and a screenshot of the running configuration.
+Heading: Before you start
+- Network simulator installed and licensed
+- Access to the shared drive for saving project files
+Note: Save your project before closing the simulator or the topology will be lost.
+Heading: Steps
+1. Open the network simulator and create a new project named acct-lab.
+2. Add one Layer 2 switch to the topology and rename it SW1.
+3. Open the CLI for SW1 and enter global configuration mode.
+> enable
+> configure terminal
+4. Create VLAN 10 and name it FINANCE.
+[IMAGE: CLI output showing the VLAN 10 creation command accepted]
+5. Create VLAN 20 and name it ADMIN.
+6. Assign ports 1 to 4 to VLAN 10 and ports 5 to 8 to VLAN 20.
+7. Save the running configuration and take a screenshot of the output of show vlan brief.
+Warning: Do not use write erase at any point, it will clear the configuration you have just built.
+Heading: What to submit
+Upload your screenshot and your saved project file to the submission folder.
+Download: Lab 1 Virtual Switch Setup.docx
+──── Activity 2: Test connectivity between VLANs ────
+Heading: Purpose
+Building on the switch you configured in Activity 1, you will confirm that VLAN separation is working as intended. You will submit a short table recording the result of each ping test.
+Heading: Address plan
+FINANCE VLAN 10: 192.168.10.0 /24
+ADMIN VLAN 20: 192.168.20.0 /24
+Heading: Steps
+1. Add two PCs to VLAN 10 and assign them addresses 192.168.10.11 and 192.168.10.12.
+2. Add two PCs to VLAN 20 and assign them addresses 192.168.20.11 and 192.168.20.12.
+3. Ping from 192.168.10.11 to 192.168.10.12 and record the result.
+4. Ping from 192.168.10.11 to 192.168.20.11 and record the result.
+[IMAGE: Ping output showing a successful reply within VLAN 10]
+5. Explain in two sentences why the second ping behaves differently from the first.
+[TEACHER: confirm the simulator version students are using this semester]
+Download: Lab 1 Virtual Switch Setup.docx`;
+    showTextarea();
+}
+</script>
+</body>
+</html>
