@@ -133,6 +133,17 @@
       "notes": "Assessment, Goldilocks, Program Team",
       "public": true,
       "updatedAt": "2026-08-27T03:01:05.728Z"
+    },
+    "cove-lab-converter-basic.html": {
+      "description": "Create a lab page",
+      "tags": [
+        "Canvas",
+        "LD"
+      ],
+      "owner": "BAU",
+      "notes": "Course Development",
+      "public": true,
+      "updatedAt": "2026-09-01T00:43:14.678Z"
     }
   }
 }
