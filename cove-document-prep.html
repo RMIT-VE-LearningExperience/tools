@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CoVE Document Prep — Goldilocks upload preparation</title>
+<title>CoVE Document Prep — assessment document upload preparation</title>
 <style>
   :root{
     --navy:#000054;
@@ -176,16 +176,16 @@
 </head>
 <body>
 <header class="app">
-  <p class="eyebrow">CoVE Assessment Toolkit — Goldilocks companion</p>
+  <p class="eyebrow">CoVE Assessment Toolkit</p>
   <h1>CoVE Document Prep</h1>
-  <p>Prepares Word assessment documents for a Goldilocks session. Resolves Word automatic numbering into literal numbers that survive upload, and reports how much document there is — so you can tell whether Copilot read all of it.</p>
+  <p>Prepares Word documents for an AI session. Resolves Word automatic numbering into literal numbers that survive upload, and reports how much document there is — so you can tell whether the assistant read all of it. Works on any .docx; documents built on the VE assessment template also have their unit code and task number read out of the header table.</p>
 </header>
 
 <main>
   <section aria-labelledby="add-heading">
     <h2 id="add-heading">Add documents</h2>
     <div id="drop" tabindex="0" role="button" aria-describedby="drop-help">
-      <p id="drop-help">Drop .docx files here, or choose them below. Units of competency, assessor guides, competency maps — anything headed for a Copilot session.</p>
+      <p id="drop-help">Drop any .docx files here, or choose them below — assessment tasks, assessor guides, units of competency, competency maps, or anything else headed for an AI session.</p>
       <button type="button" id="pick">Choose files</button>
       <input type="file" id="file" accept=".docx" multiple class="visually-hidden">
     </div>
@@ -209,7 +209,8 @@
         <li><strong>Upload the flattened .md file</strong> in place of the .docx. Question and item numbers are written into the text, so they cannot be lost on extraction.</li>
         <li><strong>Keep the reference card on screen</strong> while the session runs. When the prompt states the last item it can see, compare it with the last item listed here. If they differ, the upload was truncated — start a fresh chat.</li>
         <li><strong>Flattening is not a substitute for the guard.</strong> It removes the most common cause of a bad read; the extent check is what catches the rest.</li>
-        <li>Formatting, colour and page layout are deliberately dropped. Goldilocks judges instructions and evidence, not appearance.</li>
+        <li>Formatting, colour and page layout are deliberately dropped. These tools judge instructions and evidence, not appearance.</li>
+        <li><strong>Identifiers are read from the VE assessment template only.</strong> If a document isn't built on that template, everything else still works — you'll just be asked for the task identifier yourself.</li>
       </ul>
     </div>
   </section>
@@ -611,7 +612,7 @@ async function processDocx(file){
   const totalTasks = taskNumberRaw ? (taskNumberRaw.match(/of\s*(\d+)/i) || [])[1] || null : null;
 
   const header = [
-    "<!-- Flattened for Goldilocks upload by CoVE Document Prep -->",
+    "<!-- Flattened for AI upload by CoVE Document Prep -->",
     "<!-- Source: " + file.name + " -->",
     "<!-- Word automatic numbering has been resolved to literal numbers. -->",
     "<!-- Last numbered item: " + (lastNumbered ? lastNumbered.label + " " + lastNumbered.text.slice(0, 60) : "none") + " -->",
@@ -659,10 +660,10 @@ async function processDocx(file){
 
 function referenceCard(r){
   const L = [];
-  L.push("STEP 0 REFERENCE — " + r.name);
+  L.push("EXTENT REFERENCE (STEP 0) — " + r.name);
   if(r.taskId) L.push("Task identifier: " + r.taskId + (r.totalTasks ? " of " + r.totalTasks : "") + (r.taskName ? " — " + r.taskName : ""));
   if(r.unitCode) L.push("Unit code: " + r.unitCode);
-  L.push("Compare these against what the Copilot session reports it can see.");
+  L.push("Compare these against what the AI session reports it can see.");
   L.push("");
   L.push("Last numbered item:  " + (r.lastNumbered ? r.lastNumbered.label + " " + r.lastNumbered.text.slice(0, 80) : "document has no automatic numbering"));
   L.push("Highest top-level number: " + (r.stats.highest !== null ? r.stats.highest : "n/a"));
@@ -723,7 +724,7 @@ function render(){
     if(!r.taskId && /assessor|task/i.test(r.name)){
       const n = document.createElement("p");
       n.className = "note";
-      n.textContent = "No Task Number field found in this document's header table. The Quick Check will have nothing to take its task identifier from, so you'll be asked for it when you save the read.";
+      n.textContent = "No Task Number field found in this document's header table. Any downstream tool will have nothing to take its task identifier from, so you'll be asked for it when you save the read.";
       card.appendChild(n);
     }
 
@@ -757,7 +758,7 @@ function render(){
     if(s.numberedItems === 0){
       const n = document.createElement("p");
       n.className = "note";
-      n.textContent = "No automatic numbering found. If this document has numbered questions, they were typed as plain text and already survive upload — use the extent figures above for the STEP 0 check.";
+      n.textContent = "No automatic numbering found. If this document has numbered questions, they were typed as plain text and already survive upload — use the extent figures above for the extent check.";
       card.appendChild(n);
     }
 
