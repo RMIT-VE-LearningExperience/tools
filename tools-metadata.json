@@ -164,6 +164,16 @@
       "notes": "Assessment toolkit (legacy)",
       "public": true,
       "updatedAt": "2026-09-04T04:06:21.988Z"
+    },
+    "cove-legacy-rubric-csv.html": {
+      "description": "ABB Legacy Rubric",
+      "tags": [
+        "Assessment"
+      ],
+      "owner": "BAU",
+      "notes": "Assessment toolkit (legacy)",
+      "public": true,
+      "updatedAt": "2026-09-04T04:11:32.033Z"
     }
   }
 }
