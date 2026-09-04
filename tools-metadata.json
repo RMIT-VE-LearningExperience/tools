@@ -154,6 +154,16 @@
       "notes": "Assessment toolkit (legacy)",
       "public": true,
       "updatedAt": "2026-09-04T04:03:41.378Z"
+    },
+    "cove-legacy-quiz-qti.html": {
+      "description": "ABB Legacy QTI Quiz generator",
+      "tags": [
+        "Assessment"
+      ],
+      "owner": "BAU",
+      "notes": "Assessment toolkit (legacy)",
+      "public": true,
+      "updatedAt": "2026-09-04T04:06:21.988Z"
     }
   }
 }
