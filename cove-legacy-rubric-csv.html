@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Legacy Rubric CSV — CoVE Assessment Toolkit</title>
+<style>
+:root{--red:#E61E2A;--navy:#000054;--grey:#E3E5E0;--embre:#F2F2F2;--yellow:#FAC800;
+  --mono:'Monaco','Menlo','Consolas',monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--embre);color:#000;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:32px 22px 80px}
+.eyebrow{display:flex;align-items:center;gap:10px;font:600 .74rem/1 var(--mono);letter-spacing:.09em;color:var(--navy);margin-bottom:14px}
+.eyebrow::before{content:"";width:12px;height:12px;background:var(--red);flex:none}
+h1{font-size:1.85rem;line-height:1.15;margin:0 0 8px;color:var(--navy)}
+.lede{max-width:64ch;margin:0;color:#333}
+.rule{height:3px;background:var(--red);margin:22px 0 26px}
+.card{background:#fff;border:1px solid var(--grey);padding:22px;margin-bottom:18px}
+h2{font-size:1.05rem;margin:0 0 12px;color:var(--navy)}
+.drop{border:2px dashed var(--navy);background:#fff;padding:40px 20px;text-align:center;cursor:pointer}
+.drop:hover,.drop.over{background:#F7F7FB;border-color:var(--red)}
+.drop strong{display:block;color:var(--navy);font-size:1.05rem;margin-bottom:6px}
+.drop span{color:#555;font-size:.88rem}
+label{display:block;font-weight:600;color:var(--navy);margin:14px 0 6px;font-size:.9rem}
+input[type=text]{width:100%;padding:9px 10px;border:1px solid var(--navy);font:inherit}
+button{background:var(--navy);color:#fff;border:0;padding:11px 20px;cursor:pointer;font:inherit;font-weight:600}
+button:hover{background:var(--red)}
+button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+button.ghost:hover{background:var(--grey);color:var(--navy)}
+.hidden{display:none}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;background:var(--navy);color:#fff;padding:7px 9px}
+td{padding:7px 9px;border-bottom:1px solid var(--grey);vertical-align:top}
+.num{text-align:right;font:600 .85rem var(--mono);white-space:nowrap}
+.flag{background:#FEF6D8;border-left:4px solid var(--yellow);padding:10px 12px;margin:10px 0;font-size:.87rem}
+.err{background:#FCE9EA;border-left:4px solid var(--red);padding:12px 14px;font-size:.9rem}
+pre{background:#fff;border:1px solid var(--grey);padding:12px;overflow:auto;font:.76rem/1.5 var(--mono);max-height:280px;margin:0}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--grey);font-size:.8rem;color:#555}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+@media(max-width:620px){.wrap{padding:20px 14px 60px}h1{font-size:1.45rem}}
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">CoVE Assessment Toolkit</div>
+  <h1>Legacy rubric CSV</h1>
+  <p class="lede">Reads the assessment criteria out of a legacy assessor guide and writes a Canvas rubric import CSV. It only reads — your document is not modified, and nothing leaves your computer.</p>
+  <div class="rule"></div>
+
+  <div class="card">
+    <h2>1. Add the assessor guide</h2>
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose an assessor guide">
+      <strong>Drop the .docx here</strong>
+      <span>or click to choose. It must be the original Word file, not a PDF or a converted copy.</span>
+    </div>
+    <input type="file" id="file" accept=".docx" class="hidden">
+    <div id="err" class="err hidden" role="alert"></div>
+  </div>
+
+  <div class="card hidden" id="step2">
+    <h2>2. Check what was found</h2>
+    <label for="rname">Rubric name (as it will appear in Canvas)</label>
+    <input type="text" id="rname">
+    <label style="font-weight:400;margin-top:12px">
+      <input type="checkbox" id="actnum" checked> Number criteria by activity (1A.1, 1A.2, 4a.1 &hellip;)
+    </label>
+    <label style="font-weight:400;margin-top:2px">
+      <input type="checkbox" id="ascii"> Plain ASCII punctuation &mdash; replaces en dashes and curly quotes. Use if you need to open the file in Excel before uploading.
+    </label>
+    <div id="summary"></div>
+    <div class="actions">
+      <button id="dl">Download CSV</button>
+      <button class="ghost" id="toggle">Show the CSV</button>
+      <button class="ghost" id="again">Start again</button>
+    </div>
+    <div id="prev" class="hidden" style="margin-top:14px"><pre id="csvtext"></pre></div>
+  </div>
+
+  <footer>
+    <p>Every criterion gets two ratings: <strong>Satisfactory</strong> (1 point) and <strong>Not Yet Satisfactory</strong> (0), with no rating descriptions and no scoring range. The marking guide is deliberately left out — a Canvas rubric is visible to students, and the minimum requirements are assessor information.</p>
+    <p>In Canvas: <em>Course &rarr; Rubrics &rarr; Import Rubric</em>, then attach the rubric to the assignment. Upload the downloaded file directly. It is UTF-8, which is what Canvas expects, and no byte order mark is added because a stray character in the header row stops Canvas finding the columns. If you open it in Excel first and see <code>&lsquo;Scenario 1 &sbquo;&Auml;&igrave; CPR&rsquo;</code>, that is Excel reading UTF-8 as Windows-1252 &mdash; use the ASCII option above, or import to Excel with the encoding set to UTF-8.</p>
+    <p class="meta" id="ver" style="font-family:var(--mono);font-size:.78rem"></p>
+  </footer>
+</div>
+<script>
+/* ============================================================
+   CoVE Legacy Transfer — core
+   Reads a legacy assessor guide, writes a pristine V3.0 template.
+   No libraries. Zip work uses the browser's native deflate.
+   ============================================================ */
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+
+/* ---------- depth-aware body splitter (byte-exact round trip) ---------- */
+function splitBody(xml){
+  const s=xml.indexOf('<w:body>'), e=xml.lastIndexOf('</w:body>');
+  if(s<0||e<0) throw new Error('This file has no document body — it may not be a Word document.');
+  const pre=xml.slice(0,s+8), post=xml.slice(e), inner=xml.slice(s+8,e);
+  const els=[]; let i=0;
+  while(i<inner.length){
+    const lt=inner.indexOf('<',i);
+    if(lt<0){ if(inner.slice(i).trim()) els.push({raw:inner.slice(i),name:'#text'}); break; }
+    if(lt>i&&inner.slice(i,lt).trim()) els.push({raw:inner.slice(i,lt),name:'#text'});
+    const m=/^<([\w:]+)([^>]*?)(\/?)>/.exec(inner.slice(lt));
+    if(!m) throw new Error('Malformed document XML.');
+    const name=m[1];
+    if(m[3]==='/'){ els.push({raw:inner.slice(lt,lt+m[0].length),name}); i=lt+m[0].length; continue; }
+    let depth=1,j=lt+m[0].length;
+    const open=new RegExp('<'+name.replace(':','\\:')+'(?=[\\s/>])','g'), close='</'+name+'>';
+    while(depth>0){
+      const c=inner.indexOf(close,j);
+      if(c<0) throw new Error('Unclosed '+name+' in document XML.');
+      open.lastIndex=j; let o,count=0;
+      while((o=open.exec(inner))!==null&&o.index<c){
+        const t=/^<[\w:]+[^>]*?(\/?)>/.exec(inner.slice(o.index));
+        if(t&&t[1]!=='/') count++;
+      }
+      depth+=count; depth--; j=c+close.length;
+      if(count===0) break;
+    }
+    els.push({raw:inner.slice(lt,j),name}); i=j;
+  }
+  return {pre,els,post};
+}
+const textOf=raw=>(raw.match(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)||[]).map(t=>t.replace(/<[^>]+>/g,'')).join('')
+  .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/\s+/g,' ').trim();
+const styleOf=raw=>{const m=/<w:pPr>[\s\S]*?<w:pStyle w:val="([^"]+)"/.exec(raw);return m?m[1]:'';};
+const levelOf=raw=>{const s=styleOf(raw);const m=/^Heading(\d)$/.exec(s);return m?+m[1]:(s==='Title'?0:null);};
+const isGuidance=raw=>/<w:color w:val="0070C0"/.test(raw);
+const sub=(raw,tag)=>splitBody('<w:body>'+raw.replace(new RegExp('^<'+tag+'[^>]*>'),'').replace(new RegExp('</'+tag+'>$'),'')+'</w:body>').els;
+
+/* ---------- extraction from the legacy guide ---------- */
+const FIELDS=[
+  {key:'duration',probes:['assessment duration and or due date','duration and or due date']},
+  {key:'instructions',probes:['task instructions']},
+  {key:'conditions',probes:['conditions for assessment']},
+  {key:'links',probes:['useful links']},
+  {key:'submitting',probes:['instructions on submitting your assessment','instructions on submitting your project portfolio','instructions on submitting']},
+  {key:'equipStudent',probes:['equipment resources students must supply']},
+  {key:'equipRmit',probes:['equipment resources to be provided by rmit or the workplace','equipment resources to be provided by rmit']}
+];
+const LABEL={duration:'Assessment duration and/or due date',instructions:'Task instructions',
+  conditions:'Conditions for assessment',links:'Useful Links',
+  submitting:'Instructions on Submitting your Assessment',
+  equipStudent:'Equipment/resources students must supply',
+  equipRmit:'Equipment/resources to be provided by RMIT or the workplace'};
+function matchField(label){
+  const n=norm(label);
+  for(const f of FIELDS) for(const p of f.probes)
+    if(n===p||n.startsWith(p)||(p.startsWith(n)&&n.length>12)) return f.key;
+  return null;
+}
+function cellBlocks(tc){
+  const out=[];
+  for(const e of sub(tc,'w:tc')){
+    if(e.name!=='w:p') continue;
+    const list=/<w:numPr>/.test(e.raw)||styleOf(e.raw)==='ListParagraph';
+    const ticked=/w14:checked w14:val="1"/.test(e.raw);
+    for(const line of textOf(e.raw.replace(/<w:br\s*\/>/g,'<w:t>\u0001</w:t>')).split('\u0001')){
+      const t=line.trim();
+      if(t) out.push({text:t,list,ticked});
+    }
+  }
+  return out;
+}
+const rowsOf=tbl=>sub(tbl,'w:tbl').filter(e=>e.name==='w:tr').map(tr=>sub(tr.raw,'w:tr').filter(c=>c.name==='w:tc').map(c=>c.raw));
+
+function extract(docXml){
+  const {els}=splitBody(docXml);
+  const rep={variant:null,titleLine:'',cover:{},sectionA:{},unplaced:[],notes:[]};
+  for(const el of els.slice(0,5)){
+    if(el.name!=='w:p') continue;
+    const t=textOf(el.raw);
+    const m=/ASSESSOR GUIDE\s*[\u2013-]\s*(PRODUCT|PRACTICAL|KNOWLEDGE|QUIZ)/i.exec(t);
+    if(m){ rep.variant=m[1].toUpperCase(); rep.titleLine=t; break; }
+  }
+  const firstTbl=els.find(e=>e.name==='w:tbl');
+  if(firstTbl){
+    const parts={}, lastKey=[];   // clustered units continue on rows with a blank label
+    for(const cells of rowsOf(firstTbl.raw))
+      for(let i=0;i+1<cells.length;i+=2){
+        const col=i/2;
+        let k=textOf(cells[i]).replace(/[:\s]+$/,'');
+        if(k) lastKey[col]=k; else k=lastKey[col];
+        if(!k) continue;
+        const v=cellBlocks(cells[i+1]).map(b=>b.text).filter(Boolean);
+        if(v.length) (parts[k]=parts[k]||[]).push(...v);
+      }
+    for(const [k,v] of Object.entries(parts))
+      rep.cover[k]=v.every(x=>!/\s/.test(x)) ? v.join(', ') : v.join(' ');
+  }
+  const aIdx=els.findIndex(e=>e.name==='w:p'&&/^section a\b/i.test(textOf(e.raw)));
+  if(aIdx<0){ rep.notes.push('Section A heading not found — nothing was transferred.'); return rep; }
+  const bIdx=els.findIndex((e,i)=>i>aIdx&&e.name==='w:p'&&/^section b\b/i.test(textOf(e.raw)));
+  const aTbl=els.slice(aIdx,bIdx<0?els.length:bIdx).find(e=>e.name==='w:tbl');
+  if(!aTbl){ rep.notes.push('Section A table not found — nothing was transferred.'); return rep; }
+
+  const classed=rowsOf(aTbl.raw).map(cells=>cells.map(c=>({raw:c,text:textOf(c),key:matchField(textOf(c))})));
+  let pending=null;
+  classed.forEach((cells,ri)=>{
+    const labels=cells.filter(c=>c.key), filled=cells.filter(c=>c.text);
+    if(labels.length&&labels.length===filled.length){
+      if(labels.length===1&&cells.length>1&&cells[1].text&&!cells[1].key){
+        rep.sectionA[labels[0].key]=cellBlocks(cells[1].raw); pending=null;
+      } else { pending=labels.map(c=>c.key); labels.forEach(c=>rep.sectionA[c.key]=rep.sectionA[c.key]||[]); }
+      return;
+    }
+    if(labels.length===1&&cells.length>1&&cells[1].text){
+      rep.sectionA[labels[0].key]=cellBlocks(cells[1].raw); pending=null; return;
+    }
+    if(pending){
+      pending.forEach((k,i)=>{ const c=filled[i]||filled[0]; if(c) rep.sectionA[k]=(rep.sectionA[k]||[]).concat(cellBlocks(c.raw)); });
+      pending=null; return;
+    }
+    if(cells[0]&&cells[0].text) rep.unplaced.push({where:'Section A row '+(ri+1),text:cells[0].text.slice(0,400)});
+  });
+
+  const SUB=[['summary',/^summary and purpose\b/],['what',/^what:?$/],['where',/^where:?$/],['how',/^how:?$/]];
+  const ORDER=['summary','what','where','how'];
+  // "Assessment Instructions" is a divider in the legacy layout, not content.
+  // The V3.0 template supplies it as a heading, so drop the line.
+  if(rep.sectionA.instructions)
+    rep.sectionA.instructions=rep.sectionA.instructions.filter(b=>!/^assessment instructions:?$/.test(norm(b.text)));
+  const blob=rep.sectionA.instructions||[], marks=[];
+  blob.forEach((b,i)=>{ if(b.list) return; const n=norm(b.text);
+    const h=SUB.find(([,re])=>re.test(n)); if(h&&n.length<=48) marks.push([i,h[0]]); });
+  const keys=marks.map(m=>m[1]);
+  const ordered=keys.every((k,i)=>i===0||ORDER.indexOf(k)>ORDER.indexOf(keys[i-1]));
+  if(marks.length>=3&&keys[0]==='summary'&&ordered&&new Set(keys).size===keys.length){
+    rep.instructionParts={};
+    if(marks[0][0]>0) rep.instructionParts.preamble=blob.slice(0,marks[0][0]);
+    marks.forEach(([i,key],n)=>rep.instructionParts[key]=blob.slice(i+1,n+1<marks.length?marks[n+1][0]:blob.length));
+    rep.notes.push('Task instructions carried Summary / What / Where / How in the source, so they were split accordingly.');
+  } else if(blob.length){
+    rep.notes.push('Task instructions arrived as one block. All of it was placed under Summary and Purpose of Assessment. Someone needs to split the What, Where and How out by hand.');
+  }
+  rep.instructions=readInstructions(els);
+  rep.sectionB=readSectionB(els);
+  return rep;
+}
+
+/* ---------- filling the template ---------- */
+const MAP=[
+  {key:'duration',heading:null,after:/^section a\b/i},
+  {key:'instructions',heading:'Summary and Purpose of Assessment'},
+  {key:'conditions',heading:'Conditions for assessment'},
+  {key:'links',heading:'Useful Links'},
+  {key:'submitting',heading:'Instructions on Submitting your Assessment'},
+  {key:'equipStudent',heading:'Equipment/resources students must supply'},
+  {key:'equipRmit',heading:'Equipment/resources to be provided by RMIT'}
+];
+const PARTS={summary:'Summary and Purpose of Assessment',what:'What',where:'Where',how:'How'};
+function donors(els){
+  const find=p=>{const e=els.find(e=>e.name==='w:p'&&p(e.raw)); if(!e) return '';
+    const m=/<w:pPr>[\s\S]*?<\/w:pPr>/.exec(e.raw);
+    // the donor is often a guidance paragraph; do not inherit its blue paragraph mark
+    return m?m[0].replace(/<w:color w:val="0070C0"\s*\/>/g,''):'';};
+  return {body:find(r=>levelOf(r)===null&&!/<w:numPr>/.test(r)&&textOf(r).length>20),
+          bullet:find(r=>styleOf(r)==='ListBullet')};
+}
+const mkP=(t,pPr)=>'<w:p>'+pPr+'<w:r><w:t xml:space="preserve">'+esc(t)+'</w:t></w:r></w:p>';
+function regionEnd(els,i){
+  const lvl=levelOf(els[i].raw);
+  for(let j=i+1;j<els.length;j++){ const l=levelOf(els[j].raw); if(l!==null&&l<=lvl) return j; }
+  return els.length;
+}
+const findHeading=(els,label,from)=>{
+  const want=norm(label), start=from||0;
+  const isH=e=>e.name==='w:p'&&levelOf(e.raw)!==null;
+  // exact match first: "TASK:" must not resolve to "Task instructions"
+  let i=els.findIndex((e,j)=>j>=start&&isH(e)&&norm(textOf(e.raw))===want);
+  if(i>=0) return i;
+  return els.findIndex((e,j)=>j>=start&&isH(e)&&norm(textOf(e.raw)).startsWith(want));
+};
+
+// The shaded cover block: eight label paragraphs with the value typed inline.
+const COVER=[
+  ['Task Number',['task number']],
+  ['Task Name',['task name']],
+  ['National unit/s code',['national unit s code','national unit codes','national unit code']],
+  ['National unit/s title',['national unit s title','national unit titles','national unit title']],
+  ['National qualification code',['national qualification code']],
+  ['National qualification title',['national qualification title']],
+  ['RMIT Program code',['rmit program code']],
+  ['RMIT Course code',['rmit course code']]
+];
+function fillCover(els,cover,log){
+  const edits=[];
+  const lookup=probes=>{
+    for(const [k,v] of Object.entries(cover)){
+      const n=norm(k);
+      if(probes.some(p=>n===p||n.startsWith(p)||p.startsWith(n))) return String(v||'').trim();
+    }
+    return '';
+  };
+  for(const [label,probes] of COVER){
+    const idx=els.findIndex(e=>e.name==='w:p'&&levelOf(e.raw)===null&&norm(textOf(e.raw)).startsWith(norm(label)));
+    if(idx<0){ log.push({field:label,status:'not found in template'}); continue; }
+    const val=lookup(probes);
+    if(!val){ log.push({field:label,status:'nothing in the source'}); continue; }
+    const runs=els[idx].raw.match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g)||[];
+    if(!runs.length){ log.push({field:label,status:'no text to write into'}); continue; }
+    const rPrM=/<w:rPr>[\s\S]*?<\/w:rPr>/.exec(runs[runs.length-1]||'');
+    const rPr=rPrM?rPrM[0]:'';
+    const head=runs[0];
+    const tail='<w:r>'+rPr+'<w:t xml:space="preserve">: '+esc(val)+'</w:t></w:r>';
+    let raw=els[idx].raw;
+    runs.slice(1).forEach(r=>{ raw=raw.replace(r,''); });
+    raw=raw.replace(head,head+tail);
+    edits.push({at:idx,raw});
+    log.push({field:label,status:'written',detail:''});
+  }
+  return edits;
+}
+
+function fill(tplXml,rep){
+  const {pre,els,post}=splitBody(tplXml);
+  const D=donors(els), log=[], edits=[];
+  const coverEdits=fillCover(els,rep.cover,log);
+  edits.push(...fillRest(els,rep,log));
+  const place=(idx,blocks,label,warn)=>{
+    if(!blocks||!blocks.length){ log.push({field:label,status:'nothing in the source',detail:'The template guidance was left in place.'}); return; }
+    const end=regionEnd(els,idx); let kept=0;
+    for(let j=idx+1;j<end;j++) if(els[j].name==='w:p'&&textOf(els[j].raw)&&!isGuidance(els[j].raw)) kept++;
+    edits.push({start:idx+1,end,xml:blocks.map(b=>mkP(b.text,b.list?D.bullet:D.body)).join('')});
+    log.push({field:label,status:blocks.length+' paragraph'+(blocks.length>1?'s':'')+' written',
+      detail:warn||(kept?kept+' paragraph'+(kept>1?'s':'')+' of template content (not blue guidance) was replaced — check this was right.':'')});
+  };
+  for(const m of MAP){
+    if(m.key==='instructions'&&rep.instructionParts){
+      for(const [k,label] of Object.entries(PARTS)){
+        const i=findHeading(els,label);
+        if(i<0){ log.push({field:label,status:'heading missing from template'}); continue; }
+        place(i,rep.instructionParts[k],label);
+      }
+      const pre=rep.instructionParts.preamble;
+      if(pre&&pre.length){
+        rep.unplaced.push({where:'Task instructions, before Summary and Purpose',
+          text:pre.map(b=>b.text).join(' \u00b7 ').slice(0,600)});
+        log.push({field:'Task instructions (lead-in)',status:pre.length+' paragraph(s) not transferred',
+          detail:'This sat above Summary and Purpose in the legacy guide. The V3.0 template has no body under Task instructions, so it was left out. It is in the not-transferred list below.'});
+      }
+      continue;
+    }
+    let idx = m.heading ? findHeading(els,m.heading)
+      : els.findIndex(e=>e.name==='w:p'&&levelOf(e.raw)!==null&&m.after.test(textOf(e.raw)));
+    if(idx<0){ log.push({field:LABEL[m.key],status:'destination missing from template'}); continue; }
+    if(m.key==='duration'){
+      const blocks=rep.sectionA.duration;
+      if(!blocks||!blocks.length){ log.push({field:LABEL.duration,status:'nothing in the source'}); continue; }
+      rep.unplaced.push({where:'Section A, duration and due date',text:blocks.map(b=>b.text).join(' \u00b7 ').slice(0,600)});
+      log.push({field:LABEL.duration,status:blocks.length+' paragraph(s) not transferred',
+        detail:'The V3.0 templates have no heading for duration or due date. Rather than drop this into an unlabelled gap, it is listed below so someone can decide where it belongs \u2014 usually Conditions for assessment, or Where. Worth raising with Q&C.'});
+      continue;
+    }
+    place(idx,rep.sectionA[m.key],LABEL[m.key]);
+  }
+  const out=els.map(e=>e.raw);
+  coverEdits.forEach(e=>out[e.at]=e.raw);
+  edits.sort((a,b)=>b.start-a.start);
+  let lastStart=Infinity;
+  for(const e of edits){
+    if(e.end>lastStart){
+      log.push({field:'Internal',status:'overlapping write skipped',
+        detail:'Two regions of the template resolved to the same paragraphs. Nothing was written for one of them.'});
+      continue;
+    }
+    out.splice(e.start,e.end-e.start,e.xml);
+    lastStart=e.start;
+  }
+  return {xml:pre+out.join('')+post,log};
+}
+
+/* Section B and Instructions to Assessor. Appended to core.js at build time. */
+
+// grid-aware view of a table row: every cell with its start column and span
+function gridRow(trRaw){
+  const cells=sub(trRaw,'w:tr').filter(e=>e.name==='w:tc');
+  let col=0; const out=[];
+  for(const c of cells){
+    const m=/<w:gridSpan w:val="(\d+)"/.exec(c.raw);
+    const span=m?+m[1]:1;
+    out.push({raw:c.raw,text:textOf(c.raw),start:col,span,
+      blocks:cellBlocks(c.raw).filter(b=>!/^[\u2610\u2611\u2612\u00fc\u00fe]$/.test(b.text))});
+    col+=span;
+  }
+  return {cells:out,width:col};
+}
+const cellAt=(g,col)=>g.cells.find(c=>col>=c.start&&col<c.start+c.span);
+
+// Find the header row. It is not always the first: some guides put a title
+// and a lead-in paragraph inside the table above it.
+function readHeader(rows){
+  for(let i=0;i<Math.min(rows.length,5);i++){
+    const g=gridRow(rows[i]);
+    const find=re=>g.cells.find(c=>re.test(c.text));
+    const crit=find(/criteria|list (of|the) actions?|actions to be observed|questions|aspects/i);
+    const sat=find(/^satisfactory/i);
+    if(!crit||!sat) continue;
+    const mg=find(/marking guide|minimum requirement/i);
+    return {row:i, hasMg:!!mg, width:g.width};
+  }
+  return null;
+}
+const isSubHeader=trRaw=>{
+  const g=gridRow(trRaw);
+  const t=g.cells.map(c=>c.text).filter(Boolean).join(' ').trim();
+  return /^(y\s*n|yes\s*no|s\s*nys)$/i.test(t.replace(/\s+/g,' '));
+};
+
+// Pull every criteria row out of the legacy Section B, in document order.
+function readSectionB(els){
+  const bIdx=els.findIndex(e=>e.name==='w:p'&&/^section b\b/i.test(textOf(e.raw)));
+  if(bIdx<0) return null;
+  const out={task:[],rows:[],skipped:[]};
+  let pendingBanner=null, seen=0;
+  for(let i=bIdx+1;i<els.length;i++){
+    const e=els[i];
+    if(e.name==='w:p'){
+      const t=textOf(e.raw);
+      if(/^(appendix|references|terms\s*&\s*conditions)/i.test(t)) break;
+      continue;
+    }
+    if(e.name!=='w:tbl') continue;
+    const rows=sub(e.raw,'w:tbl').filter(x=>x.name==='w:tr').map(x=>x.raw);
+    if(!rows.length) continue;
+    const hdr=readHeader(rows);
+    if(!hdr){
+      // a one- or two-cell banner is the task description or a group title
+      const g=gridRow(rows[0]);
+      if(rows.length<=2&&g.cells.length<=2){
+        const blocks=g.cells[g.cells.length-1].blocks;
+        if(!seen&&!out.task.length){ out.task=blocks; out.taskLabel=((g.cells[0].blocks[0]||{}).text||''); }
+        else pendingBanner=((g.cells[0].blocks[0]||{}).text||'').slice(0,80);
+        continue;
+      }
+      out.skipped.push({rows:rows.length,text:textOf(rows[0]).slice(0,120)});
+      continue;
+    }
+    seen++;
+    if(pendingBanner){ out.rows.push({banner:pendingBanner}); pendingBanner=null; }
+    // Body rows do not reliably follow the header's column grid — Word lets each
+    // row set its own widths. Read by content instead: drop the tick cells, then
+    // 1 cell is a group banner, 2 is criteria + marking guide, 3 adds a number.
+    // If any body row has two or more content cells, this table has a real
+    // criteria column, so full-width rows are scenario or group headings.
+    // If no row does, it is a question-and-answer sheet and every row is a criterion.
+    // Count cells as laid out, not cells with text. A tick cell is empty but it
+    // is still a cell, and it is what distinguishes a criterion from a heading.
+    let hasMulti=false;
+    for(let r=hdr.row+1;r<rows.length;r++){
+      if(isSubHeader(rows[r])) continue;
+      const g=gridRow(rows[r]);
+      if(g.cells.length>=2&&g.cells.filter(c=>c.blocks.length).length){ hasMulti=true; break; }
+    }
+    for(let r=0;r<hdr.row;r++){
+      const t=textOf(rows[r]).trim();
+      if(t) out.rows.push({banner:((gridRow(rows[r]).cells[0].blocks[0]||{}).text||t).slice(0,80)});
+    }
+    for(let r=hdr.row+1;r<rows.length;r++){
+      if(r===hdr.row+1&&isSubHeader(rows[r])) continue;
+      const g=gridRow(rows[r]);
+      const joined=g.cells.map(c=>c.text).join(' ');
+      if(/satisfactory/i.test(joined)&&/criteria|list (of|the) actions?|actions to be observed/i.test(joined)) continue;
+      if(/^(y\s*n|yes\s*no|s\s*nys)$/i.test(joined.replace(/\s+/g,' ').trim())) continue;
+      const content=g.cells.filter(c=>c.blocks.length);
+      if(!content.length) continue;
+      if(g.cells.length===1||!hasMulti&&content.length===1){
+        const t=content[0].text.trim();
+        if(!t) continue;
+        if(!hdr.hasMg&&/^answers?\s*[:.]/i.test(t)&&out.rows.length){
+          // question-and-answer sheet: the answer is the marking guidance
+          const prev=out.rows[out.rows.length-1];
+          const blocks=content[0].blocks.slice();
+          blocks[0]={...blocks[0],text:blocks[0].text.replace(/^answers?\s*[:.]\s*/i,'')};
+          if(prev.banner){ out.rows[out.rows.length-1]={num:'',crit:[{text:prev.banner}],mg:blocks}; }
+          else prev.mg=(prev.mg||[]).concat(blocks);
+          continue;
+        }
+        if(!hasMulti){ out.rows.push({num:'',crit:content[0].blocks,mg:[]}); continue; }
+        out.rows.push({banner:((content[0].blocks[0]||{}).text||t).slice(0,80)});
+        continue;
+      }
+      const [a,b,c]=content;
+      if(content.length>=3) out.rows.push({num:a.text.slice(0,8),crit:b.blocks,mg:c.blocks});
+      else if(content.length===2) out.rows.push({num:'',crit:a.blocks,mg:b.blocks});
+      else out.rows.push({num:'',crit:a.blocks,mg:[]});   // criterion with the tick cells empty
+    }
+  }
+  return out;
+}
+
+/* ---- writing ---- */
+function setCellText(tcRaw,blocks,donorP){
+  const head=/^<w:tc[^>]*>/.exec(tcRaw)[0];
+  const tcPr=(/<w:tcPr>[\s\S]*?<\/w:tcPr>/.exec(tcRaw)||[''])[0];
+  const pPr=(/<w:pPr>[\s\S]*?<\/w:pPr>/.exec(donorP||'')||[''])[0];
+  const body=(blocks.length?blocks:[{text:''}]).map(b=>mkP(b.text,pPr)).join('');
+  return head+tcPr+body+'</w:tc>';
+}
+function buildRubric(tblRaw,data){
+  const rows=sub(tblRaw,'w:tbl').filter(e=>e.name==='w:tr').map(e=>e.raw);
+  const header=rows[0];
+  const donor=rows[2]||rows[1];
+  const donorCells=sub(donor,'w:tr').filter(e=>e.name==='w:tc').map(e=>e.raw);
+  const donorP=(/<w:p\b[\s\S]*?<\/w:p>/.exec(donorCells[1])||[''])[0];
+  const open=/^<w:tbl>[\s\S]*?(?=<w:tr)/.exec(tblRaw)[0];
+  let n=0; const built=[];
+  for(const r of data.rows){
+    if(r.banner){
+      const cells=[setCellText(donorCells[0],[],donorP),
+                   setCellText(donorCells[1],[{text:r.banner}],donorP),
+                   setCellText(donorCells[2],[],donorP),
+                   setCellText(donorCells[3],[],donorP)];
+      built.push(donor.replace(/<w:tc[\s\S]*<\/w:tc>/,cells.join('')));
+      continue;
+    }
+    n++;
+    const cells=[setCellText(donorCells[0],[{text:r.num||String(n)}],donorP),
+                 setCellText(donorCells[1],r.crit,donorP),
+                 setCellText(donorCells[2],[],donorP),
+                 setCellText(donorCells[3],r.mg,donorP)];
+    built.push(donor.replace(/<w:tc[\s\S]*<\/w:tc>/,cells.join('')));
+  }
+  if(!built.length) return null;
+  return open+header+built.join('')+'</w:tbl>';
+}
+
+// Instructions to Assessor: legacy 6-row table -> two heading regions + two controls
+function readInstructions(els){
+  const i=els.findIndex(e=>e.name==='w:p'&&/^instructions to assessor/i.test(textOf(e.raw)));
+  if(i<0) return null;
+  const tbl=els.slice(i+1,i+4).find(e=>e.name==='w:tbl');
+  if(!tbl) return null;
+  const rows=sub(tbl.raw,'w:tbl').filter(e=>e.name==='w:tr').map(e=>e.raw);
+  const out={info:[],approval:{}};
+  for(const r of rows){
+    const g=gridRow(r);
+    const label=g.cells[0].text, val=g.cells.length>1?g.cells[g.cells.length-1]:null;
+    const n=norm(label);
+    if(/^information on preparing/.test(n)) continue;
+    if(/^information on recording/.test(n)) continue;
+    if(/^approval by program manager/.test(n)){ out.approval.signature=val?val.blocks:[]; continue; }
+    if(/^date this assessment/.test(n)){ out.approval.date=val?val.text:''; continue; }
+    if(/^person s who developed/.test(n)){ out.approval.person=val?val.text:''; continue; }
+    if(g.cells.length===1||g.cells[0].span>1) out.info.push(...g.cells[0].blocks);
+  }
+  return out;
+}
+
+// Wire Section B and Instructions to Assessor into the fill pass.
+function fillRest(els,rep,log){
+  const edits=[];
+  const region=(idx)=>({start:idx+1,end:regionEnd(els,idx)});
+  const D=donors(els);
+
+  // --- Instructions to Assessor ---
+  if(rep.instructions){
+    const i=findHeading(els,'Information on preparing, conducting, and marking assessment');
+    if(i>=0&&rep.instructions.info.length){
+      const r=region(i);
+      edits.push({start:r.start,end:r.end,xml:rep.instructions.info.map(b=>mkP(b.text,b.list?D.bullet:D.body)).join('')});
+      log.push({field:'Information on preparing, conducting and marking assessment',
+                status:rep.instructions.info.length+' paragraphs written'});
+    } else log.push({field:'Information on preparing, conducting and marking assessment',status:'nothing in the source'});
+    const a=rep.instructions.approval;
+    const j=findHeading(els,'Approval by Program Manager');
+    if(j>=0){
+      const r=region(j);
+      const lines=[];
+      (a.signature||[]).forEach(b=>lines.push(b.text));
+      if(a.date) lines.push('Date this assessment was developed/modified: '+a.date);
+      if(a.person) lines.push('Person/s who developed/modified assessment: '+a.person);
+      if(lines.length){
+        edits.push({start:r.start,end:r.end,xml:lines.map(t=>mkP(t,D.body)).join('')});
+        log.push({field:'Approval by Program Manager',status:lines.length+' lines written',
+          detail:'The template holds the date and author in content controls. These were written as plain lines instead, so the controls are gone from this section — check with Q&C whether that matters.'});
+      }
+    }
+  }
+
+  // --- Section B ---
+  const sb=rep.sectionB;
+  if(sb){
+    const secB=els.findIndex(e=>e.name==='w:p'&&levelOf(e.raw)!==null&&/^section b\b/i.test(textOf(e.raw)));
+    const t=findHeading(els,'TASK:',secB<0?0:secB);
+    let tEnd=-1;
+    if(t>=0){
+      tEnd=regionEnd(els,t);
+      for(let j=t+1;j<tEnd;j++) if(els[j].name==='w:tbl'){ tEnd=j; break; }
+    }
+    if(t>=0&&sb.task.length){
+      edits.push({start:t+1,end:tEnd,xml:sb.task.map(b=>mkP(b.text,b.list?D.bullet:D.body)).join('')});
+      log.push({field:'Section B — TASK description',status:sb.task.length+' paragraphs written'});
+    } else if(t>=0) log.push({field:'Section B — TASK description',status:'nothing in the source',
+      detail:'No task banner was found above the criteria table. The template guidance is still there.'});
+    const ti=els.findIndex((e,i)=>e.name==='w:tbl'&&i>=(tEnd<0?0:tEnd));
+    if(ti>=0){
+      const built=buildRubric(els[ti].raw,sb);
+      const crit=sb.rows.filter(r=>!r.banner);
+      if(built){
+        edits.push({start:ti,end:ti+1,xml:built});
+        const nomg=crit.filter(r=>!r.mg.length||!r.mg.some(b=>b.text)).length;
+        log.push({field:'Section B — marking guide',status:crit.length+' criteria rows written',
+          detail:(sb.rows.length-crit.length?(sb.rows.length-crit.length)+' group headings kept as their own rows. ':'')+
+                 (nomg?nomg+' rows have no minimum requirement in the source. ':'')+
+                 'The Satisfactory column is left empty for the assessor to mark.'});
+      } else log.push({field:'Section B — marking guide',status:'no criteria rows found'});
+    }
+    sb.skipped.forEach(t=>rep.unplaced.push({where:'Section B, '+t.rows+'-row table',text:t.text}));
+  }
+  return edits;
+}
+
+/* Legacy assessor guide -> Canvas rubric import CSV. Reading only. */
+function csvCell(s){ s=String(s==null?'':s); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+const HEADER='Rubric Name,Criteria Name,Criteria Description,Criteria Enable Range,'+
+             'Rating Name,Rating Description,Rating Points,Rating Name,Rating Description,Rating Points';
+
+const ASCII={'\u2013':'-','\u2014':'-','\u2018':"'",'\u2019':"'",'\u201c':'"','\u201d':'"','\u2026':'...','\u00a0':' ','\u00b7':'-','\u2022':'-'};
+const toAscii=s=>String(s).replace(/[\u2013\u2014\u2018\u2019\u201c\u201d\u2026\u00a0\u00b7\u2022]/g,c=>ASCII[c])
+                          .replace(/[^\x09\x0a\x0d\x20-\x7e]/g,'');
+function buildRubricCsv(docXml, opts){
+  opts=opts||{};
+  const rep=extract(docXml);
+  const sb=rep.sectionB||{rows:[],skipped:[]};
+  const name=opts.name||rep.cover['Task Name']||rep.cover['Task name']||'Rubric';
+  const rows=[HEADER];
+  const notes=[];
+  // "Activity: 1A", "Scenario 4a", "ACTIVITY 4" -> 1A, 4A, 4.
+  // Case is normalised to upper so a rubric reads consistently even when the
+  // legacy guide mixes "1A" with "4a".
+  const codeOf=s=>{
+    const m=/(?:activity|scenario|part)\s*:?\s*(\d+\s*[A-Za-z]?)\b/i.exec(s||'');
+    return m?m[1].replace(/\s+/g,'').toUpperCase():'';
+  };
+  // the first activity heading is consumed upstream as the task banner; for a
+  // rubric it is just the first group
+  let group=sb.taskLabel||((sb.task||[])[0]||{}).text||'';
+  if(group.length>60) group='';
+  let code=codeOf(group);
+  let n=0, seq=0;
+  for(const r of sb.rows){
+    if(r.banner){
+      // a group title is a short heading; long prose is scenario detail, not a label
+      const b=r.banner.replace(/\s+/g,' ').trim();
+      group = b.length<=60 ? b : b.slice(0,57).replace(/\s\S*$/,'')+'\u2026';
+      code = codeOf(b) || code;
+      seq=0; continue;
+    }
+    const crit=(r.crit||[]).map(b=>b.text).filter(Boolean).join(' ');
+    if(!crit) continue;
+    n++; seq++;
+    // Canvas shows Criteria Name as the heading and the description underneath in
+    // small text, so the criterion itself belongs in the name. The source number
+    // is prefixed only when the criterion text does not already start with it.
+    const num=(r.num||'').trim()||String(seq);
+    // Number within the activity: 1A.1 ... 1A.20, keeping the source's own
+    // numbering so 8a and 8b survive. Without an activity code, just the number.
+    const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const body=crit.replace(new RegExp('^'+esc(num)+'[.)]?\\s+'),'');
+    const useCode = code && opts.activityNumbering!==false;
+    const stem = useCode ? code+'.'+num.toUpperCase() : num.toUpperCase()+'.';
+    const label=stem+' '+body;
+    // The marking guide is assessor-only. A Canvas rubric is student-visible,
+    // so the rating descriptions stay empty.
+    rows.push([csvCell(name),csvCell(label),csvCell(group||''),'false',
+               'Satisfactory','','1','Not Yet Satisfactory','','0'].join(','));
+  }
+  let csv=rows.join('\n')+'\n';
+  if(opts.ascii) csv=toAscii(csv);
+  return {csv:csv, count:n, name:name,
+          notes:notes, skipped:(sb.skipped||[]).map(s=>s.rows+'-row table: '+s.text)};
+}
+
+
+/* ---- read one part out of a .docx using the browser's own inflate ---- */
+const drain=async st=>new Uint8Array(await new Response(st).arrayBuffer());
+const inflate=b=>drain(new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate-raw')));
+async function readPart(buf,name){
+  const dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength);
+  let eo=buf.length-22;
+  while(eo>=0&&dv.getUint32(eo,true)!==0x06054b50) eo--;
+  if(eo<0) throw new Error('That file is not a Word document (.docx).');
+  const n=dv.getUint16(eo+10,true); let p=dv.getUint32(eo+16,true);
+  const dec=new TextDecoder();
+  for(let i=0;i<n;i++){
+    if(dv.getUint32(p,true)!==0x02014b50) throw new Error('The .docx package is damaged.');
+    const nl=dv.getUint16(p+28,true),el=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true);
+    if(dec.decode(buf.subarray(p+46,p+46+nl))===name){
+      const lho=dv.getUint32(p+42,true), csize=dv.getUint32(p+20,true), method=dv.getUint16(p+10,true);
+      const off=lho+30+dv.getUint16(lho+26,true)+dv.getUint16(lho+28,true);
+      const raw=buf.subarray(off,off+csize);
+      return dec.decode(method===0?raw:await inflate(raw));
+    }
+    p+=46+nl+el+cl;
+  }
+  throw new Error('This document is missing '+name+' and cannot be read.');
+}
+
+const $=id=>document.getElementById(id);
+let state={};
+$('ver').textContent='Legacy rubric CSV v1.0';
+$('drop').onclick=()=>$('file').click();
+$('drop').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('file').click();}};
+$('drop').ondragover=e=>{e.preventDefault();$('drop').classList.add('over')};
+$('drop').ondragleave=()=>$('drop').classList.remove('over');
+$('drop').ondrop=e=>{e.preventDefault();$('drop').classList.remove('over');if(e.dataTransfer.files[0])load(e.dataTransfer.files[0])};
+$('file').onchange=e=>{if(e.target.files[0])load(e.target.files[0])};
+$('again').onclick=()=>location.reload();
+$('toggle').onclick=()=>{const p=$('prev');p.classList.toggle('hidden');$('toggle').textContent=p.classList.contains('hidden')?'Show the CSV':'Hide the CSV'};
+$('rname').oninput=()=>regen();
+$('actnum').onchange=()=>regen();
+$('ascii').onchange=()=>regen();
+
+async function load(f){
+  $('err').classList.add('hidden'); $('step2').classList.add('hidden');
+  try{
+    if(!/\.docx$/i.test(f.name)) throw new Error('This needs the original .docx. A PDF or a converted copy has already lost the table structure it reads.');
+    const buf=new Uint8Array(await f.arrayBuffer());
+    state.xml=await readPart(buf,'word/document.xml');
+    state.file=f.name;
+    const first=buildRubricCsv(state.xml,{});
+    if(!first.count) throw new Error('No marking guide criteria were found. This tool looks for a table under Section B with a Satisfactory column — check the guide has one.');
+    $('rname').value=first.name;
+    regen();
+    $('step2').classList.remove('hidden');
+    $('step2').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(e){ $('err').textContent=e.message; $('err').classList.remove('hidden'); }
+}
+
+function regen(){
+  if(!state.xml) return;
+  const r=buildRubricCsv(state.xml,{name:$('rname').value.trim()||undefined,
+    activityNumbering:$('actnum').checked, ascii:$('ascii').checked});
+  state.csv=r.csv;
+  $('csvtext').textContent=r.csv;
+  const grpOf=line=>{
+    const m=/^(?:"(?:[^"]|"")*"|[^,]*),(?:"(?:[^"]|"")*"|[^,]*),("(?:[^"]|"")*"|[^,]*),/.exec(line);
+    return ((m?m[1]:'')||'').replace(/^"|"$/g,'').replace(/""/g,'"')||'(no group heading)';
+  };
+  const groups={};
+  r.csv.split('\n').slice(1).filter(Boolean).forEach(line=>{
+    const g=grpOf(line);
+    groups[g]=(groups[g]||0)+1;
+  });
+  let html='<table><tr><th>Group in the source</th><th style="text-align:right">Criteria</th></tr>';
+  for(const g in groups) html+='<tr><td>'+g.replace(/</g,'&lt;')+'</td><td class="num">'+groups[g]+'</td></tr>';
+  html+='<tr><td><strong>Total</strong></td><td class="num"><strong>'+r.count+'</strong></td></tr></table>';
+  if(r.skipped.length) html+='<div class="flag"><strong>Not read as criteria:</strong><br>'+r.skipped.map(s=>'&bull; '+s.replace(/</g,'&lt;')).join('<br>')+'</div>';
+  $('summary').innerHTML=html;
+}
+
+$('dl').onclick=()=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([state.csv],{type:'text/csv'}));
+  a.download=state.file.replace(/\.docx$/i,'')+'-rubric.csv';
+  a.click(); URL.revokeObjectURL(a.href);
+};
+</script>
+</body>
+</html>
