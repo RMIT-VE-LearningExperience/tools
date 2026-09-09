@@ -442,14 +442,14 @@ function parseDelimitedFormat(raw){
                 if(t.match(/^(?:Title|Duration|Format|Purpose|Resources?\s*(?:needed)?):/i))break;
                 // Capture Alternative: as a final instruction note
                 if(t.match(/^Alternative:/i)){iLines.push(t);break;}
-                if(t)iLines.push(t.replace(/^\d+[.)]\s*/,'').trim());
+                if(t)iLines.push(keepInstrLine(l));
             }
             parsedData.actInstructions=iLines.filter(l=>l).join('\n');
         } else {
             // Try inline instructions
             const instrInline=at.match(/Instructions:\s*(.+?)(?=Title:|Duration:|Format:|Purpose:|Resources?|Alternative:|$)/is);
             if(instrInline){
-                parsedData.actInstructions=instrInline[1].split('\n').map(l=>l.trim()).filter(l=>l).map(l=>l.replace(/^\d+[.)]\s*/,'').trim()).filter(l=>l).join('\n');
+                parsedData.actInstructions=instrInline[1].split('\n').filter(l=>l.trim()).map(keepInstrLine).filter(l=>l).join('\n');
             }
         }
         // Also try plain numbered lines after Instructions
@@ -459,7 +459,7 @@ function parseDelimitedFormat(raw){
                 if(l.match(/^Instructions/i)){inInstr=true;continue;}
                 if(inInstr){
                     if(l.match(/^(?:Alternative|Purpose|Resources?|Duration|Format|Title):/i))break;
-                    const cleaned=l.replace(/^\d+[.)]\s*/,'').trim();
+                    const cleaned=keepInstrLine(l);
                     if(cleaned)iLines.push(cleaned);
                 }
             }
@@ -520,6 +520,15 @@ function cleanTitle(t){
 }
 // Strips the marker from a list line, leaves other lines untouched
 function stripMarker(line){const i=listInfo(line);return i?i.text:String(line||'').trim()}
+
+// Activity instruction lines keep their list markers and indentation, so a
+// numbered step with sub-bullets under it survives into the generated HTML.
+// Plain lines are trimmed and any stray leading number is removed.
+function keepInstrLine(line){
+    const raw=String(line||'').replace(/\s+$/,'');
+    if(isListLine(raw))return raw;
+    return raw.trim().replace(/^\d+[.)]\s*/,'').trim();
+}
 
 // Escape + inline emphasis. Copilot writes **bold**, __bold__, *italic*, _italic_
 function inlineHtml(s,escFn){
@@ -820,11 +829,11 @@ function parseLabelFormat(raw){
         if(instrIdx>-1){
             let iEnd=at.indexOf('\n',instrIdx);if(iEnd===-1)iEnd=at.length;
             const afterI=at.substring(iEnd+1);const iLines=[];
-            for(const l of afterI.split('\n')){const t=l.trim();if(t.match(/^(?:Purpose|Resources?\s*(?:needed)?):/i))break;if(t.match(/^Alternative:/i)){iLines.push(t);break;}if(t)iLines.push(t.replace(/^\d+[.)]\s*/,'').trim());}
+            for(const l of afterI.split('\n')){const t=l.trim();if(t.match(/^(?:Purpose|Resources?\s*(?:needed)?):/i))break;if(t.match(/^Alternative:/i)){iLines.push(t);break;}if(t)iLines.push(keepInstrLine(l));}
             parsedData.actInstructions=iLines.filter(l=>l).join('\n');
         } else {
             const instrInline=at.match(/Instructions:\s*(.+?)(?=Purpose:|Resources?\s*(?:needed)?:|Alternative:|$)/is);
-            if(instrInline){parsedData.actInstructions=instrInline[1].split('\n').map(l=>l.trim()).filter(l=>l).map(l=>l.replace(/^\d+[.)]\s*/,'').trim()).filter(l=>l).join('\n');}
+            if(instrInline){parsedData.actInstructions=instrInline[1].split('\n').filter(l=>l.trim()).map(keepInstrLine).filter(l=>l).join('\n');}
         }
     }
 }
@@ -1069,6 +1078,120 @@ function copyHTML(){const c=document.getElementById('outputContent').textContent
 function backToEdit(){updateStep(3,'');updateStep(2,'active');document.getElementById('editForm').style.display='block';document.getElementById('outputSection').style.display='none'}
 function resetAll(){if(confirm('Start over with new content?'))location.reload()}
 function loadSample(){document.getElementById('copilotInput').value=`──── Page Title (Page 1 of 3) ──────────────────────────\nDesign Thinking Through Eclecticism: Expanding the Designer's Creative Vocabulary\n──── Photographic Element ──────────────────────────────\nA high-resolution photograph of an Australian creative studio space with an eclectic combination of mid-century timber furniture, contemporary lighting, and Indigenous art on the wall.\n──── Opening Paragraph ─────────────────────────────────\nIn contemporary Australian design practice, eclectic composition often emerges organically when clients bring diverse personal histories into a single project. Imagine a young couple in Brisbane renovating a Queenslander cottage: one partner collects vintage science lab glassware, while the other has inherited carved wooden screens from their Sri Lankan family home.\n\nFor interior designers, recognising how disparate elements can form a coherent visual narrative is essential. This approach goes beyond visual mixing; it tests the designer's judgment in selecting, editing, and recombining elements in ways that meet both functional and cultural aims.\n──── Content Block ─────────────────────────────────────\nHeading: How Eclecticism Challenges Traditional Design Logic\nEclectic interiors in Australian homes frequently emerge where architectural heritage meets contemporary needs. In older terrace houses in Sydney's Inner West, for example, clients often preserve original Victorian features while introducing recycled steel, polished concrete, and digital artworks.\n\nA common misconception is that eclecticism lacks discipline. In practice, it requires deeper conceptual clarity and stronger curatorial control than single-style interiors.\n──── Content Block ─────────────────────────────────────\nHeading: Curating With Intention in Australian Contexts\nInterior designers increasingly work with clients whose cultural influences, travel histories, and professional experiences translate into unique design expectations.\n\nRather than simply assembling objects, designers must analyse which combinations support function, well-being, and cultural authenticity.\n──── Content Block ─────────────────────────────────────\nHeading: Navigating Misinterpretations of Style\nMany emerging designers assume eclectic schemes are client-led rather than designer-led. In professional practice, the opposite is true.\n\nUnderstanding what eclecticism is not also strengthens practice. It is not indiscriminate decoration, nor is it a simple homage to historical styles.\n──── Visual Element ────────────────────────────────────\nType: Mind map\nThe mind map centres on the concept "Eclectic Design Logic" with four main branches: Historical Influences, Material Strategies, Client Identity, and Spatial Cohesion.\n──── Key Insights ──────────────────────────────────────\nInterconnected concepts: Eclectic design relies on underlying relationships, not random assortment.\nCuratorial discipline: Designers must apply structured decision-making to avoid visual confusion.\nAustralian cultural layers: Diverse client identities shape eclectic outcomes in contemporary practice.\n──── Industry Tools & Technology ───────────────────────\nCurrent tools: Physical material boards, colour sample sets, reference books on global design histories.\nRecommended RMIT tools: Miro for mind-mapping and VAL for documenting precedent images.\nWhere helpful: Use Miro to map client influences and design logic before material selection.\nDiscipline-specific tools: Museum-grade conservation guidelines for handling artefacts; digital colour analysis tools.\n──── Video ─────────────────────────────────────────────\nDescription: A short explainer on how designers synthesise diverse stylistic influences into coherent interior schemes.\nPurpose: To help students understand how eclectic combinations are curated through analysis rather than intuition.\nSuggested search: "professional interior design eclectic curation process"\n──── Knowledge Check ───────────────────────────────────\nTEACHER INSTRUCTION: Use the H5P Quiz (Question Set) content type in Canvas.\nQ1: When working on an eclectic interior, which action best demonstrates advanced design reasoning?\na) Selecting objects based solely on client preference\nb) Choosing contrasting items without considering relationships\nc) Identifying an organising logic that guides material and object selection ✅\nd) Avoiding historical references entirely\nQ2: Eclectic interiors in Australia often involve blending diverse cultural influences within a single space.\na) True ✅\nb) False\nQ3: In a Victorian terrace with mixed heritage elements, what strategy best supports cohesive eclectic design?\na) Random placement of items\nb) Avoiding any contemporary materials\nc) Establishing visual hierarchy through colour, scale, and rhythm ✅\nd) Matching all materials perfectly\n──── Reflection Questions ──────────────────────────────\nHow can eclectic design approaches help you respond to the cultural diversity of Australian clients?\nWhat decision-making strategies can ensure eclectic schemes remain cohesive and intentional?\n──── Activity ──────────────────────────────────────────\nTitle: Curating a Visual Logic for an Eclectic Room\nDuration: 45 minutes\nFormat: Individual\nPurpose: To practise identifying relationships between varied elements and organising them into a cohesive visual strategy.\nResources: Miro or physical sketchbook; digital images of objects and materials.\nInstructions:\nSelect four unrelated objects or materials representing different historical or cultural influences.\nIdentify two underlying relationships between them (e.g., texture, colour temperature, symbolic meaning).\nProduce a visual map showing how these relationships create cohesion within a proposed room.\nAlternative: Students may complete the activity using tactile material samples if digital access is limited.`;showTextarea()}
+// ═══════════════════════════════════════════════════════
+// RICH PASTE BRIDGE
+// A textarea can only hold plain text, so when Copilot output is copied from
+// the rendered chat window the browser discards the <ul>/<ol> structure and
+// the bullet markers go with it. This reads the text/html flavour of the
+// clipboard instead and rewrites lists as "- " and "1. " lines, with two
+// space indents for sub levels, which the parser already understands.
+// Only fires when the clipboard actually contains list markup. Plain text
+// pastes are left to the browser.
+// ═══════════════════════════════════════════════════════
+function pasteLooksBold(el){
+    const w=String(el.style&&el.style.fontWeight||'').toLowerCase();
+    return w==='bold'||w==='bolder'||parseInt(w,10)>=600;
+}
+function pasteLooksItalic(el){
+    return String(el.style&&el.style.fontStyle||'').toLowerCase()==='italic';
+}
+// Flattens an element to text, keeping bold and italic as markdown wrappers
+function pasteInline(node){
+    let s='';
+    node.childNodes.forEach(n=>{
+        if(n.nodeType===3){s+=n.nodeValue.replace(/\s+/g,' ');return}
+        if(n.nodeType!==1)return;
+        const tag=n.tagName;
+        if(tag==='BR'){s+=' ';return}
+        if(tag==='STYLE'||tag==='SCRIPT')return;
+        const inner=pasteInline(n);
+        if(!inner.trim()){s+=inner;return}
+        const lead=/^\s/.test(inner)?' ':'',trail=/\s$/.test(inner)?' ':'';
+        if(tag==='STRONG'||tag==='B'||pasteLooksBold(n))s+=lead+'**'+inner.trim()+'**'+trail;
+        else if(tag==='EM'||tag==='I'||pasteLooksItalic(n))s+=lead+'*'+inner.trim()+'*'+trail;
+        else s+=inner;
+    });
+    return s;
+}
+// pasteInline reads a node's children. This reads the node itself as well,
+// so a top level <strong> or bolded span keeps its emphasis.
+function pasteInlineNode(node){
+    const holder=node.ownerDocument.createElement('div');
+    holder.appendChild(node.cloneNode(true));
+    return pasteInline(holder);
+}
+function clipHtmlToText(html){
+    const doc=new DOMParser().parseFromString(html,'text/html');
+    doc.querySelectorAll('style,script,meta,link,title,noscript').forEach(n=>n.remove());
+    const out=[];
+    const BLOCK=/^(DIV|SECTION|ARTICLE|MAIN|HEADER|FOOTER|ASIDE|FIGURE|FIGCAPTION|DL|DT|DD|FONT|CENTER|LABEL|A)$/;
+    // Renders one list, recursing into nested lists at a deeper indent
+    function pushList(list,indent){
+        let i=1;
+        Array.prototype.forEach.call(list.children,li=>{
+            if(li.tagName!=='LI')return;
+            const marker=list.tagName==='OL'?(i++)+'. ':'- ';
+            const clone=li.cloneNode(true);
+            clone.querySelectorAll('ul,ol').forEach(x=>x.remove());
+            const head=pasteInline(clone).replace(/\s+/g,' ').trim();
+            if(head)out.push(' '.repeat(indent)+marker+head);
+            // Sub lists belonging to this item, however deeply wrapped
+            li.querySelectorAll('ul,ol').forEach(sub=>{
+                if(sub.closest('li')===li)pushList(sub,indent+2);
+            });
+        });
+    }
+    function walk(node,indent){
+        node.childNodes.forEach(n=>{
+            if(n.nodeType===3){const t=n.nodeValue.replace(/\s+/g,' ').trim();if(t)out.push(t);return}
+            if(n.nodeType!==1)return;
+            const tag=n.tagName;
+            if(tag==='UL'||tag==='OL'){out.push('');pushList(n,indent);out.push('');return}
+            if(/^H[1-6]$/.test(tag)){const t=pasteInline(n).replace(/\s+/g,' ').trim();if(t)out.push('','### '+t);return}
+            if(tag==='P'||tag==='BLOCKQUOTE'||tag==='PRE'){const t=pasteInline(n).replace(/\s+/g,' ').trim();if(t)out.push('',t);return}
+            if(tag==='HR'){out.push('');return}
+            if(tag==='BR')return;
+            if(tag==='TR'){
+                const cells=[];
+                n.querySelectorAll('td,th').forEach(c=>{const t=pasteInline(c).replace(/\s+/g,' ').trim();if(t)cells.push(t)});
+                if(cells.length)out.push(cells.length===2?cells.join(': '):cells.join(' | '));
+                return;
+            }
+            if(tag==='TABLE'||tag==='TBODY'||tag==='THEAD'||tag==='TFOOT'||BLOCK.test(tag)){walk(n,indent);return}
+            const t=pasteInlineNode(n).replace(/\s+/g,' ').trim();
+            if(t)out.push(t);
+        });
+    }
+    walk(doc.body,0);
+    return out.join('\n').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function insertAtCursor(el,text){
+    el.focus();
+    let ok=false;
+    try{ok=document.execCommand('insertText',false,text)}catch(e){ok=false}
+    if(!ok){
+        const s=el.selectionStart||0,e=el.selectionEnd||0;
+        el.value=el.value.slice(0,s)+text+el.value.slice(e);
+        const p=s+text.length;
+        el.selectionStart=el.selectionEnd=p;
+    }
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+}
+document.addEventListener('paste',function(ev){
+    const el=ev.target;
+    if(!el||el.tagName!=='TEXTAREA')return;
+    const cd=ev.clipboardData||window.clipboardData;
+    if(!cd)return;
+    let html='';
+    try{html=cd.getData('text/html')||''}catch(e){return}
+    if(!html||!/<\s*li[\s>]/i.test(html))return;
+    let text='';
+    try{text=clipHtmlToText(html)}catch(e){return}
+    if(!text)return;
+    ev.preventDefault();
+    insertAtCursor(el,text);
+},true);
+
 document.getElementById('copilotInput').addEventListener('input',function(){document.getElementById('parseBtn').disabled=!this.value.trim()});
 </script>
 </body>
