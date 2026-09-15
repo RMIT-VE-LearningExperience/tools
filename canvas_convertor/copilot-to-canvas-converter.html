@@ -211,7 +211,7 @@ function removeReflection(){if(reflectionCount>0){const e=document.getElementByI
 function escH(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
 
 // ═══════════════════════════════════════════════════════
-// ROBUST PARSER v4 — Supports both delimited (────) and label-based formats
+// ROBUST PARSER v5 — Tolerant delimiter tokeniser, supports delimited (────) and label-based formats
 // ═══════════════════════════════════════════════════════
 function parseCopilotOutput(){
     debugLog=[];
@@ -220,7 +220,7 @@ function parseCopilotOutput(){
     dbg('INPUT',raw.length+' chars, '+raw.split('\n').length+' lines');
 
     // ── Detect format: delimited (────) vs label-based ──
-    const isDelimited=raw.includes('────');
+    const isDelimited=DELIM_RE.test(raw);DELIM_RE.lastIndex=0;
     dbg('FORMAT',isDelimited?'DELIMITED (────)':'LABEL-BASED');
 
     if(isDelimited){
@@ -240,27 +240,33 @@ function parseDelimitedFormat(raw){
     parsedData={};
     const lines=raw.split('\n');
 
-    // Split into sections by ──── delimiters
+    // Split into sections by ──── delimiters (tolerant tokeniser, v5).
+    // Copy-out of Copilot can collapse newlines so the heading and its first
+    // content line land on the delimiter line, wrap the delimiter in **bold**
+    // or a markdown heading, add leading spaces, drop the trailing dash run,
+    // or swap ─ for a different dash character. All of these are accepted.
+    // Text after the closing dash run on the same line is kept as content.
     const sections=[];
-    let currentSection=null;
-    for(const line of lines){
-        const delimMatch=line.match(/^─{2,}\s*(.+?)\s*(?:\([^)]*\))?\s*─*$/);
-        if(delimMatch){
-            const name=delimMatch[1].replace(/─/g,'').trim();
-            currentSection={name:name,lines:[]};
-            sections.push(currentSection);
-            dbg('DELIM_SECTION',name);
-        } else if(currentSection){
-            currentSection.lines.push(line);
-        }
-    }
-
-    // Capture any text before the first delimiter as preamble
     const preambleLines=[];
-    for(const line of lines){
-        if(line.match(/^─{2,}/)) break;
-        if(line.trim()) preambleLines.push(line.trim());
+    let cursor=0,m;
+    DELIM_RE.lastIndex=0;
+    const pushBody=(target,text)=>{for(const l of text.split('\n'))target.push(l);};
+    while((m=DELIM_RE.exec(raw))!==null){
+        const before=raw.substring(cursor,m.index);
+        if(sections.length)pushBody(sections[sections.length-1].lines,before);
+        else for(const l of before.split('\n'))if(l.trim())preambleLines.push(l.trim());
+        const name=m[1].replace(/[─━—–\-*_#]/g,' ').replace(/\s+/g,' ').trim();
+        const sec={name:name,lines:[]};
+        sections.push(sec);
+        dbg('DELIM_SECTION',name);
+        // Anything else on the delimiter line is the first content line
+        let lineEnd=raw.indexOf('\n',DELIM_RE.lastIndex);if(lineEnd===-1)lineEnd=raw.length;
+        const trailing=raw.substring(DELIM_RE.lastIndex,lineEnd).replace(/^[\s*_#─━—–\-]+/,'').replace(/[\s*_]+$/,'');
+        if(trailing)sec.lines.push(trailing);
+        cursor=lineEnd;
     }
+    if(sections.length)pushBody(sections[sections.length-1].lines,raw.substring(cursor));
+    else for(const l of raw.split('\n'))if(l.trim())preambleLines.push(l.trim());
     dbg('PREAMBLE',preambleLines.join(' | ')||'(none)');
 
     // Map section names to data
@@ -306,7 +312,11 @@ function parseDelimitedFormat(raw){
             if(cLines.length>0){
                 const hMatch=cLines[0].match(/^Heading:\s*(.+)/i);
                 if(hMatch){
-                    heading=cleanHeading(hMatch[1]);
+                    let hText=hMatch[1];
+                    // Newline collapse can glue the body onto the heading line
+                    const glued=hText.length>90&&hText.match(/^((?:\S+\s+){2,}?)([A-Z]\S*\s+[a-z]\S*\s+[a-z].*[.!?].*)$/);
+                    if(glued){hText=glued[1];s.lines.splice(s.lines.indexOf(cLines[0])+1,0,glued[2]);cLines.splice(1,0,glued[2]);}
+                    heading=cleanHeading(hText);
                     bodyLines=cLines.slice(1);
                 } else {
                     // First short line might be heading
@@ -338,13 +348,13 @@ function parseDelimitedFormat(raw){
 
     // Visual Element
     if(sectionMap.visual){
-        parsedData.visualDesc=sectionMap.visual[0].lines.filter(l=>l.trim()).join('\n');
+        parsedData.visualDesc=sectionMap.visual[0].lines.filter(l=>l.trim()).join('\n').replace(/^(Type:\s*[^\n.]{2,40}?)\s+(?=[A-Z][a-z])/,'$1\n');
     } else parsedData.visualDesc='';
 
     // Key Insights
     parsedData.insights=[];
     if(sectionMap.insights){
-        const iLines=sectionMap.insights[0].lines.filter(l=>l.trim());
+        const iLines=splitInsights(sectionMap.insights[0].lines.join('\n')).split('\n').filter(l=>l.trim());
         for(const line of iLines){
             let c=line.replace(/^\s*[*•\-—]\s+/,'').replace(/^\d+[.)]\s+/,'').trim();
             if(!c)continue;
@@ -376,7 +386,7 @@ function parseDelimitedFormat(raw){
     // Video
     parsedData.videoDesc='';parsedData.videoSearch='';
     if(sectionMap.video){
-        const vLines=sectionMap.video[0].lines.filter(l=>l.trim());
+        const vLines=splitLabels(sectionMap.video[0].lines.join('\n'),VID_LABELS).split('\n').filter(l=>l.trim());
         const vt=vLines.join('\n');
         dbg('VIDEO_RAW',vt);
         for(const p of[/Suggested\s+search:\s*"?([^"\n]+)"?/i,/Suggested\s+YouTube\s+topic:\s*"?([^"\n]+)"?/i,/YouTube\s+Topic:\s*"?([^"\n]+)"?/i,/Search:\s*"?([^"\n]+)"?/i]){const m=vt.match(p);if(m){parsedData.videoSearch=m[1].replace(/^["]+|["]+$/g,'').trim();break;}}
@@ -391,7 +401,7 @@ function parseDelimitedFormat(raw){
     // Knowledge Check / Quiz
     parsedData.quizQuestions=[];
     if(sectionMap.quiz){
-        const ql=sectionMap.quiz[0].lines.filter(l=>l.trim()).filter(l=>!l.match(/^(?:TEACHER|Multiple\s+Choice|True\s*\/?\s*False\s*$|Fill\s+in)/i));
+        const ql=sectionMap.quiz[0].lines.filter(l=>l.trim()).filter(l=>!l.match(/^(?:TEACHER|(?:\*\*)?(?:Multiple\s+Choice|True\s*\/?\s*False|Fill\s+in\s+the\s+blanks?|Drag\s+the\s+words)(?:\*\*)?\s*:?\s*$)/i));
         dbg('QUIZ_LINES',ql.join(' | '));
         parseQuizLines(ql);
     }
@@ -418,11 +428,11 @@ function parseDelimitedFormat(raw){
     // Activity
     parsedData.actTitle='';parsedData.actDuration='';parsedData.actFormat='';parsedData.actPurpose='';parsedData.actResources='';parsedData.actInstructions='';
     if(sectionMap.activity){
-        const aLines=sectionMap.activity[0].lines.filter(l=>l.trim());
+        const aLines=splitLabels(sectionMap.activity[0].lines.join('\n'),ACT_LABELS).split('\n').filter(l=>l.trim());
         const at=aLines.join('\n');
         dbg('ACTIVITY_RAW',at);
         // Title line
-        const titleM=at.match(/Title:\s*(.+)/i);
+        const titleM=at.match(/Title:\s*([^\n]+)/i);
         parsedData.actTitle=titleM?titleM[1].trim():(aLines[0]||'');
         // Duration
         const durM=at.match(/Duration:\s*([^\n|]+)/i);if(durM)parsedData.actDuration=durM[1].trim();
@@ -489,6 +499,23 @@ function classifyDelimitedSection(name){
 // Bulleted and numbered lists are preserved end to end:
 // parser → edit form → generated Emble HTML
 // ═══════════════════════════════════════════════════════
+// Section delimiter: a run of 2+ dashes (box-drawing, em, en or hyphen), a
+// name, optional (Page n of m), then a closing dash run or end of line.
+// Leading markdown wrappers (**, __, #, >, spaces) are tolerated.
+const DELIM_RE=/(?:^|\n)[ \t>*_#]*[─━—–-]{2,}[ \t]*([^─━—–\n]{2,80}?)[ \t]*(?:\([^)\n]*\))?[ \t]*(?:[─━—–-]{2,}|(?=\n|$))/g;
+// Newline collapse can run several "Label: value" fields onto one line.
+// Insert a line break before each known label that appears mid-line.
+function splitLabels(text,labels){
+    const re=new RegExp('(\\S)\\s+(?=(?:\\*\\*|__)?(?:'+labels.join('|')+')\\s*:)','gi');
+    return String(text||'').replace(re,'$1\n');
+}
+const ACT_LABELS=['Title','Duration','Format','Purpose','Resources?(?:\\s*needed)?','Instructions','Alternative'];
+const VID_LABELS=['Description','Suggested\\s+search','Suggested\\s+YouTube\\s+topic','YouTube\\s+Topic','Search','Purpose','Ideal\\s+content','What\\s+to\\s+look\\s+for','Look\\s+for'];
+// Key Insights run together: "Title: sentence. Next Title: sentence." Split
+// after terminal punctuation where a short Title Case label with a colon follows.
+function splitInsights(text){
+    return String(text||'').replace(/([.!?])\s+(?=(?:\*\*|__)?[A-Z][A-Za-z0-9'’\- ]{1,50}:\s)/g,'$1\n');
+}
 const BULLET_RE=/^([ \t]*)(?:[*•▪◦‣·]|[-–—])[ \t]+(.+)$/;
 const ORDERED_RE=/^([ \t]*)(?:\(?(?:\d{1,2}|[a-z])[.)])[ \t]+(.+)$/;
 
@@ -735,7 +762,7 @@ function parseLabelFormat(raw){
     // Key Insights
     parsedData.insights=[];
     if(sectionTexts.insights&&sectionTexts.insights.length){
-        const insLines=sectionTexts.insights;
+        const insLines=splitInsights(sectionTexts.insights.join('\n')).split('\n').filter(l=>l.trim());
         dbg('INSIGHTS_RAW',insLines.join('|'));
         const hasBullets=insLines.some(l=>/^\s*[*•\-—]\s/.test(l));
         const hasColons=insLines.some(l=>/^.{3,50}:\s+.{10,}/.test(l));
@@ -783,7 +810,7 @@ function parseLabelFormat(raw){
     // Video
     parsedData.videoDesc='';parsedData.videoSearch='';
     if(sectionTexts.video&&sectionTexts.video.length){
-        const vt=sectionTexts.video.join('\n');
+        const vt=splitLabels(sectionTexts.video.join('\n'),VID_LABELS);
         dbg('VIDEO_RAW',vt);
         for(const p of[/Suggested\s+search:\s*"?([^"\n]+)"?/i,/Suggested\s+YouTube\s+topic:\s*"?([^"\n]+)"?/i,/YouTube\s+Topic:\s*"?([^"\n]+)"?/i,/Search:\s*"?([^"\n]+)"?/i]){const m=vt.match(p);if(m){parsedData.videoSearch=m[1].replace(/^["]+|["]+$/g,'').trim();break;}}
         for(const p of[/What\s+to\s+look\s+for:\s*(.+)/i,/Look\s+for:\s*(.+)/i,/Ideal\s+content:\s*(.+)/i,/Description:\s*(.+)/i]){const m=vt.match(p);if(m){parsedData.videoDesc=m[1].trim();break;}}
@@ -793,7 +820,7 @@ function parseLabelFormat(raw){
     // Quiz
     parsedData.quizQuestions=[];
     if(sectionTexts.quiz&&sectionTexts.quiz.length){
-        const ql=sectionTexts.quiz.filter(l=>!l.match(/^(?:TEACHER|Multiple\s+Choice|True\s*\/?\s*False\s*$|Fill\s+in)/i));
+        const ql=sectionTexts.quiz.filter(l=>!l.match(/^(?:TEACHER|(?:\*\*)?(?:Multiple\s+Choice|True\s*\/?\s*False|Fill\s+in\s+the\s+blanks?|Drag\s+the\s+words)(?:\*\*)?\s*:?\s*$)/i));
         dbg('QUIZ_LINES',ql.join(' | '));
         parseQuizLines(ql);
     }
@@ -817,7 +844,7 @@ function parseLabelFormat(raw){
     // Activity
     parsedData.actTitle='';parsedData.actDuration='';parsedData.actFormat='';parsedData.actPurpose='';parsedData.actResources='';parsedData.actInstructions='';
     if(sectionTexts.activity&&sectionTexts.activity.length){
-        const at=sectionTexts.activity.join('\n');
+        const at=splitLabels(sectionTexts.activity.join('\n'),ACT_LABELS);
         dbg('ACTIVITY_RAW',at);
         parsedData.actTitle=sectionTexts.activity[0].trim();
         const durM=at.match(/Duration:\s*([^|\n]+)/i);if(durM)parsedData.actDuration=durM[1].trim();
@@ -842,62 +869,72 @@ function parseLabelFormat(raw){
 // SHARED: Quiz Line Parser
 // ═══════════════════════════════════════════════════════
 function parseQuizLines(ql){
-    let i=0;
-    while(i<ql.length){
-        const line=ql[i];
-        const qM=line.match(/^(?:Q|Question|Statement)\s*(\d+):\s*(.+)/i);
-        if(qM){
-            let qText=qM[2].trim();
-            // Inline True/False with answer at end: "...text. False"
-            const inlineAns=qText.match(/^(.+?)\s+(True|False)\s*$/i);
-            if(inlineAns&&!inlineAns[1].match(/True\s*\/\s*False/i)){
-                parsedData.quizQuestions.push({text:inlineAns[1].replace(/✅/g,'').trim(),options:['True','False'],correct:inlineAns[2].toLowerCase()==='true'?0:1});
-                i++;continue;
-            }
-            // Inline ✅ True / False
-            if(qText.match(/✅\s*True\s*\/?\s*False/i)||qText.match(/True\s*\/?\s*False.*✅/i)){
-                const clean=qText.replace(/✅/g,'').replace(/True\s*\/?\s*False/i,'').trim();
-                const trueC=qText.indexOf('✅')<qText.search(/False/i);
-                parsedData.quizQuestions.push({text:clean,options:['True','False'],correct:trueC?0:1});
-                i++;continue;
-            }
-            // Look ahead for answer lines or a)/b) options
-            let opts=[],ci=0;
-            let foundTF=false;
-            for(let j=i+1;j<Math.min(i+8,ql.length);j++){
-                // "Answer: True/False" or bare "True" / "False"
-                const am=ql[j].match(/^(?:Answer:\s*)?(True|False)\s*$/i);
-                if(am){
-                    parsedData.quizQuestions.push({text:qText.replace(/✅/g,'').trim(),options:['True','False'],correct:am[1].toLowerCase()==='true'?0:1});
-                    i=j+1;foundTF=true;break;
-                }
-                if(ql[j].match(/^True\s*\/\s*False$/i))continue;
-                if(ql[j].match(/^(?:[*•\-—]\s*)?[a-d]\)/)||ql[j].match(/^(?:Q|Question|Statement)\s*\d/i))break;
-            }
-            if(foundTF)continue;
-            // Collect a) b) c) d) options
-            i++;
-            while(i<ql.length){
-                const oM=ql[i].match(/^(?:[*•\-—]\s*)?([a-d])\)\s*(.+)/);
-                if(oM){
-                    const ot=oM[2].replace(/✅/g,'').trim();
-                    if(ql[i].includes('✅'))ci=opts.length;
-                    opts.push(ot);i++;
-                } else break;
-            }
-            if(opts.length>=2){parsedData.quizQuestions.push({text:qText.replace(/✅/g,'').trim(),options:opts,correct:ci});}
-            else{parsedData.quizQuestions.push({text:qText.replace(/✅/g,'').trim(),options:['','','',''],correct:0});}
-            continue;
-        }
-        // Fill in the blank
-        const fibM=line.match(/^Sentence\s*\d*:\s*(.+)/i);
-        if(fibM){
-            let fOpts=[];
+    // Tolerant quiz parser (v5). Works on the whole block as one string so
+    // questions and options survive newline collapse, bold labels, a. / A)
+    // / (a) markers, alternative tick characters, "(correct)" tags, bold-only
+    // answers and trailing "Answer: b" lines.
+    const TICK=/[✅✔✓☑]|\((?:correct|correct answer|answer)\)|\[(?:correct|correct answer)\]/i;
+    let text=(ql||[]).join('\n').replace(/^[ \t]*#{1,6}[ \t]+/gm,'');
+    const BOLD=/\*\*|(?<!_)__(?!_)/g;
+    // Split into question chunks at Q1 / Question 1 / Statement 1 markers, even mid-line
+    const QRE=/(?:^|\n|\s)(?:\*\*|__)?\s*(?:Q|Question|Statement)\s*(\d{1,2})\s*(?:[:.)\-–—]|(?=\s))\s*(?:\*\*|__)?\s*(?:\((?:[^)]*)\)\s*:?\s*)?/gi;
+    const chunks=[];let m,last=null;
+    while((m=QRE.exec(text))!==null){
+        if(last)chunks.push(text.substring(last.end,m.index));
+        last={end:QRE.lastIndex};
+    }
+    if(last)chunks.push(text.substring(last.end));
+    if(!chunks.length){
+        // No Q markers: fall back to old Sentence:/Options: fill-in format
+        for(let i=0;i<ql.length;i++){const fibM=ql[i].match(/^Sentence\s*\d*:\s*(.+)/i);if(!fibM)continue;let fOpts=[];
             for(let j=i+1;j<Math.min(i+3,ql.length);j++){const om=ql[j].match(/^Options:\s*(.+)/i);if(om){fOpts=om[1].match(/\[([^\]]+)\]/g)?.map(o=>o.replace(/[\[\]]/g,'').trim())||[];i=j;break;}}
-            parsedData.quizQuestions.push({text:'Fill in the blank: '+fibM[1].trim(),options:fOpts.length>=2?fOpts:['','','',''],correct:0});
-            i++;continue;
+            parsedData.quizQuestions.push({text:'Fill in the blank: '+fibM[1].trim(),options:fOpts.length>=2?fOpts:['','','',''],correct:0});}
+        return;
+    }
+    const strip=t=>String(t||'').replace(BOLD,'').replace(TICK,'').replace(/\s+/g,' ').trim();
+    for(let chunk of chunks){
+        chunk=chunk.trim();if(!chunk)continue;
+        // Pull off a trailing answer key line: "Answer: b" / "Correct answer: c) text" / "Correct: True"
+        let keyLetter=null,keyTF=null;
+        chunk=chunk.replace(/(?:^|\n|\s)(?:correct\s+answer|answer|correct)\s*[:\-–—]\s*(?:\(?([a-dA-D])[).]?|(True|False))[^\n]*/i,(_,l,tf)=>{if(l)keyLetter=l.toLowerCase();if(tf)keyTF=tf.toLowerCase();return '';});
+        // Split at option markers: a) a. (a) A) with optional bullet / bold
+        const ORE=/(?:^|\n|\s)(?:[*•\-–—]\s*)?(?:\*\*|__)?\(?([a-dA-D])[).](?:\*\*|__)?(?=\s)/g;
+        const parts=[];let om,prevEnd=0,prevLetter=null;
+        while((om=ORE.exec(chunk))!==null){
+            parts.push({letter:prevLetter,raw:chunk.substring(prevEnd,om.index)});
+            prevLetter=om[1].toLowerCase();prevEnd=ORE.lastIndex;
         }
-        i++;
+        parts.push({letter:prevLetter,raw:chunk.substring(prevEnd)});
+        let qRaw=parts[0].raw;const optParts=parts.slice(1);
+        // Fill in the Blanks / Drag the Words word bank on its own line
+        const wbM=qRaw.match(/(?:^|\n)\s*(?:options?|word\s*bank)\s*:\s*(.+)/i);
+        let opts=[],ci=-1;
+        if(optParts.length>=2){
+            optParts.forEach((p,idx)=>{
+                const hasTick=TICK.test(p.raw)||/^\s*\*\*[^*]+\*\*\s*$/.test(p.raw.trim());
+                if(hasTick&&ci<0)ci=idx;
+                if(keyLetter&&p.letter===keyLetter)ci=idx;
+                opts.push(strip(p.raw));
+            });
+        } else if(wbM){
+            opts=wbM[1].split(/\s*[,|\/]\s*|\s*\]\s*\[\s*/).map(o=>strip(o.replace(/[\[\]]/g,''))).filter(o=>o);
+            qRaw=qRaw.replace(wbM[0],'');ci=0;
+        }
+        qRaw=qRaw.replace(/^\s*(?:true\s*\/\s*false|multiple\s+choice|fill\s+in\s+the\s+blanks?|drag\s+the\s+words)\s*[:\-–—]\s*/i,'');
+        let qText=strip(qRaw);
+        // True/False handling: inline "... False" tail, bare True/False, or a)/b) already caught above
+        if(opts.length<2){
+            const tail=qText.match(/^(.+?)\s+(True|False)\s*$/i);
+            if(/\bTrue\s*\/?\s*False\b/i.test(qRaw)){const tickBeforeFalse=qRaw.search(TICK)>-1&&qRaw.search(TICK)<qRaw.search(/False/i);qText=strip(qRaw.replace(/True\s*\/?\s*False/i,''));opts=['True','False'];ci=keyTF?(keyTF==='true'?0:1):(tickBeforeFalse?0:1);}
+            else if(tail&&!/true\s*\/\s*false/i.test(tail[1])){qText=tail[1].trim();opts=['True','False'];ci=tail[2].toLowerCase()==='true'?0:1;}
+            else if(keyTF){opts=['True','False'];ci=keyTF==='true'?0:1;}
+        }
+        if(opts.length>=2&&ci<0){
+            // Tick may have landed on the question line (collapsed) or nowhere: default first option
+            ci=0;
+        }
+        if(opts.length>=2)parsedData.quizQuestions.push({text:qText,options:opts,correct:ci});
+        else parsedData.quizQuestions.push({text:qText,options:['','','',''],correct:0});
     }
 }
 
