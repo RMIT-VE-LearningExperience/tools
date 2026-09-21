@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoVE Copilot → Canvas Lab Activities Converter (Basic) - RMIT</title>
+    <title>CoVE Copilot → Canvas Lab and Tutorial Activities Converter (Basic) - RMIT</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
@@ -55,6 +55,11 @@
         .mode-option label{display:flex;align-items:center;gap:8px;font-weight:700;color:#000054;cursor:pointer;margin-bottom:4px}
         .mode-option input[type="radio"]{width:18px;height:18px;cursor:pointer}
         .mode-option .help-text{margin-top:0}
+        .session-type{margin-bottom:20px}
+        .session-type .mode-option{min-width:0;padding:10px 14px}
+        .session-type-label{font-weight:700;color:#000054;font-size:.9rem;margin-bottom:8px}
+        .mode-option input[type="radio"]{accent-color:#e61e2a}
+        .mode-option:focus-within{outline:3px solid #fac800;outline-offset:2px}
         .activity-card{background:#f8f9fa;border:1px solid #e3e5e0;border-left:4px solid #000054;border-radius:6px;padding:18px;margin-bottom:18px}
         .activity-card .activity-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
         .activity-card .activity-head h4{color:#000054;font-size:1rem;margin:0}
@@ -98,8 +103,8 @@
 <div class="main-wrapper">
 <div class="container">
     <div class="header">
-        <h1>CoVE Lab Activities Converter <span style="font-weight:400;opacity:.8;">Basic</span></h1>
-        <p>Full lab content open in the colour block. Paste → Review &amp; Edit → Generate Emble HTML</p>
+        <h1>CoVE <span id="hdrType">Lab</span> Activities Converter <span style="font-weight:400;opacity:.8;">Basic</span></h1>
+        <p>Full <span class="typeNoun">lab</span> content open in the colour block. Paste → Review &amp; Edit → Generate Emble HTML</p>
     </div>
     <div class="workflow-steps">
         <div class="step active" id="step1"><div class="step-number">1</div><span>Paste Copilot Output</span></div>
@@ -108,10 +113,18 @@
     </div>
     <div class="main-layout">
         <div class="sidebar">
+            <div class="session-type" role="radiogroup" aria-labelledby="sessionTypeLabel">
+                <div class="session-type-label" id="sessionTypeLabel">Session type</div>
+                <div class="output-mode">
+                    <div class="mode-option selected" id="modeOptLab"><label><input type="radio" name="sessionType" value="lab" checked onchange="setSessionType(this.value)">Lab</label></div>
+                    <div class="mode-option" id="modeOptTutorial"><label><input type="radio" name="sessionType" value="tutorial" onchange="setSessionType(this.value)">Tutorial</label></div>
+                </div>
+                <p class="help-text">Sets the page heading, standing instructions and labels. A Tutorial or Lab page title in the pasted content switches this automatically.</p>
+            </div>
             <div class="paste-area" id="pasteArea" onclick="showTextarea()">
                 <div class="paste-icon">📋</div>
                 <div class="paste-text">Paste Copilot Output</div>
-                <div class="paste-subtext">Click here, then paste your lab activity content</div>
+                <div class="paste-subtext">Click here, then paste your <span class="typeNoun">lab</span> activity content</div>
             </div>
             <textarea id="copilotInput" placeholder="Paste your Copilot output here..."></textarea>
             <div class="button-group">
@@ -126,7 +139,7 @@
             <div id="initialInstructions">
                 <h2 style="color:#000054;margin-bottom:20px;">How to Use This Tool</h2>
                 <ol style="font-size:1.05rem;line-height:2;">
-                    <li><strong>Paste</strong> the Part B output from the lab activities prompt</li>
+                    <li><strong>Paste</strong> the Part B output from the <span class="typeNoun">lab</span> activities prompt</li>
                     <li><strong>Review</strong> the parsed activities, steps and image markers</li>
                     <li><strong>Edit</strong> any fields that need correction</li>
                     <li><strong>Check</strong> the counts in the output panel</li>
@@ -145,7 +158,7 @@
                 </div>
 
                 <div class="form-section">
-                    <h3>📝 Lab Activities</h3>
+                    <h3>📝 <span id="secType">Lab</span> Activities</h3>
                     <p class="help-text" style="margin-bottom:15px;">Each activity becomes one Emble colour block. Steps and image markers keep the order you enter them in.</p>
                     <div id="activityBlocks"></div>
                     <div class="add-remove-btns"><button onclick="addActivity()">+ Add Activity</button><button onclick="removeLastActivity()">− Remove Last</button></div>
@@ -169,8 +182,48 @@
 <script>
 let parsedData={},activityCount=0,debugLog=[];
 
-const DEFAULT_INSTRUCTIONS="In person attendance is required\nWork individually or in small groups as directed\nRead the lab instructions carefully";
+// ═══════════════════════════════════════════════════════
+// CONFIG — per session type defaults. Edit freely.
+// ═══════════════════════════════════════════════════════
 const DEFAULT_INTEGRITY="All work must be your own. Do not copy from other students, online sources or AI tools. Any use of external assistance must be acknowledged.";
+const CONFIG={
+    lab:{
+        name:'Lab',noun:'lab',
+        pageTitle:'Lab Activities',
+        instructions:"In person attendance is required\nWork individually or in small groups as directed\nRead the lab instructions carefully",
+        accLabel:'Lab instructions',
+        dlPlaceholder:'e.g. Lab 1 worksheet (Word)'
+    },
+    tutorial:{
+        name:'Tutorial',noun:'tutorial',
+        pageTitle:'Tutorial Activities',
+        instructions:"In person attendance is required\nWork individually or in small groups as directed\nRead the tutorial instructions carefully",
+        accLabel:'Tutorial instructions',
+        dlPlaceholder:'e.g. Tutorial 1 worksheet (Word)'
+    }
+};
+let sessionType='lab';
+const cfg=()=>CONFIG[sessionType];
+
+function setSessionType(t,fromParse){
+    if(!CONFIG[t])return;
+    const old=CONFIG[sessionType];
+    sessionType=t;
+    const c=cfg();
+    document.querySelectorAll('input[name="sessionType"]').forEach(r=>{r.checked=(r.value===t)});
+    document.getElementById('modeOptLab').classList.toggle('selected',t==='lab');
+    document.getElementById('modeOptTutorial').classList.toggle('selected',t==='tutorial');
+    document.getElementById('hdrType').textContent=c.name;
+    document.getElementById('secType').textContent=c.name;
+    document.querySelectorAll('.typeNoun').forEach(e=>{e.textContent=c.noun});
+    document.title=`CoVE Copilot → Canvas ${c.name} Activities Converter (Basic) - RMIT`;
+    // Swap form defaults only where the teacher has not edited them
+    const pt=document.getElementById('fPageTitle'),ins=document.getElementById('fInstructions');
+    if(pt.value.trim()===old.pageTitle||!pt.value.trim())pt.value=c.pageTitle;
+    if(ins.value.trim()===old.instructions)ins.value=c.instructions;
+    document.querySelectorAll('[id^="actDlLabel"]').forEach(e=>{e.placeholder=c.dlPlaceholder});
+    dbg('SESSION_TYPE',t+(fromParse?' (detected from content)':' (selected)'));
+}
 const HL='#FAC800';
 
 function dbg(l,v){debugLog.push(`[${l}] ${typeof v==='string'?v:JSON.stringify(v,null,1)}`)}
@@ -226,9 +279,11 @@ function parseCopilotOutput(){
         const n=s.name.toLowerCase();
         if(/^activity/i.test(s.name)){
             parsedData.activities.push(parseActivity(s));
-        } else if(/page\s*title|lab\s*title|page\s*heading/.test(n)){
+        } else if(/page\s*title|lab\s*title|tutorial\s*title|page\s*heading/.test(n)){
             parsedData.pageTitle=s.lines.map(l=>l.trim()).filter(Boolean)[0]||'';
-        } else if(/instruction/.test(n)&&!/lab\s*step/.test(n)){
+            if(/tutorial\s*title/.test(n))parsedData.detectedType='tutorial';
+            else if(/lab\s*title/.test(n))parsedData.detectedType='lab';
+        } else if(/instruction/.test(n)&&!/(lab|tutorial)\s*step/.test(n)){
             const keep=[],integ=[];let inInteg=false;
             for(const l of s.lines){
                 const t=l.trim();if(!t)continue;
@@ -244,13 +299,20 @@ function parseCopilotOutput(){
         }
     }
 
+    // Session type: explicit title section wins, then the page title wording, else keep the selector
+    let det=parsedData.detectedType||'';
+    if(!det&&/\btutorial/i.test(parsedData.pageTitle))det='tutorial';
+    else if(!det&&/\blab\b/i.test(parsedData.pageTitle))det='lab';
+    if(det&&det!==sessionType)setSessionType(det,true);
+    else dbg('SESSION_TYPE',sessionType+(det?' (confirmed by content)':' (no type in content, using selector)'));
+
     dbg('ACTIVITIES',parsedData.activities.length+' parsed');
     document.getElementById('debugPanel').textContent=debugLog.join('\n');
     populateForm();showExtractionStatus();showEditForm();
 }
 
 function parseActivity(section){
-    const a={title:section.name.trim(),intro:[],body:[],dlLabel:'',accLabel:'Lab instructions',steps:0,images:0};
+    const a={title:section.name.trim(),intro:[],body:[],dlLabel:'',accLabel:cfg().accLabel,steps:0,images:0};
     const buf=[];
     for(const rawLine of section.lines){
         const t=rawLine.trim();
@@ -280,7 +342,7 @@ function parseActivity(section){
 function addActivity(data){
     activityCount++;
     const n=activityCount;
-    const d=data||{title:'',intro:[],body:[],dlLabel:'',accLabel:'Lab instructions'};
+    const d=data||{title:'',intro:[],body:[],dlLabel:'',accLabel:cfg().accLabel};
     const bodyText=Array.isArray(d.body)?d.body.join('\n'):'';
     const el=document.createElement('div');
     el.className='activity-card';el.id='activityCard'+n;
@@ -289,15 +351,15 @@ function addActivity(data){
         <div class="form-group"><label>Activity Title</label><input type="text" id="actTitle${n}" value="${escH(d.title||'')}" placeholder="e.g. Activity 1: Configure a virtual switch"></div>
         <div class="form-group"><label>Lead-in Above the Content (optional)</label><textarea id="actIntro${n}" rows="2" placeholder="Leave blank to run straight into the document content">${escH((d.intro||[]).join('\n'))}</textarea></div>
         <div class="form-group"><label>Full Activity Content</label><textarea id="actSteps${n}" rows="16" placeholder="Heading: Before you start&#10;Everything from the source document, in order.&#10;1. First step&#10;[IMAGE: what the screenshot shows]&#10;2. Second step&#10;> show vlan brief&#10;Note: something to watch for">${escH(bodyText)}</textarea><p class="help-text">Reproduced in full inside the colour block. Numbered lines become an ordered list, dashes become bullets, <code>Heading:</code> becomes a subheading, <code>Note:</code> and <code>Warning:</code> become labelled paragraphs, lines starting <code>&gt;</code> render as commands, pipe rows build a table, <code>&lt;strong&gt;</code> <code>&lt;em&gt;</code> <code>&lt;u&gt;</code> are kept, and <code>[IMAGE: ...]</code> or <code>[TEACHER: ...]</code> become yellow placeholders in position.</p></div>
-        <div class="form-group"><label>Download File Name</label><input type="text" id="actDlLabel${n}" value="${escH(d.dlLabel||'')}" placeholder="e.g. Lab 1 worksheet (Word)"><p class="help-text">Outputs a yellow placeholder. The teacher uploads the file and inserts the Canvas link in Emble.</p></div>`;
+        <div class="form-group"><label>Download File Name</label><input type="text" id="actDlLabel${n}" value="${escH(d.dlLabel||'')}" placeholder="${escH(cfg().dlPlaceholder)}"><p class="help-text">Outputs a yellow placeholder. The teacher uploads the file and inserts the Canvas link in Emble.</p></div>`;
     document.getElementById('activityBlocks').appendChild(el);
 }
 function countStepsBefore(body,idx){let c=0;for(let i=0;i<=idx;i++){if(body[i].type==='step')c++}return c}
 function removeLastActivity(){const cards=document.querySelectorAll('.activity-card');if(cards.length)cards[cards.length-1].remove()}
 
 function populateForm(){
-    document.getElementById('fPageTitle').value=parsedData.pageTitle||'Lab Activities';
-    document.getElementById('fInstructions').value=parsedData.instructions||DEFAULT_INSTRUCTIONS;
+    document.getElementById('fPageTitle').value=parsedData.pageTitle||cfg().pageTitle;
+    document.getElementById('fInstructions').value=parsedData.instructions||cfg().instructions;
     document.getElementById('fIntegrity').value=parsedData.integrity||DEFAULT_INTEGRITY;
     document.getElementById('fCta').value=parsedData.cta||'Please complete the following';
     document.getElementById('activityBlocks').innerHTML='';activityCount=0;
@@ -437,7 +499,7 @@ function buildBody(rawBody){
 }
 
 function generateHTML(){
-    const pageTitle=document.getElementById('fPageTitle').value.trim()||'Lab Activities';
+    const pageTitle=document.getElementById('fPageTitle').value.trim()||cfg().pageTitle;
     const instructions=document.getElementById('fInstructions').value.split('\n').map(l=>l.trim()).filter(Boolean);
     const integrity=document.getElementById('fIntegrity').value.trim();
     const cta=document.getElementById('fCta').value.trim();
@@ -502,6 +564,7 @@ function backToEdit(){updateStep(3,'');updateStep(2,'active');document.getElemen
 function resetAll(){if(confirm('Start over with new content?'))location.reload()}
 
 function loadSample(){
+    if(sessionType==='tutorial'){document.getElementById('copilotInput').value=SAMPLE_TUTORIAL;showTextarea();return}
     document.getElementById('copilotInput').value=`PART B: PAGE CONTENT
 ──── Activity 1: Build a virtual switch ────
 Accordion label: Lab instructions
@@ -543,6 +606,35 @@ Heading: Steps
 Download: Lab 1 Virtual Switch Setup.docx`;
     showTextarea();
 }
+
+const SAMPLE_TUTORIAL=`PART B: PAGE CONTENT
+──── Tutorial title ────
+Tutorial Activities
+──── Activity 1: Spot the phishing indicators ────
+Heading: Purpose
+You will review three suspicious emails sent to staff at a small accounting practice and identify the indicators that mark each one as phishing.
+Heading: Steps
+1. Read each of the three sample emails in the worksheet.
+2. For each email, list every indicator you can find.
+- Sender address and display name
+- Links and attachments
+- Tone, urgency and requests for credentials
+3. Rate each email as low, medium or high risk and justify your rating in one sentence.
+[IMAGE: Sample email with the sender address and a suspicious link highlighted]
+Heading: Discussion
+Compare your ratings with the person next to you. Where you disagree, agree on which indicator matters most.
+Download: Tutorial 1 Phishing Samples.docx
+──── Activity 2: Write a staff awareness tip ────
+Heading: Purpose
+Using what you found in Activity 1, you will write a short tip that the practice could send to all staff.
+Heading: Steps
+1. Choose the indicator your group rated as most important.
+2. Write a tip of no more than 50 words that explains how to spot it.
+3. Share your tip with the class for feedback.
+| Indicator | Why it matters | Tip |
+| --- | --- | --- |
+| Mismatched sender | Attackers spoof trusted names | Hover over the name to check the address |
+[TEACHER: collect the tips and share the strongest three next week]`;
 </script>
 </body>
 </html>
