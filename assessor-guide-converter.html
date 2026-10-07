@@ -136,7 +136,7 @@
 <main>
   <div class="panel">
     <h2>Step 1: Drop an existing TAFE Victoria assessor guide</h2>
-    <p class="hint">A Word <code>.docx</code> file. Question tables headed <em>Question 1</em>, <em>Question 2</em> and so on are read question by question, with answers taken from red text. Assessment detail tables (time allowed, location, resources and so on) are read by their row labels.</p>
+    <p class="hint">A Word <code>.docx</code> file. Question tables headed <em>Question 1</em> or <em>Question A1</em> and so on are read question by question, with answers taken from red text. Assessment detail tables (time allowed, location, resources and so on) are read by their row labels.</p>
     <div id="drop" tabindex="0" role="button" aria-describedby="drophint">
       <strong>Drop the TAFE Victoria assessor guide (.docx) here</strong>
       <span id="drophint">or press Enter to browse. Nothing is uploaded, it all happens in this browser tab.</span>
@@ -11963,7 +11963,7 @@ function allLines(doc){
 /* ---------- questions ---------- */
 
 var SELECT_LINE = /^(please\s+)?(select|choose|circle|tick)\s+(the\s+)?(\w+|\d+)\s*(\(\d+\))?\s*(correct\s+)?(answers?|options?|responses?)\s*(from\s+the\s+list\s+below)?\.?$/i;
-var BLANK = /_{3,}|…{2,}|\.{5,}/g;
+var BLANK = /_*\[\s*\d+\s*\]_*|_{3,}|…{2,}|\.{5,}/g;
 
 function wordCount(s){
   var m = /(\d+)|\b(one|two|three|four|five|six|seven|eight|nine|ten)\b/i.exec(s || '');
@@ -11995,7 +11995,8 @@ function addStemPara(q, p){
   p.text.split('\n').forEach(function(l){ l = l.trim(); if(l) q.stem.push((p.list ? '- ' : '') + l); });
 }
 
-function isQuestionHead(t){ return /^question\s*(\d+)\b/i.exec(String(t || '').trim()); }
+/* "Question 1", and also part-prefixed "Question A1" or "Question B.2" */
+function isQuestionHead(t){ return /^question\s*([a-z]?\s*[.-]?\s*\d+)\b/i.exec(String(t || '').trim()); }
 
 function parseQuestionTable(tb, part){
   var rows = tb.rows;
@@ -12019,11 +12020,14 @@ function parseQuestionTable(tb, part){
 
   /* word bank: Word Selection block, then Answer block */
   if(first.length === 1 && /^word\s*(selection|bank|list)$/i.test(first[0].text)){
-    var j = 1, words = [];
+    var j = 1, words = [], bankRows = [];
     while(j < body.length && !(body[j].length === 1 && /^answers?$/i.test(body[j][0].text))){
+      bankRows.push(body[j]);
       body[j].forEach(function(c){ if(c.text) words.push(c.text); });
       j++;
     }
+    /* rows like "1. | clean | view | rebuild" give each blank its own choices, answer in red */
+    var perBlank = bankRows.length > 0 && bankRows.every(function(r){ return r.length > 1 && /^\(?\[?\d+[.)\]]?$/.test(r[0].text.trim()); });
     var answers = [];
     body.slice(j + 1).forEach(function(r){ r.forEach(function(c){ c.paras.forEach(function(p){
       var cur = [];
@@ -12036,6 +12040,13 @@ function parseQuestionTable(tb, part){
     answers = answers.map(function(a){ return a.replace(/[\s.,;:]+$/, ''); }).filter(Boolean);
     q.bank = words;
     q.blanks = answers;
+    if(perBlank){
+      q.choices = bankRows.map(function(r){ return r.slice(1).map(function(c){ return c.text.trim(); }).filter(Boolean); });
+      q.blanks = bankRows.map(function(r){ var c = r.slice(1).filter(function(x){ return x.red; })[0]; return c ? c.text.trim() : ''; });
+      q.bank = [];
+      q.notes.push({ t:'Each blank has its own dropdown choices, taken from the numbered Word Selection rows.' });
+      if(q.blanks.some(function(b){ return !b; })) q.notes.push({ bad:true, t:'A Word Selection row has no red answer.' });
+    }
     var n = 0;
     q.stem = q.stem.map(function(l){ return l.replace(BLANK, function(){ n++; return '[answer ' + n + ']'; }); });
     q.type = 'Multiple dropdowns';
@@ -12075,7 +12086,19 @@ function parseQuestionTable(tb, part){
   if(data.length && data.every(function(r){ return r.length === 2; }) && data.filter(function(r){ return r[1].red; }).length >= Math.max(1, data.length - 1)){
     q.leftHead = head ? head[0].text : 'Prompt';
     q.rightHead = head ? head[1].text : 'Answer';
-    data.forEach(function(r){ if(r[0].text) q.pairs.push({ l:r[0].text.replace(/\n/g, ' '), r:(r[1].redText || r[1].text).replace(/\n/g, ' ') }); });
+    var leftImgs = data.map(function(r){ var im = []; r[0].paras.forEach(function(p){ im = im.concat(p.imgs); }); return im; });
+    data.forEach(function(r){ if(r[0].text || leftImgs[data.indexOf(r)].length) q.pairs.push({ l:r[0].text.replace(/\n/g, ' '), r:(r[1].redText || r[1].text).replace(/\n/g, ' ') }); });
+    /* "4) Compliance Code ..." numbering on every answer is just a list label */
+    if(q.pairs.length > 1 && q.pairs.every(function(p){ return /^\d+\)\s*/.test(p.r); })) q.pairs.forEach(function(p){ p.r = p.r.replace(/^\d+\)\s*/, ''); });
+    if(leftImgs.some(function(im){ return im.length; })){
+      /* Canvas matching prompts are text only, so pictures go to an image based dropdown table */
+      q.type = 'Multiple dropdowns';
+      q.imgRows = data.map(function(r, i){ return { images:leftImgs[i], caption:r[0].text.replace(/\n/g, ' '), answer:q.pairs[i] ? q.pairs[i].r : '' }; });
+      q.blanks = q.imgRows.map(function(r){ return r.answer; });
+      q.pairs = [];
+      q.notes.push({ t:'The prompts are pictures, so this is an image based Multiple dropdowns question with an Item and Meaning table, as the quiz template requires.' });
+      return q;
+    }
     q.sequence = q.pairs.length > 1 && q.pairs.every(function(p){ return /^\d+\b/.test(p.r); });
     q.type = 'Matching';
     return q;
@@ -12569,13 +12592,13 @@ function checkQ(q){
   }
   if(q.type === 'Multiple answers' && !nc) out.push({ bad:true, t:'No option is marked correct.' });
   if(q.type === 'True/false' && nc !== 1) out.push({ bad:true, t:'Mark either True or False as correct.' });
-  if(BLANK_TYPES[q.type] && q.tables && q.tables.length){
+  if(BLANK_TYPES[q.type] && ((q.tables && q.tables.length) || (q.imgRows && q.imgRows.length))){
     /* image based: the table is the answer key */
   } else if(BLANK_TYPES[q.type]){
     var n = (q.stem.join('\n').match(/\[answer \d+\]/g) || []).length;
     if(!q.blanks.length) out.push({ bad:true, t:'No answers keyed.' });
     else if(n !== q.blanks.length) out.push({ bad:true, t:'The question has ' + plural(n, '[answer n] marker') + ' but ' + plural(q.blanks.length, 'answer') + ' are keyed.' });
-    if(q.type === 'Multiple dropdowns' && !q.bank.length) out.push({ bad:true, t:'No dropdown choices. Add them in the word bank.' });
+    if(q.type === 'Multiple dropdowns' && !q.bank.length && !(q.choices && q.choices.length)) out.push({ bad:true, t:'No dropdown choices. Add them in the word bank.' });
   }
   if(q.type === 'Matching' && !q.pairs.length) out.push({ bad:true, t:'No pairs keyed.' });
   if(q.type === 'Matching' && q.pairs.some(function(p){ return !p.r; })) out.push({ bad:true, t:'A pair has no answer.' });
@@ -12710,9 +12733,23 @@ function drawQuiz(){
   var qs = state.questions;
   $('itemsTitle').textContent = 'Step 4: Check the questions';
   $('itemsHint').innerHTML = 'Each question goes into Section B in the quiz template\'s Canvas format: whole number, type, 1 point, answer in red. Red and yellow cards need a look before the file is built.';
-  var n = 0;
-  $('items').innerHTML = qs.length ? qs.map(function(q){ if(q.type !== 'Text (no question)') n++; return qCard(q, n); }).join('') :
-    '<div class="flag bad">No questions found. Section B will keep the template guidance.</div>';
+  var n = 0, head = '', parts = quizParts(), split = quizSplitOn();
+  if(parts.length > 1){
+    var gs = quizGroups();
+    head = '<div class="flag"><label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" id="qsplit"' + (split ? ' checked' : '') + ' style="margin-top:4px;accent-color:var(--navy)"> <span><b>Split into ' + parts.length + ' separate assessor guides</b>, one per part (' +
+      gs.map(function(g){ return esc(g.label); }).join(', ') + '), each its own Canvas quiz numbered from 1. They download together as a zip. Section A lines about other parts are dropped, and anything that still counts the whole task is listed after the build for editing.</span></label>' +
+      (split ? '<div class="grid" style="margin-top:10px">' + gs.map(function(g){ return '<div class="f" style="margin:0"><label>Task ' + esc(g.label) + ' name (' + plural(g.questions.length, 'question') + ')</label><input type="text" data-part="' + esc(g.part) + '" value="' + esc(g.name) + '"></div>'; }).join('') + '</div>' : '') + '</div>';
+  }
+  $('items').innerHTML = head + (qs.length ? qs.map(function(q, i){
+      if(split && i > 0 && q.part !== qs[i - 1].part) n = 0;
+      if(q.type !== 'Text (no question)') n++;
+      return (split && (i === 0 || q.part !== qs[i - 1].part) ? '<div class="sechead" style="font-size:0.85rem;border-bottom:3px solid var(--yellow);margin-top:26px">Task ' + esc(quizGroups().filter(function(g){ return g.part === q.part; })[0].label) + ': ' + esc(q.part) + '</div>' : '') + qCard(q, n);
+    }).join('') :
+    '<div class="flag bad">No questions found. Section B will keep the template guidance.</div>');
+  var qsEl = $('qsplit'); if(qsEl) qsEl.addEventListener('change', function(){ state.quizSplit = qsEl.checked; drawQuiz(); tally(); });
+  Array.prototype.forEach.call($('items').querySelectorAll('[data-part]'), function(el){
+    el.addEventListener('input', function(){ state.partNames[el.getAttribute('data-part')] = el.value; });
+  });
   wireCards();
 }
 
@@ -12732,11 +12769,8 @@ function wireCards(){
   });
 }
 function refreshCard(card, q){
-  var idx = 0, n = 0;
-  state.questions.some(function(x){ if(x.type !== 'Text (no question)') n++; return x === q; });
-  var tmp = document.createElement('div'); tmp.innerHTML = qCard(q, n);
-  card.parentNode.replaceChild(tmp.firstChild, card);
-  wireCards(); tally();
+  /* redraw the list so numbering stays right, including per part numbering when split */
+  drawQuiz(); tally();
 }
 function softCheck(card, q){
   var chk = checkQ(q), bad = chk.some(function(c){ return c.bad; });
@@ -12761,6 +12795,30 @@ function qToCriterion(q, n, verbal){
 }
 function splitOn(){
   return state.tpl !== 'quiz' && state.a.tasks.length > 1 && state.split !== false;
+}
+/* quiz parts (Part A, Part B...) can each become their own assessor guide */
+function quizParts(){ return uniq(state.questions.map(function(q){ return q.part; }).filter(Boolean)); }
+function quizSplitOn(){ return state.tpl === 'quiz' && quizParts().length > 1 && state.quizSplit !== false; }
+function partLetter(p){ var m = /^part\s+([a-z0-9]+)/i.exec(p || ''); return m ? m[1] : ''; }
+function quizGroups(){
+  var parts = quizParts(), base = state.meta.taskNo || '', letters = 'abcdefghijklmnopqrstuvwxyz';
+  state.partNames = state.partNames || {};
+  return parts.map(function(p, i){
+    if(state.partNames[p] == null) state.partNames[p] = (state.meta.taskName ? state.meta.taskName + ': ' : '') + p.replace(/[:\s]+$/, '');
+    return { quiz:true, part:p, letter:partLetter(p), label: base + letters[i], name: state.partNames[p],
+             questions: state.questions.filter(function(q){ return q.part === p; }) };
+  });
+}
+/* Section A lines that talk about other parts are dropped; lines that count the whole task are flagged */
+function partLines(ls, g, total, warn, label){
+  var totalWord = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'][total] || '';
+  return (ls || []).filter(function(l){
+    var m = /\bpart\s+([a-z0-9]+)\b/i.exec(l);
+    if(m && g.letter && m[1].toUpperCase() !== g.letter.toUpperCase()) return false;
+    if(new RegExp('\\b(' + total + (totalWord ? '|' + totalWord : '') + ')\\b', 'i').test(l) || /\b(four|three|two|five|\d+)\s*(\(\d+\)\s*)?parts\b/i.test(l))
+      warn.push(label + ': "' + l.replace(/^-\s+/, '').slice(0, 90) + (l.length > 90 ? '\u2026' : '') + '"');
+    return true;
+  });
 }
 function shortTaskName(name){
   return String(name || '').replace(/^(observation|practical|performance|workplace)?\s*task\s*\d+\s*[:\-–]?\s*/i, '').replace(/^(observation|activity)\s*\d+\s*[:\-–]?\s*/i, '').trim() || name;
@@ -12874,7 +12932,7 @@ function tally(){
   var t;
   if(state.tpl === 'quiz'){
     var bad = state.questions.filter(function(q){ return checkQ(q).some(function(c){ return c.bad; }); }).length;
-    t = plural(state.questions.length, 'question') + (bad ? ', ' + bad + ' flagged red' : ', none flagged');
+    t = (quizSplitOn() ? plural(quizParts().length, 'separate guide') + ', ' : '') + plural(state.questions.length, 'question') + (bad ? ', ' + bad + ' flagged red' : ', none flagged');
   } else {
     var gs = allocate().groups;
     var nc = gs.reduce(function(n, g){ return n + g.criteria.length; }, 0);
@@ -13135,6 +13193,25 @@ function importTable(ctx, tb, blankCol){
   }
   return node;
 }
+function imageRowsTable(ctx, q, blankAnswers){
+  function cell(inner, head){
+    return '<w:tc><w:tcPr><w:tcW w:w="0" w:type="auto"/>' + (head ? '<w:shd w:val="clear" w:color="auto" w:fill="D9D9D9"/>' : '') + '</w:tcPr>' + inner + '</w:tc>';
+  }
+  var xml = '<w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:w="0" w:type="auto"/><w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr>' +
+    '<w:tblGrid><w:gridCol w:w="3000"/><w:gridCol w:w="5000"/></w:tblGrid>' +
+    '<w:tr><w:trPr><w:tblHeader/></w:trPr>' + cell('<w:p>' + rX('Item', { b:true }) + '</w:p>', true) + cell('<w:p>' + rX('Meaning', { b:true }) + '</w:p>', true) + '</w:tr>';
+  q.imgRows.forEach(function(r, i){
+    var ans = blankAnswers ? '' : (q.blanks[i] || r.answer || '');
+    xml += '<w:tr><w:trPr><w:cantSplit/></w:trPr>' + cell('<w:p/>') + cell('<w:p>' + (ans ? rX(ans) : '') + '</w:p>') + '</w:tr>';
+  });
+  var tbl = frag(ctx, xml + '</w:tbl>')[0];
+  kidsNamed(tbl, 'tr').slice(1).forEach(function(tr, i){
+    var tc = kidsNamed(tr, 'tc')[0], p = kidsNamed(tc, 'p')[0], row = q.imgRows[i];
+    row.images.forEach(function(d){ var r = ctx.doc.createElementNS(W_NS, 'w:r'); r.appendChild(importDrawing(ctx, d)); p.appendChild(r); ctx.rep.images++; });
+    if(row.caption) tc.appendChild(frag(ctx, pX(rX(row.caption, { sz:16 })))[0]);
+  });
+  return tbl;
+}
 function tableColumn(tb, col){
   return tb.rows.slice(1).map(function(r){ return r[col] ? r[col].text : ''; }).filter(Boolean);
 }
@@ -13155,11 +13232,11 @@ function qLabel(q, n){
   return s;
 }
 
-function quizNodes(ctx){
+function quizNodes(ctx, list){
   var out = [], n = 0, lastPart = null, red = CONFIG.ANSWER_COLOUR;
   function add(xml){ frag(ctx, xml).forEach(function(x){ out.push(x); }); }
   if(CONFIG.QUIZ_INTRO) add(pX(rX(CONFIG.QUIZ_INTRO, { color:red }), { after:120 }));
-  state.questions.forEach(function(q){
+  (list || state.questions).forEach(function(q){
     if($('optParts').checked && q.part && q.part !== lastPart){
       add('<w:p><w:pPr><w:pStyle w:val="Heading3"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="0"/></w:numPr></w:pPr>' + rX(q.part) + '</w:p>');
     }
@@ -13177,8 +13254,9 @@ function quizNodes(ctx){
       else add(pX(rX(l), { after:120 }));
     });
     (q.tables || []).forEach(function(tb){ out.push(importTable(ctx, tb)); add(pX('', { after:120 })); });
+    if(q.imgRows && q.imgRows.length){ out.push(imageRowsTable(ctx, q, false)); add(pX('', { after:120 })); }
     var t = q.type;
-    if(BLANK_TYPES[t] && q.tables && q.tables.length){
+    if(BLANK_TYPES[t] && ((q.tables && q.tables.length) || (q.imgRows && q.imgRows.length))){
       /* image based dropdowns: the table is the answer key, as the template says */
     } else if(CHOICE_TYPES[t]){
       q.options.forEach(function(o){ add(pX(rX(o.text), { numId:ctx.optNum, after:40 })); });
@@ -13188,7 +13266,8 @@ function quizNodes(ctx){
       if(t === 'Multiple answers') add('<w:p>' + ansPPr + rX('Answers: ', { b:true, color:red }) + rX(c.join('; ') + '.', { color:red }) + '</w:p>');
       else add('<w:p>' + ansPPr + rX('Answer: ', { b:true, color:red }) + rX((c[0] || '') + '.', { color:red }) + '</w:p>');
     } else if(BLANK_TYPES[t]){
-      if(t === 'Multiple dropdowns' && q.bank.length) add(pX([rX('Dropdown choices: ', { b:true }), rX(q.bank.join('; ') + '.')], { after:120 }));
+      if(t === 'Multiple dropdowns' && q.choices && q.choices.length) add(pX([rX('Dropdown choices: ', { b:true }), rX(q.choices.map(function(c, i){ return '[' + (i + 1) + '] ' + c.join(' / '); }).join('; ') + '.')], { after:120 }));
+      else if(t === 'Multiple dropdowns' && q.bank.length) add(pX([rX('Dropdown choices: ', { b:true }), rX(q.bank.join('; ') + '.')], { after:120 }));
       add(pX([rX('Answers: ', { b:true, color:red }), rX(q.blanks.map(function(b, i){ return '[' + (i + 1) + '] ' + b; }).join('; ') + '.', { color:red })], { after:120 }));
     } else if(t === 'Matching'){
       add(pX(rX('Prompts (the longer column):', { b:true }), { after:40 }));
@@ -13210,10 +13289,11 @@ function quizNodes(ctx){
   return out;
 }
 
-function fillQuizSectionB(ctx){
+function fillQuizSectionB(ctx, list){
+  list = list || state.questions;
   var h = findHeading(ctx, /^section\s*b/i);
   if(!h){ ctx.rep.missing.push('Section B'); return; }
-  if(!state.questions.length){ ctx.rep.guidance.push('Section B questions'); return; }
+  if(!list.length){ ctx.rep.guidance.push('Section B questions'); return; }
   var audit = findHeading(ctx, /before\s*building\s*in\s*canvas/i, h);
   var keepAudit = $('optAudit').checked;
   var n = h.nextSibling, doomed = [];
@@ -13227,8 +13307,8 @@ function fillQuizSectionB(ctx){
   }
   var anchor = doomed.length ? doomed[doomed.length - 1].nextSibling : h.nextSibling;
   doomed.forEach(function(el){ el.parentNode.removeChild(el); });
-  quizNodes(ctx).forEach(function(x){ h.parentNode.insertBefore(x, anchor); });
-  ctx.rep.filled.push('Section B: ' + plural(state.questions.length, 'question'));
+  quizNodes(ctx, list).forEach(function(x){ h.parentNode.insertBefore(x, anchor); });
+  ctx.rep.filled.push('Section B: ' + plural(list.length, 'question'));
 }
 
 /* ---- Section B, marking guide table ---- */
@@ -13355,7 +13435,13 @@ async function buildGuide(g){
   var ct = parseXml(await entryText(tz, '[Content_Types].xml'), 'The template content types');
   var body = doc.getElementsByTagNameNS(W_NS, 'body')[0];
   var m = Object.assign({}, state.meta);
-  if(g && g.label){
+  if(g && g.label && g.quiz){
+    m.taskNo = g.label;
+    m.taskName = g.name;
+    var total = state.questions.length, warn = [];
+    ['summary', 'what', 'how', 'timing', 'conditions'].forEach(function(k){ m[k] = partLines(state.meta[k], g, total, warn, k === 'summary' ? 'Summary' : k.charAt(0).toUpperCase() + k.slice(1)); });
+    g.warn = uniq(warn);
+  } else if(g && g.label){
     m.taskNo = g.label;
     m.taskName = g.name;
     m.what = g.what;
@@ -13399,7 +13485,7 @@ async function buildGuide(g){
   fillSlot(ctx, 'Equipment/resources provided by RMIT or the workplace', /provided\s*by\s*rmit/i, slotXml(m.rmitRes, true));
 
   if(state.tpl === 'quiz'){
-    fillQuizSectionB(ctx);
+    fillQuizSectionB(ctx, g && g.questions);
   } else {
     fillSlot(ctx, 'TASK description', /^task:?$/i, slotXml(g.taskDesc, false), { all:true });
     fillCriteriaTable(ctx, g.criteria);
@@ -13464,9 +13550,9 @@ async function build(){
   btn.disabled = true; btn.textContent = 'Building…';
   $('report').innerHTML = '';
   try {
-    var groups = state.tpl === 'quiz' ? [null] : allocate().groups;
+    var groups = state.tpl === 'quiz' ? (quizSplitOn() ? quizGroups() : [null]) : allocate().groups;
     var built = [];
-    for(var i = 0; i < groups.length; i++) built.push(await buildGuide(groups[i]));
+    for(var i = 0; i < groups.length; i++){ var bg = await buildGuide(groups[i]); bg.warn = groups[i] && groups[i].warn; built.push(bg); }
     if(built.length === 1){
       save(built[0].blob, built[0].name);
       report(built, built[0].name);
@@ -13494,8 +13580,9 @@ function report(built, fname){
     h += '<div class="flag good">' + pre + 'Filled: ' + esc(r.filled.join(', ')) + '.' + (r.images ? ' ' + plural(r.images, 'image') + ' carried across.' : '') + '</div>';
     if(r.guidance.length) h += '<div class="flag">' + pre + '<b>Left with the template guidance, as nothing was supplied:</b> ' + esc(r.guidance.join(', ')) + '.</div>';
     if(r.missing.length) h += '<div class="flag bad">' + pre + '<b>Not found in this template, so not filled:</b> ' + esc(r.missing.join(', ')) + '. The template may have changed.</div>';
+    if(b.warn && b.warn.length) h += '<div class="flag">' + pre + '<b>Section A still describes the whole task here. Edit in Word:</b><ul>' + b.warn.map(function(w){ return '<li>' + esc(w) + '</li>'; }).join('') + '</ul></div>';
   });
-  if(built.length > 1) h += '<div class="flag">Resources and Instructions on Submitting are copied into every task guide, because the source lists them once for the whole assessment. Trim each one in Word to what that task needs.</div>';
+  if(built.length > 1 && state.tpl !== 'quiz') h += '<div class="flag">Resources and Instructions on Submitting are copied into every task guide, because the source lists them once for the whole assessment. Trim each one in Word to what that task needs.</div>';
   if(state.tpl === 'quiz'){
     var bad = state.questions.filter(function(q){ return checkQ(q).some(function(c){ return c.bad; }); }).length;
     if(bad) h += '<div class="flag bad">' + plural(bad, 'question was', 'questions were') + ' still flagged red when built. Check those in Word.</div>';
