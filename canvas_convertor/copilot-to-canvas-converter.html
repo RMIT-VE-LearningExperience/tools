@@ -211,13 +211,19 @@ function removeReflection(){if(reflectionCount>0){const e=document.getElementByI
 function escH(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
 
 // ═══════════════════════════════════════════════════════
-// ROBUST PARSER v5 — Tolerant delimiter tokeniser, supports delimited (────) and label-based formats
+// ROBUST PARSER v7 — Collapsed-paste normaliser plus tolerant delimiter tokeniser, supports delimited (────) and label-based formats
 // ═══════════════════════════════════════════════════════
 function parseCopilotOutput(){
     debugLog=[];
-    const raw=document.getElementById('copilotInput').value.trim();
-    if(!raw)return alert('Please paste Copilot output first.');
-    dbg('INPUT',raw.length+' chars, '+raw.split('\n').length+' lines');
+    const pasted=document.getElementById('copilotInput').value.trim();
+    if(!pasted)return alert('Please paste Copilot output first.');
+    dbg('INPUT',pasted.length+' chars, '+pasted.split('\n').length+' lines');
+    let raw=normaliseCollapsed(pasted);
+    if(raw!==pasted)dbg('NORMALISED','repaired collapsed paste: now '+raw.split('\n').length+' lines');
+    // v7: per-block "Enhancement applied:" notes are teacher-facing, never page content
+    const before=raw;
+    raw=raw.replace(/^[ \t]*(?:\*\*|__)?Enhancement\s+applied\s*(?:\*\*|__)?\s*:[^\n]*(?:\n|$)/gim,'');
+    if(raw!==before)dbg('STRIPPED','Enhancement applied notes removed');
 
     // ── Detect format: delimited (────) vs label-based ──
     const isDelimited=DELIM_RE.test(raw);DELIM_RE.lastIndex=0;
@@ -231,6 +237,58 @@ function parseCopilotOutput(){
 
     document.getElementById('debugPanel').textContent=debugLog.join('\n');
     populateForm();showExtractionStatus();showEditForm();
+}
+
+// ═══════════════════════════════════════════════════════
+// PASTE NORMALISER (v6)
+// Copy-out from Copilot can drop line breaks partway through a response,
+// running every later section onto one line, and can add markdown escapes.
+// Repair both before parsing. Clean pastes pass through unchanged.
+// Only box-drawing runs (─ ━) count as delimiters here, so hyphens and
+// dashes in prose are never split.
+// ═══════════════════════════════════════════════════════
+function normaliseCollapsed(text){
+    let t=String(text||'');
+    // Markdown escapes: \[ \] \_ \* \# \( \) \- \. \! \>
+    t=t.replace(/\\([\[\]_*#()\-.!>`])/g,'$1');
+    // Section delimiters glued to other text: give each its own line.
+    // Matched left to right so opening and closing runs pair up correctly.
+    let collapsed=false;
+    t=t.replace(/[ \t]*([─━]{3,}[ \t]*[A-Za-z][^─━\n]{1,80}?[ \t]*(?:\([^)\n]*\))?[ \t]*[─━]{3,})[ \t]*/g,(m,d,off,all)=>{
+        const pre=off>0&&all[off-1]!=='\n'?'\n':'';
+        const end=off+m.length,post=end<all.length&&all[end]!=='\n'?'\n':'';
+        if(pre)collapsed=true;
+        return (pre||post)?pre+d+post:m;
+    });
+    // Missing opening bracket on a reference note: "Referenced document: x]"
+    t=t.replace(/(^|[^\[])\b(Referenced\s+document:[^\[\]\n]*\])/g,'$1[$2');
+    // The remaining repairs only run when line breaks were actually lost,
+    // so a clean paste parses exactly as before.
+    if(!collapsed)return t;
+    // Placeholders and enhancement notes glued mid-paragraph: own paragraph
+    t=t.replace(/([^\n])[ \t]+(\[(?:Reinsert\s+image|Referenced\s+document|Insert\s+video|Video)\b)/gi,'$1\n\n$2');
+    t=t.replace(/([.\]!?])[ \t]+(Enhancement\s+applied:)/g,'$1\n\n$2');
+    // Quiz questions glued together or onto the TEACHER INSTRUCTION line
+    t=t.replace(/([^\n])[ \t]+(Q\d{1,2}:[ \t]+(?=[A-Z]))/g,'$1\n$2');
+    // Inline "* item" bullets after a sentence end or colon
+    t=t.replace(/([.:!?"”])[ \t]+\*[ \t]+(?=\S)/g,'$1\n* ');
+    // Inline numbered items: "Instructions: 1. Step" and "end. 2. Step"
+    t=t.replace(/(:)[ \t]+(1[.)])[ \t]+(?=[A-Z])/g,'$1\n$2 ');
+    t=t.replace(/([.!?])[ \t]+(\d{1,2}[.)])[ \t]+(?=[A-Z])/g,'$1\n$2 ');
+    // The last bullet of a list swallows the paragraph after it: keep the
+    // item's first sentence and move the rest into a new paragraph.
+    const L=t.split('\n'),isB=l=>/^\* /.test(l);
+    for(let i=0;i<L.length;i++){
+        if(!isB(L[i]))continue;
+        const last=!(i+1<L.length&&isB(L[i+1]));
+        // A lead-in for the next list ("... four stages:") inside an item
+        const lead=L[i].match(/^(\* .*?[.!?]["”']?)[ \t]+([A-Z][^\n]*:)$/);
+        if(lead&&!last){L.splice(i,1,lead[1],'',lead[2]);i+=2;continue;}
+        if(!last)continue;
+        const m=L[i].match(/^(\* .*?[.!?]["”']?)[ \t]+(?=[A-Z])(.+)$/);
+        if(m)L.splice(i,1,m[1],'',m[2]);
+    }
+    return L.join('\n');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -371,7 +429,7 @@ function parseDelimitedFormat(raw){
     // Industry Tools & Technology
     parsedData.toolEntries=[];
     if(sectionMap.tools){
-        const tLines=sectionMap.tools[0].lines.filter(l=>l.trim());
+        const tLines=splitLabels(sectionMap.tools[0].lines.join('\n'),TOOL_LABELS).split('\n').filter(l=>l.trim());
         for(const line of tLines){
             const colM=line.match(/^(.+?):\s+(.+)$/);
             if(colM&&colM[1].length<60){
@@ -391,7 +449,7 @@ function parseDelimitedFormat(raw){
         dbg('VIDEO_RAW',vt);
         for(const p of[/Suggested\s+search:\s*"?([^"\n]+)"?/i,/Suggested\s+YouTube\s+topic:\s*"?([^"\n]+)"?/i,/YouTube\s+Topic:\s*"?([^"\n]+)"?/i,/Search:\s*"?([^"\n]+)"?/i]){const m=vt.match(p);if(m){parsedData.videoSearch=m[1].replace(/^["]+|["]+$/g,'').trim();break;}}
         // Description — look for Description:, Ideal content:, Purpose:, or fallback
-        for(const p of[/Description:\s*(.+)/i,/Ideal\s+content:\s*(.+)/i,/What\s+to\s+look\s+for:\s*(.+)/i,/Look\s+for:\s*(.+)/i]){const m=vt.match(p);if(m){parsedData.videoDesc=(parsedData.videoDesc?parsedData.videoDesc+' ':'')+m[1].trim();}}
+        for(const p of[/Description:\s*(.+)/i,/Suggested\s+addition:\s*(.+)/i,/Ideal\s+content:\s*(.+)/i,/What\s+to\s+look\s+for:\s*(.+)/i,/Look\s+for:\s*(.+)/i]){const m=vt.match(p);if(m){parsedData.videoDesc=(parsedData.videoDesc?parsedData.videoDesc+' ':'')+m[1].trim();}}
         // Also grab Purpose line if present
         const purM=vt.match(/Purpose:\s*(.+)/i);
         if(purM) parsedData.videoDesc=(parsedData.videoDesc?parsedData.videoDesc+' ':'')+purM[1].trim();
@@ -510,7 +568,8 @@ function splitLabels(text,labels){
     return String(text||'').replace(re,'$1\n');
 }
 const ACT_LABELS=['Title','Duration','Format','Purpose','Resources?(?:\\s*needed)?','Instructions','Alternative'];
-const VID_LABELS=['Description','Suggested\\s+search','Suggested\\s+YouTube\\s+topic','YouTube\\s+Topic','Search','Purpose','Ideal\\s+content','What\\s+to\\s+look\\s+for','Look\\s+for'];
+const VID_LABELS=['Description','Suggested\\s+search','Suggested\\s+YouTube\\s+topic','YouTube\\s+Topic','Search','Purpose','Ideal\\s+content','What\\s+to\\s+look\\s+for','Look\\s+for','Existing','Suggested\\s+addition'];
+const TOOL_LABELS=['Current\\s+tools','Recommended\\s+RMIT\\s+tools','Where\\s+helpful','Discipline-specific\\s+tools'];
 // Key Insights run together: "Title: sentence. Next Title: sentence." Split
 // after terminal punctuation where a short Title Case label with a colon follows.
 function splitInsights(text){
