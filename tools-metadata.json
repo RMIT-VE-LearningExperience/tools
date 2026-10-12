@@ -195,6 +195,17 @@
       "notes": "Project, Cert II Electro",
       "public": true,
       "updatedAt": "2026-10-12T01:54:31.700Z"
+    },
+    "lesson-plan-builder.html": {
+      "description": "Lesson Planner",
+      "tags": [
+        "Canvas",
+        "Teaching & Learning"
+      ],
+      "owner": "BAU",
+      "notes": "Induction",
+      "public": true,
+      "updatedAt": "2026-10-12T21:45:37.355Z"
     }
   }
 }
