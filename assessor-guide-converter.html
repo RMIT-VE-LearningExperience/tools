@@ -11591,13 +11591,13 @@ AAAAAAAAAAAA49UDAGN1c3RvbVhtbC9pdGVtUHJvcHMyLnhtbFBLBQYAAAAAIwAjAA0JAAA01wMAAAA=
 
 var CONFIG = {
   TEMPLATES: {
-    quiz:       { id:'tpl-quiz',       name:'Knowledge Quiz',       short:'Quiz',                 bulletNum:'11',
+    quiz:       { id:'tpl-quiz',       name:'Knowledge Quiz',       short:'Quiz',                 bulletNum:'11', fileLabel:'Knowledge Assessment Quiz',
                   desc:'Canvas quiz. Selected response questions auto marked, essays marked in SpeedGrader.' },
-    submission: { id:'tpl-submission', name:'Knowledge Submission', short:'Knowledge_Submission', bulletNum:'11',
+    submission: { id:'tpl-submission', name:'Knowledge Submission', short:'Knowledge_Submission', bulletNum:'11', fileLabel:'Knowledge Assessment Submission',
                   desc:'Project, report, portfolio or case study, marked against criteria.' },
-    practical:  { id:'tpl-practical',  name:'Practical',            short:'Practical',            bulletNum:'6',
+    practical:  { id:'tpl-practical',  name:'Practical',            short:'Practical',            bulletNum:'6',  fileLabel:'Practical Assessment',
                   desc:'Observed performance against a checklist. Verbal questions are built into the checklist.' },
-    product:    { id:'tpl-product',    name:'Product',              short:'Product',              bulletNum:'6',
+    product:    { id:'tpl-product',    name:'Product',              short:'Product',              bulletNum:'6',  fileLabel:'Product Assessment',
                   desc:'Something the student makes or builds, assessed against criteria.' }
   },
 
@@ -11606,6 +11606,12 @@ var CONFIG = {
   LABEL_DASH: ' — ',
   POINTS: '1 point',
   ANSWER_COLOUR: 'E61E2A',
+  /* Instructions on Submitting your Assessment: fixed wording for these templates */
+  QUIZ_SUBMISSION: 'This assessment task will be completed in CANVAS.',
+  PRACTICAL_SUBMISSION_LEAD: 'You will be observed completing all required practical tasks by your assessor. In addition, you will need to upload the following documents/appendices as evidence in CANVAS:',
+  PRACTICAL_SUBMISSION_SAVE: 'Save the file format in PDF or Word/Excel etc. before uploading',
+  PRACTICAL_SUBMISSION_BULLETS: ['Naming convention', 'Example: Roberts_s123456_{unit}_Task{no}'],
+
   /* leave empty so Section B starts at question 1, as in populated guides */
   QUIZ_INTRO: '',
   /* added under every multiple choice stem that has no instruction line of its own */
@@ -11998,7 +12004,15 @@ function addStemPara(q, p){
 /* "Question 1", and also part-prefixed "Question A1" or "Question B.2" */
 function isQuestionHead(t){ return /^question\s*([a-z]?\s*[.-]?\s*\d+)\b/i.exec(String(t || '').trim()); }
 
-function parseQuestionTable(tb, part){
+/* any question whose wording says "match" is a Matching question */
+function applyMatchRule(q){
+  if(q.type === 'Matching' || !/\bmatch(es|ed|ing)?\b/i.test(q.stem.join(' '))) return q;
+  if(q.pairs.length){ q.type = 'Matching'; return q; }
+  q.notes.push({ bad:true, t:'The question says match but no pairs were found to build a Matching question. Check the type and key.' });
+  return q;
+}
+function parseQuestionTable(tb, part){ return applyMatchRule(parseQuestionTable0(tb, part)); }
+function parseQuestionTable0(tb, part){
   var rows = tb.rows;
   var m = isQuestionHead(rows[0][0].text);
   var q = newQ(part, m[1]);
@@ -12090,6 +12104,14 @@ function parseQuestionTable(tb, part){
     data.forEach(function(r){ if(r[0].text || leftImgs[data.indexOf(r)].length) q.pairs.push({ l:r[0].text.replace(/\n/g, ' '), r:(r[1].redText || r[1].text).replace(/\n/g, ' ') }); });
     /* "4) Compliance Code ..." numbering on every answer is just a list label */
     if(q.pairs.length > 1 && q.pairs.every(function(p){ return /^\d+\)\s*/.test(p.r); })) q.pairs.forEach(function(p){ p.r = p.r.replace(/^\d+\)\s*/, ''); });
+    if(leftImgs.some(function(im){ return im.length; }) && /\bmatch(es|ed|ing)?\b/i.test(q.stem.join(' '))){
+      /* the question says match, so it stays Matching; the pictures go in a numbered table */
+      q.imgRows = data.map(function(r, i){ return { images:leftImgs[i], caption:r[0].text.replace(/\n/g, ' '), answer:q.pairs[i] ? q.pairs[i].r : '' }; });
+      q.pairs = q.imgRows.map(function(r, i){ return { l:'Image ' + (i + 1), r:r.answer }; });
+      q.type = 'Matching';
+      q.notes.push({ t:'Matching, because the question says match. Canvas matching prompts are text only, so the prompts are Image 1, Image 2 and so on, with the pictures in a numbered table. Add the pictures to the question text in Canvas.' });
+      return q;
+    }
     if(leftImgs.some(function(im){ return im.length; })){
       /* Canvas matching prompts are text only, so pictures go to an image based dropdown table */
       q.type = 'Multiple dropdowns';
@@ -12204,6 +12226,7 @@ function parseParagraphQuestions(blocks){
     if(q.options.length) q.type = nc > 1 ? 'Multiple answers' : 'Multiple choice';
     else q.type = 'Essay question';
     q.notes.push({ t:'Read from numbered paragraphs rather than a question table, so check the stem and options closely.' });
+    applyMatchRule(q);
   });
   return qs;
 }
@@ -12213,34 +12236,73 @@ function parseParagraphQuestions(blocks){
    oral question tables (Step | Questions | Benchmark responses), evidence tables
    (Expected evidence | Benchmarks) and classic criteria tables with a Satisfactory column. */
 
-function parseCriteriaTable(tb){
-  var head = tb.rows[0];
-  if(!head || head.length < 2) return null;
-  var ht = head.map(function(c){ return norm(c.text); });
-  function col(re, not){ return ht.findIndex(function(t, k){ return (not || []).indexOf(k) === -1 && re.test(t); }); }
-  var si = col(/^(step|no|#|item|number|ref)\b|step no|^\d*$/);
-  var bi = col(/benchmark|observable|minimum|requirement|expected response|indicator|performance standard|model answer/, [si]);
-  var ii = col(/^(image|picture|photo|diagram|sign image)$/, [si, bi]);
-  var di = col(/question|description|criteri|task|activity|sign type|expected evidence|evidence|skill|element|observ|performance|step description|item/, [si, bi, ii]);
-  var judged = ht.some(function(t){ return /^s$|satisf|yes|achieved|competent|^ns$|not yet|✓/.test(t); });
+var STEP_ID = /^[A-Z]{0,2}\.?\d{1,3}[a-z]?\.?$/i;
+
+/* a row as grid columns: a cell merged across 2 columns fills both, so header and body line up */
+function gridRow(r){
+  var g = [];
+  r.forEach(function(c){ for(var k = 0; k < (c.span || 1); k++) g.push(c); });
+  return g;
+}
+function criteriaMap(cells){
+  var ht = cells.map(function(c){ return norm(c.text); });
+  /* first grid column whose header matches, skipping cells already given a role */
+  function col(re, taken){ return ht.findIndex(function(t, k){ return taken.indexOf(cells[k]) === -1 && re.test(t); }); }
+  function cellAt(k){ return k >= 0 ? cells[k] : null; }
+  var si = col(/^(step|no|#|item|number|ref)\b|step no|^\d*$/, []);
+  var bi = col(/benchmark|observable|minimum|requirement|expected response|indicator|performance standard|model answer/, [cellAt(si)]);
+  var ii = col(/^(image|picture|photo|diagram|sign image)$/, [cellAt(si), cellAt(bi)]);
+  var di = col(/question|description|criteri|task|activity|sign type|expected evidence|evidence|skill|element|observ|performance|step description|item/, [cellAt(si), cellAt(bi), cellAt(ii)]);
+  var judged = ht.some(function(t){ return /^s$|satisf|yes|achieved|competent|^ns$|not yet|n y s|observation|✓/.test(t); });
   if(di < 0 || (bi < 0 && !judged)) return null;
-  var oral = /question/.test(ht[di]);
-  var evidence = /evidence/.test(ht[di]);
+  function span(k){ var o = []; if(k < 0) return o; cells.forEach(function(c, x){ if(c === cells[k]) o.push(x); }); return o; }
+  return { width:cells.length, si:si, di:di, bi:bi, ii:ii, span:{ si:span(si), di:span(di), bi:span(bi), ii:span(ii) },
+           oral:/question/.test(ht[di]), evidence:/evidence/.test(ht[di]), head:ht.join('|') };
+}
+
+/* last = the previous marking table's layout, so a table that carries on without a header still reads */
+function parseCriteriaTable(tb, last){
+  var rows = tb.rows.map(gridRow);
+  var map = null, hi = -1;
+  for(var i = 0; i < Math.min(4, rows.length); i++){
+    if(rows[i].length < 2) continue;
+    /* a header never starts with a step number or carries red benchmark text */
+    if(STEP_ID.test((rows[i][0].text || '').trim()) || rows[i].some(function(c){ return c.red; })) break;
+    var mm = criteriaMap(rows[i]);
+    if(mm){ map = mm; hi = i; break; }
+  }
+  if(!map && last){
+    /* continuation: no header, same width, and the first column holds step numbers */
+    var body = rows.filter(function(r){ return r.length === last.width; });
+    var steps = body.filter(function(r){ return (last.span.si || []).some(function(k){ return r[k] && STEP_ID.test(r[k].text.trim()); }); }).length;
+    if(body.length && steps >= Math.max(1, Math.floor(body.length / 2))){ map = last; hi = -1; }
+  }
+  if(!map) return null;
   var out = [];
-  tb.rows.slice(1).forEach(function(r){
+  rows.slice(hi + 1).forEach(function(r){
     if(r.length < 2) return;
-    var c = r[di], q = bi >= 0 ? r[bi] : null;
+    var distinct = r.filter(function(c, k){ return k === 0 || c !== r[k - 1]; });
+    if(distinct.length < 2) return;                                  /* title row like "PART 2: ..." */
+    if(r.map(function(c){ return norm(c.text); }).join('|') === map.head) return;   /* repeated header */
+    if(criteriaMap(r) && !STEP_ID.test((r[0].text || '').trim())) return;          /* a header for a new section */
+    /* under a merged header the text can sit in any of the columns it spans */
+    function pick(role){
+      var ks = map.span[role] || [], found = null;
+      ks.forEach(function(k){ var x = r[k]; if(!found && x && (x.text || x.paras.some(function(p){ return p.imgs.length; }))) found = x; });
+      return found || (ks.length ? r[ks[0]] : null);
+    }
+    var c = pick('di'), q = map.bi >= 0 ? pick('bi') : null, st = map.si >= 0 ? pick('si') : null, im = map.ii >= 0 ? pick('ii') : null;
     if(!c || (!c.text && !c.paras.some(function(p){ return p.imgs.length; })) || /^example\b/i.test(c.text)) return;
     var imgs = [];
-    if(ii >= 0 && r[ii]) r[ii].paras.forEach(function(p){ imgs = imgs.concat(p.imgs); });
+    if(im) im.paras.forEach(function(p){ imgs = imgs.concat(p.imgs); });
     c.paras.forEach(function(p){ imgs = imgs.concat(p.imgs); });
     out.push({
-      n: si >= 0 && r[si] ? r[si].text.replace(/\s+/g, '') : '',
-      c: c.text, req: q ? q.text : '', images: imgs,
-      kind: oral ? 'oral' : 'crit', evidence: evidence
+      n: st && st !== c ? st.text.replace(/\s+/g, '') : '',
+      c: c.text, req: q && q !== c ? q.text : '', images: imgs,
+      kind: map.oral ? 'oral' : 'crit', evidence: map.evidence
     });
   });
-  return out.length ? out : null;
+  return out.length ? { rows:out, map:map } : null;
 }
 
 /* ---------- the whole source ---------- */
@@ -12401,6 +12463,7 @@ function analyseSource(src){
   var part = '', section = '', sectionField = '', skipping = false, headLevel = 0, instrLevel = 0, qTables = 0;
   var obsTask = '', obsPhase = '', obsTaskUsed = {}, appendix = false, appendixNames = [];
   var tasks = [], sharedSubmission = m.submission.slice(), rowSeq = 0;
+  var lastCritMap = null;
   function bucket(name){
     name = name || obsTask;
     var t = tasks.filter(function(x){ return x.name === name; })[0];
@@ -12468,7 +12531,9 @@ function analyseSource(src){
       return;
     }
     if(kvTables.indexOf(b) !== -1) return;
-    var cr = parseCriteriaTable(b);
+    var crx = parseCriteriaTable(b, lastCritMap);
+    var cr = crx ? crx.rows : null;
+    if(crx) lastCritMap = crx.map;
     if(cr){
       cr.forEach(function(r){ r.task = obsTask; r.seq = ++rowSeq; if(r.kind === 'oral') oral.push(r); else criteria.push(r); });
       cr.filter(function(r){ return r.evidence; }).forEach(function(r){ m.submission.push(r.c); if(obsTask) bucket().submission.push(r.c); });
@@ -12638,7 +12703,7 @@ var SECTION_FIELDS = [
   { k:'where', l:'Where' },
   { k:'how', l:'How' },
   { k:'conditions', l:'Conditions for assessment', sub:'Each line becomes a bullet' },
-  { k:'submission', l:'Instructions on Submitting your Assessment', sub:'Each line becomes a bullet' },
+  { k:'submission', l:'Instructions on Submitting your Assessment', sub:'Each line becomes a bullet. Quiz: replaced by the fixed CANVAS wording. Practical: the fixed observed-tasks wording is used and these lines are listed as the documents to upload.' },
   { k:'studentRes', l:'Equipment/resources students must supply', sub:'Each line becomes a bullet' },
   { k:'rmitRes', l:'Equipment/resources to be provided by RMIT or the workplace', sub:'Each line becomes a bullet' }
 ];
@@ -13197,9 +13262,22 @@ function imageRowsTable(ctx, q, blankAnswers){
   function cell(inner, head){
     return '<w:tc><w:tcPr><w:tcW w:w="0" w:type="auto"/>' + (head ? '<w:shd w:val="clear" w:color="auto" w:fill="D9D9D9"/>' : '') + '</w:tcPr>' + inner + '</w:tc>';
   }
+  var match = q.type === 'Matching';
   var xml = '<w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:w="0" w:type="auto"/><w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr>' +
     '<w:tblGrid><w:gridCol w:w="3000"/><w:gridCol w:w="5000"/></w:tblGrid>' +
-    '<w:tr><w:trPr><w:tblHeader/></w:trPr>' + cell('<w:p>' + rX('Item', { b:true }) + '</w:p>', true) + cell('<w:p>' + rX('Meaning', { b:true }) + '</w:p>', true) + '</w:tr>';
+    '<w:tr><w:trPr><w:tblHeader/></w:trPr>' + cell('<w:p>' + rX(match ? 'Prompt' : 'Item', { b:true }) + '</w:p>', true) + cell('<w:p>' + rX(match ? 'Image' : 'Meaning', { b:true }) + '</w:p>', true) + '</w:tr>';
+  if(match){
+    /* Prompt | Image: the prompt label and credit on the left, the picture on the right, no answers in the table */
+    q.imgRows.forEach(function(r, i){
+      xml += '<w:tr><w:trPr><w:cantSplit/></w:trPr>' + cell('<w:p>' + rX('Image ' + (i + 1), { b:true }) + '</w:p>' + (r.caption ? pX(rX(r.caption, { sz:16 })) : '')) + cell('<w:p/>') + '</w:tr>';
+    });
+    var mt = frag(ctx, xml + '</w:tbl>')[0];
+    kidsNamed(mt, 'tr').slice(1).forEach(function(tr, i){
+      var p = kidsNamed(kidsNamed(tr, 'tc')[1], 'p')[0];
+      q.imgRows[i].images.forEach(function(d){ var r = ctx.doc.createElementNS(W_NS, 'w:r'); r.appendChild(importDrawing(ctx, d)); p.appendChild(r); ctx.rep.images++; });
+    });
+    return mt;
+  }
   q.imgRows.forEach(function(r, i){
     var ans = blankAnswers ? '' : (q.blanks[i] || r.answer || '');
     xml += '<w:tr><w:trPr><w:cantSplit/></w:trPr>' + cell('<w:p/>') + cell('<w:p>' + (ans ? rX(ans) : '') + '</w:p>') + '</w:tr>';
@@ -13420,8 +13498,23 @@ function stripLeftovers(ctx){
   if(count) ctx.rep.filled.push('Removed ' + plural(count, 'leftover guidance paragraph'));
 }
 
+/* quiz and practical use fixed wording; practical lists the source's evidence documents under it */
+function submissionXml(m){
+  var bn = CONFIG.TEMPLATES[state.tpl].bulletNum;
+  function para(t){ return pX(rX(t, { sz:20 }), { sz:20 }); }
+  function bullet(t){ return pX(rX(t, { sz:20 }), { style:'ListParagraph', numId:bn, sz:20 }); }
+  if(state.tpl === 'quiz') return para(CONFIG.QUIZ_SUBMISSION);
+  if(state.tpl === 'practical'){
+    var unit = (m.unitCodes || '<Unit Code>').split(/\s*,\s*/)[0], no = m.taskNo || '[No]';
+    var evidence = (m.submission || []).filter(function(l){ return l && !/observed completing|save the file format|naming convention|^example:\s*roberts/i.test(l); });
+    return para(CONFIG.PRACTICAL_SUBMISSION_LEAD) + evidence.map(function(l){ return bullet(l.replace(/^[-\u2022*]\s+/, '')); }).join('') +
+      para(CONFIG.PRACTICAL_SUBMISSION_SAVE) + CONFIG.PRACTICAL_SUBMISSION_BULLETS.map(function(l){ return bullet(l.replace('{unit}', unit).replace('{no}', no)); }).join('');
+  }
+  return slotXml(m.submission, true);
+}
+
 function fileStem(m, T){
-  return [ (m.unitCodes || 'Assessment').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, ''), m.taskNo ? 'AT' + m.taskNo : '', T.short, 'Assessor_Guide' ].filter(Boolean).join('_');
+  return [ (m.unitCodes || 'Assessment').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, ''), m.taskNo ? 'AT' + m.taskNo : '', T.fileLabel ].filter(Boolean).join('_');
 }
 
 /* one Word file from one group; returns its name, bytes and what was filled */
@@ -13480,7 +13573,7 @@ async function buildGuide(g){
   fillSlot(ctx, 'Where', /^where$/i, slotXml(m.where, false));
   fillSlot(ctx, 'How', /^how$/i, slotXml(m.how, false));
   fillSlot(ctx, 'Conditions for assessment', /^conditions\s*for\s*assessment/i, slotXml(m.conditions, true));
-  fillSlot(ctx, 'Instructions on Submitting your Assessment', /^instructions\s*on\s*submitting/i, slotXml(m.submission, true));
+  fillSlot(ctx, 'Instructions on Submitting your Assessment', /^instructions\s*on\s*submitting/i, submissionXml(m));
   fillSlot(ctx, 'Equipment/resources students must supply', /students\s*must\s*supply/i, slotXml(m.studentRes, true));
   fillSlot(ctx, 'Equipment/resources provided by RMIT or the workplace', /provided\s*by\s*rmit/i, slotXml(m.rmitRes, true));
 
@@ -13560,7 +13653,7 @@ async function build(){
       var files = [];
       for(var k = 0; k < built.length; k++) files.push({ name: built[k].name, data: new Uint8Array(await built[k].blob.arrayBuffer()) });
       var m = state.meta, T = CONFIG.TEMPLATES[state.tpl];
-      var zname = [ (m.unitCodes || 'Assessment').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, ''), m.taskNo ? 'AT' + m.taskNo : '', T.short, 'Assessor_Guides' ].filter(Boolean).join('_') + '.zip';
+      var zname = fileStem(m, T) + '.zip';
       save(makeZip(files, 'application/zip'), zname);
       report(built, zname);
     }
