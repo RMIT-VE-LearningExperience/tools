@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson Plan Builder</title>
+<style>
+html, body { margin: 0; }
+[hidden] { display: none !important; }
+/* Layout: form on the left, live output on the right (stacks on phones). CoVE palette. */
+:root {
+  --bg: #f2f2f2;
+  --panel: #ffffff;
+  --line: #d4d6d0;
+  --soft: #e3e5e0;
+  --fg: #000000;
+  --muted: #4a4a5c;
+  --navy: #000054;
+  --red: #e61e2a;
+  --red-ink: #ffffff;
+  --yellow: #fac800;
+  --ok: #1d6b3a;
+  --focus: #000054;
+  --font: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #07072a; --panel: #10103a; --line: #2c2c5e; --soft: #1a1a48;
+    --fg: #ffffff; --muted: #b8b8d0; --navy: #c9c9ff; --red: #ff4b55; --red-ink: #000000;
+    --yellow: #fac800; --ok: #6fd39a; --focus: #fac800; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #07072a; --panel: #10103a; --line: #2c2c5e; --soft: #1a1a48;
+  --fg: #ffffff; --muted: #b8b8d0; --navy: #c9c9ff; --red: #ff4b55; --red-ink: #000000;
+  --yellow: #fac800; --ok: #6fd39a; --focus: #fac800; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; }
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; border-bottom: 4px solid var(--red); padding-bottom: 12px; margin-bottom: 20px; }
+header.top h1 { margin: 0; font-size: 1.6rem; color: var(--navy); text-wrap: balance; }
+header.top p { margin: 4px 0 0; color: var(--muted); max-width: 60ch; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+fieldset { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 16px; margin: 0 0 16px; min-width: 0; }
+legend { font-weight: 700; color: var(--navy); padding: 0 6px; font-size: 1.05rem; }
+.part legend .num { display: inline-block; min-width: 1.6em; height: 1.6em; line-height: 1.6em; text-align: center; background: var(--navy); color: var(--panel); border-radius: 50%; font-size: .85rem; margin-right: 6px; }
+fieldset.optional { border-left: 4px solid var(--yellow); }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; min-width: 0; }
+label { font-weight: 600; font-size: .9rem; }
+.hint { font-weight: 400; color: var(--muted); font-size: .82rem; }
+p.hint { margin: 0 0 12px; }
+input, select, textarea { font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; width: 100%; }
+input[type="checkbox"] { width: 1.15rem; height: 1.15rem; margin: 2px 0 0; flex: none; accent-color: var(--navy); }
+textarea { min-height: 84px; resize: vertical; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, [role="tab"]:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+button { font: inherit; font-weight: 600; cursor: pointer; border-radius: 4px; padding: 8px 14px; border: 2px solid var(--navy); background: var(--panel); color: var(--navy); }
+button:hover { background: var(--soft); }
+button.primary { background: var(--red); border-color: var(--red); color: var(--red-ink); }
+button.primary:hover { filter: brightness(1.08); }
+button.small { padding: 4px 10px; font-size: .85rem; }
+.check { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+.check label { display: flex; flex-direction: column; }
+.bank { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; padding: 10px; background: var(--soft); border-radius: 4px; margin-bottom: 12px; }
+.bank .field { margin: 0; flex: 1 1 200px; }
+.break-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, .8fr) auto; gap: 10px; align-items: end; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--soft); }
+.break-row .field { margin: 0; }
+@media (max-width: 520px) { .break-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.timecheck { padding: 10px 12px; border-radius: 4px; font-weight: 600; margin-bottom: 16px; border: 2px solid var(--ok); color: var(--ok); background: var(--panel); font-variant-numeric: tabular-nums; }
+.timecheck.warn { border-color: var(--yellow); background: var(--yellow); color: #000000; }
+.timecheck ul { margin: 6px 0 0; padding-left: 20px; font-weight: 400; }
+.note { font-size: .85rem; color: var(--ok); min-height: 1.2em; margin: 0; }
+.out { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+.out-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+[role="tablist"] { display: flex; gap: 4px; }
+[role="tab"] { border: none; border-bottom: 3px solid transparent; border-radius: 0; background: none; color: var(--muted); padding: 6px 10px; }
+[role="tab"][aria-selected="true"] { color: var(--navy); border-bottom-color: var(--red); }
+.panel { padding: 16px; max-height: 78vh; overflow: auto; }
+@media (max-width: 900px) { .out { position: static; } .panel { max-height: none; } }
+#code { font-family: var(--mono); font-size: .8rem; min-height: 60vh; white-space: pre; }
+.status { font-size: .85rem; color: var(--ok); min-height: 1.2em; padding: 0 12px; }
+.example-flag { display: inline-block; background: var(--yellow); color: #000000; font-weight: 700; font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; }
+/* Preview approximates a Canvas page */
+.preview { font-family: "Lato", var(--font); color: var(--fg); }
+.preview h2 { color: var(--navy); font-size: 1.5rem; margin: 0 0 8px; }
+.preview h3 { color: var(--navy); font-size: 1.2rem; margin: 22px 0 8px; border-bottom: 2px solid var(--soft); padding-bottom: 4px; }
+.preview h4 { font-size: 1rem; margin: 14px 0 4px; }
+.preview table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.preview caption { text-align: left; font-weight: 600; padding-bottom: 6px; color: var(--muted); }
+.preview th, .preview td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+.preview thead th { background: var(--navy); color: var(--panel); }
+.preview tbody th { background: var(--soft); white-space: nowrap; }
+.table-scroll { overflow-x: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Lesson Plan Builder</h1>
+      <p>Fill in the four parts of your session. The plan builds as you type and copies as accessible HTML ready for Canvas.</p>
+    </div>
+    <div class="toolbar">
+      <button type="button" id="btnExample">Load example</button>
+      <button type="button" id="btnClear">Clear form</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <form id="form" novalidate>
+      <p id="exampleNote"><span class="example-flag">Example</span> The form starts with a sample plan. Replace it with your own content or select Clear form.</p>
+
+      <fieldset>
+        <legend>Session details</legend>
+        <div class="row">
+          <div class="field"><label for="unitCode">Unit code</label><input id="unitCode" type="text"></div>
+          <div class="field"><label for="unitName">Unit name</label><input id="unitName" type="text"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="topicNum">Topic number</label><input id="topicNum" type="text" inputmode="numeric"></div>
+          <div class="field"><label for="topicTitle">Topic title</label><input id="topicTitle" type="text"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="startTime">Start time</label><input id="startTime" type="time" step="300"></div>
+          <div class="field">
+            <label for="length">Session length</label>
+            <select id="length">
+              <option value="60">1 hour</option>
+              <option value="90">1.5 hours</option>
+              <option value="120">2 hours</option>
+              <option value="180">3 hours</option>
+              <option value="240">4 hours</option>
+              <option value="300">5 hours</option>
+              <option value="360">6 hours</option>
+              <option value="420">7 hours</option>
+              <option value="480">8 hours</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="delivery">Delivery mode</label>
+            <select id="delivery"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="outcomes">Learning outcomes <span class="hint">Copy the learning outcomes from the module's Introduction page in Canvas and paste them here. Lists paste as one outcome per line. Each line completes the sentence "By the end of this session, students can..."</span></label>
+          <textarea id="outcomes"></textarea>
+        </div>
+        <div class="field">
+          <label for="preClass">Before class <span class="hint">Optional. Pre-reading or tasks, one per line.</span></label>
+          <textarea id="preClass"></textarea>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Breaks</legend>
+        <p class="hint">Set each break by its start time. A break that falls inside a part splits that part around it, so lunch can sit in the middle of a long practical.</p>
+        <div id="breaks"></div>
+        <button type="button" class="small" id="addBreak">Add break</button>
+      </fieldset>
+
+      <div id="timecheck" class="timecheck" role="status" aria-live="polite"></div>
+
+      <div id="parts"></div>
+
+      <fieldset>
+        <legend>Optional sections</legend>
+        <p class="hint">Turn on the sections your context needs. They appear in the form below and in the plan.</p>
+        <div id="optToggles"></div>
+        <p class="note" id="optNote" role="status" aria-live="polite"></p>
+      </fieldset>
+
+      <div id="optSections"></div>
+
+      <fieldset>
+        <legend>Assessment and mapping</legend>
+        <div class="field">
+          <label for="assessment">Assessment links <span class="hint">Which tasks and questions this session supports, one per line.</span></label>
+          <textarea id="assessment"></textarea>
+        </div>
+        <div class="field">
+          <label for="competency">Unit elements and performance criteria <span class="hint">Optional. What this session covers from the unit, one per line. For example: Element 2: Identify plan features (PC 2.1, 2.2)</span></label>
+          <textarea id="competency"></textarea>
+        </div>
+        <div class="field">
+          <label for="notes">Educator notes <span class="hint">Optional. Anything else to remember for this session.</span></label>
+          <textarea id="notes"></textarea>
+        </div>
+      </fieldset>
+    </form>
+
+    <section class="out" aria-label="Lesson plan output">
+      <div class="out-head">
+        <div role="tablist" aria-label="Output view">
+          <button type="button" role="tab" id="tabPreview" aria-selected="true" aria-controls="panelPreview">Preview</button>
+          <button type="button" role="tab" id="tabCode" aria-selected="false" aria-controls="panelCode" tabindex="-1">HTML</button>
+        </div>
+        <button type="button" class="primary" id="btnCopy">Copy HTML</button>
+      </div>
+      <div class="status" id="copyStatus" role="status" aria-live="polite"></div>
+      <div class="panel" id="panelPreview" role="tabpanel" aria-labelledby="tabPreview" tabindex="0"><div class="preview" id="preview"></div></div>
+      <div class="panel" id="panelCode" role="tabpanel" aria-labelledby="tabCode" hidden>
+        <label for="code" class="sr-only">Generated HTML</label>
+        <textarea id="code" readonly spellcheck="false"></textarea>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+/* ===== CONFIG: edit these to change defaults without touching the logic ===== */
+var CONFIG = {
+  storageKey: "cove-lesson-plan-builder-v1",
+  defaultStart: "09:00",
+  breakLabels: ["Break", "Morning tea", "Lunch", "Afternoon tea"],
+
+  /* Delivery modes. "safety: true" turns on the Safety and equipment section when the mode is chosen. */
+  deliveryModes: [
+    { key: "f2f",       label: "Face to face" },
+    { key: "practical", label: "Workshop or practical", safety: true },
+    { key: "online",    label: "Online live" },
+    { key: "blended",   label: "Blended" },
+    { key: "workplace", label: "Workplace", safety: true }
+  ],
+
+  parts: [
+    { key: "start",    name: "Start",           prompt: "Welcome, goals, recap and link to pre-reading" },
+    { key: "show",     name: "Show",            prompt: "Explain the key concept or skill, then demonstrate it" },
+    { key: "practise", name: "Practise",        prompt: "Students apply it through a task, scenario or activity" },
+    { key: "check",    name: "Check and close", prompt: "Check understanding, link to assessment, preview next session" }
+  ],
+
+  /* Activity starters for Part 3. "modes" lists the delivery modes each one suits. */
+  activities: {
+    practical: { label: "Practical task", modes: ["practical", "workplace", "f2f", "blended"],
+      students: "Complete the task in pairs using the job sheet\nSelf-check work against the task checklist\nAsk for sign-off when complete",
+      trainer: "Brief the task and safety requirements\nCirculate and give feedback on technique\nSign off completed tasks",
+      resources: "Job sheet\nTask checklist\nTools, equipment and PPE" },
+    demo: { label: "Demonstrate, then practise", modes: ["practical", "workplace", "f2f", "blended", "online"],
+      students: "Watch the full demonstration\nTalk through the steps with the educator\nPerform the skill with support, then on your own",
+      trainer: "Demonstrate the skill at normal speed, then step by step\nGuide the group through it together\nObserve each student and give feedback",
+      resources: "Demonstration equipment\nStep-by-step guide" },
+    workplaceTask: { label: "Supervised workplace task", modes: ["workplace"],
+      students: "Complete the task as part of normal work\nRecord what you did in your logbook\nDiscuss the task with your supervisor",
+      trainer: "Agree the task with the workplace supervisor\nObserve and record performance\nGive feedback and plan next steps",
+      resources: "Logbook or observation record\nWorkplace procedures" },
+    caseStudy: { label: "Case study", modes: ["f2f", "online", "blended"],
+      students: "Read the case study in small groups\nIdentify the key issues and options\nAgree on a recommended response and share it with the class",
+      trainer: "Introduce the scenario\nPrompt groups with guiding questions\nDraw out links to workplace practice",
+      resources: "Case study handout\nDiscussion questions" },
+    rolePlay: { label: "Role play", modes: ["f2f", "online", "blended"],
+      students: "Work in groups of three: worker, client and observer\nObserver gives feedback using the checklist\nSwap roles and repeat",
+      trainer: "Model a short example\nSet up groups and hand out role cards\nDebrief what worked and why",
+      resources: "Role cards\nObserver checklist" },
+    breakout: { label: "Breakout room discussion", modes: ["online", "blended"],
+      students: "Discuss the question in your breakout room\nRecord your group's ideas on the shared slide\nShare one idea when the class returns",
+      trainer: "Set the question and time limit before opening rooms\nVisit each room\nDraw the ideas together in the main room",
+      resources: "Shared slide or document\nDiscussion question" },
+    poll: { label: "Live poll and quiz", modes: ["online", "blended", "f2f"],
+      students: "Answer each poll question\nExplain your answer to a partner or in the chat\nRe-answer after discussion",
+      trainer: "Run the poll and show the results\nDiscuss common wrong answers\nClarify the key points",
+      resources: "Polling tool\nQuestion set" },
+    worked: { label: "Worked problems", modes: ["f2f", "online", "blended", "practical"],
+      students: "Work through the problems individually\nCheck answers with a partner\nShare one method with the class",
+      trainer: "Work one example on the board\nSupport students who are stuck\nReview common errors",
+      resources: "Problem sheet\nCalculators" },
+    cardSort: { label: "Card sort", modes: ["f2f", "blended"],
+      students: "Sort the cards into categories in small groups\nMark any card that could fit more than one category\nCompare your sort with another group",
+      trainer: "Hand out card sets and category headings\nLet disagreements stand until the debrief\nClarify categories in the debrief",
+      resources: "Card sets\nCategory headings" },
+    galleryWalk: { label: "Gallery walk", modes: ["f2f"],
+      students: "Move between posters and add an example on a sticky note\nDiscuss the examples at one poster in a small group\nReport back your group's main insight",
+      trainer: "Set up posters around the room\nTime each round\nConnect the ideas in a short summary",
+      resources: "Posters\nSticky notes and markers" }
+  },
+
+  /* Optional sections. "place" sets where they appear in the plan: before or after the four parts. */
+  optional: [
+    { key: "safety", label: "Safety and equipment", hint: "Recommended for workshop, practical and workplace delivery", heading: "Safety and Equipment", place: "before",
+      fields: [
+        { id: "safe_hazards", label: "Hazards and risk controls", out: "Hazards and Risk Controls" },
+        { id: "safe_ppe", label: "PPE required", out: "PPE Required" },
+        { id: "safe_supervision", label: "Supervision and ratios", out: "Supervision" },
+        { id: "safe_equipment", label: "Equipment and room bookings", out: "Equipment and Room Bookings" }
+      ] },
+    { key: "wellbeing", label: "Content and wellbeing", hint: "For topics that may be confronting or personal", heading: "Content and Wellbeing", place: "before",
+      fields: [
+        { id: "well_notice", label: "Content notice to read to students", out: "Content Notice", paragraphs: true },
+        { id: "well_support", label: "Support services to display", out: "Support Services" }
+      ] },
+    { key: "support", label: "Learner support", hint: "Adjustments, language, literacy and numeracy, and extension", heading: "Learner Support", place: "after",
+      fields: [
+        { id: "ls_adjust", label: "Reasonable adjustments", out: "Reasonable Adjustments" },
+        { id: "ls_lln", label: "Language, literacy and numeracy support", out: "Language, Literacy and Numeracy Support" },
+        { id: "ls_extension", label: "Extension for students who finish early", out: "Extension Activities" }
+      ] }
+  ],
+
+  example: {
+    unitCode: "ABC12345", unitName: "Example unit", topicNum: "3", topicTitle: "Reading Basic Plans and Drawings",
+    startTime: "09:00", length: "180", delivery: "practical",
+    outcomes: "identify common drawing symbols and abbreviations\nread dimensions using a scale\nlocate key features on a floor plan",
+    preClass: "Read Page 3.1: Drawing Symbols\nComplete the Knowledge Check on Page 3.1",
+    breaks: [{ label: "Morning tea", at: "09:45", min: "15" }],
+    opt_safety: true, opt_wellbeing: false, opt_support: true,
+    safe_hazards: "Trip hazards from bags and cables: keep walkways clear",
+    safe_ppe: "Closed-toe shoes",
+    safe_supervision: "One educator to 20 students",
+    safe_equipment: "Book Workshop 2 and plan tables",
+    ls_adjust: "A3 copies of plans for students who need larger print",
+    ls_lln: "Glossary of drawing abbreviations",
+    ls_extension: "Calculate the floor area of two rooms on the plan",
+    assessment: "AT2 Practical Task, Part A\nAT1 Knowledge Questions 4 to 6",
+    competency: "Element 1: Prepare to read plans (PC 1.1 to 1.3)\nElement 2: Identify plan features (PC 2.1, 2.2)",
+    notes: "Have printed plans ready for students without devices.",
+    parts: {
+      start: { min: "15", focus: "Welcome, goals and recap",
+        students: "Share one thing from the pre-reading", trainer: "Welcome students and outline the session goals\nRecap the last session", resources: "Session goals on the board" },
+      show: { min: "30", focus: "Explain and demonstrate",
+        students: "Follow the demonstration and ask questions\nNote the key steps", trainer: "Explain drawing symbols and scales\nDemonstrate reading a floor plan step by step", resources: "Sample plans\nScale rulers" },
+      practise: { min: "90", focus: "Practical task: read a floor plan",
+        students: "Complete the task in pairs using the job sheet\nSelf-check work against the task checklist\nAsk for sign-off when complete", trainer: "Brief the task and safety requirements\nCirculate and give feedback on technique\nSign off completed tasks", resources: "Job sheet\nTask checklist\nPrinted floor plans" },
+      check: { min: "30", focus: "Check, reflect and preview",
+        students: "Complete the quick quiz\nShare one question you still have", trainer: "Review quiz answers as a class\nLink today's content to the assessment\nPreview the next session", resources: "Quick quiz" }
+    }
+  }
+};
+/* ===== END CONFIG ===== */
+
+var $ = function (id) { return document.getElementById(id); };
+var PART_FIELDS = ["min", "focus", "students", "trainer", "resources"];
+var SIMPLE = ["unitCode", "unitName", "topicNum", "topicTitle", "startTime", "length", "delivery", "outcomes", "preClass", "assessment", "competency", "notes"];
+CONFIG.optional.forEach(function (s) { s.fields.forEach(function (f) { SIMPLE.push(f.id); }); });
+
+/* ---------- Helpers ---------- */
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+/* Strip leading bullets or numbering left over from pasted lists */
+function stripMarker(l) { return l.replace(/^\s*(?:[•◦▪●‣⁃·*\-]+|\d+[.)]|[a-z][.)])\s+/i, "").trim(); }
+function lines(s) { return String(s || "").split(/\r?\n/).map(stripMarker).filter(Boolean); }
+function ul(arr) { return "<ul>\n" + arr.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("\n") + "\n</ul>\n"; }
+function textBlock(arr) { return arr.length === 1 ? "<p>" + esc(arr[0]) + "</p>\n" : ul(arr); }
+function num(v) { var n = parseInt(v, 10); return isNaN(n) || n < 0 ? 0 : n; }
+function parseTime(v) {
+  var m = /^(\d{1,2}):(\d{2})/.exec(v || "");
+  return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : null;
+}
+function timeValue(m) { m = ((m % 1440) + 1440) % 1440; var h = Math.floor(m / 60), mm = m % 60; return (h < 10 ? "0" : "") + h + ":" + (mm < 10 ? "0" : "") + mm; }
+function clock(m) {
+  m = ((m % 1440) + 1440) % 1440;
+  var h = Math.floor(m / 60), mm = m % 60, ap = h < 12 ? "am" : "pm", h12 = h % 12 === 0 ? 12 : h % 12;
+  return h12 + ":" + (mm < 10 ? "0" : "") + mm + " " + ap;
+}
+function mins(m) {
+  if (m < 60) return m + " min";
+  var h = Math.floor(m / 60), r = m % 60;
+  return h + (h === 1 ? " hour" : " hours") + (r ? " " + r + " min" : "");
+}
+function modeByKey(k) { return CONFIG.deliveryModes.filter(function (m) { return m.key === k; })[0]; }
+
+/* ---------- Build form sections from CONFIG ---------- */
+function buildDelivery() {
+  $("delivery").innerHTML = CONFIG.deliveryModes.map(function (m) { return '<option value="' + m.key + '">' + esc(m.label) + "</option>"; }).join("");
+}
+
+function buildParts() {
+  var html = "";
+  CONFIG.parts.forEach(function (p, i) {
+    var k = p.key, bank = "";
+    if (k === "practise") {
+      bank = '<div class="bank"><div class="field"><label for="bankSel">Start from an activity <span class="hint">Activities that suit your delivery mode are listed first</span></label><select id="bankSel"></select></div>' +
+        '<button type="button" class="small" id="bankBtn">Use this activity</button></div>';
+    }
+    html += '<fieldset class="part"><legend><span class="num" aria-hidden="true">' + (i + 1) + "</span>Part " + (i + 1) + ": " + esc(p.name) + "</legend>" +
+      '<p class="hint">' + esc(p.prompt) + "</p>" + bank +
+      '<div class="row"><div class="field"><label for="' + k + '_min">Minutes of activity <span class="hint">Not counting breaks</span></label><input id="' + k + '_min" type="number" min="0" step="5"></div>' +
+      '<div class="field"><label for="' + k + '_focus">Focus <span class="hint">Shows in the overview table</span></label><input id="' + k + '_focus" type="text"></div></div>' +
+      '<div class="field"><label for="' + k + '_students">What students do <span class="hint">One per line</span></label><textarea id="' + k + '_students"></textarea></div>' +
+      '<div class="field"><label for="' + k + '_trainer">What the educator does <span class="hint">One per line</span></label><textarea id="' + k + '_trainer"></textarea></div>' +
+      '<div class="field"><label for="' + k + '_resources">Resources <span class="hint">One per line</span></label><textarea id="' + k + '_resources"></textarea></div></fieldset>';
+  });
+  $("parts").innerHTML = html;
+}
+
+function buildBank() {
+  var sel = $("bankSel"), current = sel.value, mode = $("delivery").value;
+  var label = (modeByKey(mode) || {}).label || "this mode";
+  var fits = [], others = [];
+  Object.keys(CONFIG.activities).forEach(function (a) {
+    var act = CONFIG.activities[a], opt = '<option value="' + a + '">' + esc(act.label) + "</option>";
+    (act.modes.indexOf(mode) >= 0 ? fits : others).push(opt);
+  });
+  sel.innerHTML = (fits.length ? '<optgroup label="Suits ' + esc(label) + '">' + fits.join("") + "</optgroup>" : "") +
+    (others.length ? '<optgroup label="Other activities">' + others.join("") + "</optgroup>" : "");
+  if (current && sel.querySelector('option[value="' + current + '"]')) sel.value = current;
+}
+
+function buildOptional() {
+  $("optToggles").innerHTML = CONFIG.optional.map(function (s) {
+    return '<div class="check"><input type="checkbox" id="opt_' + s.key + '"><label for="opt_' + s.key + '">' + esc(s.label) +
+      ' <span class="hint">' + esc(s.hint) + "</span></label></div>";
+  }).join("");
+  $("optSections").innerHTML = CONFIG.optional.map(function (s) {
+    return '<fieldset class="optional" id="sec_' + s.key + '" hidden><legend>' + esc(s.label) + "</legend>" +
+      s.fields.map(function (f) {
+        return '<div class="field"><label for="' + f.id + '">' + esc(f.label) + ' <span class="hint">' + (f.paragraphs ? "One paragraph per line" : "One per line") +
+          '</span></label><textarea id="' + f.id + '"></textarea></div>';
+      }).join("") + "</fieldset>";
+  }).join("");
+}
+function syncOptional() {
+  CONFIG.optional.forEach(function (s) { $("sec_" + s.key).hidden = !$("opt_" + s.key).checked; });
+}
+
+/* ---------- Breaks ---------- */
+var breaks = [];
+function renderBreaks() {
+  if (!breaks.length) { $("breaks").innerHTML = '<p class="hint">No breaks. Select Add break to include one.</p>'; return; }
+  $("breaks").innerHTML = breaks.map(function (b, i) {
+    var opts = CONFIG.breakLabels.map(function (l) { return "<option" + (l === b.label ? " selected" : "") + ">" + esc(l) + "</option>"; }).join("");
+    return '<div class="break-row" role="group" aria-label="Break ' + (i + 1) + '">' +
+      '<div class="field"><label for="break_' + i + '_label">Type</label><select id="break_' + i + '_label" data-break="' + i + '" data-key="label">' + opts + "</select></div>" +
+      '<div class="field"><label for="break_' + i + '_at">Starts at</label><input id="break_' + i + '_at" type="time" step="300" value="' + esc(b.at || "") + '" data-break="' + i + '" data-key="at"></div>' +
+      '<div class="field"><label for="break_' + i + '_min">Minutes</label><input id="break_' + i + '_min" type="number" min="0" step="5" value="' + esc(b.min || "") + '" data-break="' + i + '" data-key="min"></div>' +
+      '<button type="button" class="small" data-remove="' + i + '" aria-label="Remove break ' + (i + 1) + '">Remove</button></div>';
+  }).join("");
+}
+$("breaks").addEventListener("input", function (e) {
+  var i = e.target.dataset.break;
+  if (i !== undefined) breaks[i][e.target.dataset.key] = e.target.value;
+});
+$("breaks").addEventListener("click", function (e) {
+  var i = e.target.dataset ? e.target.dataset.remove : undefined;
+  if (i === undefined) return;
+  breaks.splice(+i, 1); renderBreaks(); update(); $("addBreak").focus();
+});
+$("addBreak").addEventListener("click", function () {
+  var start = parseTime($("startTime").value); if (start === null) start = parseTime(CONFIG.defaultStart);
+  var at = start + Math.round(num($("length").value) / 2 / 15) * 15;
+  breaks.push({ label: CONFIG.breakLabels[0], at: timeValue(at), min: "15" });
+  renderBreaks(); update();
+  $("break_" + (breaks.length - 1) + "_label").focus();
+});
+
+/* ---------- Collect and fill ---------- */
+function collect() {
+  var d = { parts: {}, breaks: breaks.map(function (b) { return { label: b.label, at: b.at, min: b.min }; }) };
+  SIMPLE.forEach(function (id) { d[id] = $(id).value; });
+  CONFIG.optional.forEach(function (s) { d["opt_" + s.key] = $("opt_" + s.key).checked; });
+  CONFIG.parts.forEach(function (p) {
+    d.parts[p.key] = {};
+    PART_FIELDS.forEach(function (f) { d.parts[p.key][f] = $(p.key + "_" + f).value; });
+  });
+  return d;
+}
+function fill(d) {
+  SIMPLE.forEach(function (id) { $(id).value = d[id] !== undefined ? d[id] : ""; });
+  if (!$("delivery").value) $("delivery").value = CONFIG.deliveryModes[0].key;
+  if (!$("length").value) $("length").value = "180";
+  CONFIG.optional.forEach(function (s) { $("opt_" + s.key).checked = !!d["opt_" + s.key]; });
+  CONFIG.parts.forEach(function (p) {
+    var src = (d.parts && d.parts[p.key]) || {};
+    PART_FIELDS.forEach(function (f) { $(p.key + "_" + f).value = src[f] || ""; });
+  });
+  breaks = (d.breaks || []).map(function (b) { return { label: b.label || CONFIG.breakLabels[0], at: b.at || "", min: b.min || "" }; });
+  renderBreaks(); syncOptional(); buildBank();
+}
+
+/* Drafts saved by the first version stored delivery as a label and a single break placed after a part */
+function migrate(d) {
+  if (!d) return d;
+  var byLabel = CONFIG.deliveryModes.filter(function (m) { return m.label === d.delivery; })[0];
+  if (byLabel) d.delivery = byLabel.key;
+  if (!d.breaks) {
+    d.startTime = d.startTime || CONFIG.defaultStart;
+    d.breaks = [];
+    if (num(d.breakMin) > 0) {
+      var t = parseTime(d.startTime), after = parseInt(d.breakAfter, 10);
+      CONFIG.parts.forEach(function (p, i) { if (i <= after) t += num(d.parts && d.parts[p.key] ? d.parts[p.key].min : 0); });
+      d.breaks.push({ label: "Break", at: timeValue(t), min: d.breakMin });
+    }
+  }
+  return d;
+}
+
+/* ---------- Schedule: parts run in order, breaks are placed at their start times ---------- */
+function schedule(d) {
+  var issues = [], start = parseTime(d.startTime);
+  if (start === null) { issues.push("Add a start time. Times are calculated from " + clock(parseTime(CONFIG.defaultStart)) + " until you do."); start = parseTime(CONFIG.defaultStart); }
+  var list = d.breaks.map(function (b, i) { return { label: b.label, at: parseTime(b.at), min: num(b.min), n: i + 1 }; });
+  list.forEach(function (b) {
+    if (b.at === null) issues.push("Break " + b.n + " (" + b.label + ") has no start time, so it is left out.");
+    else if (b.min === 0) issues.push("Break " + b.n + " (" + b.label + ") has no length, so it is left out.");
+  });
+  list = list.filter(function (b) { return b.at !== null && b.min > 0; }).sort(function (a, b) { return a.at - b.at; });
+
+  var t = start, rows = [], bi = 0, parts = [];
+  function takeBreaks(partIdx) {
+    while (bi < list.length && list[bi].at <= t) {
+      var b = list[bi];
+      if (b.at < start) issues.push(b.label + " at " + clock(b.at) + " is before the session starts. It has been placed at " + clock(t) + ".");
+      else if (b.at < t) issues.push(b.label + " at " + clock(b.at) + " overlaps the break before it. It has been moved to " + clock(t) + ".");
+      var row = { type: "break", label: b.label, start: t, min: b.min };
+      rows.push(row);
+      if (partIdx !== null && parts[partIdx]) parts[partIdx].inner.push(row);
+      t += b.min; bi++;
+    }
+  }
+  CONFIG.parts.forEach(function (p, i) {
+    takeBreaks(i > 0 ? i - 1 : null);
+    var rem = num(d.parts[p.key].min), first = true;
+    parts[i] = { start: t, end: t, min: rem, inner: [] };
+    if (rem === 0) { rows.push({ type: "part", idx: i, part: p, start: t, min: 0, cont: false }); return; }
+    while (rem > 0) {
+      var next = bi < list.length ? list[bi].at : Infinity;
+      var seg = Math.min(rem, next - t);
+      rows.push({ type: "part", idx: i, part: p, start: t, min: seg, cont: !first });
+      first = false; t += seg; rem -= seg; parts[i].end = t;
+      if (rem > 0) takeBreaks(i);
+    }
+  });
+  /* A break planned exactly at the end of the last part still counts */
+  while (bi < list.length && list[bi].at === t) { rows.push({ type: "break", label: list[bi].label, start: t, min: list[bi].min }); t += list[bi].min; bi++; }
+  for (; bi < list.length; bi++) issues.push(list[bi].label + " at " + clock(list[bi].at) + " is after the planned activities finish at " + clock(t) + ", so it is left out.");
+  /* Breaks that sit between two parts belong to neither part's detail section */
+  parts.forEach(function (pt) { pt.inner = pt.inner.filter(function (b) { return b.start > pt.start && b.start < pt.end; }); });
+  return { rows: rows, parts: parts, start: start, total: t - start, issues: issues };
+}
+
+/* ---------- Generate the Canvas HTML ---------- */
+function optionalHtml(d, place) {
+  var out = "";
+  CONFIG.optional.forEach(function (s) {
+    if (s.place !== place || !d["opt_" + s.key]) return;
+    var body = "";
+    s.fields.forEach(function (f) {
+      var ls = lines(d[f.id]);
+      if (!ls.length) return;
+      body += "<h4>" + esc(f.out) + "</h4>\n" + (f.paragraphs ? ls.map(function (l) { return "<p>" + esc(l) + "</p>\n"; }).join("") : textBlock(ls));
+    });
+    if (body) out += "<h3>" + esc(s.heading) + "</h3>\n" + body;
+  });
+  return out;
+}
+
+function generate(d) {
+  var s = schedule(d), out = "", len = num(d.length);
+  var topic = [d.topicNum ? "Topic " + d.topicNum : "", d.topicTitle].filter(Boolean).join(": ");
+  out += "<h2>Lesson Plan" + (topic ? ": " + esc(topic) : "") + "</h2>\n";
+  var meta = [];
+  var unit = [d.unitCode, d.unitName].filter(Boolean).join(" ");
+  if (unit) meta.push("<strong>Unit:</strong> " + esc(unit));
+  meta.push("<strong>Session:</strong> " + clock(s.start) + " to " + clock(s.start + len) + " (" + esc(mins(len)) + ")");
+  var mode = modeByKey(d.delivery);
+  if (mode) meta.push("<strong>Delivery:</strong> " + esc(mode.label));
+  out += "<p>" + meta.join(" | ") + "</p>\n";
+
+  var lo = lines(d.outcomes);
+  if (lo.length) out += "<h3>Learning Outcomes</h3>\n<p>By the end of this session, students can:</p>\n" + ul(lo);
+  var pc = lines(d.preClass);
+  if (pc.length) out += "<h3>Before Class</h3>\n<p>Students complete the following before attending:</p>\n" + ul(pc);
+
+  out += "<h3>Session Overview</h3>\n<table>\n<caption>Session timing and focus for each part</caption>\n<thead>\n<tr>\n<th scope=\"col\">Start time</th>\n<th scope=\"col\">Duration</th>\n<th scope=\"col\">Part</th>\n<th scope=\"col\">Focus</th>\n</tr>\n</thead>\n<tbody>\n";
+  s.rows.forEach(function (r) {
+    var name, focus;
+    if (r.type === "break") { name = r.label; focus = "Rest and informal check-ins"; }
+    else { name = "Part " + (r.idx + 1) + ": " + r.part.name + (r.cont ? " (continued)" : ""); focus = d.parts[r.part.key].focus || r.part.prompt; }
+    out += "<tr>\n<th scope=\"row\">" + clock(r.start) + "</th>\n<td>" + r.min + " min</td>\n<td>" + esc(name) + "</td>\n<td>" + esc(focus) + "</td>\n</tr>\n";
+  });
+  out += "</tbody>\n</table>\n";
+
+  out += optionalHtml(d, "before");
+
+  var allRes = [];
+  CONFIG.parts.forEach(function (p, i) {
+    var pd = d.parts[p.key], pt = s.parts[i];
+    out += "<h3>Part " + (i + 1) + ": " + esc(p.name) + " (" + clock(pt.start) + " to " + clock(pt.end) + ")</h3>\n";
+    if (pd.focus) out += "<p><strong>Focus:</strong> " + esc(pd.focus) + "</p>\n";
+    if (pt.inner.length) {
+      out += "<p><strong>Activity time:</strong> " + esc(mins(pt.min)) + ", with " +
+        pt.inner.map(function (b) { return esc(b.label) + " from " + clock(b.start) + " to " + clock(b.start + b.min); }).join(" and ") + ".</p>\n";
+    }
+    var st = lines(pd.students), tr = lines(pd.trainer), rs = lines(pd.resources);
+    if (st.length) out += "<h4>What Students Do</h4>\n" + textBlock(st);
+    if (tr.length) out += "<h4>What the Educator Does</h4>\n" + textBlock(tr);
+    if (rs.length) { out += "<h4>Resources</h4>\n" + textBlock(rs); rs.forEach(function (x) { if (allRes.indexOf(x) < 0) allRes.push(x); }); }
+  });
+
+  out += optionalHtml(d, "after");
+
+  var as = lines(d.assessment);
+  if (as.length) out += "<h3>Assessment Links</h3>\n<p>This session supports:</p>\n" + ul(as);
+  var cm = lines(d.competency);
+  if (cm.length) out += "<h3>Unit Coverage</h3>\n<p>This session covers:</p>\n" + ul(cm);
+  if (allRes.length) out += "<h3>Resources Checklist</h3>\n" + ul(allRes);
+  var nt = lines(d.notes);
+  if (nt.length) out += "<h3>Educator Notes</h3>\n" + textBlock(nt);
+  return { html: out, s: s, len: len };
+}
+
+function update() {
+  var d = collect(), g = generate(d), s = g.s;
+  $("preview").innerHTML = g.html.replace(/<table>/g, '<div class="table-scroll"><table>').replace(/<\/table>/g, "</table></div>");
+  $("code").value = g.html;
+
+  var msgs = s.issues.slice(), tc = $("timecheck"), head;
+  if (s.total === g.len) head = "Timing adds up: " + clock(s.start) + " to " + clock(s.start + s.total) + ", " + mins(s.total) + " including breaks.";
+  else {
+    var diff = Math.abs(g.len - s.total);
+    head = "Timing check: " + mins(s.total) + " planned, including breaks. Session length is " + mins(g.len) + ". " +
+      (s.total < g.len ? "You have " + mins(diff) + " unallocated." : "You are " + mins(diff) + " over.");
+  }
+  tc.className = s.total === g.len && !msgs.length ? "timecheck" : "timecheck warn";
+  tc.innerHTML = esc(head) + (msgs.length ? "<ul>" + msgs.map(function (m) { return "<li>" + esc(m) + "</li>"; }).join("") + "</ul>" : "");
+
+  try { localStorage.setItem(CONFIG.storageKey, JSON.stringify(d)); } catch (e) {}
+}
+
+/* Two-step buttons: first press asks, second press acts. Replaces confirm(), which the viewer blocks. */
+function twoStep(btn, ask, needsAsk, act) {
+  var original = btn.textContent, timer = null;
+  btn.addEventListener("click", function () {
+    if (needsAsk() && !btn.dataset.armed) {
+      btn.dataset.armed = "1"; btn.textContent = ask;
+      timer = setTimeout(function () { delete btn.dataset.armed; btn.textContent = original; }, 4000);
+      return;
+    }
+    clearTimeout(timer); delete btn.dataset.armed; btn.textContent = original; act();
+  });
+}
+
+/* ---------- Start up ---------- */
+buildDelivery();
+buildParts();
+buildOptional();
+var saved = null;
+try { saved = migrate(JSON.parse(localStorage.getItem(CONFIG.storageKey))); } catch (e) {}
+fill(saved || CONFIG.example);
+$("exampleNote").hidden = !!saved;
+
+$("form").addEventListener("input", function () { $("exampleNote").hidden = true; update(); });
+$("form").addEventListener("change", function (e) {
+  if (e.target.id === "delivery") {
+    buildBank();
+    var m = modeByKey(e.target.value);
+    if (m && m.safety && !$("opt_safety").checked) {
+      $("opt_safety").checked = true;
+      $("optNote").textContent = "Safety and equipment turned on for " + m.label + " delivery. Untick it if you do not need it.";
+    } else $("optNote").textContent = "";
+  }
+  if (e.target.id && e.target.id.indexOf("opt_") === 0) { syncOptional(); $("optNote").textContent = ""; }
+  update();
+});
+$("form").addEventListener("submit", function (e) { e.preventDefault(); });
+
+/* Paste bridge: textareas only take plain text, so read the clipboard HTML and turn list items into one line each.
+   In Learning outcomes, drop stem lines such as "By the end of this topic, you will be able to:". */
+$("form").addEventListener("paste", function (e) {
+  var ta = e.target;
+  if (!ta || ta.tagName !== "TEXTAREA" || !e.clipboardData) return;
+  var items = [], html = e.clipboardData.getData("text/html");
+  if (html) {
+    var doc = new DOMParser().parseFromString(html, "text/html");
+    doc.querySelectorAll("li").forEach(function (li) {
+      var c = li.cloneNode(true);
+      c.querySelectorAll("ul, ol").forEach(function (n) { n.remove(); });
+      var t = c.textContent.replace(/\s+/g, " ").trim();
+      if (t) items.push(t);
+    });
+  }
+  if (!items.length) items = lines(e.clipboardData.getData("text/plain"));
+  if (ta.id === "outcomes") items = items.filter(function (l) { return !/:\s*$/.test(l); });
+  if (!items.length) return;
+  e.preventDefault();
+  var text = items.map(stripMarker).join("\n");
+  var before = ta.value.slice(0, ta.selectionStart);
+  if (before && !/\n$/.test(before)) text = "\n" + text;
+  ta.setRangeText(text, ta.selectionStart, ta.selectionEnd, "end");
+  ta.dispatchEvent(new Event("input", { bubbles: true }));
+});
+
+twoStep($("btnClear"), "Select again to clear", function () { return true; }, function () {
+  fill({ startTime: CONFIG.defaultStart, length: "180", delivery: CONFIG.deliveryModes[0].key, breaks: [], parts: {} });
+  $("exampleNote").hidden = true; $("optNote").textContent = ""; update(); $("unitCode").focus();
+});
+twoStep($("btnExample"), "Select again to replace your plan", function () { return true; }, function () {
+  fill(CONFIG.example); $("exampleNote").hidden = false; $("optNote").textContent = ""; update();
+});
+twoStep($("bankBtn"), "Select again to replace Part 3 text", function () {
+  return ["students", "trainer", "resources"].some(function (f) { return $("practise_" + f).value.trim(); });
+}, function () {
+  var a = CONFIG.activities[$("bankSel").value];
+  $("practise_students").value = a.students; $("practise_trainer").value = a.trainer; $("practise_resources").value = a.resources;
+  if (!$("practise_focus").value.trim()) $("practise_focus").value = a.label;
+  update(); $("practise_students").focus();
+});
+
+function selectTab(which) {
+  var prev = which === "preview";
+  $("tabPreview").setAttribute("aria-selected", prev); $("tabCode").setAttribute("aria-selected", !prev);
+  $("tabPreview").tabIndex = prev ? 0 : -1; $("tabCode").tabIndex = prev ? -1 : 0;
+  $("panelPreview").hidden = !prev; $("panelCode").hidden = prev;
+}
+$("tabPreview").addEventListener("click", function () { selectTab("preview"); });
+$("tabCode").addEventListener("click", function () { selectTab("code"); });
+document.querySelector('[role="tablist"]').addEventListener("keydown", function (e) {
+  if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+    var toCode = $("tabPreview").getAttribute("aria-selected") === "true";
+    selectTab(toCode ? "code" : "preview"); (toCode ? $("tabCode") : $("tabPreview")).focus();
+  }
+});
+
+$("btnCopy").addEventListener("click", function () {
+  var txt = $("code").value, st = $("copyStatus");
+  function fallback() {
+    selectTab("code"); $("code").focus(); $("code").select();
+    st.textContent = "Copy was blocked. The HTML is selected: press Ctrl+C (or Cmd+C) to copy it.";
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(function () { st.textContent = "Copied. Paste into the Canvas HTML editor."; }, fallback);
+  } else fallback();
+});
+
+update();
+</script>
+</body>
+</html>
