@@ -12249,7 +12249,7 @@ function criteriaMap(cells){
   /* first grid column whose header matches, skipping cells already given a role */
   function col(re, taken){ return ht.findIndex(function(t, k){ return taken.indexOf(cells[k]) === -1 && re.test(t); }); }
   function cellAt(k){ return k >= 0 ? cells[k] : null; }
-  var si = col(/^(step|no|#|item|number|ref)\b|step no|^\d*$/, []);
+  var si = col(/^(step|no|#|item|number|ref)\b|step no|question\s*(number|no)\b|^q\s*no\b|^\d*$/, []);
   var bi = col(/benchmark|observable|minimum|requirement|expected response|indicator|performance standard|model answer/, [cellAt(si)]);
   var ii = col(/^(image|picture|photo|diagram|sign image)$/, [cellAt(si), cellAt(bi)]);
   var di = col(/question|description|criteri|task|activity|sign type|expected evidence|evidence|skill|element|observ|performance|step description|item/, [cellAt(si), cellAt(bi), cellAt(ii)]);
@@ -12267,7 +12267,7 @@ function parseCriteriaTable(tb, last){
   for(var i = 0; i < Math.min(4, rows.length); i++){
     if(rows[i].length < 2) continue;
     /* a header never starts with a step number or carries red benchmark text */
-    if(STEP_ID.test((rows[i][0].text || '').trim()) || rows[i].some(function(c){ return c.red; })) break;
+    if(STEP_ID.test((rows[i][0].text || '').trim()) || rows[i].some(function(c){ return c.red || (c.text || '').length > 60; })) continue;
     var mm = criteriaMap(rows[i]);
     if(mm){ map = mm; hi = i; break; }
   }
@@ -12284,7 +12284,9 @@ function parseCriteriaTable(tb, last){
     var distinct = r.filter(function(c, k){ return k === 0 || c !== r[k - 1]; });
     if(distinct.length < 2) return;                                  /* title row like "PART 2: ..." */
     if(r.map(function(c){ return norm(c.text); }).join('|') === map.head) return;   /* repeated header */
-    if(criteriaMap(r) && !STEP_ID.test((r[0].text || '').trim())) return;          /* a header for a new section */
+    /* a header for a new section: short labels only, never red, never a step number */
+    var headerLike = r.every(function(c){ return (c.text || '').length <= 60 && !c.red; }) && !STEP_ID.test((r[0].text || '').trim());
+    if(headerLike && criteriaMap(r)) return;
     /* under a merged header the text can sit in any of the columns it spans */
     function pick(role){
       var ks = map.span[role] || [], found = null;
@@ -12480,7 +12482,7 @@ function analyseSource(src){
       if(!b.heading && b.text && !b.list && /(^|[-\u2013:]\s*)appendix\s*\d+\s*$/i.test(b.text) && b.text.length < 80){
         appendix = true; appendixNames.push(b.text); return;
       }
-      if(b.heading && b.heading <= 2 && /^(observation|practical|performance|workplace)?\s*task\s*\d+|^observation\s*\d+|^activity\s*\d+/i.test(b.text)){
+      if(b.heading && b.heading <= 2 && /^(observation|practical|performance|workplace)?\s*task\s*(\d+|[a-z])\b|^observation\s*(\d+|[a-z])\b|^activity\s*(\d+|[a-z])\b/i.test(b.text)){
         obsTask = b.text.trim(); obsPhase = 'student'; sectionField = ''; skipping = false; bucket(); return;
       }
       if(obsTask && b.text){
@@ -12886,7 +12888,7 @@ function partLines(ls, g, total, warn, label){
   });
 }
 function shortTaskName(name){
-  return String(name || '').replace(/^(observation|practical|performance|workplace)?\s*task\s*\d+\s*[:\-–]?\s*/i, '').replace(/^(observation|activity)\s*\d+\s*[:\-–]?\s*/i, '').trim() || name;
+  return String(name || '').replace(/^(observation|practical|performance|workplace)?\s*task\s*(\d+|[a-z])\b\s*[:\-–]?\s*/i, '').replace(/^(observation|activity)\s*\d+\s*[:\-–]?\s*/i, '').trim() || name;
 }
 function allocate(){
   var split = splitOn();
