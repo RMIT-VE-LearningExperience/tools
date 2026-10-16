@@ -238,6 +238,17 @@
       "notes": "Assessment, Goldilocks, ABB",
       "public": true,
       "updatedAt": "2026-10-16T07:45:17.708Z"
+    },
+    "cove-assessment-builder.html": {
+      "description": "Translate student and assessor guides into Canvas assessment assets",
+      "tags": [
+        "Canvas",
+        "Assessment"
+      ],
+      "owner": "BAU",
+      "notes": "Assessment, Goldilocks, ABB",
+      "public": true,
+      "updatedAt": "2026-10-16T07:46:19.176Z"
     }
   }
 }
