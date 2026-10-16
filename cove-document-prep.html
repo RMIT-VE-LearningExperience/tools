@@ -165,6 +165,7 @@
   @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
 
+
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
 <script>
@@ -330,7 +331,7 @@ function parseNumbering(xml){
       const i = parseInt(lvl.getAttributeNS(W, "ilvl"), 10) || 0;
       levels[i] = {
         fmt:   wVal(wChild(lvl, "numFmt")) || "decimal",
-        text:  wVal(wChild(lvl, "lvlText")) || "%1.",
+        text:  (() => { const lt = wChild(lvl, "lvlText"); return lt ? (wVal(lt) || "") : "%1."; })(),
         start: parseInt(wVal(wChild(lvl, "start")) || "1", 10)
       };
     }
@@ -445,7 +446,8 @@ function makeNumberer(numbering){
     for(let i = ilvl + 1; i < c.length; i++) c[i] = undefined;
     const lvl = levels[ilvl];
     if(lvl.fmt === "bullet") return { text: "-", numeric: null };
-    let text = lvl.text || "%1.";
+    if(lvl.fmt === "none") return null;   // hidden numbering (e.g. Heading 2 in VE templates)
+    let text = lvl.text;
     for(let i = 0; i < 9; i++){
       const token = "%" + (i + 1);
       if(text.includes(token)){
@@ -453,12 +455,69 @@ function makeNumberer(numbering){
         text = text.split(token).join(formatCounter(c[i] || 0, src.fmt));
       }
     }
+    if(!/[A-Za-z0-9]/.test(text)) return null;   // marker with no visible number
     return { text, numeric: c[0], level: ilvl, raw: c.slice(0, ilvl + 1) };
   };
 }
 
 function cleanCell(text){
   return text.replace(/\s*\n\s*/g, " ").replace(/\|/g, "\\|").trim();
+}
+
+/* ---------- benchmark codes (units of competency only) ---------- */
+// Codes are fixed by the unit, not by any AI read:
+//   PC  — the unit's own numbering (PC1.1)
+//   KE/PE — top-level item n, sub-item letter, third level roman: KE-1a, KE-1a.i
+//   Only items with no sub-items get a code (no umbrella rows); a sub-item row
+//   carries its parent text verbatim before " › " so the row reads in full.
+//   FS  — FS-<skill label>, only where the unit tabulates foundation skills.
+function buildBenchmark(listItems, pcLines, fsRows, headings, lines){
+  const isUnit = headings.some(h => /^performance evidence$/i.test(h.text)) &&
+                 headings.some(h => /^knowledge evidence$/i.test(h.text));
+  if(!isUnit) return null;
+  const rows = [];
+  const problems = [];
+  for(const p of pcLines) rows.push(["PC" + p.el + "." + p.pc, "PC", p.text]);
+  if(!pcLines.length) problems.push("no performance criteria found in the Elements and Performance Criteria table");
+
+  const family = (fam, sectionRe) => {
+    const items = listItems.filter(i => sectionRe.test(i.section));
+    if(!items.length){ problems.push("no list items under " + (fam === "KE" ? "Knowledge" : "Performance") + " Evidence"); return; }
+    const base = Math.min(...items.map(i => i.level));
+    const path = []; const counts = [];
+    items.forEach((it, idx) => {
+      const lv = Math.min(it.level - base, 2);
+      counts[lv] = (counts[lv] || 0) + 1;
+      counts.length = lv + 1;
+      path.length = lv; path[lv] = it.text;
+      const next = items[idx + 1];
+      const isLeaf = !next || (Math.min(next.level - base, 2) <= lv);
+      if(!isLeaf) return;
+      let code = fam + "-" + counts[0];
+      if(lv >= 1) code += toLetter(counts[1] || 1);
+      if(lv >= 2) code += "." + toRoman(counts[2] || 1);
+      rows.push([code, fam, path.slice(0, lv + 1).join(" \u203a ")]);
+    });
+  };
+  family("KE", /^knowledge evidence$/i);
+  family("PE", /^performance evidence$/i);
+
+  const fsExplicit = /explicit in the performance criteria/i.test(lines.join("\n"));
+  for(const f of fsRows) rows.push(["FS-" + f.label.replace(/\s+/g, "-"), "FS", f.text]);
+
+  const count = fam => rows.filter(r => r[1] === fam).length;
+  const unitCode = (lines.join("\n").match(/\b[A-Z]{3,}[0-9]{3,4}[A-Z]?\b/) || [])[0] || "unknown";
+  const block = [
+    "BENCHMARK CODES — generated from this unit by CoVE Document Prep. Copy exactly.",
+    "Unit: " + unitCode,
+    "Codes: " + rows.length + " (PC " + count("PC") + " · KE " + count("KE") + " · PE " + count("PE") + " · FS " + count("FS") + ")",
+    fsExplicit && !count("FS") ? "Foundation skills: explicit in the performance criteria — no FS codes." : null,
+    "code|family|requirement (unit wording; › separates a parent item from its sub-item)",
+    ...rows.map(r => r.join("|")),
+    "END-BENCHMARK-CODES"
+  ].filter(l => l !== null);
+  return { block, rows, unitCode, problems,
+           counts: { PC: count("PC"), KE: count("KE"), PE: count("PE"), FS: count("FS") } };
 }
 
 async function processDocx(file){
@@ -477,6 +536,12 @@ async function processDocx(file){
   const numbered = [];
   let paraCount = 0, tableCount = 0, wordCount = 0, lastText = "";
   let checkboxes = 0;
+  const typed = [];   // "12. Multiple choice …" typed as plain text, outside tables
+  // Benchmark capture (units of competency): section-tagged list items and PC lines
+  let currentSection = "";
+  const listItems = [];   // {section, level, text}
+  const pcLines = [];     // {el, pc, text}
+  const fsRows = [];      // {label, text}
 
   const styleInfo = (p) => {
     const id = wVal(descend(p, ["pPr", "pStyle"]));
@@ -487,6 +552,14 @@ async function processDocx(file){
     if(m) heading = parseInt(m[1], 10);
     else if(styles.outline.has(id) && styles.outline.get(id) < 9) heading = styles.outline.get(id) + 1;
     return { id, name, heading };
+  };
+
+  // Units of competency nest bullets by STYLE (List Bullet / List Bullet 2), each on its own
+  // level-0 list, so ilvl alone reports every bullet as top-level. Read the depth from the style.
+  const styleListLevel = (sty) => {
+    const m = /^list(?: bullet| number| continue)?\s*([2-9])$/i.exec(sty.name || "") ||
+              /^List(?:Bullet|Number|Continue)?([2-9])$/.exec(sty.id || "");
+    return m ? parseInt(m[1], 10) - 1 : 0;
   };
 
   const numberingFor = (p, sty) => {
@@ -522,12 +595,24 @@ async function processDocx(file){
       lastText = text;
     }
     if(!inTable) paraCount++;
+    if(!marker && !sty.heading && !inTable){
+      const tm = /^(\d{1,3})[.)]\s+\S/.exec(text);
+      if(tm) typed.push({ label: tm[1] + ".", numeric: parseInt(tm[1], 10), text: text.slice(tm[0].length - 1) });
+    }
+    if(inTable && /performance criteria/i.test(currentSection)){
+      const full = (marker ? marker + " " : "") + text;
+      const pm = /^(\d+)\.(\d+)\.?\s+(.+)$/.exec(full);
+      if(pm) pcLines.push({ el: pm[1], pc: pm[2], text: pm[3].trim() });
+    }
     if(sty.heading){
+      currentSection = text;
       headings.push({ level: sty.heading, text });
       return "\n" + "#".repeat(Math.min(6, sty.heading)) + " " + text;
     }
     if(marker){
-      const indent = "  ".repeat(np ? np.ilvl : 0);
+      const depth = Math.max(np ? np.ilvl : 0, styleListLevel(sty));
+      if(!inTable && text) listItems.push({ section: currentSection, level: depth, text });
+      const indent = "  ".repeat(depth);
       return indent + marker + " " + text;
     }
     return text;
@@ -553,6 +638,10 @@ async function processDocx(file){
         cells.push(cleanCell(parts.join(" / ")));
       }
       if(cells.length) rows.push(cells);
+      if(/^foundation skills/i.test(currentSection) && cells.length >= 2 && cells[0] &&
+         !/^(skill|foundation skills?)$/i.test(cells[0]) && cells[cells.length - 1]){
+        fsRows.push({ label: cells[0], text: cells[cells.length - 1] });
+      }
     }
     if(!rows.length) return [];
     const width = Math.max(...rows.map(r => r.length));
@@ -591,11 +680,20 @@ async function processDocx(file){
   const highest = topLevel.length ? Math.max(...topLevel.map(n => n.numeric)) : null;
   const lastNumbered = numbered.length ? numbered[numbered.length - 1] : null;
   const lastHeading = headings.length ? headings[headings.length - 1].text : null;
+  const lastTyped = typed.length ? typed[typed.length - 1] : null;
+  const benchmark = buildBenchmark(listItems, pcLines, fsRows, headings, lines);
+  const highestTyped = typed.length ? Math.max(...typed.map(t => t.numeric)) : null;
 
   const flat = lines.join("\n");
   const findField = (labels) => {
     for(const label of labels){
       const re = new RegExp("\\|\\s*" + label + "\\s*\\|\\s*([^|]+?)\\s*\\|", "i");
+      const m = flat.match(re);
+      if(m && m[1].trim()) return m[1].trim();
+    }
+    // Templates that put the header as "Label: value" paragraphs rather than a table
+    for(const label of labels){
+      const re = new RegExp("^\\s*" + label + "\\s*:\\s*(.+?)\\s*$", "im");
       const m = flat.match(re);
       if(m && m[1].trim()) return m[1].trim();
     }
@@ -614,13 +712,14 @@ async function processDocx(file){
   const header = [
     "<!-- Flattened for AI upload by CoVE Document Prep -->",
     "<!-- Source: " + file.name + " -->",
-    "<!-- Word automatic numbering has been resolved to literal numbers. -->",
+    "<!-- Word automatic numbering has been resolved to literal numbers. Line-start numbers are written as 12\\. so they cannot be read as a Markdown list. -->",
     "<!-- Last numbered item: " + (lastNumbered ? lastNumbered.label + " " + lastNumbered.text.slice(0, 60) : "none") + " -->",
+    lastTyped ? "<!-- Last typed number: " + lastTyped.label + " " + lastTyped.text.slice(0, 60) + " (highest " + highestTyped + ") -->" : null,
     "<!-- Last heading: " + (lastHeading || "none") + " -->",
     ""
   ];
   if(taskId || taskName || unitCode){
-    header.splice(5, 0,
+    header.splice(header.length - 1, 0,
       "",
       "DOCUMENT IDENTIFIERS — use these exactly.",
       unitCode ? "Unit code: " + unitCode : null,
@@ -629,9 +728,13 @@ async function processDocx(file){
       taskId ? "Refer to this task as " + taskId + " throughout. Do not use the task name as its identifier." : null
     );
   }
+  if(benchmark) header.splice(header.length - 1, 0, "", ...benchmark.block);
   const cleanHeader = header.filter(l => l !== null);
 
-  const markdown = cleanHeader.concat(lines).join("\n")
+  // A line starting "62. " is a Markdown ordered-list item: AI file readers render it as a list
+  // and drop or renumber the printed number. Escape the full stop so the number survives as text.
+  const protectedLines = lines.map(l => l.startsWith("|") ? l : l.replace(/^(\s*)(\d{1,3})([.)])(\s)/, "$1$2\\$3$4"));
+  const markdown = cleanHeader.concat(protectedLines).join("\n")
     .replace(/\n{3,}/g, "\n\n").trim() + "\n";
 
   return {
@@ -651,6 +754,8 @@ async function processDocx(file){
       headings: headings.length
     },
     lastNumbered,
+    lastTyped, highestTyped,
+    benchmark,
     lastHeading,
     lastText: lastText.slice(-160)
   };
@@ -667,6 +772,8 @@ function referenceCard(r){
   L.push("");
   L.push("Last numbered item:  " + (r.lastNumbered ? r.lastNumbered.label + " " + r.lastNumbered.text.slice(0, 80) : "document has no automatic numbering"));
   L.push("Highest top-level number: " + (r.stats.highest !== null ? r.stats.highest : "n/a"));
+  if(r.benchmark) L.push("Benchmark codes:     " + r.benchmark.rows.length + " (PC " + r.benchmark.counts.PC + " · KE " + r.benchmark.counts.KE + " · PE " + r.benchmark.counts.PE + " · FS " + r.benchmark.counts.FS + ")");
+  if(r.lastTyped) L.push("Last typed number:   " + r.lastTyped.label + " " + r.lastTyped.text.slice(0, 80) + " (highest " + r.highestTyped + ")");
   L.push("Last heading:        " + (r.lastHeading || "none found"));
   L.push("Last text in file:   " + (r.lastText || "(empty)"));
   L.push("Tables:              " + r.stats.tables);
@@ -751,9 +858,20 @@ function render(){
     const code = document.createElement("code");
     code.textContent = r.lastNumbered
       ? r.lastNumbered.label + " " + r.lastNumbered.text.slice(0, 120)
+      : r.lastTyped ? r.lastTyped.label + " " + r.lastTyped.text.slice(0, 120) + " (typed number)"
       : (r.lastHeading ? "(no numbering) last heading: " + r.lastHeading : "(no numbering found)");
     tail.append(strong, code);
     card.appendChild(tail);
+
+    if(r.benchmark){
+      const n = document.createElement("p");
+      n.className = "note" + (r.benchmark.problems.length ? " alert" : "");
+      const c = r.benchmark.counts;
+      n.textContent = "Unit of competency detected — benchmark codes written into the flattened file: " +
+        r.benchmark.rows.length + " (PC " + c.PC + " · KE " + c.KE + " · PE " + c.PE + " · FS " + c.FS + ")." +
+        (r.benchmark.problems.length ? " CHECK: " + r.benchmark.problems.join("; ") + "." : "");
+      card.appendChild(n);
+    }
 
     if(s.numberedItems === 0){
       const n = document.createElement("p");
