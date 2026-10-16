@@ -332,7 +332,8 @@ details.crit-det summary{cursor:pointer;font-size:.8rem;color:#000054;margin-top
 
 <script>
 /* ============================================================
-   CoVE Assessment Builder v2.1
+   CoVE Assessment Builder v2.2
+   v2.2: QTI downloads as a flat .zip (quiz XML + imsmanifest.xml).
    v2.1: Rubric built from the student guide. Assessor guide required
          only for quiz QTI; optional cross-check for other types.
    v2.0: Two guides. Assessor guide -> QTI / rubric. Student guide ->
@@ -347,7 +348,7 @@ details.crit-det summary{cursor:pointer;font-size:.8rem;color:#000054;margin-top
    Block IDs: ZIP, RED, VAR, SECA, QPARSE, RUBRIC, QTI, CANVAS, UI
    ============================================================ */
 
-var VERSION="2.1";
+var VERSION="2.2";
 var gImages=[],gImagesBySrc={},gImagesById={};
 var gVariant=null,gCritSource="xml",gQuestions=[],gCriteria=[],gChecks=[],gDropped=[],gRedTexts=null;
 var gData={};
@@ -2313,6 +2314,21 @@ function outName(d,kind,ext){
   var task=(d&&d.taskNumber)?"AT"+d.taskNumber:"AT-unnumbered";
   return unit+"-"+task+"-"+kind+"."+ext;
 }
+/* Flat QTI package: quiz XML + IMS manifest at the root, no folders. */
+function qtiZip(xml,xmlName){
+  var id=xmlName.replace(/\.xml$/,"").replace(/[^A-Za-z0-9_-]/g,"_");
+  var manifest='<?xml version="1.0" encoding="UTF-8"?>\n'+
+  '<manifest identifier="man_'+id+'" xmlns="http://www.imsglobal.org/xsd/imscp_v1p1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.imsglobal.org/xsd/imscp_v1p1 http://www.imsglobal.org/xsd/imscp_v1p1.xsd">\n'+
+  '  <metadata><schema>IMS Content</schema><schemaversion>1.1.3</schemaversion></metadata>\n'+
+  '  <organizations/>\n'+
+  '  <resources>\n'+
+  '    <resource identifier="res_'+id+'" type="imsqti_xmlv1p2" href="'+eX(xmlName)+'">\n'+
+  '      <file href="'+eX(xmlName)+'"/>\n'+
+  '    </resource>\n'+
+  '  </resources>\n'+
+  '</manifest>\n';
+  return zipStore([{name:"imsmanifest.xml",content:manifest},{name:xmlName,content:xml}]);
+}
 function generateOutputs(){
   var st=outputState();
   if(gS&&$("includeAI").checked&&!$("aiUseStatement").value){
@@ -2332,7 +2348,9 @@ function generateOutputs(){
     var w=[];
     if(gImages.length) w.push(gImages.length+" image"+(gImages.length>1?"s are":" is")+" referenced by token, not embedded. After import, place each image in its question in Canvas and give it alt text \u2014 the question is not finished until you do.");
     tabs.push({id:"qti",label:"QTI 1.2 XML"});
-    panels.push({id:"qti",content:outXml,download:outName(gA.data,"quiz","xml"),mime:"application/xml",warn:w.join(" "),note:"Built from the assessor guide: "+gA.name});
+    var xmlName=outName(gA.data,"quiz","xml");
+    panels.push({id:"qti",content:outXml,download:outName(gA.data,"quiz","zip"),blob:qtiZip(outXml,xmlName),mime:"application/zip",warn:w.join(" "),
+      note:"Built from the assessor guide: "+gA.name+". Download gives a flat .zip (the quiz XML and an imsmanifest.xml, no folders) ready for Canvas: Import existing content \u2192 QTI .zip file."});
   } else if(st.marking.ok){
     outCsv=generateCSV();
     tabs.push({id:"rubric",label:"Rubric CSV"});
