@@ -1,0 +1,2419 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoVE Assessment Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#e3e5e0;min-height:100vh;display:flex;flex-direction:column;line-height:1.6}
+.main-wrapper{flex:1;padding:20px}
+.container{max-width:1600px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden}
+.header{background:#000054;color:#fff;padding:30px}
+.eyebrow{display:flex;align-items:center;gap:10px;font-family:'Monaco','Menlo',monospace;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;opacity:.85;margin-bottom:12px}
+.eyebrow .sq{width:12px;height:12px;background:#e61e2a;display:inline-block}
+.header h1{font-size:2.3rem;margin-bottom:8px;font-weight:700}
+.header p{font-size:1.05rem;opacity:.9}
+.workflow-steps{display:flex;justify-content:center;padding:24px;background:#f2f2f2;border-bottom:3px solid #fac800;flex-wrap:wrap}
+.step{display:flex;align-items:center;margin:6px 15px;font-weight:600;color:#000054}
+.step-number{width:30px;height:30px;background:#000054;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:.9rem}
+.step.active .step-number{background:#e61e2a}
+.step.completed .step-number{background:#28a745}
+.main-layout{display:grid;grid-template-columns:400px 1fr;min-height:70vh}
+.sidebar{background:#f2f2f2;padding:30px;border-right:1px solid #e3e5e0}
+.content-area{padding:30px;min-width:0}
+.upload-area{border:3px dashed #000054;border-radius:8px;padding:40px;text-align:center;cursor:pointer;background:#fff;margin-bottom:20px}
+.upload-area:hover,.upload-area.dragover{border-color:#e61e2a;background:#f8f9fa}
+.upload-icon{font-size:3rem;color:#000054;margin-bottom:15px}
+.upload-text{font-size:1.05rem;color:#000054;margin-bottom:10px;font-weight:600}
+.file-input{display:none}
+.upload-area{padding:22px 18px;margin-bottom:14px}
+.upload-area .upload-icon{font-size:2rem;margin-bottom:6px}
+.upload-need{font-size:.82rem;color:#555;margin-bottom:8px}
+.upload-file{font-size:.82rem;color:#666;word-break:break-word}
+.upload-area.loaded{border-style:solid;border-color:#28a745;background:#f4fbf6}
+.upload-area.loaded .upload-file{color:#1c6b2e;font-weight:600}
+.status-group{font-family:'Monaco','Menlo',monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#000054;margin:14px 0 8px}
+.ro{background:#fafbfc!important;cursor:default}
+.ro-block{min-height:0;background:#fafbfc;cursor:default}
+.out-unavail{background:#f8f9fa;border:1px dashed #c9ccc5;border-radius:4px;padding:12px 14px;margin-bottom:10px;font-size:.92rem;color:#444}
+.extraction-status{display:none;background:#fff;border:2px solid #fac800;border-radius:6px;padding:20px;margin-top:20px}
+.extraction-status h3{color:#000054;margin-bottom:15px;font-size:1.15rem}
+.status-item{display:flex;align-items:flex-start;margin-bottom:10px;font-size:.92rem}
+.status-icon{width:20px;height:20px;min-width:20px;border-radius:50%;margin-right:10px;margin-top:3px;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#fff;font-weight:700}
+.status-icon.found{background:#28a745}
+.status-icon.partial{background:#fac800;color:#000054}
+.status-icon.missing{background:#e61e2a}
+.variant-badge{display:inline-block;background:#000054;color:#fff;font-family:'Monaco','Menlo',monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:6px 12px;border-radius:3px;margin-bottom:16px}
+.edit-form,.output-section{display:none}
+.form-section{background:#fff;border:1px solid #e3e5e0;border-radius:6px;padding:25px;margin-bottom:25px}
+.form-section h3{color:#000054;margin-bottom:20px;font-size:1.2rem;border-bottom:2px solid #fac800;padding-bottom:10px}
+.form-group{margin-bottom:20px}
+.form-group label{display:block;font-weight:600;color:#000054;margin-bottom:8px;font-size:.92rem}
+.form-group input[type="text"],.form-group select,.form-group textarea{width:100%;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.93rem;font-family:inherit;background:#fafbfc}
+.form-group input[type="text"]:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#000054}
+.rich-editor{width:100%;min-height:120px;padding:10px;border:2px solid #e3e5e0;border-radius:4px;font-size:.93rem;background:#fff;overflow-y:auto;max-height:360px}
+.rich-editor:focus{outline:none;border-color:#000054}
+.rich-editor ul,.rich-editor ol{margin-left:22px}
+.rich-editor p{margin-bottom:.5em}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.help-text{font-size:.82rem;color:#666;margin-top:5px}
+.checkbox-group{display:flex;align-items:center;margin:18px 0;padding:14px;background:#f2f2f2;border-radius:4px}
+.checkbox-group input[type="checkbox"]{width:20px;height:20px;margin-right:10px;cursor:pointer}
+.checkbox-group label{cursor:pointer;font-weight:400}
+.radio-fieldset{border:none;margin:18px 0}
+.radio-fieldset legend{font-weight:600;color:#000054;margin-bottom:8px;font-size:.92rem}
+.radio-row{display:flex;gap:24px;padding:14px;background:#f2f2f2;border-radius:4px;flex-wrap:wrap}
+.radio-row label{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;margin:0;color:inherit}
+.radio-row input[type="radio"]{width:18px;height:18px;cursor:pointer}
+.voice-badges{margin:-2px 0 6px}
+.lvl{display:inline-block;font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:2px;margin:2px 4px 2px 0}
+.lvl.ok{background:#e6f2ea;color:#1c6b2e}
+.lvl.mid{background:#fff6dd;color:#7a5c00}
+.lvl.hard{background:#fdeaea;color:#a3121b}
+.button-group{display:flex;gap:15px;margin-top:30px;padding-top:25px;border-top:2px solid #e3e5e0;flex-wrap:wrap}
+.btn{padding:12px 28px;border:none;border-radius:4px;font-size:.98rem;font-weight:600;cursor:pointer}
+.btn-primary{background:#e61e2a;color:#fff}
+.btn-primary:hover{background:#c51923}
+.btn-secondary{background:#000054;color:#fff}
+.btn-secondary:hover{background:#000043}
+.btn-small{padding:7px 14px;font-size:.85rem}
+.tabs{display:flex;gap:4px;border-bottom:3px solid #000054;margin-bottom:0;flex-wrap:wrap}
+.tab{padding:11px 22px;background:#f2f2f2;border:none;cursor:pointer;font-weight:600;color:#000054;font-size:.93rem;border-radius:4px 4px 0 0}
+.tab.active{background:#000054;color:#fff}
+.tab-panel{display:none;padding-top:22px}
+.tab-panel.active{display:block}
+.output-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;overflow:hidden;margin-bottom:20px}
+.output-header{background:#000054;color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.output-header h4{font-size:1rem;font-weight:600}
+.output-content{padding:18px;font-family:'Monaco','Menlo',monospace;font-size:.78rem;line-height:1.5;max-height:460px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#f8f9fa}
+.preview-container{background:#fff;border:2px solid #e3e5e0;border-radius:6px;padding:24px;margin-top:20px}
+.preview-container h3{color:#000054;margin-bottom:16px}
+.alert{padding:14px;border-radius:4px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px}
+.alert-warning{background:#fff9e6;border:1px solid #fac800;color:#6b5200}
+.alert-info{background:#e6f3ff;border:1px solid #0066cc;color:#004085}
+.alert-danger{background:#fdecee;border:1px solid #e61e2a;color:#8c1119}
+.alert-ok{background:#eaf7ee;border:1px solid #28a745;color:#1c6b2e}
+.alert-icon{font-size:1.3rem}
+.loader{display:none;width:40px;height:40px;border:4px solid #f2f2f2;border-top:4px solid #e61e2a;border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.footer{background:#000054;color:#fff;text-align:center;padding:18px;margin-top:40px;font-size:.9rem}
+.q-card{border:1px solid #e3e5e0;border-left:5px solid #000054;border-radius:5px;padding:16px;margin-bottom:14px;background:#fff}
+.q-card.flagged{border-left-color:#e61e2a;background:#fffbfb}
+.q-head{display:flex;align-items:center;gap:10px;margin-bottom:9px;flex-wrap:wrap}
+.q-num{font-family:'Monaco','Menlo',monospace;font-weight:700;color:#000054}
+.q-type{font-family:'Monaco','Menlo',monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;background:#f2f2f2;padding:3px 9px;border-radius:3px;color:#000054}
+.q-text{margin-bottom:9px;font-size:.94rem}
+.q-opts{list-style:none;font-size:.9rem}
+.q-opts li{padding:3px 0 3px 22px;position:relative}
+.q-opts li.correct::before{content:"\2713";position:absolute;left:0;color:#28a745;font-weight:700}
+.q-opts li.correct{font-weight:600}
+.q-flag{margin-top:9px;font-size:.85rem;color:#8c1119;background:#fdecee;border-left:3px solid #e61e2a;padding:7px 11px}
+.q-note{margin-top:9px;font-size:.85rem;color:#004085;background:#e6f3ff;border-left:3px solid #0066cc;padding:7px 11px}
+table.rub{width:100%;border-collapse:collapse;font-size:.9rem}
+table.rub th{background:#000054;color:#fff;text-align:left;padding:9px 11px;font-size:.8rem;letter-spacing:.05em;text-transform:uppercase}
+table.rub td{border-bottom:1px solid #e3e5e0;padding:9px 11px;vertical-align:top}
+table.rub td input{width:100%;padding:7px;border:1px solid #e3e5e0;border-radius:3px;font-family:inherit;font-size:.9rem}
+.crit-card{border:1px solid #e3e5e0;border-left:5px solid #000054;border-radius:5px;padding:14px 16px;margin-bottom:14px;background:#fff}
+.crit-card .crit-num{font-family:'Monaco','Menlo',monospace;font-weight:700;color:#000054;margin-bottom:8px}
+.crit-card label{display:block;font-size:.78rem;font-family:'Monaco','Menlo',monospace;letter-spacing:.08em;text-transform:uppercase;color:#555;margin:10px 0 4px}
+.crit-card input{width:100%;padding:8px;border:1px solid #e3e5e0;border-radius:3px;font-family:inherit;font-size:.92rem;font-weight:600}
+.crit-out{white-space:pre-wrap;font-size:.88rem;background:#f8f9fa;border:1px solid #e3e5e0;border-radius:3px;padding:10px 12px;max-height:320px;overflow:auto;line-height:1.5}
+.crit-src{font-size:.88rem;border:1px dashed #c9ccc5;border-radius:3px;padding:10px 12px;max-height:320px;overflow:auto}
+.crit-src p{margin:0 0 3px}
+.crit-src .li{display:flex;gap:6px}
+.crit-src .lbl{min-width:1.6em;text-align:right;flex-shrink:0}
+details.crit-det summary{cursor:pointer;font-size:.8rem;color:#000054;margin-top:8px}
+.img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.img-card{border:1px solid #e3e5e0;border-radius:5px;padding:11px;background:#fff}
+.img-card img{max-width:100%;max-height:130px;display:block;margin:0 auto 9px}
+.img-card .img-id{font-family:'Monaco','Menlo',monospace;font-size:.75rem;color:#000054;font-weight:700;margin-bottom:5px}
+.img-card .img-use{font-size:.78rem;color:#666;margin-bottom:7px}
+.img-card input{width:100%;padding:7px;border:1px solid #e3e5e0;border-radius:3px;font-size:.8rem}
+.ai-opt{background:#fff;border:1px solid #e3e5e0;border-radius:4px;padding:12px 14px;margin-bottom:12px;font-size:.92rem}
+.ai-opt p+p{margin-top:5px}
+.ai-opt mark{background:#fac800;padding:0 2px}
+.dropped{font-size:.85rem;color:#555;background:#f8f9fa;border-left:3px solid #999;padding:7px 11px;margin-bottom:7px;font-style:italic}
+@media(max-width:1200px){.main-layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid #e3e5e0}.form-row{grid-template-columns:1fr}}
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MDBG3TN2X');
+</script>
+</head>
+<body>
+<div class="main-wrapper">
+<div class="container">
+
+<div class="header">
+  <div class="eyebrow"><span class="sq"></span> CoVE Assessment Toolkit</div>
+  <h1>Assessment Builder</h1>
+  <p>Student guide &rarr; Canvas page + rubric CSV &nbsp;&middot;&nbsp; Assessor guide &rarr; QTI quiz</p>
+</div>
+
+<div class="workflow-steps">
+  <div class="step active" id="step1"><div class="step-number">1</div><span>Upload Guides</span></div>
+  <div class="step" id="step2"><div class="step-number">2</div><span>Review &amp; Check</span></div>
+  <div class="step" id="step3"><div class="step-number">3</div><span>Generate Outputs</span></div>
+</div>
+
+<div class="main-layout">
+  <div class="sidebar">
+    <div class="upload-area" id="uploadA" data-role="assessor">
+      <div class="upload-icon">&#128196;</div>
+      <div class="upload-text">Assessor guide</div>
+      <div class="upload-need">Required for quizzes (QTI). Optional for other types, to check the student version.</div>
+      <div class="upload-file" id="fileNameA">Drop here or click to browse (.docx)</div>
+      <input type="file" id="fileA" class="file-input" accept=".docx">
+    </div>
+    <div class="upload-area" id="uploadS" data-role="student">
+      <div class="upload-icon">&#128196;</div>
+      <div class="upload-text">Student guide</div>
+      <div class="upload-need">Builds the Canvas page, and the rubric for practical, product and submission tasks</div>
+      <div class="upload-file" id="fileNameS">Drop here or click to browse (.docx)</div>
+      <input type="file" id="fileS" class="file-input" accept=".docx">
+    </div>
+    <div class="loader" id="loader"></div>
+    <div class="extraction-status" id="extractionStatus">
+      <h3>Extraction results</h3>
+      <div id="variantBadge"></div>
+      <div id="statusList"></div>
+    </div>
+  </div>
+
+  <div class="content-area">
+
+    <div id="initialInstructions">
+      <h2 style="color:#000054;margin-bottom:18px">How to use this tool</h2>
+      <p style="margin-bottom:14px">Everything students see is built from the <strong>student guide</strong>, so Canvas matches the Word version on SharePoint.</p>
+      <ul style="margin-left:22px;margin-bottom:18px">
+        <li><strong>Student guide</strong> &rarr; Canvas page HTML for every type, and the Canvas rubric CSV for Practical, Product and Knowledge Submission tasks. Section A and the criteria go across word for word.</li>
+        <li><strong>Assessor guide</strong> &rarr; QTI 1.2 quiz. Required for quizzes, because only it has the answer key. Optional for other types: load it to check the student version against it.</li>
+      </ul>
+      <div class="alert alert-info"><div class="alert-icon">&#8505;</div><div>
+        With both loaded, the tool checks they are the same task and the same version: unit code, task number and type, and every question or criterion. If they don&rsquo;t match, nothing is generated &mdash; one of them is out of date.
+      </div></div>
+      <div class="alert alert-warning"><div class="alert-icon">&#9888;</div><div>
+        <strong>Answer keys and minimum requirements never leave the assessor guide.</strong> The student guide is also checked for red text, answer lines and Minimum Requirement wording before its content is used.
+      </div></div>
+      <p style="font-size:.9rem;color:#666">Nothing from either guide can be edited here. If something is wrong, talk to your Quality Lead, fix the Word document and re-run &mdash; the documents stay the single source of truth.</p>
+    </div>
+
+    <div class="edit-form" id="editForm">
+      <h2 style="color:#000054;margin-bottom:20px">Review &amp; check</h2>
+      <div id="checksPanel"></div>
+
+      <div class="form-section">
+        <h3>Task &amp; compliance information</h3>
+        <p class="help-text" id="coverSource" style="margin:-8px 0 16px"></p>
+        <div class="form-row">
+          <div class="form-group"><label for="taskNumber">Task number</label><input type="text" id="taskNumber" class="ro" readonly></div>
+          <div class="form-group"><label for="taskName">Task name</label><input type="text" id="taskName" class="ro" readonly></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label for="unitCode">National unit/s code</label><input type="text" id="unitCode" class="ro" readonly><p class="help-text">Separate multiple codes with spaces</p></div>
+          <div class="form-group"><label for="unitTitle">National unit/s title</label><input type="text" id="unitTitle" class="ro" readonly></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label for="qualificationCode">National qualification code</label><input type="text" id="qualificationCode" class="ro" readonly></div>
+          <div class="form-group"><label for="programCode">RMIT program code</label><input type="text" id="programCode" class="ro" readonly></div>
+        </div>
+        <div class="form-group"><label for="courseCode">RMIT course code</label><input type="text" id="courseCode" class="ro" readonly></div>
+      </div>
+
+      <div class="form-section" id="sectionAPanel">
+        <h3>Section A &mdash; from the student guide</h3>
+        <div id="sectionANote"></div>
+        <div class="form-group"><label>Duration and/or due date</label><div class="voice-badges" data-badges="timing"></div><div id="timing" class="rich-editor ro-block"></div></div>
+        <div class="form-group"><label>Summary and Purpose of Assessment</label><div class="voice-badges" data-badges="taskInstructions"></div><div id="taskInstructions" class="rich-editor ro-block"></div></div>
+        <div class="form-group" data-quiz-only="1"><label>What</label><div class="voice-badges" data-badges="what"></div><div id="what" class="rich-editor ro-block"></div></div>
+        <div class="form-group" data-quiz-only="1"><label>Where</label><div class="voice-badges" data-badges="where"></div><div id="where" class="rich-editor ro-block"></div></div>
+        <div class="form-group" data-quiz-only="1"><label>How</label><div class="voice-badges" data-badges="how"></div><div id="how" class="rich-editor ro-block"></div></div>
+        <div class="form-group"><label>Conditions for assessment</label><div class="voice-badges" data-badges="conditions"></div><div id="conditions" class="rich-editor ro-block"></div></div>
+        <div class="form-group"><label>Equipment/resources students must supply</label><div class="voice-badges" data-badges="studentSupplies"></div><div id="studentSupplies" class="rich-editor ro-block"></div></div>
+        <div class="form-group"><label>Equipment/resources to be provided by RMIT or the workplace</label><div class="voice-badges" data-badges="rmitSupplies"></div><div id="rmitSupplies" class="rich-editor ro-block"></div></div>
+        <div class="form-group"><label>Instructions on Submitting your Assessment</label><div class="voice-badges" data-badges="submissionInstructions"></div><div id="submissionInstructions" class="rich-editor ro-block"></div></div>
+        <p class="help-text" id="whatHowNote"></p>
+        <fieldset class="radio-fieldset" id="tplRow">
+          <legend>Additional download button</legend>
+          <p class="help-text" id="extraDocNote" style="margin:0 0 8px"></p>
+          <div class="radio-row">
+            <label><input type="radio" name="extraDoc" value="none" checked> None</label>
+            <label><input type="radio" name="extraDoc" value="template"> Student Response Template</label>
+            <label><input type="radio" name="extraDoc" value="appendices"> Student Appendices</label>
+          </div>
+        </fieldset>
+        <div class="checkbox-group" id="aiRow"><input type="checkbox" id="includeAI"><label for="includeAI">Add AI &mdash; acceptable use statement</label></div>
+        <div id="aiOptionsSection" style="display:none">
+          <div style="background:#f8f9fa;padding:20px;border-radius:4px;margin:0 0 20px">
+            <p style="margin-bottom:15px"><strong>AI acceptable use statement options</strong></p>
+            <div class="ai-opt"><p><strong>Option 1: AI tools and their use are not restricted for this assessment task</strong></p><p>In this assessment task, you can use AI tools to assist you. All use of AI tools and their outputs should be appropriately acknowledged and referenced.</p></div>
+            <div class="ai-opt"><p><strong>Option 2: AI tools are restricted in certain ways for this assessment task</strong></p><p>In this assessment task, you can use AI tools to support you in developing and completing your work by <mark>[insert ways students are permitted to use AI tools e.g., generating ideas/planning/drafting]</mark> only. Any use of such tools must be appropriately acknowledged and referenced.</p></div>
+            <div class="ai-opt"><p><strong>Option 3: AI tools are restricted in the completion of this assessment task</strong></p><p>In this assessment task, you can use the following AI tools only <mark>[insert name(s) of tools, or types of tools e.g. image generators/text generators/standard editing software]</mark>. Any use of these tools must be appropriately acknowledged and referenced.</p></div>
+            <div class="ai-opt"><p><strong>Option 4: AI tools cannot be used in the completion of this assessment task</strong></p><p>In this assessment task, you must not use any AI tools (excluding text editing software e.g., Grammarly) to generate any materials, content or ideas related to the task.</p></div>
+            <p class="help-text" style="margin-top:14px">Highlighted text is a placeholder. It carries through to the Canvas page highlighted in yellow for you to complete there.</p>
+          </div>
+          <div class="form-group">
+            <label for="aiUseStatement">Select ONE (1) acceptable use statement only</label>
+            <select id="aiUseStatement">
+              <option value="">&mdash; Select one &mdash;</option>
+              <option value="unrestricted">Option 1: AI tools not restricted</option>
+              <option value="restricted-ways">Option 2: AI tools restricted in certain ways</option>
+              <option value="restricted-tools">Option 3: AI tools restricted &mdash; specific tools only</option>
+              <option value="not-permitted">Option 4: AI tools cannot be used</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="imageSection" style="display:none">
+        <h3>Images (<span id="imageCount">0</span>)</h3>
+        <p class="help-text" style="margin-bottom:16px">Download these, upload them to Canvas Files, then drop each one into the question where its token sits. Canvas prompts for alt text as you insert.</p>
+        <p style="margin-bottom:16px"><button type="button" class="btn btn-secondary btn-small" id="downloadImagesBtn">Download images (.zip)</button></p>
+        <div class="img-grid" id="imageGallery"></div>
+      </div>
+
+      <div class="form-section" id="questionSection" style="display:none">
+        <h3>Questions (<span id="questionCount">0</span>)</h3>
+        <div class="form-row" style="margin-bottom:18px">
+          <div class="form-group"><label for="quizTitle">Quiz title</label><input type="text" id="quizTitle"></div>
+          <div class="form-group"><label for="assessmentIdent">Assessment identifier</label><input type="text" id="assessmentIdent" value="quiz_1"></div>
+        </div>
+        <div id="questionList"></div>
+      </div>
+
+      <div class="form-section" id="rubricSection" style="display:none">
+        <h3>Rubric criteria (<span id="criteriaCount">0</span>)</h3>
+        <div class="alert alert-info"><div class="alert-icon">&#8505;</div><div>
+          Criteria cross over to the rubric, which students see. Minimum Requirement does not &mdash; it is assessor marking guidance and stays in the document.
+        </div></div>
+        <div class="form-group"><label for="rubricName">Rubric name</label><input type="text" id="rubricName"></div>
+        <fieldset class="radio-fieldset">
+          <legend>Criteria description</legend>
+          <div class="radio-row">
+            <label><input type="radio" name="descMode" value="long" checked> Short + long description</label>
+            <label><input type="radio" name="descMode" value="short"> Short description only</label>
+          </div>
+          <p class="help-text" id="descModeHelp"></p>
+        </fieldset>
+        <div class="alert alert-warning" id="formatNote"><div class="alert-icon">&#9888;</div><div id="formatNoteText"></div></div>
+        <div id="criteriaList"></div>
+      </div>
+
+      <div class="button-group">
+        <button class="btn btn-primary" id="generateBtn">Generate outputs</button>
+        <button class="btn btn-secondary" id="resetBtn1">Start over</button>
+      </div>
+    </div>
+
+    <div class="output-section" id="outputSection">
+      <h2 style="color:#000054;margin-bottom:20px">Generated outputs</h2>
+      <div id="unavailOut"></div>
+      <div class="tabs" id="tabs"></div>
+      <div id="panels"></div>
+      <div class="button-group">
+        <button class="btn btn-secondary" id="backBtn">Back to review</button>
+        <button class="btn btn-secondary" id="resetBtn2">Start over</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="footer"><p>Design: Learning &amp; Teaching Innovation Team &mdash; RMIT College of Vocational Education</p></footer>
+</div>
+</div>
+
+<script>
+/* ============================================================
+   CoVE Assessment Builder v2.1
+   v2.1: Rubric built from the student guide. Assessor guide required
+         only for quiz QTI; optional cross-check for other types.
+   v2.0: Two guides. Assessor guide -> QTI / rubric. Student guide ->
+         Canvas page, word for word. Guides must match; student guide
+         is leak-checked. Section A rewrite rules removed.
+   v1.3: Section A rewritten for students with the Student Version
+         Generator v5 rules, with the same review diff and checks.
+   v1.2: Rubric criteria keep their full formatting (lines, numbering,
+         bullets, indent). Toggle: short only, or short + long description.
+   v1.1: Student Response Template / Student Appendices / None
+         as a single either-or choice.
+   Block IDs: ZIP, RED, VAR, SECA, QPARSE, RUBRIC, QTI, CANVAS, UI
+   ============================================================ */
+
+var VERSION="2.1";
+var gImages=[],gImagesBySrc={},gImagesById={};
+var gVariant=null,gCritSource="xml",gQuestions=[],gCriteria=[],gChecks=[],gDropped=[],gRedTexts=null;
+var gData={};
+var outHtml="",outXml="",outCsv="";
+
+var QT={mc:"multiple_choice_question",ma:"multiple_answers_question",tf:"true_false_question",
+matching:"matching_question",short_answer:"short_answer_question",fill_blanks:"fill_in_multiple_blanks_question",
+multi_dropdown:"multiple_dropdowns_question",numerical:"numerical_question",calculated:"calculated_question",
+essay:"essay_question",file_upload:"file_upload_question",text_only:"text_only_question"};
+
+var TYPE_LABELS=[
+ ["fill in multiple blanks","fill_blanks"],
+ ["fill in the blank","short_answer"],
+ ["multiple dropdowns","multi_dropdown"],
+ ["multiple answers","ma"],
+ ["multiple choice","mc"],
+ ["true/false","tf"],
+ ["true or false","tf"],
+ ["matching","matching"],
+ ["numerical answer","numerical"],
+ ["numerical","numerical"],
+ ["formula question","calculated"],
+ ["formula","calculated"],
+ ["essay question","essay"],
+ ["essay","essay"],
+ ["file upload question","file_upload"],
+ ["file upload","file_upload"],
+ ["text (no question)","text_only"]
+];
+
+/* ===== [UI] helpers ===== */
+function $(id){return document.getElementById(id);}
+function esc(s){return s?String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"):"";}
+function eX(s){return s?String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;"):"";}
+function cd(s){return "<![CDATA["+(s==null?"":String(s)).replace(/\]\]>/g,"]]]]><![CDATA[>")+"]]>";}
+function qtiText(s){return cd(swapImagePlaceholders(s==null?"":String(s)));}
+function norm(s){return String(s||"").replace(/\s+/g," ").trim();}
+function keyNorm(s){return norm(s).toLowerCase().replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"').replace(/[.,;:!?]+$/,"").replace(/\s*\.\s*$/,"").trim();}
+function updateStep(n,s){var el=$("step"+n);el.classList.remove("active","completed");if(s)el.classList.add(s);}
+function addCheck(level,text){gChecks.push({level:level,text:text});}
+
+/* ============================================================
+   [ZIP] Minimal reader for selected parts of the .docx.
+   Feeds the red-text cross-check and the rubric criteria parser.
+   Failure is non-fatal: each part comes back null.
+   ============================================================ */
+function readZipParts(ab,names){
+  var out={},jobs=[];
+  names.forEach(function(nm){out[nm]=null;});
+  try{
+    var dv=new DataView(ab),n=ab.byteLength,eocd=-1,i;
+    for(i=n-22;i>=Math.max(0,n-65557);i--){ if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;} }
+    if(eocd<0) return Promise.resolve(out);
+    var cdOff=dv.getUint32(eocd+16,true),cnt=dv.getUint16(eocd+10,true),p=cdOff;
+    for(var k=0;k<cnt;k++){
+      if(dv.getUint32(p,true)!==0x02014b50) break;
+      var method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true);
+      var nlen=dv.getUint16(p+28,true),elen=dv.getUint16(p+30,true),clen=dv.getUint16(p+32,true);
+      var lho=dv.getUint32(p+42,true);
+      var name=new TextDecoder().decode(new Uint8Array(ab,p+46,nlen));
+      if(names.indexOf(name)!==-1){
+        var lnlen=dv.getUint16(lho+26,true),lelen=dv.getUint16(lho+28,true);
+        var bytes=new Uint8Array(ab,lho+30+lnlen+lelen,csize);
+        (function(nm,bytes,method){
+          if(method===0){out[nm]=new TextDecoder().decode(bytes);return;}
+          if(typeof DecompressionStream==="undefined") return;
+          var stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+          jobs.push(new Response(stream).arrayBuffer().then(function(buf){out[nm]=new TextDecoder().decode(buf);}).catch(function(){}));
+        })(name,bytes,method);
+      }
+      p+=46+nlen+elen+clen;
+    }
+  }catch(e){console.warn("[ZIP] read failed",e);}
+  return Promise.all(jobs).then(function(){return out;});
+}
+
+/* ============================================================
+   [OOXML] Marking guide criteria read straight from the Word XML.
+   mammoth splits mixed numbered/bulleted lists into separate lists,
+   which restarts numbering, so the criteria column is read here
+   instead. Every paragraph keeps its list label, depth and bold/
+   italic/underline runs. Only the Criteria for assessment column is
+   read: Minimum Requirement never leaves the document.
+   ============================================================ */
+function xmlDecode(s){return String(s).replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,function(m,d){return String.fromCharCode(+d);}).replace(/&amp;/g,"&");}
+function xOpen(x,tag,from){var re=new RegExp("<"+tag+"[ >]","g");re.lastIndex=from;var m=re.exec(x);return m?m.index:-1;}
+/* Top-level <tag> elements, nesting-aware (tables inside tables). */
+function xTop(x,tag){
+  var out=[],closeT="</"+tag+">",pos=0;
+  while(true){
+    var s=xOpen(x,tag,pos); if(s<0) break;
+    var depth=1,p=s+1;
+    while(depth>0){
+      var o=xOpen(x,tag,p),c=x.indexOf(closeT,p);
+      if(c<0) return out;
+      if(o>=0&&o<c){depth++;p=o+1;} else {depth--;p=c+closeT.length;}
+    }
+    out.push(x.substring(s,p)); pos=p;
+  }
+  return out;
+}
+function xAttr(frag,tag,attr){
+  var m=frag.match(new RegExp("<"+tag+"\\b[^>]*\\b"+attr+'="([^"]*)"'));
+  return m?m[1]:null;
+}
+function xOnOff(rPr,tag){
+  if(!rPr) return null;
+  var m=rPr.match(new RegExp("<w:"+tag+'(?:\\s+w:val="([^"]*)")?\\s*/>'));
+  if(!m) return null;
+  return !(m[1]==="0"||m[1]==="false"||m[1]==="off");
+}
+function xUnderline(rPr){
+  if(!rPr) return null;
+  var v=xAttr(rPr,"w:u","w:val");
+  if(v===null) return /<w:u\s*\/>/.test(rPr)?true:null;
+  return v!=="none";
+}
+function xIndLeft(pPrLike){
+  if(!pPrLike) return null;
+  var m=pPrLike.match(/<w:ind\b[^>]*>/);
+  if(!m) return null;
+  var v=xAttr(m[0],"w:ind","w:left");
+  if(v===null) v=xAttr(m[0],"w:ind","w:start");
+  return v===null?null:parseInt(v,10);
+}
+
+function parseStyles(xml){
+  var st={};
+  if(!xml) return st;
+  xTop(xml,"w:style").forEach(function(s){
+    var id=xAttr(s,"w:style","w:styleId");
+    if(!id) return;
+    var pPr=(s.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)||[""])[0];
+    var rPr=(s.match(/<w:rPr>[\s\S]*?<\/w:rPr>/)||[""])[0];
+    var numId=xAttr(pPr,"w:numId","w:val"),ilvl=xAttr(pPr,"w:ilvl","w:val");
+    st[id]={basedOn:xAttr(s,"w:basedOn","w:val"),b:xOnOff(rPr,"b"),i:xOnOff(rPr,"i"),u:xUnderline(rPr),ind:xIndLeft(pPr),numId:numId,ilvl:ilvl===null?null:parseInt(ilvl,10)};
+  });
+  return st;
+}
+function styleProp(st,id,key){
+  var guard=0;
+  while(id&&st[id]&&guard++<10){
+    if(st[id][key]!==null&&st[id][key]!==undefined) return st[id][key];
+    id=st[id].basedOn;
+  }
+  return null;
+}
+
+function parseNumbering(xml){
+  var abs={},nums={};
+  if(!xml) return{abs:abs,nums:nums};
+  xTop(xml,"w:abstractNum").forEach(function(a){
+    var id=xAttr(a,"w:abstractNum","w:abstractNumId"),lv={};
+    xTop(a,"w:lvl").forEach(function(l){
+      var il=parseInt(xAttr(l,"w:lvl","w:ilvl"),10);
+      lv[il]={fmt:xAttr(l,"w:numFmt","w:val")||"decimal",text:xAttr(l,"w:lvlText","w:val"),start:parseInt(xAttr(l,"w:start","w:val")||"1",10),ind:xIndLeft(l)};
+    });
+    abs[id]=lv;
+  });
+  xTop(xml,"w:num").forEach(function(n){
+    var id=xAttr(n,"w:num","w:numId"),ov={};
+    xTop(n,"w:lvlOverride").forEach(function(o){
+      var il=parseInt(xAttr(o,"w:lvlOverride","w:ilvl"),10),so=xAttr(o,"w:startOverride","w:val");
+      if(so!==null) ov[il]=parseInt(so,10);
+    });
+    nums[id]={abs:xAttr(n,"w:abstractNumId","w:val"),startOv:ov};
+  });
+  return{abs:abs,nums:nums};
+}
+
+function toRoman(n){
+  var v=[1000,900,500,400,100,90,50,40,10,9,5,4,1],s=["m","cm","d","cd","c","xc","l","xl","x","ix","v","iv","i"],o="";
+  for(var i=0;i<v.length;i++) while(n>=v[i]){o+=s[i];n-=v[i];}
+  return o;
+}
+function toLetter(n){var o="";while(n>0){n--;o=String.fromCharCode(97+n%26)+o;n=Math.floor(n/26);}return o;}
+function fmtNum(n,fmt){
+  switch(fmt){
+    case "lowerLetter":return toLetter(n);
+    case "upperLetter":return toLetter(n).toUpperCase();
+    case "lowerRoman":return toRoman(n);
+    case "upperRoman":return toRoman(n).toUpperCase();
+    case "decimalZero":return (n<10?"0":"")+n;
+    case "none":return "";
+    default:return String(n);
+  }
+}
+var BULLETS=["•","◦","▪"];
+
+function makeNumberer(numbering){
+  var counters={};
+  return function(numId,ilvl){
+    var num=numbering.nums[numId];
+    if(!num) return null;
+    var lvls=numbering.abs[num.abs]||{},lv=lvls[ilvl]||{fmt:"bullet",text:"•",start:1,ind:null};
+    /* Lists sharing an abstract definition continue numbering unless restarted. */
+    var key=(num.startOv&&Object.keys(num.startOv).length)?"n"+numId:"a"+num.abs;
+    if(!counters[key]) counters[key]={};
+    var c=counters[key];
+    if(lv.fmt==="bullet") return{label:null,bullet:true,ind:lv.ind,ilvl:ilvl};
+    var start=(num.startOv&&num.startOv[ilvl]!=null)?num.startOv[ilvl]:lv.start;
+    c[ilvl]=(c[ilvl]==null)?start:c[ilvl]+1;
+    for(var d=ilvl+1;d<9;d++) delete c[d];
+    var label=(lv.text||"%"+(ilvl+1)+".").replace(/%(\d)/g,function(m,k){
+      var L=parseInt(k,10)-1,lvk=lvls[L]||lv;
+      return fmtNum(c[L]!=null?c[L]:(lvk.start||1),lvk.fmt);
+    });
+    return{label:label,bullet:false,ind:lv.ind,ilvl:ilvl};
+  };
+}
+
+function parseParagraph(p,styles,numberer){
+  var pPr=(p.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)||[""])[0];
+  var pStyle=xAttr(pPr,"w:pStyle","w:val");
+  var numId=xAttr(pPr,"w:numId","w:val"),ilvl=xAttr(pPr,"w:ilvl","w:val");
+  if(numId===null&&pStyle){numId=styleProp(styles,pStyle,"numId");if(ilvl===null){var si=styleProp(styles,pStyle,"ilvl");ilvl=si===null?null:String(si);}}
+  ilvl=ilvl===null?0:parseInt(ilvl,10);
+  var runs=[],rm=p.match(/<w:r[ >][\s\S]*?<\/w:r>/g)||[];
+  for(var i=0;i<rm.length;i++){
+    var r=rm[i];
+    var rPr=(r.match(/<w:rPr>[\s\S]*?<\/w:rPr>/)||[""])[0];
+    var rStyle=xAttr(rPr,"w:rStyle","w:val");
+    function prop(k,fn){var v=fn(rPr);if(v!==null)return v;v=styleProp(styles,rStyle,k);if(v!==null)return v;v=styleProp(styles,pStyle,k);return !!v;}
+    var b=prop("b",function(x){return xOnOff(x,"b");}),it=prop("i",function(x){return xOnOff(x,"i");}),u=prop("u",xUnderline);
+    var t="",tok=r.match(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>|<w:tab\s*\/>|<w:br\b[^>]*\/>|<w:cr\s*\/>|<w:noBreakHyphen\s*\/>/g)||[];
+    for(var j=0;j<tok.length;j++){
+      var tk=tok[j];
+      if(tk.indexOf("<w:tab")===0) t+=" ";
+      else if(tk.indexOf("<w:br")===0||tk.indexOf("<w:cr")===0) t+="\n";
+      else if(tk.indexOf("<w:noBreakHyphen")===0) t+="-";
+      else t+=xmlDecode(tk.replace(/<[^>]+>/g,""));
+    }
+    if(!t) continue;
+    var last=runs[runs.length-1];
+    if(last&&last.b===b&&last.i===it&&last.u===u) last.t+=t;
+    else runs.push({t:t,b:b,i:it,u:u});
+  }
+  var list=null;
+  if(numId&&numId!=="0") list=numberer(numId,ilvl);
+  var ind=xIndLeft(pPr);
+  if(ind===null&&list) ind=list.ind;
+  if(ind===null&&pStyle) ind=styleProp(styles,pStyle,"ind");
+  var text=runs.map(function(r){return r.t;}).join("");
+  return{runs:runs,text:text,list:list,ind:ind||0};
+}
+
+function cellText(cell){
+  return norm(xmlDecode((cell.match(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>/g)||[]).map(function(t){return t.replace(/<[^>]+>/g,"");}).join(" ")));
+}
+
+/* Returns null if the XML is unavailable or holds no marking guide table. */
+function criteriaFromXml(docXml,stylesXml,numberingXml){
+  if(!docXml) return null;
+  var styles=parseStyles(stylesXml),numbering=parseNumbering(numberingXml),numberer=makeNumberer(numbering);
+  var body=(docXml.match(/<w:body>[\s\S]*<\/w:body>/)||[docXml])[0];
+  var tables=xTop(body,"w:tbl");
+  for(var t=0;t<tables.length;t++){
+    var rows=xTop(tables[t],"w:tr");
+    if(rows.length<2) continue;
+    var head=xTop(rows[0],"w:tc").map(cellText),critCol=-1;
+    for(var h=0;h<head.length;h++) if(/criteria for assessment/i.test(head[h])){critCol=h;break;}
+    if(critCol<0) continue;
+    var out=[];
+    for(var r=1;r<rows.length;r++){
+      var cells=xTop(rows[r],"w:tc");
+      if(cells.length<=critCol) continue;
+      var paras=xTop(cells[critCol],"w:p").map(function(p){return parseParagraph(p,styles,numberer);});
+      var c=buildCriterion(cellText(cells[0])||"",paras,out.length);
+      if(c) out.push(c);
+    }
+    return out;
+  }
+  return null;
+}
+
+/* Fallback when the XML can't be read: the mammoth table cell. Numbering
+   comes from the HTML lists, so a list mammoth split will restart. */
+function criteriaFromHtml(table){
+  var out=[],head=table.rows[0],critCol=-1,h;
+  for(h=0;h<head.cells.length;h++) if(/criteria for assessment/i.test(head.cells[h].textContent)){critCol=h;break;}
+  if(critCol<0) critCol=1;
+  function runsOf(node){
+    var runs=[];
+    (function walk(n,b,i,u){
+      if(n.nodeType===3){ if(n.nodeValue) runs.push({t:n.nodeValue,b:b,i:i,u:u}); return; }
+      if(n.nodeType!==1) return;
+      var tg=n.tagName;
+      if(tg==="UL"||tg==="OL") return;
+      if(tg==="BR"){runs.push({t:"\n",b:b,i:i,u:u});return;}
+      var nb=b||tg==="STRONG"||tg==="B",ni=i||tg==="EM"||tg==="I",nu=u||tg==="U";
+      for(var k=0;k<n.childNodes.length;k++) walk(n.childNodes[k],nb,ni,nu);
+    })(node,false,false,false);
+    return runs;
+  }
+  function walkBlocks(el,depth,paras){
+    for(var k=0;k<el.children.length;k++){
+      var c=el.children[k];
+      if(c.tagName==="UL"||c.tagName==="OL"){
+        var n=0;
+        for(var j=0;j<c.children.length;j++){
+          var li=c.children[j]; if(li.tagName!=="LI") continue;
+          n++;
+          var runs=runsOf(li);
+          paras.push({runs:runs,text:runs.map(function(r){return r.t;}).join(""),list:c.tagName==="OL"?{label:n+".",bullet:false}:{label:null,bullet:true},ind:(depth+1)*360});
+          walkBlocks(li,depth+1,paras);
+        }
+      } else if(c.tagName==="TABLE"){ /* nested tables: flatten text */
+        paras.push({runs:[{t:norm(c.textContent),b:false,i:false,u:false}],text:norm(c.textContent),list:null,ind:depth*360});
+      } else {
+        var rr=runsOf(c);
+        paras.push({runs:rr,text:rr.map(function(r){return r.t;}).join(""),list:null,ind:depth*360});
+      }
+    }
+  }
+  for(var r=1;r<table.rows.length;r++){
+    var row=table.rows[r];
+    if(row.cells.length<=critCol) continue;
+    var paras=[];
+    walkBlocks(row.cells[critCol],0,paras);
+    var c=buildCriterion(norm(row.cells[0].textContent),paras,out.length);
+    if(c) out.push(c);
+  }
+  return out;
+}
+
+function buildCriterion(num,paras,seq){
+  paras=paras.filter(function(p){return norm(p.text)||p.list;});
+  if(!paras.length) return null;
+  var full=norm(paras.map(function(p){return p.text;}).join(" "));
+  if(!full) return null;
+  if(/^example\s*:?/i.test(full)){gDropped.push("Marking guide row "+num+" (example row): "+full.substring(0,80));return null;}
+  if(/^type .*here\.?$/i.test(full)) return null;
+  /* Visual depth: rank of each paragraph's left indent within the cell. */
+  var inds=[];
+  paras.forEach(function(p){if(inds.indexOf(p.ind)===-1)inds.push(p.ind);});
+  inds.sort(function(a,b){return a-b;});
+  var minList=null;
+  paras.forEach(function(p){p.depth=inds.indexOf(p.ind);if(p.list&&(minList===null||p.depth<minList))minList=p.depth;});
+  /* Title for the short description: the leading wholly-bold, unlisted paragraphs. */
+  var t=0;
+  while(t<paras.length&&!paras[t].list&&paras[t].runs.length&&paras[t].runs.every(function(r){return r.b||!norm(r.t);})) t++;
+  if(t===0) t=1;
+  if(t>=paras.length&&paras.length>1) t=1;
+  var titleParas=paras.slice(0,t),bodyParas=paras.slice(t);
+  return{
+    num:num.replace(/\.$/,"")||String(seq+1),
+    paras:paras,
+    titleAuto:norm(titleParas.map(function(p){return p.text;}).join(" ")),
+    titleParas:titleParas,
+    bodyParas:bodyParas,
+    minListDepth:minList||0,
+    titleEdit:null
+  };
+}
+
+/* Plain text for the CSV: one paragraph per line, list labels kept,
+   nesting shown by indent. Canvas rubric fields are plain text, so
+   bold/italic/underline cannot travel; everything structural does. */
+function parasToText(paras,minListDepth){
+  var lines=[];
+  for(var i=0;i<paras.length;i++){
+    var p=paras[i],d=Math.max(0,p.depth-(minListDepth||0)),pre="";
+    for(var k=0;k<d;k++) pre+="    ";
+    if(p.list) pre+=(p.list.bullet?BULLETS[Math.min(d,BULLETS.length-1)]:p.list.label)+" ";
+    var parts=p.text.split("\n").map(function(x){return x.replace(/\s+/g," ").trim();});
+    if(!parts.join("")&&!p.list) continue;
+    var hang=pre.replace(/./g," ");
+    lines.push((pre+parts[0]).replace(/\s+$/,""));
+    for(var q=1;q<parts.length;q++) if(parts[q]) lines.push(hang+parts[q]);
+  }
+  return lines.join("\n");
+}
+/* Faithful HTML of the source cell for checking on screen. */
+function parasToHtml(paras){
+  var h="";
+  for(var i=0;i<paras.length;i++){
+    var p=paras[i],inner="";
+    for(var j=0;j<p.runs.length;j++){
+      var r=p.runs[j],s=esc(r.t).replace(/\n/g,"<br>");
+      if(r.u) s="<u>"+s+"</u>";
+      if(r.i) s="<em>"+s+"</em>";
+      if(r.b) s="<strong>"+s+"</strong>";
+      inner+=s;
+    }
+    var pad=(p.depth*1.4)+"em";
+    if(p.list) h+='<div class="li" style="margin-left:'+pad+'"><span class="lbl">'+esc(p.list.bullet?BULLETS[Math.min(p.depth,BULLETS.length-1)]:p.list.label)+'</span><span>'+inner+'</span></div>';
+    else h+='<p style="margin-left:'+pad+'">'+(inner||"&nbsp;")+'</p>';
+  }
+  return h;
+}
+
+/* ============================================================
+   [RED] Fully-red paragraphs. Cross-check only, never a source.
+   ============================================================ */
+function isRedHex(h){
+  if(!h||h.length!==6) return false;
+  var r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);
+  return r>=140 && g<=95 && b<=95;
+}
+function redParagraphs(xml){
+  if(!xml) return null;
+  var out=[],paras=xml.match(/<w:p[ >][\s\S]*?<\/w:p>/g)||[];
+  for(var i=0;i<paras.length;i++){
+    var p=paras[i];
+    var tm=p.match(/<w:t[^>]*>[^<]*<\/w:t>/g)||[];
+    var txt=tm.map(function(t){return t.replace(/<[^>]+>/g,"");}).join("");
+    if(!txt.trim()) continue;
+    var runs=p.match(/<w:r[ >][\s\S]*?<\/w:r>/g)||[],textRuns=0,redRuns=0;
+    for(var j=0;j<runs.length;j++){
+      if(!/<w:t[^>]*>[^<]/.test(runs[j])) continue;
+      textRuns++;
+      var cm=runs[j].match(/<w:color w:val="([0-9A-Fa-f]{6})"/);
+      if(cm&&isRedHex(cm[1])) redRuns++;
+    }
+    if(textRuns>0&&redRuns===textRuns) out.push(norm(txt));
+  }
+  return out;
+}
+
+/* ============================================================
+   [VAR] Variant routing off the Title paragraph.
+   ============================================================ */
+function detectVariant(rawText){
+  var head=rawText.substring(0,1200);
+  var m=head.match(/ASSESSOR\s+GUIDE\s*[\u2013\u2014-]\s*([A-Z ()\/]+?)\s+ASSESSMENT\s+TASK/i);
+  var label=m?norm(m[1]).toLowerCase():"";
+  if(/quiz/.test(label)) return{key:"quiz",label:"Quiz",outputs:["canvas","qti"]};
+  if(/practical/.test(label)) return{key:"practical",label:"Practical",outputs:["canvas","rubric"]};
+  if(/product/.test(label)) return{key:"product",label:"Product",outputs:["canvas","rubric"]};
+  if(/knowledge\s*submission/.test(label)) return{key:"submission",label:"Knowledge Submission",outputs:["canvas","rubric"]};
+  if(/Section\s*B\s*[\u2013\u2014-]\s*Student\s+Facing\s+Questions/i.test(rawText))
+    return{key:"quiz",label:"Quiz (inferred)",outputs:["canvas","qti"]};
+  if(/Section\s*B\s*[\u2013\u2014-]\s*Marking\s+Guide/i.test(rawText))
+    return{key:"product",label:"Marking guide (inferred)",outputs:["canvas","rubric"]};
+  return null;
+}
+
+/* ============================================================
+   [SECA] Heading-anchored Section A extraction.
+   ============================================================ */
+function isHeading(el){return el&&/^H[1-6]$/.test(el.tagName);}
+function hLevel(el){return isHeading(el)?parseInt(el.tagName.charAt(1),10):99;}
+function textOf(el){return norm(el.textContent||"");}
+
+function findHeading(blocks,re,from,until){
+  for(var i=from||0;i<(until==null?blocks.length:until);i++){
+    if(isHeading(blocks[i])&&re.test(textOf(blocks[i]))) return i;
+  }
+  return -1;
+}
+
+/* A paragraph that is entirely italic is template guidance, not content. */
+function isGuidance(el){
+  if(!el||el.tagName!=="P") return false;
+  var t=textOf(el);
+  if(!t) return false;
+  var ital=el.querySelectorAll("em,i");
+  if(!ital.length) return false;
+  var italText="";
+  for(var i=0;i<ital.length;i++) italText+=ital[i].textContent;
+  return norm(italText).length>=norm(t).length-3;
+}
+function isGuidanceList(el){
+  if(!el||(el.tagName!=="UL"&&el.tagName!=="OL")) return false;
+  var lis=el.children,n=0,g=0;
+  for(var i=0;i<lis.length;i++){
+    if(lis[i].tagName!=="LI") continue;
+    n++;
+    var em=lis[i].querySelectorAll("em,i"),et="";
+    for(var j=0;j<em.length;j++) et+=em[j].textContent;
+    if(norm(et).length>=norm(lis[i].textContent).length-3) g++;
+  }
+  return n>0&&g===n;
+}
+
+function sectionHtml(blocks,idx,stopAt){
+  if(idx<0) return "";
+  var lvl=hLevel(blocks[idx]),out=[],limit=(stopAt==null?blocks.length:stopAt);
+  for(var i=idx+1;i<limit;i++){
+    var b=blocks[i];
+    if(isHeading(b)&&hLevel(b)<=lvl) break;
+    if(isGuidance(b)||isGuidanceList(b)){gDropped.push(textOf(b).substring(0,150));continue;}
+    if(isHeading(b)){out.push("<h4>"+esc(textOf(b))+"</h4>");continue;}
+    if(!textOf(b)) continue;
+    out.push(cleanBlock(b));
+  }
+  return out.join("\n");
+}
+
+function cleanBlock(el){
+  var c=el.cloneNode(true);
+  var all=c.querySelectorAll("*");
+  for(var i=0;i<all.length;i++){all[i].removeAttribute("style");all[i].removeAttribute("id");all[i].removeAttribute("class");}
+  return c.outerHTML;
+}
+
+/* Cover block: "Label: value" on one line, or value on the following line. */
+function coverField(rawText,labelRe){
+  var m=rawText.match(labelRe);
+  if(!m) return "";
+  var after=rawText.substring(m.index+m[0].length);
+  var line=after.split(/\n/)[0].replace(/^[:\s]+/,"").trim();
+  if(line) return line;
+  var lines=after.split(/\n/);
+  for(var i=1;i<Math.min(lines.length,4);i++){
+    var t=lines[i].trim();
+    if(t&&!/^(Task|National|RMIT|Note|Section|\*)/i.test(t)) return t;
+  }
+  return "";
+}
+
+function extractSectionA(blocks,rawText,sectionBIdx){
+  var d={};
+  d.taskNumber=(coverField(rawText,/Task\s*Number/i).match(/(\d+)/)||["",""])[1];
+  d.taskName=coverField(rawText,/Task\s*Name/i);
+  d.unitCode=coverField(rawText,/National\s*unit\/?s?\s*code/i);
+  d.unitTitle=coverField(rawText,/National\s*unit\/?s?\s*title/i);
+  d.qualificationCode=coverField(rawText,/National\s*qualification\s*code/i);
+  d.qualificationTitle=coverField(rawText,/National\s*qualification\s*title/i);
+  d.programCode=coverField(rawText,/RMIT\s*Program\s*code/i);
+  d.courseCode=coverField(rawText,/RMIT\s*Course\s*code/i);
+
+  var aIdx=findHeading(blocks,/^Section\s*A/i,0,sectionBIdx);
+  var from=aIdx>=0?aIdx:0;
+
+  var sumIdx=findHeading(blocks,/^Summary\s+and\s+Purpose/i,from,sectionBIdx);
+  var instrIdx=findHeading(blocks,/^Assessment\s+Instructions/i,from,sectionBIdx);
+  var condIdx=findHeading(blocks,/^Conditions\s+for\s+assessment/i,from,sectionBIdx);
+  var subIdx=findHeading(blocks,/^Instructions\s+on\s+Submitting/i,from,sectionBIdx);
+  var stuIdx=findHeading(blocks,/Equipment\/resources\s+students\s+must\s+supply/i,from,sectionBIdx);
+  var rmitIdx=findHeading(blocks,/Equipment\/resources\s+to\s+be\s+provided/i,from,sectionBIdx);
+
+  /* Only Summary and Purpose goes to the Canvas page. What/Where/How stays in the
+     document \u2014 students download the student version for the full picture. */
+  d.taskInstructions=sectionHtml(blocks,sumIdx,sectionBIdx).trim();
+  var ai=sectionHtml(blocks,instrIdx,sectionBIdx).trim();
+  d.assessmentInstructions=ai;
+  d.conditions=sectionHtml(blocks,condIdx,sectionBIdx);
+  d.submissionInstructions=sectionHtml(blocks,subIdx,sectionBIdx);
+  d.studentSupplies=sectionHtml(blocks,stuIdx,sectionBIdx);
+  d.rmitSupplies=sectionHtml(blocks,rmitIdx,sectionBIdx);
+  return d;
+}
+
+/* ============================================================
+   [QPARSE] Declarative quiz parsing.
+   Primary signal is the question header and the answer label.
+   ============================================================ */
+function parseQuestionHeader(t){
+  var s=norm(t).replace(/\u2019/g,"'");
+  var m=s.match(/^Text\s*\(no\s*question\)\s*[\u2013\u2014-]\s*(\d+)\s*points?\.?/i);
+  if(m) return{num:null,type:"text_only",points:parseInt(m[1],10),tail:s.substring(m[0].length).trim()};
+  m=s.match(/^(\d{1,3})\.\s*(.+?)\s*[\u2013\u2014-]\s*(\d+)\s*points?\.?/i);
+  if(!m) return null;
+  var label=norm(m[2]).toLowerCase();
+  var type=null;
+  for(var i=0;i<TYPE_LABELS.length;i++){
+    if(label.indexOf(TYPE_LABELS[i][0])===0){type=TYPE_LABELS[i][1];break;}
+  }
+  if(!type){
+    for(var j=0;j<TYPE_LABELS.length;j++){
+      if(label.indexOf(TYPE_LABELS[j][0])!==-1){type=TYPE_LABELS[j][1];break;}
+    }
+  }
+  if(!type) return null;
+  return{num:parseInt(m[1],10),type:type,points:parseInt(m[3],10),tail:s.substring(m[0].length).trim(),rawLabel:norm(m[2])};
+}
+
+var ANSWER_RE=/^\s*(Answers?|Model\s+answer|Marking)\s*:/i;
+function stripAnswerLabel(t){return norm(t).replace(ANSWER_RE,"").trim();}
+
+function collectQuestionBlocks(blocks,startIdx,endIdx){
+  var found=[],i;
+  for(i=startIdx;i<endIdx;i++){
+    var b=blocks[i];
+    if(b.tagName!=="P"&&!isHeading(b)) continue;
+    var h=parseQuestionHeader(textOf(b));
+    if(h) found.push({idx:i,head:h});
+  }
+  var out=[];
+  for(i=0;i<found.length;i++){
+    var s=found[i].idx+1,e=(i+1<found.length)?found[i+1].idx:endIdx;
+    var nodes=[];
+    for(var k=s;k<e;k++){
+      /* A heading here starts the next type's section; anything after it is
+         template guidance, not part of this question. */
+      if(isHeading(blocks[k])) break;
+      /* Wholly italic paragraphs are template guidance wherever they appear. */
+      if(isGuidance(blocks[k])||isGuidanceList(blocks[k])) continue;
+      nodes.push(blocks[k]);
+    }
+    out.push({head:found[i].head,nodes:nodes});
+  }
+  return out;
+}
+
+function listItems(el){
+  var out=[];
+  if(!el||(el.tagName!=="UL"&&el.tagName!=="OL")) return out;
+  for(var i=0;i<el.children.length;i++){
+    if(el.children[i].tagName==="LI") out.push(el.children[i]);
+  }
+  return out;
+}
+
+function parseQuestion(entry,seq){
+  var h=entry.head,nodes=entry.nodes;
+  var q={num:h.num||seq,type:h.type,declaredType:h.type,points:h.points,text:"",flags:[],notes:[]};
+
+  /* answer node: paragraph or list item carrying an answer label */
+  var answerText="",answerNode=null;
+  for(var i=0;i<nodes.length&&!answerNode;i++){
+    var n=nodes[i];
+    if(n.tagName==="P"&&ANSWER_RE.test(textOf(n))){answerNode=n;answerText=stripAnswerLabel(textOf(n));}
+    else{
+      var lis=listItems(n);
+      for(var j=0;j<lis.length;j++){
+        if(ANSWER_RE.test(textOf(lis[j]))){answerNode=lis[j];answerText=stripAnswerLabel(textOf(lis[j]));break;}
+      }
+    }
+  }
+
+  /* stem = paragraphs before the first list, minus the answer node */
+  var stemParts=[];
+  for(var s=0;s<nodes.length;s++){
+    var nd=nodes[s];
+    if(nd===answerNode) continue;
+    if(nd.tagName==="UL"||nd.tagName==="OL"||nd.tagName==="TABLE") break;
+    if(/^(Prompts|Answer options)\b/i.test(textOf(nd))) break;
+    if(!textOf(nd)) continue;
+    stemParts.push(norm(nd.textContent));
+  }
+  q.text=stemParts.join("<br>");
+  q.stemLines=stemParts.slice();
+  if(h.tail&&h.type!=="text_only"&&!/point/i.test(h.tail)) q.notes.push("Header carries extra text: "+h.tail);
+
+  if(h.type==="text_only"){
+    q.text=stemParts.join("<br>")||h.tail;
+    return q;
+  }
+  if(!answerNode&&h.type!=="essay"&&h.type!=="file_upload"&&!findImageTable(nodes)){
+    q.flags.push("No answer line found. Expected a line beginning Answer:, Answers:, Model answer: or Marking:");
+  }
+  q.answerRaw=answerText;
+
+  if(h.type==="mc"||h.type==="ma"){
+    var opts=[];
+    for(var a=0;a<nodes.length;a++){
+      var lis2=listItems(nodes[a]);
+      for(var b=0;b<lis2.length;b++){
+        if(lis2[b]===answerNode) continue;
+        var t=norm(lis2[b].textContent);
+        if(t) opts.push(t);
+      }
+    }
+    if(opts.length<2){q.flags.push("Fewer than two options found.");}
+    if(h.type==="mc"&&opts.length===2){q.flags.push("Multiple choice with only two options is not permitted.");}
+    var correctSet=[];
+    if(h.type==="ma") correctSet=answerText.split(/;/).map(keyNorm).filter(Boolean);
+    else correctSet=[keyNorm(answerText)];
+    q.options=[];
+    var matched=0;
+    for(var o=0;o<opts.length;o++){
+      var isC=correctSet.indexOf(keyNorm(opts[o]))!==-1;
+      if(isC) matched++;
+      q.options.push({letter:String.fromCharCode(97+o),text:opts[o],correct:isC});
+    }
+    if(matched===0&&answerText) q.flags.push("Answer \u201C"+answerText+"\u201D does not match any option.");
+    if(h.type==="mc"&&matched>1) q.flags.push("Answer matches more than one option.");
+    if(h.type==="ma"&&matched<correctSet.length) q.flags.push("Only "+matched+" of "+correctSet.length+" listed answers matched an option.");
+  }
+  else if(h.type==="tf"){
+    q.correctAnswer=/^\s*false/i.test(answerText)?"false":"true";
+    if(!/^\s*(true|false)/i.test(answerText)) q.flags.push("Answer does not begin True or False.");
+  }
+  else if((h.type==="multi_dropdown"||h.type==="matching")&&findImageTable(nodes)){
+    parseImageTable(q,nodes,answerText);
+  }
+  else if(h.type==="matching"){
+    parseMatching(q,nodes,answerText);
+  }
+  else if(h.type==="short_answer"){
+    var primary=answerText.replace(/\(.*?\)/g,"").trim();
+    var accept=[];
+    var am=answerText.match(/\((?:also\s+)?accept:?\s*([^)]+)\)/i);
+    if(am) accept=am[1].split(/,|;/).map(function(x){return norm(x);}).filter(Boolean);
+    q.answers=[primary].concat(accept).filter(Boolean);
+    if(!q.answers.length) q.flags.push("No accepted answer parsed.");
+  }
+  else if(h.type==="multi_dropdown"&&hasPromptBlocks(nodes)){
+    /* Declared as Multiple dropdowns but written in Prompts / Answer options form:
+       the image layout. Same parser, same output. */
+    parseMatching(q,nodes,answerText);
+  }
+  else if(h.type==="fill_blanks"||h.type==="multi_dropdown"){
+    var parts=answerText.split(/;/),map={};
+    for(var p=0;p<parts.length;p++){
+      var pm=parts[p].match(/\[?\s*(\d+)\s*\]?\s*(.+)/);
+      if(!pm) continue;
+      var key=(h.type==="fill_blanks"?"blank":"dropdown")+pm[1];
+      var val=norm(pm[2]).replace(/\(.*?\)/g,"").replace(/[.;]+$/,"").trim();
+      if(!val) continue;
+      map[key]=(h.type==="fill_blanks")?[val]:[{text:val,correct:true}];
+    }
+    if(h.type==="fill_blanks") q.blanks=map; else q.dropdowns=map;
+    var cnt=0;for(var kk in map) if(map.hasOwnProperty(kk)) cnt++;
+    /* The template writes readable markers ([choose], [answer 1]). Canvas needs the
+       reference in the stem to match the response identifier, so rewrite them in order. */
+    var seqKeys=[],si=0;
+    for(si=1;si<=cnt;si++){ var kName=(h.type==="fill_blanks"?"blank":"dropdown")+si; if(map[kName]) seqKeys.push(kName); }
+    if(seqKeys.length){
+      var used=0;
+      q.text=q.text.replace(/\[[^\]]*\]/g,function(m0){
+        if(/^\{\{image_\d+\}\}$/.test(m0)) return m0;
+        if(used<seqKeys.length) return "["+seqKeys[used++]+"]";
+        return m0;
+      });
+      if(used<seqKeys.length) q.flags.push("The question text has "+used+" placeholder"+(used===1?"":"s")+" but "+seqKeys.length+" answers were keyed. Every blank or dropdown needs a marker in the sentence.");
+    }
+    if(!cnt) q.flags.push("No numbered answers parsed. Expected the form [1] value; [2] value.");
+    if(cnt>8) q.flags.push(cnt+" student inputs exceeds the 6\u20138 cap.");
+    if(h.type==="multi_dropdown") q.notes.push("Distractors are not in the assessor guide. Add the alternatives for each dropdown in Canvas after import.");
+  }
+  else if(h.type==="numerical"){
+    var nm=answerText.replace(/,/g,"").match(/(-?\d+(?:\.\d+)?)/);
+    q.exact=nm?parseFloat(nm[1]):0;
+    var tm2=answerText.match(/tolerance[^0-9-]*([0-9.]+)/i)||answerText.match(/\u00b1\s*([0-9.]+)/);
+    q.margin=tm2?parseFloat(tm2[1]):0;
+    if(!nm) q.flags.push("No number found in the answer.");
+  }
+  else if(h.type==="calculated"){
+    q.formula=answerText.split(/\.|Variable ranges/i)[0].replace(/\u00d7/g,"*").trim();
+    q.variables={};
+    var vr=answerText.match(/Variable ranges:?\s*([^.]+)/i);
+    if(vr){
+      var vparts=vr[1].split(/;/);
+      for(var v=0;v<vparts.length;v++){
+        var vm=vparts[v].match(/([A-Za-z_][A-Za-z0-9_]*)\s*([0-9.]+)\s*(?:--|\u2013|\u2014|-|to)\s*([0-9.]+)/);
+        if(vm) q.variables[vm[1]]={min:parseFloat(vm[2]),max:parseFloat(vm[3])};
+      }
+    }
+    q.tolerance=0;
+    if(!q.formula) q.flags.push("No formula parsed.");
+    q.notes.push("Canvas regenerates values on import. Verify the formula and ranges after importing.");
+  }
+  else if(h.type==="essay"||h.type==="file_upload"){
+    q.modelAnswer=answerText;
+    if(answerText) q.notes.push("Marked in SpeedGrader. The model answer stays out of the QTI file \u2014 it is assessor-only.");
+    else q.flags.push("No marking guidance found for a manually marked question.");
+  }
+  return q;
+}
+
+function isRef(s){return /^\d+\.\d+$/.test(norm(s));}
+
+function hasPromptBlocks(nodes){
+  var p=false,o=false;
+  for(var i=0;i<nodes.length;i++){
+    var t=textOf(nodes[i]);
+    if(/^Prompts\b/i.test(t)) p=true;
+    if(/^Answer\s+options\b/i.test(t)) o=true;
+  }
+  return p&&o;
+}
+
+/* Two-column table, one column holding images: the table is the answer key. */
+function findImageTable(nodes){
+  for(var i=0;i<nodes.length;i++){
+    var n=nodes[i];
+    if(n.tagName!=="TABLE") continue;
+    var rows=n.rows;
+    if(!rows||rows.length<2) continue;
+    var imgCol=-1;
+    for(var r=1;r<rows.length;r++){
+      for(var c=0;c<rows[r].cells.length;c++){
+        if(/\{\{image_\d+\}\}/.test(rows[r].cells[c].textContent)){imgCol=c;break;}
+      }
+      if(imgCol>=0) break;
+    }
+    if(imgCol>=0) return{table:n,imgCol:imgCol};
+  }
+  return null;
+}
+
+function parseImageTable(q,nodes,answerText){
+  var ft=findImageTable(nodes);
+  if(!ft) return false;
+  var rows=ft.table.rows,imgCol=ft.imgCol,txtCol=imgCol===0?1:0;
+  var pairs=[],options=[],i;
+  for(i=0;i<rows.length;i++){
+    var cells=rows[i].cells;
+    if(cells.length<2) continue;
+    var imgCell=norm(cells[imgCol].textContent);
+    if(!/\{\{image_\d+\}\}/.test(imgCell)) continue;   /* skips the header row */
+    var meaning=norm(cells[txtCol].textContent);
+    if(!meaning){q.flags.push("Table row "+(pairs.length+1)+" has an image but no meaning.");continue;}
+    pairs.push({item:imgCell,match:meaning});
+    options.push(meaning);
+  }
+  if(!pairs.length) return false;
+
+  /* If an Answers line is still present, cross-check it. The table wins. */
+  if(answerText){
+    var chunks=answerText.split(/;/),disagree=[];
+    for(i=0;i<chunks.length;i++){
+      var c=norm(chunks[i]).replace(/\.$/,"");
+      if(!c) continue;
+      var parts=c.split(/\u2192|->|=>/);
+      if(parts.length<2) continue;
+      var left=norm(parts[0]),right=norm(parts[1]);
+      var ref=isRef(left)?left:(isRef(right)?right:null);
+      var val=isRef(left)?right:left;
+      if(!ref) continue;
+      var idx=parseInt(ref.split(".")[1],10)-1;
+      if(idx<0||idx>=pairs.length){disagree.push(ref+" is not a row in the table");continue;}
+      if(keyNorm(pairs[idx].match)!==keyNorm(val)) disagree.push(ref+" says \u201C"+val+"\u201D but the table row says \u201C"+pairs[idx].match+"\u201D");
+    }
+    if(disagree.length) q.flags.push("The Answers line disagrees with the table: "+disagree.join("; ")+". The table was used.");
+    else q.notes.push("The Answers line duplicates the table and agrees with it. It can be deleted \u2014 the table is the key.");
+  }
+
+  toImageDropdowns(q,pairs,options);
+  return true;
+}
+
+function parseMatching(q,nodes,answerText){
+  var promptsIdx=-1,optionsIdx=-1,i;
+  for(i=0;i<nodes.length;i++){
+    var t=textOf(nodes[i]);
+    if(/^Prompts\b/i.test(t)) promptsIdx=i;
+    else if(/^Answer\s+options\b/i.test(t)) optionsIdx=i;
+  }
+  function listAfter(idx){
+    /* Inline form: "Answer options (the shorter column): a; b; c" */
+    var own=textOf(nodes[idx]),ci=own.indexOf(":");
+    if(ci>=0){
+      var tail=own.substring(ci+1).replace(/\.$/,"").trim();
+      if(tail) return tail.split(/;/).map(function(x){return norm(x);}).filter(Boolean);
+    }
+    /* List form: the next ul/ol */
+    for(var k=idx+1;k<nodes.length;k++){
+      if(nodes[k].tagName==="UL"||nodes[k].tagName==="OL") return listItems(nodes[k]).map(function(li){return norm(li.textContent);});
+      if(/^(Prompts|Answer\s+options|Answers?)\b/i.test(textOf(nodes[k]))) break;
+    }
+    return [];
+  }
+  var prompts=promptsIdx>=0?listAfter(promptsIdx):[];
+  var options=optionsIdx>=0?listAfter(optionsIdx):[];
+  if(!prompts.length||!options.length){
+    q.flags.push("Could not find both a Prompts list and an Answer options list.");
+    q.pairs=[];return;
+  }
+  var hasImagePrompts=false;
+  for(i=0;i<prompts.length;i++) if(/\{\{image_\d+\}\}/.test(prompts[i])) hasImagePrompts=true;
+  if(!hasImagePrompts&&options.length>prompts.length) q.flags.push("Answer options is the longer column. The shorter column must be the answer options.");
+
+  /* reference number -> prompt text */
+  var refMap={};
+  for(i=0;i<prompts.length;i++){
+    var rm=prompts[i].match(/^(\d+\.\d+)\s*/);
+    if(rm) refMap[rm[1]]=prompts[i];
+  }
+
+  var pairs=[],seen={};
+  var chunks=answerText.split(/;/);
+  for(i=0;i<chunks.length;i++){
+    var c=norm(chunks[i]).replace(/\.$/,"");
+    if(!c) continue;
+    var pm=c.split(/\u2192|->|=>/);
+    if(pm.length<2){q.flags.push("Could not read answer pair: "+c);continue;}
+    var left=norm(pm[0]),right=norm(pm[1]);
+    var ref=isRef(left)?left:(isRef(right)?right:null);
+    var val=isRef(left)?right:left;
+    var promptText=null;
+    if(ref){
+      promptText=refMap[ref]||null;
+      if(!promptText){q.flags.push("Answer refers to "+ref+" but there is no prompt with that reference.");continue;}
+    } else {
+      for(var pp=0;pp<prompts.length;pp++){ if(keyNorm(prompts[pp])===keyNorm(left)){promptText=prompts[pp];val=right;break;} }
+      if(!promptText){ for(var p2=0;p2<prompts.length;p2++){ if(keyNorm(prompts[p2])===keyNorm(right)){promptText=prompts[p2];val=left;break;} } }
+      if(!promptText){q.flags.push("Could not match answer pair to a prompt: "+c);continue;}
+    }
+    var optMatch=null;
+    for(var oo=0;oo<options.length;oo++){ if(keyNorm(options[oo])===keyNorm(val)){optMatch=options[oo];break;} }
+    if(!optMatch){
+      q.flags.push("Answer \u201C"+val+"\u201D is not in the Answer options list. Check the spelling in both places.");
+      /* Add it as its own option rather than let the key fall through to the first option. */
+      options.push(val);
+      optMatch=val;
+    }
+    seen[promptText]=true;
+    pairs.push({item:promptText,match:optMatch});
+  }
+  for(i=0;i<prompts.length;i++){ if(!seen[prompts[i]]) q.flags.push("Prompt \u201C"+prompts[i].substring(0,50)+"\u201D has no answer."); }
+
+  /* Canvas matching prompts are plain text only. If the prompts carry images the
+     question must be built as Multiple dropdowns: images in the stem, a dropdown
+     beside each one, every dropdown offering the full option list. */
+  if(hasImagePrompts){
+    /* Present in the order the prompts appear in the guide, not answer-key order. */
+    pairs.sort(function(a,b){return prompts.indexOf(a.item)-prompts.indexOf(b.item);});
+    toImageDropdowns(q,pairs,options);
+    return;
+  }
+
+  q.pairs=pairs;
+  q.allMatches=options;
+}
+
+function toImageDropdowns(q,pairs,options){
+  q.type="multi_dropdown";
+  q.fromMatching=true;
+  var rows=[],dds={},i,j;
+  for(i=0;i<pairs.length;i++){
+    var key="d"+(i+1);
+    /* Strip the build-time reference number; it is a file pointer, not student content. */
+    var body=pairs[i].item.replace(/^\s*\d+\.\d+\s*/,"").trim();
+    rows.push("<p>"+body+" ["+key+"]</p>");
+    var list=[];
+    for(j=0;j<options.length;j++) list.push({text:options[j],correct:keyNorm(options[j])===keyNorm(pairs[i].match)});
+    var anyCorrect=false;
+    for(j=0;j<list.length;j++) if(list[j].correct) anyCorrect=true;
+    if(!anyCorrect) q.flags.push("Dropdown "+key+" has no correct option after matching \u201C"+pairs[i].match+"\u201D.");
+    dds[key]=list;
+  }
+  q.text=(q.text?q.text+"<br>":"")+rows.join("");
+  q.dropdowns=dds;
+  q.notes.push("Built as Multiple dropdowns, not Matching. Canvas matching prompts cannot hold images, so each image sits in the question body with its own dropdown offering all "+options.length+" options.");
+  if(pairs.length>8) q.flags.push(pairs.length+" dropdowns exceeds the 6\u20138 student input cap.");
+}
+
+/* ============================================================
+   [RUBRIC] Marking guide table -> criteria. Column 4 never leaves.
+   ============================================================ */
+function findMarkingTable(blocks,fromIdx){
+  for(var i=fromIdx;i<blocks.length;i++){
+    var b=blocks[i];
+    if(b.tagName!=="TABLE") continue;
+    var r0=b.rows&&b.rows[0];
+    if(!r0) continue;
+    var head=[];
+    for(var c=0;c<r0.cells.length;c++) head.push(norm(r0.cells[c].textContent).toLowerCase());
+    var joined=head.join("|");
+    if(joined.indexOf("criteria for assessment")!==-1) return{table:b,index:i};
+  }
+  return null;
+}
+
+/* ============================================================
+   [QTI] Generation. Reused from the QTI Generator v8 engine.
+   ============================================================ */
+/* Images are placed in Canvas after import, where the editor prompts for alt text.
+   The token survives into the XML as a marker for where each image goes. */
+function swapImagePlaceholders(text){return text;}
+
+function processImagesInHtml(html){
+  var div=document.createElement("div");
+  div.innerHTML=html;
+  var imgs=Array.prototype.slice.call(div.getElementsByTagName("img"));
+  for(var i=0;i<imgs.length;i++){
+    var img=imgs[i],src=img.getAttribute("src")||"";
+    if(!src) continue;
+    var id;
+    if(gImagesBySrc[src]) id=gImagesBySrc[src];
+    else{
+      id="image_"+(gImages.length+1);
+      var rec={id:id,dataUri:src,url:"",alt:img.getAttribute("alt")||""};
+      gImages.push(rec);gImagesBySrc[src]=id;gImagesById[id]=rec;
+    }
+    var ph=document.createTextNode(" {{"+id+"}} ");
+    if(img.parentNode) img.parentNode.replaceChild(ph,img);
+  }
+  return div.innerHTML;
+}
+function computeImageUsage(){
+  var usage={};
+  for(var i=0;i<gQuestions.length;i++){
+    var q=gQuestions[i],all=String(q.text||"");
+    if(q.options) for(var j=0;j<q.options.length;j++) all+=" "+(q.options[j].text||"");
+    if(q.pairs) for(var k=0;k<q.pairs.length;k++) all+=" "+(q.pairs[k].item||"")+" "+(q.pairs[k].match||"");
+    var ms=all.match(/\{\{image_(\d+)\}\}/g)||[];
+    for(var m=0;m<ms.length;m++){
+      var id=ms[m].slice(2,-2);
+      if(!usage[id]) usage[id]=[];
+      if(usage[id].indexOf(q.num)===-1) usage[id].push(q.num);
+    }
+  }
+  return usage;
+}
+
+function genItem(q){
+  var qid="q"+q.num+"_"+q.type,qt=QT[q.type]||"multiple_choice_question";
+  var x='      <item ident="'+qid+'" title="Question '+q.num+'">\n';
+  x+='        <itemmetadata>\n          <qtimetadata>\n            <qtimetadatafield>\n              <fieldlabel>question_type</fieldlabel>\n              <fieldentry>'+qt+'</fieldentry>\n            </qtimetadatafield>\n            <qtimetadatafield>\n              <fieldlabel>points_possible</fieldlabel>\n              <fieldentry>'+(q.type==="text_only"?0:1)+'</fieldentry>\n            </qtimetadatafield>\n          </qtimetadata>\n        </itemmetadata>\n';
+  var i,j,bk,dk,ci;
+
+  if(q.type==="mc"||q.type==="ma"){
+    var card=q.type==="ma"?"Multiple":"Single";
+    x+='        <presentation>\n          <material><mattext texttype="text/html">'+qtiText(q.text)+'</mattext></material>\n          <response_lid ident="response1" rcardinality="'+card+'">\n            <render_choice>\n';
+    for(i=0;i<q.options.length;i++) x+='              <response_label ident="'+q.options[i].letter+'"><material><mattext texttype="text/html">'+qtiText(q.options[i].text)+'</mattext></material></response_label>\n';
+    x+='            </render_choice>\n          </response_lid>\n        </presentation>\n';
+    var corr=[],incorr=[];
+    for(i=0;i<q.options.length;i++){ if(q.options[i].correct) corr.push(q.options[i].letter); else incorr.push(q.options[i].letter); }
+    x+='        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n          <respcondition continue="No">\n            <conditionvar>\n';
+    if(q.type==="ma"){
+      x+='              <and>\n';
+      for(i=0;i<corr.length;i++) x+='                <varequal respident="response1">'+corr[i]+'</varequal>\n';
+      for(i=0;i<incorr.length;i++) x+='                <not><varequal respident="response1">'+incorr[i]+'</varequal></not>\n';
+      x+='              </and>\n';
+    } else {
+      x+='              <varequal respident="response1">'+(corr[0]||"a")+'</varequal>\n';
+    }
+    x+='            </conditionvar>\n            <setvar action="Set" varname="SCORE">100</setvar>\n          </respcondition>\n        </resprocessing>\n';
+  }
+  else if(q.type==="tf"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html">'+qtiText(q.text)+'</mattext></material>\n          <response_lid ident="response1" rcardinality="Single">\n            <render_choice>\n              <response_label ident="true"><material><mattext texttype="text/plain">True</mattext></material></response_label>\n              <response_label ident="false"><material><mattext texttype="text/plain">False</mattext></material></response_label>\n            </render_choice>\n          </response_lid>\n        </presentation>\n';
+    x+='        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n          <respcondition continue="No">\n            <conditionvar><varequal respident="response1">'+q.correctAnswer+'</varequal></conditionvar>\n            <setvar action="Set" varname="SCORE">100</setvar>\n          </respcondition>\n        </resprocessing>\n';
+  }
+  else if(q.type==="matching"){
+    var pairs=q.pairs||[],np=pairs.length;
+    var all=q.allMatches&&q.allMatches.length?q.allMatches:pairs.map(function(p){return p.match;});
+    var partial=np>0?(100/np).toFixed(2):"100";
+    x+='        <presentation>\n          <material><mattext texttype="text/html">'+qtiText(q.text)+'</mattext></material>\n';
+    for(i=0;i<np;i++){
+      x+='          <response_lid ident="resp_'+(i+1)+'">\n            <material><mattext texttype="text/html">'+qtiText(pairs[i].item)+'</mattext></material>\n            <render_choice>\n';
+      for(j=0;j<all.length;j++) x+='              <response_label ident="m'+(j+1)+'"><material><mattext texttype="text/html">'+qtiText(all[j])+'</mattext></material></response_label>\n';
+      x+='            </render_choice>\n          </response_lid>\n';
+    }
+    x+='        </presentation>\n        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n';
+    for(i=0;i<np;i++){
+      var mi=0;
+      for(j=0;j<all.length;j++){ if(keyNorm(all[j])===keyNorm(pairs[i].match)){mi=j;break;} }
+      x+='          <respcondition continue="Yes">\n            <conditionvar><varequal respident="resp_'+(i+1)+'">m'+(mi+1)+'</varequal></conditionvar>\n            <setvar action="Add" varname="SCORE">'+partial+'</setvar>\n          </respcondition>\n';
+    }
+    x+='        </resprocessing>\n';
+  }
+  else if(q.type==="short_answer"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html">'+qtiText(q.text)+'</mattext></material>\n          <response_str ident="response1" rcardinality="Single">\n            <render_fib><response_label ident="answer1" rshuffle="No"/></render_fib>\n          </response_str>\n        </presentation>\n';
+    x+='        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n';
+    var ans=q.answers||[];
+    if(ans.length){
+      x+='          <respcondition continue="No">\n            <conditionvar>\n';
+      if(ans.length>1) x+='              <or>\n';
+      for(i=0;i<ans.length;i++) x+='                <varequal respident="response1">'+eX(ans[i])+'</varequal>\n';
+      if(ans.length>1) x+='              </or>\n';
+      x+='            </conditionvar>\n            <setvar action="Set" varname="SCORE">100</setvar>\n          </respcondition>\n';
+    }
+    x+='        </resprocessing>\n';
+  }
+  else if(q.type==="fill_blanks"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html">'+qtiText(q.text)+'</mattext></material>\n';
+    var blanks=q.blanks||{},bkeys=[];
+    for(bk in blanks) if(blanks.hasOwnProperty(bk)) bkeys.push(bk);
+    var pB=bkeys.length?(100/bkeys.length).toFixed(2):"100";
+    for(i=0;i<bkeys.length;i++) x+='          <response_str ident="response_'+eX(bkeys[i])+'" rcardinality="Single">\n            <render_fib><response_label ident="answer_'+eX(bkeys[i])+'" rshuffle="No"/></render_fib>\n          </response_str>\n';
+    x+='        </presentation>\n        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n';
+    for(i=0;i<bkeys.length;i++){
+      var ba=blanks[bkeys[i]]||[];
+      if(!ba.length) continue;
+      x+='          <respcondition continue="Yes">\n            <conditionvar>\n';
+      if(ba.length>1) x+='              <or>\n';
+      for(j=0;j<ba.length;j++) x+='                <varequal respident="response_'+eX(bkeys[i])+'">'+eX(ba[j])+'</varequal>\n';
+      if(ba.length>1) x+='              </or>\n';
+      x+='            </conditionvar>\n            <setvar action="Add" varname="SCORE">'+pB+'</setvar>\n          </respcondition>\n';
+    }
+    x+='        </resprocessing>\n';
+  }
+  else if(q.type==="multi_dropdown"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html">'+qtiText(q.text)+'</mattext></material>\n';
+    var dds=q.dropdowns||{},dkeys=[];
+    for(dk in dds) if(dds.hasOwnProperty(dk)) dkeys.push(dk);
+    var pD=dkeys.length?(100/dkeys.length).toFixed(2):"100";
+    for(i=0;i<dkeys.length;i++){
+      x+='          <response_lid ident="response_'+eX(dkeys[i])+'" rcardinality="Single">\n            <render_choice>\n';
+      for(j=0;j<dds[dkeys[i]].length;j++) x+='              <response_label ident="'+eX(dkeys[i])+'_'+j+'"><material><mattext texttype="text/html">'+qtiText(dds[dkeys[i]][j].text)+'</mattext></material></response_label>\n';
+      x+='            </render_choice>\n          </response_lid>\n';
+    }
+    x+='        </presentation>\n        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n';
+    for(i=0;i<dkeys.length;i++){
+      ci=-1;
+      for(j=0;j<dds[dkeys[i]].length;j++){ if(dds[dkeys[i]][j].correct){ci=j;break;} }
+      x+='          <respcondition continue="Yes">\n            <conditionvar><varequal respident="response_'+eX(dkeys[i])+'">'+eX(dkeys[i])+'_'+(ci>=0?ci:0)+'</varequal></conditionvar>\n            <setvar action="Add" varname="SCORE">'+pD+'</setvar>\n          </respcondition>\n';
+    }
+    x+='        </resprocessing>\n';
+  }
+  else if(q.type==="numerical"){
+    var exact=q.exact||0,margin=q.margin||0;
+    x+='        <presentation>\n          <material><mattext texttype="text/html">'+qtiText(q.text)+'</mattext></material>\n          <response_str ident="response1" rcardinality="Single">\n            <render_fib fibtype="Decimal"><response_label ident="answer1" rshuffle="No"/></render_fib>\n          </response_str>\n        </presentation>\n';
+    x+='        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n          <respcondition continue="No">\n            <conditionvar>\n';
+    if(!margin) x+='              <varequal respident="response1">'+exact+'</varequal>\n';
+    else x+='              <and>\n                <vargte respident="response1">'+(exact-margin)+'</vargte>\n                <varlte respident="response1">'+(exact+margin)+'</varlte>\n              </and>\n';
+    x+='            </conditionvar>\n            <setvar action="Set" varname="SCORE">100</setvar>\n          </respcondition>\n        </resprocessing>\n';
+  }
+  else if(q.type==="calculated"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html">'+qtiText(q.text)+'</mattext></material>\n          <response_str ident="response1" rcardinality="Single">\n            <render_fib fibtype="Decimal"><response_label ident="answer1" rshuffle="No"/></render_fib>\n          </response_str>\n        </presentation>\n';
+    x+='        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n          <respcondition continue="No">\n            <conditionvar><other/></conditionvar>\n            <setvar action="Set" varname="SCORE">0</setvar>\n          </respcondition>\n        </resprocessing>\n';
+    x+='        <itemproc_extension>\n          <calculated>\n            <formulas decimal_places="2"><formula>'+eX(q.formula||"")+'</formula></formulas>\n            <vars>\n';
+    var vars=q.variables||{};
+    for(var v in vars) if(vars.hasOwnProperty(v)) x+='              <var name="'+eX(v)+'" scale="2"><min>'+(vars[v].min||0)+'</min><max>'+(vars[v].max||10)+'</max></var>\n';
+    x+='            </vars>\n            <answer_tolerance>'+(q.tolerance||0)+'</answer_tolerance>\n          </calculated>\n        </itemproc_extension>\n';
+  }
+  else if(q.type==="essay"||q.type==="file_upload"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html">'+qtiText(q.text)+'</mattext></material>\n          <response_str ident="response1" rcardinality="Single">\n            <render_fib>\n              <response_label ident="answer1" rshuffle="No"/>\n            </render_fib>\n          </response_str>\n        </presentation>\n        <resprocessing>\n          <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>\n          <respcondition continue="No">\n            <conditionvar><other/></conditionvar>\n          </respcondition>\n        </resprocessing>\n';
+  }
+  else if(q.type==="text_only"){
+    x+='        <presentation>\n          <material><mattext texttype="text/html">'+qtiText(q.text)+'</mattext></material>\n        </presentation>\n';
+  }
+  x+='      </item>\n';
+  return x;
+}
+
+function generateQTI(){
+  var ident=$("assessmentIdent").value||"quiz_1";
+  var title=$("quizTitle").value||"Quiz";
+  var x='<?xml version="1.0" encoding="UTF-8"?>\n<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.imsglobal.org/xsd/ims_qtiasiv1p2 http://www.imsglobal.org/xsd/ims_qtiasiv1p2p1.xsd">\n';
+  x+='  <assessment ident="'+eX(ident)+'" title="'+eX(title)+'">\n    <qtimetadata>\n      <qtimetadatafield>\n        <fieldlabel>cc_maxattempts</fieldlabel>\n        <fieldentry>1</fieldentry>\n      </qtimetadatafield>\n    </qtimetadata>\n    <section ident="root_section">\n';
+  for(var i=0;i<gQuestions.length;i++) x+=genItem(gQuestions[i]);
+  x+="    </section>\n  </assessment>\n</questestinterop>";
+  return x;
+}
+
+/* ============================================================
+   [ZIPW] Minimal stored-ZIP writer, used for the image export.
+   ============================================================ */
+var CRC_TABLE=(function(){
+  var t=[],c,n,k;
+  for(n=0;n<256;n++){c=n;for(k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}
+  return t;
+})();
+function crc32(u8){
+  var c=0xFFFFFFFF;
+  for(var i=0;i<u8.length;i++) c=CRC_TABLE[(c^u8[i])&0xFF]^(c>>>8);
+  return (c^0xFFFFFFFF)>>>0;
+}
+function zipStore(files){
+  var enc=new TextEncoder(),parts=[],central=[],offset=0;
+  function u16(v){return [v&0xFF,(v>>8)&0xFF];}
+  function u32(v){return [v&0xFF,(v>>8)&0xFF,(v>>16)&0xFF,(v>>>24)&0xFF];}
+  for(var i=0;i<files.length;i++){
+    var nameBytes=enc.encode(files[i].name);
+    var data=(files[i].content instanceof Uint8Array)?files[i].content:enc.encode(files[i].content);
+    var crc=crc32(data);
+    var lh=[].concat(u32(0x04034b50),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(nameBytes.length),u16(0));
+    parts.push(new Uint8Array(lh),nameBytes,data);
+    central.push({name:nameBytes,crc:crc,size:data.length,offset:offset});
+    offset+=lh.length+nameBytes.length+data.length;
+  }
+  var cdStart=offset,cdParts=[];
+  for(i=0;i<central.length;i++){
+    var e=central[i];
+    var ch=[].concat(u32(0x02014b50),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),u32(e.crc),u32(e.size),u32(e.size),u16(e.name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(e.offset));
+    cdParts.push(new Uint8Array(ch),e.name);
+    offset+=ch.length+e.name.length;
+  }
+  var eocd=[].concat(u32(0x06054b50),u16(0),u16(0),u16(central.length),u16(central.length),u32(offset-cdStart),u32(cdStart),u16(0));
+  return new Blob(parts.concat(cdParts,[new Uint8Array(eocd)]),{type:"application/zip"});
+}
+
+
+/* ============================================================
+   [RUBRIC CSV]
+   ============================================================ */
+function csvCell(s){
+  s=String(s==null?"":s);
+  return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+}
+function descMode(){var r=document.querySelector('input[name="descMode"]:checked');return r?r.value:"long";}
+function critName(c){return norm(c.titleEdit!=null?c.titleEdit:c.titleAuto);}
+/* Short only: the whole formatted cell is the criterion name.
+   Short + long: the bold heading is the name, the rest is the long description. */
+function critExport(c){
+  if(descMode()==="short") return{name:parasToText(c.paras,c.minListDepth),desc:""};
+  var name=critName(c);
+  return{name:name,desc:parasToText(c.bodyParas,c.minListDepth)};
+}
+function generateCSV(){
+  var name=$("rubricName").value||"Rubric";
+  var rows=["Rubric Name,Criteria Name,Criteria Description,Criteria Enable Range,Rating Name,Rating Description,Rating Points,Rating Name,Rating Description,Rating Points"];
+  for(var i=0;i<gCriteria.length;i++){
+    var e=critExport(gCriteria[i]);
+    if(!norm(e.name)) continue;
+    rows.push([csvCell(name),csvCell(e.name),csvCell(e.desc),"false","Satisfactory","","1","Not Yet Satisfactory","","0"].join(","));
+  }
+  return rows.join("\n")+"\n";
+}
+
+/* ============================================================
+   [FLAGS] Readability flags on the student guide's Section A.
+   Ported from the Student Version Generator v5 (readability,
+   badge, PLAIN_FLAGS). Flags only: nothing is rewritten here.
+   ============================================================ */
+var SCONFIG={
+  PLAIN_FLAGS:['deemed','thereof','herein','aforementioned','pursuant','notwithstanding','whereby','hereby','in lieu of','facilitate','demonstrate competency'],
+  LONG_SENTENCE:25
+};
+var SECTION_A_FIELDS=[
+  {k:"timing",l:"Duration and/or due date",head:/^Duration\s+and\/or\s+due\s+date/i},
+  {k:"taskInstructions",l:"Summary and Purpose of Assessment"},
+  {k:"what",l:"What",head:/^What$/i,quiz:true},
+  {k:"where",l:"Where",head:/^Where$/i,quiz:true},
+  {k:"how",l:"How",head:/^How$/i,quiz:true},
+  {k:"conditions",l:"Conditions for assessment"},
+  {k:"studentSupplies",l:"Equipment/resources students must supply"},
+  {k:"rmitSupplies",l:"Equipment/resources to be provided by RMIT or the workplace"},
+  {k:"submissionInstructions",l:"Instructions on Submitting your Assessment"}
+];
+var VOICE_BLOCKS="p,li,h1,h2,h3,h4,h5,h6,td,th";
+function ownTextNodes(el){
+  var out=[];
+  (function walk(n){
+    for(var i=0;i<n.childNodes.length;i++){
+      var c=n.childNodes[i];
+      if(c.nodeType===3) out.push(c);
+      else if(c.nodeType===1&&!c.matches(VOICE_BLOCKS)&&c.tagName!=="UL"&&c.tagName!=="OL"&&c.tagName!=="TABLE") walk(c);
+    }
+  })(el);
+  return out;
+}
+function htmlLines(html){
+  var div=document.createElement("div");
+  div.innerHTML=html||"";
+  var out=[];
+  Array.prototype.forEach.call(div.querySelectorAll(VOICE_BLOCKS),function(el){
+    var t=ownTextNodes(el).map(function(n){return n.nodeValue;}).join("").replace(/\u00a0/g," ").replace(/\s+/g," ").trim();
+    if(t) out.push((el.tagName==="LI"?"- ":"")+t);
+  });
+  if(!out.length){var t=norm(div.textContent);if(t) out.push(t);}
+  return out;
+}
+function syllables(w){
+  w=w.toLowerCase().replace(/[^a-z]/g,'');
+  if(!w) return 0;
+  if(w.length<=3) return 1;
+  w=w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/,'').replace(/^y/,'');
+  var m=w.match(/[aeiouy]{1,2}/g);
+  return Math.max(1,m?m.length:1);
+}
+function readability(ls){
+  var text=ls.map(function(l){return l.replace(/^(-\s+|##\s+)/,'');}).map(function(l){return /[.!?:]$/.test(l)?l:l+'.';}).join(' ');
+  var sents=text.split(/(?<=[.!?:])\s+/).filter(function(s){return /[a-z]/i.test(s);});
+  var words=text.split(/\s+/).filter(function(w){return /[a-z]/i.test(w);});
+  if(!words.length) return null;
+  var syl=words.reduce(function(n,w){return n+syllables(w);},0);
+  var grade=0.39*(words.length/Math.max(1,sents.length))+11.8*(syl/words.length)-15.59;
+  var long=sents.filter(function(s){return s.split(/\s+/).length>SCONFIG.LONG_SENTENCE;}).length;
+  var low=text.toLowerCase();
+  var jargon=SCONFIG.PLAIN_FLAGS.filter(function(j){return low.indexOf(j)!==-1;});
+  var third=(text.match(/\b(students?|learners?|candidates?)\b/gi)||[]).length;
+  return{grade:Math.max(1,Math.round(grade)),long:long,jargon:jargon,third:third};
+}
+function plural(n,one,many){return n+' '+(n===1?one:(many||one+'s'));}
+function badge(r){
+  if(!r) return '';
+  var cls=r.grade<=9?'ok':r.grade<=11?'mid':'hard';
+  var bits=['<span class="lvl '+cls+'">Reading level: about Year '+r.grade+'</span>'];
+  if(r.long) bits.push('<span class="lvl mid">'+plural(r.long,'sentence')+' over '+SCONFIG.LONG_SENTENCE+' words</span>');
+  if(r.jargon.length) bits.push('<span class="lvl mid">Check: '+esc(r.jargon.join(', '))+'</span>');
+  if(r.third) bits.push('<span class="lvl hard">Still talks about students '+r.third+' time'+(r.third>1?'s':'')+'</span>');
+  return bits.join(' ');
+}
+
+/* ============================================================
+   [DOCS] Two guides, two jobs.
+   Assessor guide -> QTI / rubric. Student guide -> Canvas page.
+   ============================================================ */
+var gA=null,gS=null,gCross={errors:[],warns:[],oks:[]},gLeaks=[];
+
+function docRole(rawText){
+  var head=rawText.substring(0,1500);
+  if(/ASSESSOR\s+GUIDE/i.test(head)) return "assessor";
+  if(/STUDENT\s+GUIDE/i.test(head)) return "student";
+  return null;
+}
+function variantFromLabel(label){
+  label=norm(label).toLowerCase();
+  if(/quiz/.test(label)) return{key:"quiz",label:"Quiz",outputs:["canvas","qti"]};
+  if(/practical/.test(label)) return{key:"practical",label:"Practical",outputs:["canvas","rubric"]};
+  if(/product/.test(label)) return{key:"product",label:"Product",outputs:["canvas","rubric"]};
+  if(/knowledge\s*submission/.test(label)) return{key:"submission",label:"Knowledge Submission",outputs:["canvas","rubric"]};
+  return null;
+}
+function detectStudentVariant(rawText){
+  var m=rawText.substring(0,1500).match(/STUDENT\s+GUIDE\s*[\u2013\u2014-]\s*([A-Z ()\/]+?)\s+ASSESSMENT\s+TASK/i);
+  return m?variantFromLabel(m[1]):null;
+}
+
+function readDoc(file){
+  return file.arrayBuffer().then(function(ab){
+    return Promise.all([
+      mammoth.extractRawText({arrayBuffer:ab}),
+      mammoth.convertToHtml({arrayBuffer:ab}),
+      readZipParts(ab,["word/document.xml","word/styles.xml","word/numbering.xml"])
+    ]);
+  }).then(function(res){
+    return{name:file.name,rawText:res[0].value,html:res[1].value,parts:res[2]||{}};
+  });
+}
+function blocksOf(html){
+  var wrap=document.createElement("div");
+  wrap.innerHTML=html;
+  return Array.prototype.slice.call(wrap.children);
+}
+
+/* ---------- assessor guide ---------- */
+function processAssessor(doc){
+  gImages=[];gImagesBySrc={};gImagesById={};
+  gQuestions=[];gCriteria=[];gChecks=[];gDropped=[];
+  var html=processImagesInHtml(doc.html),parts=doc.parts;
+  gRedTexts=redParagraphs(parts["word/document.xml"]);
+  var variant=detectVariant(doc.rawText);
+  if(!variant) throw new Error("Could not identify the assessment type from the assessor guide\u2019s title.");
+  gVariant=variant;
+  var blocks=blocksOf(html);
+  var sectionBIdx=findHeading(blocks,/^Section\s*B\b/i,0);
+  if(sectionBIdx<0){addCheck("warn","Assessor guide: no Section B heading found.");sectionBIdx=blocks.length;}
+  var data=extractSectionA(blocks,doc.rawText,sectionBIdx);
+  var minReq=[];
+  if(variant.key==="quiz"){
+    var stop=findHeading(blocks,/^Before\s+building\s+in\s+Canvas/i,sectionBIdx);
+    if(stop<0) stop=findHeading(blocks,/^Delivery\s+conditions/i,sectionBIdx);
+    if(stop<0) stop=blocks.length;
+    var entries=collectQuestionBlocks(blocks,sectionBIdx,stop);
+    for(var e=0;e<entries.length;e++) gQuestions.push(parseQuestion(entries[e],e+1));
+    runQuizChecks();
+  } else {
+    var mt=findMarkingTable(blocks,sectionBIdx);
+    if(!mt){addCheck("error","No marking guide table found in the assessor guide\u2019s Section B.");}
+    else{
+      var fromXml=null;
+      try{fromXml=criteriaFromXml(parts["word/document.xml"],parts["word/styles.xml"],parts["word/numbering.xml"]);}catch(xe){console.warn("[OOXML] criteria parse failed",xe);}
+      if(fromXml&&fromXml.length){gCriteria=fromXml;gCritSource="xml";}
+      else{gCriteria=criteriaFromHtml(mt.table);gCritSource="html";}
+      var after=blocks.length-(mt.index+1);
+      if(after>0) addCheck("info",after+" block"+(after===1?"":"s")+" after the marking guide were ignored, as required.");
+      if(!gCriteria.length) addCheck("error","The marking guide table has no completed criteria rows.");
+      minReq=minReqTexts(mt.table);
+    }
+  }
+  return{name:doc.name,variant:variant,data:data,questions:gQuestions,criteria:gCriteria,critSource:gCritSource,
+    images:gImages,checks:gChecks,dropped:gDropped,minReq:minReq};
+}
+/* Minimum Requirement column text, held only for the leak check. Never output. */
+function minReqTexts(table){
+  var head=table.rows[0],col=-1,out=[];
+  for(var h=0;h<head.cells.length;h++) if(/minimum\s+requirement/i.test(head.cells[h].textContent)){col=h;break;}
+  if(col<0) return out;
+  for(var r=1;r<table.rows.length;r++){
+    var c=table.rows[r].cells[col];
+    if(!c) continue;
+    Array.prototype.forEach.call(c.querySelectorAll("p,li"),function(p){var t=norm(p.textContent);if(t) out.push(t);});
+  }
+  return out;
+}
+
+/* ---------- student guide ---------- */
+function stripImages(html){
+  var div=document.createElement("div");
+  div.innerHTML=html;
+  var n=0;
+  Array.prototype.slice.call(div.getElementsByTagName("img")).forEach(function(img){
+    n++;
+    var sp=document.createElement("span");
+    sp.setAttribute("style","background-color: #fac800;");
+    sp.textContent="[Image from the student guide \u2014 upload to Canvas Files and insert here, with alt text]";
+    img.parentNode.replaceChild(sp,img);
+  });
+  return{html:div.innerHTML,count:n};
+}
+function processStudent(doc){
+  var checks=[],dropped=[];
+  var variant=detectStudentVariant(doc.rawText);
+  if(!variant) throw new Error("Could not identify the assessment type from the student guide\u2019s title.");
+  var si=stripImages(doc.html);
+  var blocks=blocksOf(si.html);
+  var sectionBIdx=findHeading(blocks,/^Section\s*B\b/i,0);
+  if(sectionBIdx<0){checks.push({level:"warn",text:"Student guide: no Section B heading found. Section A was read to the end of the document."});sectionBIdx=blocks.length;}
+  var saveDropped=gDropped;gDropped=dropped;
+  var data=extractSectionA(blocks,doc.rawText,sectionBIdx);
+  var aIdx=findHeading(blocks,/^Section\s*A/i,0,sectionBIdx);
+  SECTION_A_FIELDS.forEach(function(f){
+    if(!f.head) return;
+    data[f.k]=sectionHtml(blocks,findHeading(blocks,f.head,aIdx<0?0:aIdx,sectionBIdx),sectionBIdx).trim();
+  });
+  var sectionCIdx=findHeading(blocks,/^Section\s*C\b/i,sectionBIdx+1);
+  if(sectionCIdx<0) sectionCIdx=blocks.length;
+  var questions=[],criteria=[],critSource="xml";
+  if(variant.key==="quiz"){
+    collectQuestionBlocks(blocks,sectionBIdx,sectionCIdx).forEach(function(en,i){questions.push(studentQuestion(en,i+1));});
+  } else {
+    var fx=null;
+    try{fx=criteriaFromXml(doc.parts["word/document.xml"],doc.parts["word/styles.xml"],doc.parts["word/numbering.xml"]);}catch(xe){console.warn(xe);}
+    if(fx&&fx.length) criteria=fx;
+    else{var mt=findMarkingTable(blocks,sectionBIdx);if(mt){criteria=criteriaFromHtml(mt.table);critSource="html";}}
+  }
+  gDropped=saveDropped;
+  if(si.count) checks.push({level:"warn",text:"The student guide\u2019s Section A has "+plural(si.count,"image")+". Each is marked on the Canvas page with a yellow placeholder: upload it to Canvas Files and insert it there."});
+  return{name:doc.name,variant:variant,data:data,questions:questions,criteria:criteria,critSource:critSource,checks:checks,dropped:dropped,
+    blocks:blocks,sectionBIdx:sectionBIdx,docXml:doc.parts["word/document.xml"],rawText:doc.rawText};
+}
+/* Light read of a student-facing question: header, first stem line, options. */
+function studentQuestion(entry,seq){
+  var h=entry.head,stem=[],opts=[];
+  entry.nodes.forEach(function(n){
+    if(n.tagName==="UL"||n.tagName==="OL") listItems(n).forEach(function(li){var t=norm(li.textContent);if(t) opts.push(t);});
+    else if(n.tagName==="P"){var t=norm(n.textContent);if(t) stem.push(t);}
+  });
+  return{num:h.num||seq,type:h.type,points:h.points,stem:stem,options:opts};
+}
+
+/* ---------- matching the two guides ---------- */
+function stemKey(s){return keyNorm(String(s||"").replace(/\{\{image_\d+\}\}/g," ").replace(/\[[^\]]*\]/g," ").replace(/<[^>]+>/g," "));}
+function firstStem(arr){for(var i=0;i<arr.length;i++){var k=stemKey(arr[i]);if(/[a-z]/.test(k)) return k;}return "";}
+function codeKey(s){return norm(s).toUpperCase().replace(/[^A-Z0-9]+/g," ").trim().split(" ").sort().join(" ");}
+function critKey(c){return keyNorm(c.paras.map(function(p){return p.text;}).join(" "));}
+function crossCheck(){
+  var x={errors:[],warns:[],oks:[]};
+  if(!gA||!gS) return x;
+  var a=gA,s=gS;
+  if(a.variant.key!==s.variant.key) x.errors.push("Assessment type differs: the assessor guide is "+a.variant.label+", the student guide is "+s.variant.label+".");
+  if(codeKey(a.data.unitCode)!==codeKey(s.data.unitCode)) x.errors.push("Unit code differs: assessor guide \u201C"+(a.data.unitCode||"none")+"\u201D, student guide \u201C"+(s.data.unitCode||"none")+"\u201D.");
+  if((a.data.taskNumber||"")!==(s.data.taskNumber||"")) x.errors.push("Task number differs: assessor guide "+(a.data.taskNumber||"none")+", student guide "+(s.data.taskNumber||"none")+".");
+  if(keyNorm(a.data.taskName)!==keyNorm(s.data.taskName)) x.warns.push("Task name differs: assessor guide \u201C"+a.data.taskName+"\u201D, student guide \u201C"+s.data.taskName+"\u201D.");
+  if(x.errors.length) return x;
+  var diffs=[];
+  if(a.variant.key==="quiz"){
+    var aq=a.questions.filter(function(q){return q.type!=="text_only";}),sq=s.questions.filter(function(q){return q.type!=="text_only";});
+    if(aq.length!==sq.length) diffs.push("The assessor guide has "+plural(aq.length,"question")+", the student guide has "+sq.length+".");
+    var n=Math.min(aq.length,sq.length);
+    for(var i=0;i<n;i++){
+      var A=aq[i],S=sq[i],lbl="Q"+A.num;
+      /* matching and image questions are rebuilt as dropdowns in the QTI, so compare the declared type */
+      if((A.declaredType||A.type)!==S.type){diffs.push(lbl+": type differs ("+(A.declaredType||A.type)+" in the assessor guide, "+S.type+" in the student guide).");continue;}
+      if(firstStem(A.stemLines||[])!==firstStem(S.stem)){diffs.push(lbl+": question wording differs.");continue;}
+      if(A.type==="mc"||A.type==="ma"){
+        var ao=(A.options||[]).map(function(o){return keyNorm(o.text);}).sort().join("|"),so=S.options.map(keyNorm).sort().join("|");
+        if(ao!==so) diffs.push(lbl+": answer options differ.");
+      }
+    }
+  } else {
+    var ac=a.criteria,sc=s.criteria;
+    if(ac.length!==sc.length) diffs.push("The assessor guide has "+plural(ac.length,"criterion","criteria")+", the student guide has "+sc.length+".");
+    var m=Math.min(ac.length,sc.length);
+    for(var j=0;j<m;j++) if(critKey(ac[j])!==critKey(sc[j])) diffs.push("Criterion "+ac[j].num+" (\u201C"+ac[j].titleAuto.substring(0,60)+"\u201D): wording differs.");
+  }
+  if(diffs.length){
+    x.errors.push("The guides don\u2019t match, so one is out of date. "+(diffs.length>6?diffs.slice(0,6).join(" ")+" \u2026 and "+(diffs.length-6)+" more.":diffs.join(" ")));
+  } else {
+    x.oks.push("The guides match: same unit, task, type and "+(a.variant.key==="quiz"?plural(a.questions.filter(function(q){return q.type!=="text_only";}).length,"question"):plural(a.criteria.length,"criterion","criteria"))+".");
+  }
+  return x;
+}
+
+/* ---------- leak check on the student guide ---------- */
+function leakKey(s){return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();}
+function leakCheck(){
+  var out=[];
+  if(!gS) return out;
+  var xml=gS.docXml;
+  if(xml){
+    var redRuns=0,sample="";
+    (xml.match(/<w:r[ >][\s\S]*?<\/w:r>/g)||[]).forEach(function(r){
+      var c=r.match(/<w:color w:val="([0-9A-Fa-f]{6})"/);
+      var t=(r.match(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>/g)||[]).map(function(x){return x.replace(/<[^>]+>/g,"");}).join("");
+      if(c&&isRedHex(c[1])&&t.trim()){redRuns++;if(!sample) sample=t.trim();}
+    });
+    if(redRuns) out.push("The student guide has red text ("+plural(redRuns,"run")+", e.g. \u201C"+xmlDecode(sample).substring(0,60)+"\u201D). Red text is assessor-only.");
+  }
+  var labelled=[];
+  for(var i=gS.sectionBIdx;i<gS.blocks.length;i++){
+    var b=gS.blocks[i],t=norm(b.textContent);
+    if((b.tagName==="P"||b.tagName==="LI")&&ANSWER_RE.test(t)) labelled.push(t.substring(0,60));
+    if(b.tagName==="TABLE"){
+      var r0=b.rows&&b.rows[0];
+      if(r0&&/minimum\s+requirement/i.test(r0.textContent)) out.push("The student guide\u2019s criteria table has a Minimum Requirement column. That column is assessor-only.");
+      Array.prototype.forEach.call(b.querySelectorAll("p,li"),function(p){var pt=norm(p.textContent);if(ANSWER_RE.test(pt)) labelled.push(pt.substring(0,60));});
+    }
+  }
+  if(labelled.length) out.push("The student guide has "+plural(labelled.length,"answer line")+" (e.g. \u201C"+labelled[0]+"\u201D).");
+  if(gA){
+    var keys=[];
+    function add(t){var k=leakKey(t);if(k.length>=20) keys.push(k);}
+    gA.questions.forEach(function(q){
+      if(q.type==="essay"||q.type==="file_upload") String(q.modelAnswer||"").split(/(?<=[.!?])\s+/).forEach(add);
+    });
+    gA.minReq.forEach(function(t){String(t).split(/(?<=[.!?])\s+/).forEach(add);});
+    /* fragments the student is meant to see are not leaks */
+    var shown=leakKey([].concat(
+      gA.questions.map(function(q){return (q.stemLines||[]).join(" ")+" "+(q.options||[]).map(function(o){return o.text;}).join(" ");}),
+      gA.criteria.map(function(c){return c.paras.map(function(p){return p.text;}).join(" ");})
+    ).join(" "));
+    var stu=leakKey(gS.rawText),hits=[];
+    keys.forEach(function(k){if(shown.indexOf(k)===-1&&stu.indexOf(k)!==-1&&hits.indexOf(k)===-1) hits.push(k);});
+    if(hits.length) out.push("The student guide contains "+plural(hits.length,"passage")+" from the assessor guide\u2019s model answers or Minimum Requirement (e.g. \u201C"+hits[0].substring(0,70)+"\u2026\u201D).");
+  }
+  return out;
+}
+
+/* ---------- what can be generated ---------- */
+function outputState(){
+  var v=(gA&&gA.variant)||(gS&&gS.variant);
+  var st={canvas:{ok:false,why:""},marking:{ok:false,why:"",label:v&&v.key==="quiz"?"QTI quiz":"Rubric CSV"}};
+  var blocked=gCross.errors.length>0;
+  if(!gS) st.canvas.why="Upload the student guide to generate the Canvas page.";
+  else if(blocked) st.canvas.why="Blocked: the two guides don\u2019t match.";
+  else if(gLeaks.length) st.canvas.why="Blocked: the student guide contains assessor-only content. Fix it in Word and re-run.";
+  else st.canvas.ok=true;
+  var isQuiz=v&&v.key==="quiz";
+  st.marking.from=isQuiz?"assessor":(gS?"student":"assessor");
+  if(isQuiz&&!gA) st.marking.why="Upload the assessor guide. The QTI needs its answer key.";
+  else if(!isQuiz&&!gS&&!gA) st.marking.why="Upload the student guide to generate the rubric.";
+  else if(blocked) st.marking.why="Blocked: the two guides don\u2019t match.";
+  else if(st.marking.from==="student"&&gLeaks.length) st.marking.why="Blocked: the student guide contains assessor-only content. Fix it in Word and re-run.";
+  else st.marking.ok=true;
+  return st;
+}
+
+function refreshAll(){
+  gCross=crossCheck();
+  gLeaks=leakCheck();
+  /* globals the rest of the tool reads */
+  gVariant=(gA&&gA.variant)||(gS&&gS.variant)||null;
+  gQuestions=gA?gA.questions:[];
+  var critDoc=(gVariant&&gVariant.key!=="quiz")?(gS||gA):gA;
+  gCriteria=critDoc?critDoc.criteria:[];
+  gCritSource=critDoc?critDoc.critSource:"xml";
+  gImages=gA?gA.images:[];
+  gData=gS?gS.data:(gA?gA.data:{});
+  gChecks=[];
+  gCross.errors.forEach(function(t){gChecks.push({level:"error",text:t});});
+  gLeaks.forEach(function(t){gChecks.push({level:"error",text:"Leak check: "+t});});
+  gCross.warns.forEach(function(t){gChecks.push({level:"warn",text:t});});
+  gCross.oks.forEach(function(t){gChecks.push({level:"ok",text:t});});
+  if(gS&&!gLeaks.length) gChecks.push({level:"ok",text:"Leak check passed: no red text, answer lines"+(gA?", model answers":"")+" or Minimum Requirement wording in the student guide."+(gA?"":" Load the assessor guide too for the full check against its answers.")});
+  if(gS) gS.checks.forEach(function(c){gChecks.push(c);});
+  if(gA) gA.checks.forEach(function(c){gChecks.push(c);});
+  var st=outputState();
+  if(gS&&!gA&&gVariant.key!=="quiz") gChecks.push({level:"info",text:"No assessor guide loaded. That\u2019s fine for a "+gVariant.label+" task: the rubric comes from the student guide. Load the assessor guide as well to confirm the student version matches the approved assessor guide and to check it for Minimum Requirement wording."});
+  if(gS&&!gS.criteria.length&&gVariant.key!=="quiz") gChecks.push({level:"error",text:"No criteria table found in the student guide\u2019s Section B, so the rubric can\u2019t be built from it."});
+  if(!st.canvas.ok) gChecks.push({level:"info",text:"Canvas page: "+st.canvas.why});
+  if(!st.marking.ok) gChecks.push({level:"info",text:st.marking.label+": "+st.marking.why});
+  gDropped=[].concat(gS?gS.dropped:[],gA?gA.dropped:[]);
+  populateForm();
+  renderChecks();
+  renderStatus();
+  renderQuestions();
+  renderCriteria();
+  renderImages();
+  $("generateBtn").disabled=!(st.canvas.ok||st.marking.ok);
+  $("generateBtn").style.opacity=$("generateBtn").disabled?".5":"1";
+  showEdit();
+}
+
+function handleFile(file,slot){
+  if(!file||!/\.docx$/i.test(file.name)){alert("Please upload a .docx file");return;}
+  $("loader").style.display="block";
+  readDoc(file).then(function(doc){
+    var role=docRole(doc.rawText);
+    if(!role) throw new Error("This doesn\u2019t look like a VE assessor or student guide. The title should start ASSESSOR GUIDE or STUDENT GUIDE.");
+    var moved=role!==slot;
+    if(role==="assessor") gA=processAssessor(doc); else gS=processStudent(doc);
+    var el=$(role==="assessor"?"uploadA":"uploadS");
+    el.classList.add("loaded");
+    $(role==="assessor"?"fileNameA":"fileNameS").textContent="\u2713 "+file.name;
+    if(moved) setTimeout(function(){alert("That file is "+(role==="assessor"?"an assessor":"a student")+" guide, so it was loaded into the "+(role==="assessor"?"Assessor":"Student")+" guide slot.");},50);
+    refreshAll();
+  }).catch(function(err){
+    console.error(err);
+    alert("Error reading the document: "+(err&&err.message?err.message:err));
+  }).then(function(){$("loader").style.display="none";});
+}
+
+/* ============================================================
+   [CANVAS] Student-facing page. Section B never reaches here.
+   ============================================================ */
+function cleanHTML(h){
+  var t=document.createElement("div");
+  t.innerHTML=h;
+  var all=t.querySelectorAll("*[style]");
+  for(var i=0;i<all.length;i++) all[i].removeAttribute("style");
+  var ps=t.querySelectorAll("p");
+  for(var j=0;j<ps.length;j++){ if(!norm(ps[j].textContent)&&!ps[j].querySelector("img")) ps[j].remove(); }
+  return t.innerHTML;
+}
+function downloadButton(label){
+  return '<p class="btn emble-btn btn-blue customise emble-prevent-delete-recursive" data-emble-name="Button" data-emble-version="2.0"><i class="icon-circle-arrow-down">&nbsp;</i> <strong>'+label+'</strong></p>';
+}
+function generateCanvasHTML(){
+  var d={};
+  var src=gS.data;
+  ["taskNumber","taskName","unitCode","unitTitle","qualificationCode","programCode","courseCode"].forEach(function(k){d[k]=src[k]||"";});
+  SECTION_A_FIELDS.forEach(function(f){d[f.k]=cleanHTML(src[f.k]||"");});
+  var ex=document.querySelector('input[name="extraDoc"]:checked');
+  d.extraDoc=ex?ex.value:"none";
+  d.includeAI=$("includeAI").checked;
+  d.aiUseStatement=$("aiUseStatement").value;
+  var isQuiz=gVariant&&gVariant.key==="quiz";
+  var hl='<span style="background-color: #fac800;">';
+  var atN='AT'+(d.taskNumber||"[Task Number]");
+
+  var h='<div class="customise emble emble-cblock emble-width-control fullwidth-on emble-cblock-boxshadow white" data-emble-version="2.0">\n'+
+  '<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-emble-name="Icon" data-emble-version="2.0"><i class="icon-assignment">&nbsp;</i></div>\n'+
+  '<p class="narrow-p">&nbsp;</p>\n<h3><br />Task instructions</h3>\n<p>&nbsp;</p>\n'+
+  (d.taskInstructions||'<p>'+hl+'Copy from Summary and Purpose of Assessment.</span></p>')+'\n<p>&nbsp;</p>';
+
+  if(isQuiz){
+    /* Quizzes have no download, so What / Where / How come across from the student guide. */
+    [["what","What"],["where","Where"],["how","How"]].forEach(function(w){
+      h+='\n<p><strong>'+w[1]+'</strong></p>\n'+(d[w[0]]||'<p>'+hl+'Not in the student guide. Add the '+w[1]+' section to the guide and re-run.</span></p>')+'\n<p>&nbsp;</p>';
+    });
+  } else {
+    h+='\n<p><strong>Download detailed task instructions</strong></p>\n'+downloadButton('Student Version: '+atN);
+    /* Either-or: one additional download, or none. */
+    if(d.extraDoc==="template"){
+      h+='\n<p><strong>Student Response Template</strong></p>\n<p>(Download and complete for final submission by due date)</p>\n'+downloadButton('Student Response Template: '+atN);
+    } else if(d.extraDoc==="appendices"){
+      h+='\n<p><strong>Student Appendices</strong></p>\n<p>(Download and complete for final submission by due date)</p>\n'+downloadButton('Student Appendices: '+atN);
+    }
+  }
+
+  h+='\n</div>\n<p class="narrow-p">&nbsp;</p>\n'+
+  '<div class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" data-emble-version="2.0">\n'+
+  '<div class="emble-icon small wrap yellow square emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false" data-emble-name="Icon" data-emble-version="2.0"><i class="icon-hour-glass">&nbsp;</i></div>\n'+
+  '<h3><br />Conditions for assessment</h3>\n<p>&nbsp;</p>\n'+
+  (d.conditions||'<p>'+hl+'Copy from Conditions for assessment section.</span></p>')+'\n<p>&nbsp;</p>\n'+
+  '<details>\n<summary style="cursor: pointer; font-size: 14pt; color: #222160; font-family: Helvetica, sans-serif; background-color: #f5f5f5; padding: 10px; margin-bottom: 5px;" aria-expanded="false"><span style="font-size: 12pt;">Equipment/resources students must supply</span></summary>\n'+
+  (d.studentSupplies||'<p>'+hl+'Copy as a bulleted list</span></p>')+'\n<p>&nbsp;</p>\n</details><details>\n'+
+  '<summary style="cursor: pointer; font-size: 14pt; color: #222160; font-family: Helvetica, sans-serif; background-color: #f5f5f5; padding: 10px; margin-bottom: 5px;" aria-expanded="false"><span style="font-size: 12pt;">Equipment/resources to be provided by RMIT or the workplace</span></summary>\n'+
+  (d.rmitSupplies||'<p>'+hl+'Copy as a bulleted list</span></p>')+'\n<p>&nbsp;</p>\n</details></div>\n<p class="narrow-p">&nbsp;</p>\n'+
+  '<div class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" data-emble-version="2.0">\n'+
+  '<div class="emble-icon small wrap emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false square yellow" data-emble-name="Icon" data-emble-version="2.0"><i class="icon-info">&nbsp;</i></div>\n'+
+  '<h3><br />Instructions on submitting your assessment</h3>\n'+
+  (d.submissionInstructions||'<p>'+hl+'Copy from Instructions on submitting your task</span></p>');
+
+  h+='\n<p><strong>Step-by-Step Submission Instructions:</strong></p>\n<ol>\n';
+  if(isQuiz){
+    h+='<li>Select Take the quiz</li>\n<li>Enter answers for each question.</li>\n<li>When you have finished, select the Submit quiz button.</li>\n'+
+    '<li>Note: Once you select the Submit quiz button you will not be able to make any changes to this attempt.</li>\n'+
+    '<li>For questions that require manual grading (e.g. essay type questions), you will have to wait until your assessor marks these.</li>\n'+
+    '<li>If required, you must wait until your assignment is graded by your teachers before beginning another attempt.</li>\n';
+  } else {
+    h+='<li>Select Start assignment</li>\n<li>Select Choose File</li>\n<li>Locate and select your final completed assessment file (named as per the naming convention)</li>\n<li>Add any comments, if required</li>\n<li>Select Submit assignment</li>\n';
+  }
+  h+='</ol>\n<h3>RMIT Electronic Submission of Work For Assessment</h3>\n'+
+  '<p>I declare that in submitting all work for this assessment I have read, understood and agree to the content and expectations of the&nbsp;<a class="external" href="https://www.rmit.edu.au/students/student-essentials/assessment-and-exams/assessment/assessment-declaration" target="_blank" rel="noopener">Assessment declaration</a>&nbsp;</p>';
+
+  if(d.includeAI){
+    h+='<h3>AI - Acceptable use for this assessment</h3>';
+    if(d.aiUseStatement==="unrestricted") h+='<p><strong>AI tools and their use are not restricted for this assessment task</strong></p><p>In this assessment task, you can use AI tools to assist you. All use of AI tools and their outputs should be appropriately acknowledged and referenced.</p>';
+    else if(d.aiUseStatement==="restricted-ways") h+='<p><strong>AI tools are restricted in certain ways for this assessment task</strong></p><p>In this assessment task, you can use AI tools to support you in developing and completing your work by '+hl+'[insert ways students are permitted to use AI tools e.g., generating ideas/planning/drafting]</span> only. Any use of such tools must be appropriately acknowledged and referenced.</p>';
+    else if(d.aiUseStatement==="restricted-tools") h+='<p><strong>AI tools are restricted in the completion of this assessment task</strong></p><p>In this assessment task, you can use the following AI tools only '+hl+'[insert name(s) of tools, or types of tools e.g. image generators/text generators/standard editing software]</span>. Any use of these tools must be appropriately acknowledged and referenced.</p>';
+    else h+='<p><strong>AI tools cannot be used in the completion of this assessment task</strong></p><p>In this assessment task, you must not use any AI tools (excluding text editing software e.g., Grammarly) to generate any materials, content or ideas related to the task.</p>';
+  }
+
+  h+='\n</div>\n<p class="narrow-p">&nbsp;</p>\n'+
+  '<div class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" data-emble-version="2.0"><details>\n'+
+  '<summary style="cursor: pointer; font-size: 1.4rem; color: #222160; font-family: Helvetica, sans-serif; background-color: #f5f5f5; padding: 10px; margin-bottom: 5px;">Useful Assessment Links&nbsp;</summary>\n'+
+  '<p><span>Please use links below to access important information on assessments:</span>&nbsp;</p>\n<ul>\n'+
+  '<li><span>Assessment submission and appeals - </span><a href="https://www.rmit.edu.au/students/my-course/assessment-results/assessment">Assessments</a>&nbsp;</li>\n'+
+  '<li><span>Extensions and special considerations - </span><a href="https://www.rmit.edu.au/students/my-course/assessment-results/special-consideration-extensions/equitable-assessment-arrangements">Extensions and special consideration</a>&nbsp;</li>\n'+
+  '<li><span>Equitable Assessment Arrangement (EAA) - </span><a href="https://www.rmit.edu.au/students/support-services/equitable-learning">Equitable Assessment Arrangements</a>&nbsp;</li>\n'+
+  '<li><span>Information on recording and retaining assessments and dealing with assessment appeals can be found in the </span><a href="https://policies.rmit.edu.au/download.php?associated=1&amp;id=348&amp;version=1">RMIT Assessment Processes document</a></li>\n'+
+  '<li>Information on recognition of prior learning &ndash; <a href="https://www.rmit.edu.au/students/my-course/enrolment/apply-for-credit">RMIT recognition of prior learning (RPL)</a></li>\n'+
+  '</ul>\n</details></div>\n<p class="narrow-p">&nbsp;</p>\n'+
+  '<div class="customise emble-columns-container emble-columns-controller-2 emble-columns-stretch-child-height" data-emble-name="Columns" data-emble-version="2.0">\n'+
+  '<div class="emble-columns-child emble-prevent-delete">\n'+
+  '<div class="customise emble emble-cblock emble-width-control fullwidth-on emble-cblock-boxshadow white" data-emble-version="2.0">\n'+
+  '<div class="emble-icon small wrap emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false yellow square" data-emble-name="Icon" data-emble-version="2.0"><i class="icon-info">&nbsp;</i></div>\n'+
+  '<p><span style="font-size: 12pt;"><strong>Task number:</strong> '+(d.taskNumber||hl+'xxxxx</span>')+'</span></p>\n'+
+  '<p><span style="font-size: 12pt;"><strong>National unit code:</strong> '+(d.unitCode||hl+'xxxxx</span>')+'</span></p>\n'+
+  '<p><span style="font-size: 12pt;"><strong>National qualification code:</strong> '+(d.qualificationCode||hl+'xxxxx</span>')+'</span></p>\n'+
+  '<p><span style="font-size: 12pt;"><strong>RMIT program code:</strong>&nbsp; '+(d.programCode||hl+'xxxxx</span>')+'</span></p>\n'+
+  '<p><span style="font-size: 12pt;"><strong>Task name:</strong> '+(d.taskName||hl+'xxxxx</span>')+'</span></p>\n'+
+  '<p><span style="font-size: 12pt;"><strong>National unit title:</strong> '+(d.unitTitle||hl+'xxxxx</span>')+'</span></p>\n'+
+  '<p><span style="font-size: 12pt;"><strong>RMIT course code:</strong> '+(d.courseCode||hl+'xxxxx</span>')+'</span></p>\n'+
+  '</div>\n<p class="narrow-p">&nbsp;</p>\n</div>\n'+
+  '<div class="emble-columns-child emble-prevent-delete">\n'+
+  '<div class="customise emble emble-cblock emble-width-control fullwidth-on white emble-cblock-boxshadow" data-emble-version="2.0">\n'+
+  '<div class="emble-icon small wrap emble-prevent-insert emble-prevent-delete-recursive emble-content-editable-false yellow square" data-emble-name="Icon" data-emble-version="2.0"><i class="icon-calendar-month">&nbsp;</i></div>\n'+
+  '<p><strong>Duration and/or due date:</strong></p>\n'+(d.timing?d.timing+'\n':'')+
+  '<p><strong>Due date: '+hl+'TEACHER TO UPDATE</span> at 11:59pm</strong></p>\n'+
+  '<p><span style="font-size: 12pt;"><strong>Feedback and Grades:</strong> Feedback on your assignment and your grade will be released via the Grades. Assessment tasks will receive the following outcomes: Satisfactory or Not Satisfactory.</span></p>\n'+
+  '</div>\n<p>&nbsp;</p>\n</div>\n</div>\n<p class="narrow-p">&nbsp;</p>';
+  return h;
+}
+
+/* ============================================================
+   [UI] File handling and rendering
+   ============================================================ */
+function runQuizChecks(){
+  var i,q;
+  if(!gQuestions.length){addCheck("error","No questions found in Section B.");return;}
+
+  var nums=[],dupes=[];
+  for(i=0;i<gQuestions.length;i++){
+    q=gQuestions[i];
+    if(q.type==="text_only") continue;
+    if(nums.indexOf(q.num)!==-1) dupes.push(q.num);
+    nums.push(q.num);
+  }
+  if(dupes.length) addCheck("error","Duplicate question numbers: "+dupes.join(", "));
+  var expected=1;
+  for(i=0;i<nums.length;i++){ if(nums[i]!==expected){addCheck("warn","Question numbering is not consecutive from 1 (found "+nums[i]+" where "+expected+" was expected).");break;} expected++; }
+
+  var manual=0,total=0;
+  for(i=0;i<gQuestions.length;i++){
+    q=gQuestions[i];
+    if(q.type==="text_only") continue;
+    total++;
+    if(q.type==="essay"||q.type==="file_upload") manual++;
+    if(q.points!==1) addCheck("warn","Q"+q.num+" is worth "+q.points+" points. Every question should be 1 point.");
+  }
+  if(total&&manual/total>0.5) addCheck("error","More than half the questions are essay or file upload. Re-vehicle this task as a submission or product/practical.");
+
+  var paper=[];
+  for(i=0;i<gQuestions.length;i++){
+    q=gQuestions[i];
+    if(/selecting the box|tick the box|circle the correct|in the space provided|write your answer below/i.test(q.text||"")) paper.push(q.num);
+  }
+  if(paper.length) addCheck("warn","Paper-era wording in Q"+paper.join(", Q")+" (for example \u201Cselecting the box\u201D). Students select an option in Canvas, not a box.");
+
+  var flagged=0;
+  for(i=0;i<gQuestions.length;i++) if(gQuestions[i].flags.length) flagged++;
+  if(flagged) addCheck("error",flagged+" question"+(flagged===1?" has":"s have")+" issues to raise with your Quality Lead and fix in the assessor guide.");
+
+  /* red-text cross-check */
+  if(gRedTexts===null){
+    addCheck("info","Red-text cross-check unavailable in this browser. Answer detection used the text label only.");
+  } else {
+    var labelled=[],unlabelledRed=[];
+    for(i=0;i<gQuestions.length;i++){ if(gQuestions[i].answerRaw) labelled.push(keyNorm(gQuestions[i].answerRaw)); }
+    for(i=0;i<gRedTexts.length;i++){
+      var rt=gRedTexts[i];
+      if(!ANSWER_RE.test(rt)){ unlabelledRed.push(rt); }
+    }
+    var labelledNotRed=0;
+    for(i=0;i<gQuestions.length;i++){
+      if(!gQuestions[i].answerRaw) continue;
+      var found=false;
+      for(var r=0;r<gRedTexts.length;r++){ if(keyNorm(gRedTexts[r]).indexOf(keyNorm(gQuestions[i].answerRaw))!==-1){found=true;break;} }
+      if(!found) labelledNotRed++;
+    }
+    if(unlabelledRed.length) addCheck("warn",unlabelledRed.length+" red paragraph"+(unlabelledRed.length===1?" is":"s are")+" not labelled as an answer: "+unlabelledRed.slice(0,3).map(function(s){return "\u201C"+s.substring(0,60)+"\u201D";}).join("; "));
+    if(labelledNotRed) addCheck("warn",labelledNotRed+" answer line"+(labelledNotRed===1?" is":"s are")+" not in red. Answers should be red for assessor use.");
+    if(!unlabelledRed.length&&!labelledNotRed&&gRedTexts.length) addCheck("ok","Red-text cross-check passed: every red paragraph is a labelled answer and every answer is red.");
+  }
+}
+
+function populateForm(){
+  var cov=gS?gS.data:(gA?gA.data:{});
+  ["taskNumber","taskName","unitCode","unitTitle","qualificationCode","programCode","courseCode"].forEach(function(k){ $(k).value=cov[k]||""; });
+  $("coverSource").textContent=gS?"From the student guide.":(gA?"From the assessor guide. Load the student guide for the Canvas page.":"");
+  var isQuiz=gVariant&&gVariant.key==="quiz";
+  $("sectionAPanel").style.display=gS?"block":"none";
+  if(gS){
+    SECTION_A_FIELDS.forEach(function(f){
+      var wrap=$(f.k).parentNode;
+      wrap.style.display=(f.quiz&&!isQuiz)?"none":"block";
+      var html=gS.data[f.k]||"";
+      $(f.k).innerHTML=html||'<em style="color:#888">Nothing in the student guide.</em>';
+      var r=readability(htmlLines(html));
+      document.querySelector('[data-badges="'+f.k+'"]').innerHTML=html?badge(r):'<span class="lvl hard">Empty in the student guide</span>';
+    });
+    $("sectionANote").innerHTML='<div class="alert alert-info"><div class="alert-icon">&#8505;</div><div>This goes onto the Canvas page word for word, so it matches the student version on SharePoint. To change it, fix the student guide and re-run. The badges are the Student Version Generator\u2019s checks, for information only.</div></div>';
+    $("whatHowNote").textContent=isQuiz?"":"What, Where and How stay in the student version, which students download from the Canvas page.";
+  }
+  var t=(cov.unitCode?cov.unitCode+" - ":"")+(cov.taskName||"Quiz");
+  $("quizTitle").value=t;
+  $("assessmentIdent").value="quiz_"+(cov.taskNumber||"1");
+  $("rubricName").value=(cov.unitCode?cov.unitCode+" ":"")+"Task "+(cov.taskNumber||"")+" Marking Guide";
+  $("tplRow").style.display=(gS&&!isQuiz)?"block":"none";
+  /* preselect the extra download from what the student guide says students receive */
+  if(gS&&!isQuiz&&!gS.extraChosen){
+    var txt=gS.rawText,pick="none",why="";
+    if(/student[_\s]*appendices/i.test(txt)){pick="appendices";why="Student Appendices";}
+    else if(/student\s+response\s+template|response[_\s]*template/i.test(txt)){pick="template";why="a Student Response Template";}
+    var r2=document.querySelector('input[name="extraDoc"][value="'+pick+'"]');if(r2) r2.checked=true;
+    $("extraDocNote").textContent=why?"Preselected because the student guide mentions "+why+". Change it if that\u2019s wrong.":"";
+    gS.extraChosen=true;
+  }
+  $("aiRow").style.display=gS?"flex":"none";
+  if(!gS) $("aiOptionsSection").style.display="none";
+}
+
+function renderStatus(){
+  var v=gVariant;
+  $("variantBadge").innerHTML=v?'<span class="variant-badge">'+esc(v.label)+'</span>':"";
+  var h="";
+  function row(ok,label,extra,partial){h+='<div class="status-item"><div class="status-icon '+(partial?"partial":ok?"found":"missing")+'">'+(partial?"!":ok?"\u2713":"\u2717")+'</div><span>'+esc(label+(extra?": "+extra:""))+'</span></div>';}
+  h+='<div class="status-group">Assessor guide</div>';
+  if(!gA){ if(gVariant&&gVariant.key!=="quiz") row(true,"Not loaded (optional for this type)","",true); else row(false,"Not loaded"); }
+  else{
+    row(true,"Type",gA.variant.label);
+    if(gA.variant.key==="quiz"){
+      var fl=gA.questions.filter(function(q){return q.flags.length;}).length;
+      row(gA.questions.length>0,"Questions",String(gA.questions.length));
+      if(fl) row(false,"Questions with issues",String(fl));
+    } else row(gA.criteria.length>0,"Criteria",String(gA.criteria.length));
+    if(gA.images.length&&gA.variant.key==="quiz") row(true,"Images",gA.images.length+" (place in Canvas after import)",true);
+  }
+  h+='<div class="status-group">Student guide</div>';
+  if(!gS) row(false,"Not loaded");
+  else{
+    row(true,"Type",gS.variant.label);
+    row(!!gS.data.taskInstructions,"Summary and Purpose");
+    row(!!gS.data.conditions,"Conditions");
+    row(!!(gS.data.studentSupplies||gS.data.rmitSupplies),"Equipment/resources");
+    row(!!gS.data.submissionInstructions,"Submission instructions");
+    row(gS.variant.key==="quiz"?gS.questions.length>0:gS.criteria.length>0,gS.variant.key==="quiz"?"Questions":"Criteria",String(gS.variant.key==="quiz"?gS.questions.length:gS.criteria.length));
+  }
+  if(gA||gS){
+    h+='<div class="status-group">Outputs</div>';
+    var st=outputState();
+    row(st.canvas.ok,"Canvas page HTML",st.canvas.ok?"ready":"not available");
+    row(st.marking.ok,st.marking.label,st.marking.ok?"ready":"not available");
+  }
+  $("statusList").innerHTML=h;
+  $("extractionStatus").style.display="block";
+}
+
+function renderChecks(){
+  var h="";
+  var order={error:0,warn:1,ok:2,info:3};
+  gChecks.sort(function(a,b){return order[a.level]-order[b.level];});
+  for(var i=0;i<gChecks.length;i++){
+    var c=gChecks[i];
+    var cls=c.level==="error"?"alert-danger":c.level==="warn"?"alert-warning":c.level==="ok"?"alert-ok":"alert-info";
+    var ic=c.level==="error"?"\u26A0":c.level==="warn"?"\u26A0":c.level==="ok"?"\u2713":"\u2139";
+    h+='<div class="alert '+cls+'"><div class="alert-icon">'+ic+'</div><div>'+esc(c.text)+'</div></div>';
+  }
+  if(gDropped.length){
+    h+='<div class="alert alert-info"><div class="alert-icon">\u2139</div><div><strong>'+gDropped.length+' guidance block'+(gDropped.length===1?"":"s")+' removed</strong> (italic template guidance, not content):<div style="margin-top:8px">'+
+    gDropped.slice(0,8).map(function(t){return '<div class="dropped">'+esc(t)+'</div>';}).join("")+
+    (gDropped.length>8?'<div class="dropped">\u2026 and '+(gDropped.length-8)+' more</div>':"")+
+    '</div></div></div>';
+  }
+  $("checksPanel").innerHTML=h;
+}
+
+function renderQuestions(){
+  if(!gA||gVariant.key!=="quiz"){$("questionSection").style.display="none";return;}
+  $("questionSection").style.display="block";
+  $("questionCount").textContent=gQuestions.length;
+  var h="";
+  for(var i=0;i<gQuestions.length;i++){
+    var q=gQuestions[i];
+    h+='<div class="q-card'+(q.flags.length?" flagged":"")+'">';
+    h+='<div class="q-head"><span class="q-num">'+(q.type==="text_only"?"Text":"Q"+q.num)+'</span><span class="q-type">'+esc(q.type)+'</span><span class="q-type">'+q.points+' pt</span></div>';
+    h+='<div class="q-text">'+esc(q.text).replace(/&lt;br&gt;/g,"<br>")+'</div>';
+    if(q.options){
+      h+='<ul class="q-opts">';
+      for(var o=0;o<q.options.length;o++) h+='<li class="'+(q.options[o].correct?"correct":"")+'">'+esc(q.options[o].text)+'</li>';
+      h+='</ul>';
+    }
+    if(q.pairs&&q.pairs.length){
+      h+='<ul class="q-opts">';
+      for(var p=0;p<q.pairs.length;p++) h+='<li class="correct">'+esc(q.pairs[p].item)+' \u2192 '+esc(q.pairs[p].match)+'</li>';
+      h+='</ul>';
+    }
+    if(q.type==="tf") h+='<ul class="q-opts"><li class="correct">'+esc(q.correctAnswer)+'</li></ul>';
+    if(q.answers) h+='<ul class="q-opts"><li class="correct">'+q.answers.map(esc).join(" / ")+'</li></ul>';
+    if(q.blanks||q.dropdowns){
+      var map=q.blanks||q.dropdowns;
+      h+='<ul class="q-opts">';
+      for(var k in map) if(map.hasOwnProperty(k)){
+        var v;
+        if(q.blanks) v=map[k].join(" / ");
+        else{
+          v=map[k].filter(function(x){return x.correct;}).map(function(x){return x.text;}).join(" / ");
+          if(map[k].length>1) v+=" (from "+map[k].length+" options)";
+        }
+        h+='<li class="correct">'+esc(k)+": "+esc(v)+'</li>';
+      }
+      h+='</ul>';
+    }
+    if(q.type==="numerical") h+='<ul class="q-opts"><li class="correct">'+q.exact+(q.margin?" \u00b1"+q.margin:"")+'</li></ul>';
+    if(q.type==="calculated") h+='<ul class="q-opts"><li class="correct">'+esc(q.formula)+'</li></ul>';
+    for(var f=0;f<q.flags.length;f++) h+='<div class="q-flag">'+esc(q.flags[f])+'</div>';
+    for(var n=0;n<q.notes.length;n++) h+='<div class="q-note">'+esc(q.notes[n])+'</div>';
+    h+='</div>';
+  }
+  $("questionList").innerHTML=h;
+}
+
+function renderCriteria(){
+  if(!gVariant||gVariant.key==="quiz"||!gCriteria.length){$("rubricSection").style.display="none";return;}
+  $("rubricSection").style.display="block";
+  $("criteriaCount").textContent=gCriteria.length;
+  var mode=descMode();
+  $("descModeHelp").textContent=mode==="short"
+    ?"The whole criteria cell goes into the criterion name. Long description is left empty."
+    :"The bold heading becomes the criterion name. Everything under it goes into the long description.";
+  $("formatNoteText").innerHTML="Canvas rubric fields are plain text, so <strong>bold, italics and underline can’t travel in the CSV</strong>. Everything else is kept: every line, list numbering, bullets and indenting. Expand “Source formatting” on any criterion to compare against the guide."+
+    (gCritSource==="html"?" <br><br><strong>The Word XML couldn’t be read in this browser</strong>, so numbering came from the converted HTML and may restart where the guide mixes numbered and bulleted lines. Use current Chrome or Edge for exact numbering.":"");
+  var h="";
+  for(var i=0;i<gCriteria.length;i++){
+    var c=gCriteria[i],e=critExport(c);
+    h+='<div class="crit-card"><div class="crit-num">Criterion '+esc(c.num)+'</div>';
+    if(mode==="long"){
+      h+='<label for="crit_'+i+'">Short description (criterion name)</label><input type="text" id="crit_'+i+'" data-crit="'+i+'" value="'+esc(critName(c)).replace(/"/g,"&quot;")+'">';
+      h+='<label>Long description</label><div class="crit-out">'+(e.desc?esc(e.desc):'<em style="color:#888">Empty — the cell has no content under its heading.</em>')+'</div>';
+    } else {
+      h+='<label>Short description (criterion name)</label><div class="crit-out">'+esc(e.name)+'</div>';
+    }
+    h+='<details class="crit-det"><summary>Source formatting</summary><div class="crit-src">'+parasToHtml(c.paras)+'</div></details></div>';
+  }
+  $("criteriaList").innerHTML=h;
+}
+
+function imageExt(dataUri){
+  var m=/^data:image\/([a-z0-9+.-]+);/i.exec(dataUri||"");
+  var e=m?m[1].toLowerCase():"png";
+  if(e==="jpeg") e="jpg";
+  return e;
+}
+function imageFileName(img){return img.id+"."+imageExt(img.dataUri);}
+function dataUriToBytes(dataUri){
+  var b64=String(dataUri).split(",")[1]||"";
+  var bin=atob(b64),out=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i);
+  return out;
+}
+function downloadImages(){
+  if(!gImages.length) return;
+  var usage=computeImageUsage(),files=[],index=["Images extracted from the assessor guide.","",
+    "Upload these to Canvas Files, then replace the matching token in the question text.",
+    "Canvas will prompt you for alt text as you insert each one.",""];
+  for(var i=0;i<gImages.length;i++){
+    var img=gImages[i],name=imageFileName(img),used=usage[img.id]||[];
+    files.push({name:name,content:dataUriToBytes(img.dataUri)});
+    index.push(name+"  \u2192  token {{"+img.id+"}}"+(used.length?"  in Q"+used.join(", Q"):"  (not placed in any question)"));
+  }
+  files.push({name:"where-these-go.txt",content:index.join("\n")+"\n"});
+  var blob=zipStore(files);
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=outName(gA?gA.data:gData,"images","zip");
+  a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+}
+function renderImages(){
+  if(!gImages.length){$("imageSection").style.display="none";return;}
+  $("imageSection").style.display="block";
+  $("imageCount").textContent=gImages.length;
+  var usage=computeImageUsage(),h="";
+  for(var i=0;i<gImages.length;i++){
+    var img=gImages[i],used=usage[img.id]||[];
+    h+='<div class="img-card"><img src="'+img.dataUri+'" alt=""><div class="img-id">'+esc(imageFileName(img))+'</div>'+
+    '<div class="img-use">'+(used.length?"Q"+used.join(", Q")+" \u2014 token {{"+img.id+"}}":"Not placed in any question")+'</div></div>';
+  }
+  $("imageGallery").innerHTML=h;
+}
+
+function showEdit(){
+  updateStep(1,"completed");updateStep(2,"active");
+  $("initialInstructions").style.display="none";
+  $("editForm").style.display="block";
+  $("outputSection").style.display="none";
+}
+
+/* File names always carry the unit code and task number, e.g. HLTAID011-AT1-quiz.xml */
+function outName(d,kind,ext){
+  var unit=norm(d&&d.unitCode).replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"")||"UNIT";
+  var task=(d&&d.taskNumber)?"AT"+d.taskNumber:"AT-unnumbered";
+  return unit+"-"+task+"-"+kind+"."+ext;
+}
+function generateOutputs(){
+  var st=outputState();
+  if(gS&&$("includeAI").checked&&!$("aiUseStatement").value){
+    alert("Choose one AI acceptable use statement, or untick the AI box.");
+    $("aiUseStatement").focus();
+    return;
+  }
+  var tabs=[],panels=[],unavail=[];
+  if(st.canvas.ok){
+    outHtml=generateCanvasHTML();
+    tabs.push({id:"canvas",label:"Canvas page HTML"});
+    panels.push({id:"canvas",content:outHtml,download:outName(gS.data,"canvas-page","html"),mime:"text/html",preview:true,
+      note:"Built from the student guide: "+gS.name});
+  } else unavail.push("Canvas page HTML \u2014 "+st.canvas.why);
+  if(st.marking.ok&&gVariant.key==="quiz"){
+    outXml=generateQTI();
+    var w=[];
+    if(gImages.length) w.push(gImages.length+" image"+(gImages.length>1?"s are":" is")+" referenced by token, not embedded. After import, place each image in its question in Canvas and give it alt text \u2014 the question is not finished until you do.");
+    tabs.push({id:"qti",label:"QTI 1.2 XML"});
+    panels.push({id:"qti",content:outXml,download:outName(gA.data,"quiz","xml"),mime:"application/xml",warn:w.join(" "),note:"Built from the assessor guide: "+gA.name});
+  } else if(st.marking.ok){
+    outCsv=generateCSV();
+    tabs.push({id:"rubric",label:"Rubric CSV"});
+    var rd=st.marking.from==="student"?gS:gA;
+    panels.push({id:"rubric",content:outCsv,download:outName(rd.data,"rubric","csv"),mime:"text/csv",note:"Built from the "+st.marking.from+" guide: "+rd.name});
+  } else unavail.push(st.marking.label+" \u2014 "+st.marking.why);
+  if(!tabs.length){alert("Nothing can be generated yet. "+unavail.join(" "));return;}
+  $("unavailOut").innerHTML=unavail.map(function(t){return '<div class="out-unavail">Not generated: '+esc(t)+'</div>';}).join("");
+
+  var th="",ph="";
+  for(var i=0;i<tabs.length;i++){
+    th+='<button class="tab'+(i===0?" active":"")+'" data-tab="'+tabs[i].id+'">'+esc(tabs[i].label)+'</button>';
+    var p=panels[i];
+    ph+='<div class="tab-panel'+(i===0?" active":"")+'" data-panel="'+p.id+'">';
+    if(p.warn) ph+='<div class="alert alert-warning"><div class="alert-icon">\u26A0</div><div>'+esc(p.warn)+'</div></div>';
+    if(p.note) ph+='<div class="alert alert-info"><div class="alert-icon">\u2139</div><div>'+esc(p.note)+'</div></div>';
+    ph+='<div class="output-container"><div class="output-header"><h4>'+esc(tabs[i].label)+'</h4><div>'+
+    '<button class="btn btn-primary btn-small" data-copy="'+p.id+'">Copy</button> '+
+    '<button class="btn btn-primary btn-small" data-download="'+p.id+'">Download</button></div></div>'+
+    '<div class="output-content" id="out_'+p.id+'"></div></div>';
+    if(p.preview) ph+='<div class="preview-container"><h3>Preview</h3><div id="preview_'+p.id+'"></div></div>';
+    ph+='</div>';
+  }
+  $("tabs").innerHTML=th;
+  $("panels").innerHTML=ph;
+  for(var j=0;j<panels.length;j++){
+    $("out_"+panels[j].id).textContent=panels[j].content;
+    if(panels[j].preview) $("preview_"+panels[j].id).innerHTML=panels[j].content;
+  }
+
+  $("tabs").onclick=function(e){
+    var t=e.target.getAttribute("data-tab");
+    if(!t) return;
+    var bs=$("tabs").querySelectorAll(".tab");
+    for(var a=0;a<bs.length;a++) bs[a].classList.toggle("active",bs[a].getAttribute("data-tab")===t);
+    var ps=$("panels").querySelectorAll(".tab-panel");
+    for(var b=0;b<ps.length;b++) ps[b].classList.toggle("active",ps[b].getAttribute("data-panel")===t);
+  };
+  $("panels").onclick=function(e){
+    var cid=e.target.getAttribute("data-copy"),did=e.target.getAttribute("data-download");
+    if(cid){
+      var txt=$("out_"+cid).textContent;
+      var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.left="-9999px";
+      document.body.appendChild(ta);ta.select();
+      try{document.execCommand("copy");e.target.textContent="Copied";setTimeout(function(){e.target.textContent="Copy";},1800);}catch(err){alert("Copy failed \u2014 select and copy manually.");}
+      document.body.removeChild(ta);
+    }
+    if(did){
+      var pnl=null;
+      for(var i2=0;i2<panels.length;i2++) if(panels[i2].id===did) pnl=panels[i2];
+      if(!pnl) return;
+      var blob=pnl.blob||new Blob([$("out_"+did).textContent],{type:pnl.mime+";charset=utf-8"});
+      var a2=document.createElement("a");
+      a2.href=URL.createObjectURL(blob);a2.download=pnl.download;a2.click();
+      setTimeout(function(){URL.revokeObjectURL(a2.href);},1000);
+    }
+  };
+
+  updateStep(2,"completed");updateStep(3,"active");
+  $("editForm").style.display="none";
+  $("outputSection").style.display="block";
+  window.scrollTo(0,0);
+}
+
+/* ===== wiring ===== */
+[["uploadA","fileA","assessor"],["uploadS","fileS","student"]].forEach(function(u){
+  var area=$(u[0]),inp=$(u[1]);
+  area.addEventListener("click",function(){inp.click();});
+  inp.addEventListener("change",function(e){if(e.target.files[0]) handleFile(e.target.files[0],u[2]);inp.value="";});
+  area.addEventListener("dragover",function(e){e.preventDefault();area.classList.add("dragover");});
+  area.addEventListener("dragleave",function(){area.classList.remove("dragover");});
+  area.addEventListener("drop",function(e){e.preventDefault();area.classList.remove("dragover");if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0],u[2]);});
+});
+$("includeAI").addEventListener("change",function(){$("aiOptionsSection").style.display=this.checked?"block":"none";});
+$("generateBtn").addEventListener("click",generateOutputs);
+Array.prototype.forEach.call(document.querySelectorAll('input[name="descMode"]'),function(r){r.addEventListener("change",renderCriteria);});
+$("criteriaList").addEventListener("input",function(e){var k=e.target.getAttribute("data-crit");if(k!==null&&gCriteria[+k])gCriteria[+k].titleEdit=e.target.value;});
+$("downloadImagesBtn").addEventListener("click",downloadImages);
+$("backBtn").addEventListener("click",function(){updateStep(3,"");updateStep(2,"active");$("editForm").style.display="block";$("outputSection").style.display="none";});
+$("resetBtn1").addEventListener("click",function(){if(confirm("Start over with a new document?"))location.reload();});
+$("resetBtn2").addEventListener("click",function(){if(confirm("Start over with a new document?"))location.reload();});
+</script>
+</body>
+</html>
