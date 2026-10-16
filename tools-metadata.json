@@ -227,6 +227,17 @@
       "notes": "",
       "public": true,
       "updatedAt": "2026-10-16T07:41:48.725Z"
+    },
+    "cove-student-version-generator.html": {
+      "description": "Generate a student version of an Assessment Task",
+      "tags": [
+        "Assessment",
+        "Q&C"
+      ],
+      "owner": "BAU",
+      "notes": "Assessment, Goldilocks, ABB",
+      "public": true,
+      "updatedAt": "2026-10-16T07:45:17.708Z"
     }
   }
 }
