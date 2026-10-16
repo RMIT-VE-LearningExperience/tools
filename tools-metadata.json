@@ -210,12 +210,12 @@
     "cove-competency-map-builder.html": {
       "description": "ABB Builds a competency map",
       "tags": [
-        "Assessment ABB"
+        "Assessment"
       ],
       "owner": "BAU",
       "notes": "Assessment, Goldilocks",
       "public": true,
-      "updatedAt": "2026-10-16T07:39:11.897Z"
+      "updatedAt": "2026-10-16T07:40:02.312Z"
     }
   }
 }
