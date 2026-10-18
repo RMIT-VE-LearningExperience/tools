@@ -277,22 +277,16 @@ class MelbourneHVACDiagnosticApp {
         this.bindPracticeAgainButton();
         
         // Track completion with Google Analytics
-        if (typeof gtag !== 'undefined') {
-            gtag('event', 'diagnostic_completed', {
-                event_category: 'training',
-                event_label: 'melbourne_hvac_diagnostic'
-            });
+        if (typeof window.rmitTrackEvent === 'function') {
+            window.rmitTrackEvent('diagnostic_completed');
         }
     }
 
     startDiagnosis() {
         console.log('Starting diagnosis');
         // Track diagnosis start with Google Analytics
-        if (typeof gtag !== 'undefined') {
-            gtag('event', 'diagnosis_started', {
-                event_category: 'training',
-                event_label: 'melbourne_hvac_diagnostic'
-            });
+        if (typeof window.rmitTrackEvent === 'function') {
+            window.rmitTrackEvent('diagnosis_started');
         }
         
         this.showDiagnosticScreen();
@@ -370,15 +364,7 @@ class MelbourneHVACDiagnosticApp {
         console.log('Option selected:', selectedOption.text);
         this.isAwaitingFeedback = true;
         this.selectedOption = selectedOption;
-        
-        // Track option selection with Google Analytics
-        if (typeof gtag !== 'undefined') {
-            gtag('event', 'option_selected', {
-                event_category: 'training',
-                event_label: `${this.currentStep}_${selectedOption.correct ? 'correct' : 'incorrect'}`,
-                value: this.stepCount
-            });
-        }
+        // Individual answer correctness stays in the browser.
         
         // Update option buttons to show selection
         const optionButtons = document.querySelectorAll('.option-button');
@@ -500,11 +486,8 @@ class MelbourneHVACDiagnosticApp {
     restart() {
         console.log('Restarting application');
         // Track restart with Google Analytics
-        if (typeof gtag !== 'undefined') {
-            gtag('event', 'diagnosis_restarted', {
-                event_category: 'training',
-                event_label: 'melbourne_hvac_diagnostic'
-            });
+        if (typeof window.rmitTrackEvent === 'function') {
+            window.rmitTrackEvent('diagnosis_restarted');
         }
         
         // Reset all application state
@@ -530,22 +513,9 @@ class MelbourneHVACDiagnosticApp {
     }
 }
 
-// Utility function to track page views with Google Analytics
-function trackPageView() {
-    if (typeof gtag !== 'undefined') {
-        gtag('config', 'G-1MDBG3TN2X', {
-            page_title: 'Melbourne HVAC Diagnostic Training',
-            page_location: window.location.href
-        });
-    }
-}
-
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing Melbourne HVAC app');
-    
-    // Track initial page view
-    trackPageView();
     
     // Initialize the app
     const app = new MelbourneHVACDiagnosticApp();
@@ -554,20 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.melbourneHvacApp = app;
     
     // Additional Google Analytics event tracking
-    if (typeof gtag !== 'undefined') {
-        gtag('event', 'app_initialized', {
-            event_category: 'training',
-            event_label: 'melbourne_hvac_diagnostic'
-        });
-    }
-});
-
-// Track when user leaves the page
-window.addEventListener('beforeunload', () => {
-    if (typeof gtag !== 'undefined') {
-        gtag('event', 'session_end', {
-            event_category: 'training',
-            event_label: 'melbourne_hvac_diagnostic'
-        });
-    }
+    if (typeof window.rmitTrackEvent === 'function') {
+            window.rmitTrackEvent('app_initialized');
+        }
 });

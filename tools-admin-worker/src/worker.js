@@ -1,3 +1,5 @@
+import { injectGoogleAnalytics } from "./analytics-policy.js";
+
 const TEXT_ENCODER = new TextEncoder();
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const METADATA_PATH = "tools-metadata.json";
@@ -222,7 +224,7 @@ async function handleUpload(request, env) {
   }
 
   const targetPath = normaliseTargetPath(requestedPath || filename);
-  const finalHtml = injectGoogleAnalytics(rawHtml, env.GA_MEASUREMENT_ID);
+  const finalHtml = injectGoogleAnalytics(rawHtml, env.GA_MEASUREMENT_ID, targetPath);
   const existing = await getExistingFile(env, targetPath);
 
   const result = await putFile(env, {
@@ -268,7 +270,7 @@ async function handleRestore(request, env) {
 
   const result = await putFile(env, {
     path,
-    content: version,
+    content: injectGoogleAnalytics(version, env.GA_MEASUREMENT_ID, path),
     sha: existing.sha,
     message: `Restore ${path} to ${commitSha.slice(0, 7)} from tools admin`
   });
@@ -434,23 +436,6 @@ function validateSha(value) {
   return cleaned;
 }
 
-function injectGoogleAnalytics(source, measurementId) {
-  if (!measurementId || source.includes(measurementId)) {
-    return source;
-  }
-
-  const snippet = `\n<!-- Google Analytics -->\n<script async src="https://www.googletagmanager.com/gtag/js?id=${escapeHtml(measurementId)}"></script>\n<script>\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag('js', new Date());\n  gtag('config', '${escapeJsString(measurementId)}');\n</script>\n`;
-
-  if (/<\/head>/i.test(source)) {
-    return source.replace(/<\/head>/i, `${snippet}</head>`);
-  }
-
-  if (/<html[^>]*>/i.test(source)) {
-    return source.replace(/<html[^>]*>/i, (match) => `${match}\n<head>${snippet}</head>`);
-  }
-
-  return `${snippet}${source}`;
-}
 
 async function getExistingFile(env, path) {
   const response = await githubFetch(env, `/contents/${encodePath(path)}?ref=${env.GITHUB_BRANCH}`);
@@ -882,7 +867,7 @@ function renderDashboard(tools, env, request) {
       </form>
       <p class="hint" id="upload-mode">Choose a file and path. Existing paths are replaced automatically.</p>
       <div class="upload-checks" id="upload-checks" hidden></div>
-      <iframe class="preview-frame" id="preview-frame" title="Upload preview" hidden></iframe>
+      <iframe class="preview-frame" id="preview-frame" title="Upload preview" sandbox="" referrerpolicy="no-referrer" hidden></iframe>
     </section>
 
     <section class="panel">
@@ -999,13 +984,14 @@ function renderDashboard(tools, env, request) {
         const checks = [];
         checks.push(file.name.toLowerCase().endsWith(".html") ? "HTML extension detected." : "Warning: file extension is not .html.");
         checks.push(/<title>[^<]+<\\/title>/i.test(content) ? "Title found." : "Warning: missing title element.");
-        checks.push(content.includes("${escapeJsString(env.GA_MEASUREMENT_ID)}") ? "GA already present." : "GA will be added on upload.");
+        checks.push(content.includes("${escapeJsString(env.GA_MEASUREMENT_ID)}") ? "Existing GA will be checked and replaced with the privacy policy." : "Privacy-configured GA will be added unless explicitly opted out.");
         checks.push(content.length < ${MAX_UPLOAD_BYTES} ? "File size is within limit." : "Warning: file may be too large.");
 
         uploadChecks.hidden = false;
         uploadChecks.innerHTML = checks.map((check) => "<div>" + check + "</div>").join("");
         previewFrame.hidden = false;
-        previewFrame.srcdoc = content;
+        // Preview cannot execute uploaded scripts or request remote resources.
+        previewFrame.srcdoc = '<meta http-equiv="Content-Security-Policy" content="default-src &apos;none&apos;; img-src data: blob:; style-src &apos;unsafe-inline&apos;; base-uri &apos;none&apos;; form-action &apos;none&apos;">' + content;
       }
 
       document.querySelector(".upload form").addEventListener("submit", async (event) => {
