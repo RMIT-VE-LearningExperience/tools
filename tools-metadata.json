@@ -25,10 +25,11 @@
         "IP",
         "RPL"
       ],
-      "owner": "IP Team",
+      "owner": "IP Team/KT",
       "notes": "AI for RPL",
       "public": false,
-      "updatedAt": "2026-08-11T22:42:11.756Z"
+      "updatedAt": "2026-08-11T22:42:11.756Z",
+      "analytics": false
     },
     "ip_ai_rpl_toolbox-candidate.html": {
       "description": "RPL self evaluation for candidate",
@@ -36,10 +37,11 @@
         "IP",
         "RPL"
       ],
-      "owner": "IP Team",
+      "owner": "IP Team/KT",
       "notes": "AI for RPL",
       "public": false,
-      "updatedAt": "2026-08-11T22:43:53.351Z"
+      "updatedAt": "2026-08-11T22:43:53.351Z",
+      "analytics": false
     },
     "ip_ai_rpl_logbook.html": {
       "description": "audio/video recorder and transcriber",
@@ -47,10 +49,11 @@
         "IP",
         "RPL"
       ],
-      "owner": "IP Team",
+      "owner": "IP Team/KT",
       "notes": "AI for RPL",
       "public": false,
-      "updatedAt": "2026-08-11T22:45:10.405Z"
+      "updatedAt": "2026-08-11T22:45:10.405Z",
+      "analytics": false
     },
     "ip_ai_rpl_toolbox-assessor.html": {
       "description": "assessor toolbox (prompt suite) for evaluation of sanitised documents",
@@ -58,10 +61,11 @@
         "IP",
         "RPL"
       ],
-      "owner": "IP Team",
+      "owner": "IP Team/KT",
       "notes": "AI for RPL",
       "public": false,
-      "updatedAt": "2026-08-11T22:46:41.109Z"
+      "updatedAt": "2026-08-11T22:46:41.109Z",
+      "analytics": false
     },
     "canvas-image-block-generator.html": {
       "description": "crop, resize, download and credit your images",
@@ -331,6 +335,30 @@
     },
     "intro-page-converter.html": {
       "owner": "BAU",
+      "analytics": false
+    },
+    "colour-wheel-palette-studio.html": {
+      "owner": "KT",
+      "analytics": false
+    },
+    "pdf-flipbook-generator.html": {
+      "owner": "KT",
+      "analytics": false
+    },
+    "projects/cove-ai-canvas.html": {
+      "owner": "KT",
+      "analytics": false
+    },
+    "projects/cove-before-after-converter.html": {
+      "owner": "KT",
+      "analytics": false
+    },
+    "projects/cove-intro-page-converter.html": {
+      "owner": "KT",
+      "analytics": false
+    },
+    "projects/cove-presentation-converter.html": {
+      "owner": "KT",
       "analytics": false
     }
   }
