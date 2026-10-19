@@ -15,7 +15,7 @@ Cloudflare Access-protected Worker dashboard for listing and uploading standalon
 - Uploads a new `.html` file through a browser form.
 - Automatically replaces an existing `.html` file when the upload path already exists.
 - Archives published files by moving them into `archive/`.
-- Injects the shared Google Analytics snippet when it is missing.
+- Applies the shared analytics policy, excluding BAU/KT-owned tools, persistent opt-outs and Kirsty’s authenticated uploads/restores.
 - Commits the file to `main` through the GitHub API.
 - Provides a Versions page for each file and can restore an older commit as a new commit.
 - Links to each file's GitHub commit history for version review or rollback.

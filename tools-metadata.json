@@ -16,7 +16,8 @@
       "owner": "BAU",
       "notes": "Course Development",
       "public": true,
-      "updatedAt": "2026-08-10T06:56:03.530Z"
+      "updatedAt": "2026-08-10T06:56:03.530Z",
+      "analytics": false
     },
     "ip_ai_rpl_isolate.html": {
       "description": "sanitises personal information",
@@ -71,7 +72,8 @@
       "owner": "BAU",
       "notes": "Course Development",
       "public": true,
-      "updatedAt": "2026-08-14T05:14:41.804Z"
+      "updatedAt": "2026-08-14T05:14:41.804Z",
+      "analytics": false
     },
     "goldilocks-ledger-extractor.html": {
       "description": "ABB Ledger Extractor",
@@ -81,7 +83,8 @@
       "owner": "BAU",
       "notes": "Assessment, Goldilocks",
       "public": true,
-      "updatedAt": "2026-08-26T03:07:37.465Z"
+      "updatedAt": "2026-08-26T03:07:37.465Z",
+      "analytics": false
     },
     "paper-choice-simulator.html": {
       "description": "Make paper selection for photographic prints",
@@ -92,7 +95,8 @@
       "owner": "BAU",
       "notes": "Course, Photography, Printing",
       "public": true,
-      "updatedAt": "2026-08-28T05:55:14.395Z"
+      "updatedAt": "2026-08-28T05:55:14.395Z",
+      "analytics": false
     },
     "goldilocks-merge.html": {
       "description": "ABB Merger",
@@ -102,7 +106,8 @@
       "owner": "BAU",
       "notes": "Assessment, Goldilocks",
       "public": true,
-      "updatedAt": "2026-08-26T03:08:38.880Z"
+      "updatedAt": "2026-08-26T03:08:38.880Z",
+      "analytics": false
     },
     "goldilocks-report-viewer.html": {
       "description": "ABB Report Viewer",
@@ -112,7 +117,8 @@
       "owner": "BAU",
       "notes": "Assessment, Goldilocks",
       "public": true,
-      "updatedAt": "2026-08-26T03:09:26.616Z"
+      "updatedAt": "2026-08-26T03:09:26.616Z",
+      "analytics": false
     },
     "cove-document-prep.html": {
       "description": "ABB document preparation for workflow",
@@ -122,7 +128,8 @@
       "owner": "BAU",
       "notes": "Assessment, Goldilocks, Program Team",
       "public": true,
-      "updatedAt": "2026-10-16T03:37:25.402Z"
+      "updatedAt": "2026-10-16T03:37:25.402Z",
+      "analytics": false
     },
     "cove-quick-check-collector.html": {
       "description": "ABB consolidates the task reports into a single txt file",
@@ -132,7 +139,8 @@
       "owner": "BAU",
       "notes": "Assessment, Goldilocks, Program Team",
       "public": true,
-      "updatedAt": "2026-08-27T03:01:05.728Z"
+      "updatedAt": "2026-08-27T03:01:05.728Z",
+      "analytics": false
     },
     "cove-lab-converter-basic.html": {
       "description": "Create a lab page",
@@ -143,7 +151,8 @@
       "owner": "BAU",
       "notes": "Course Development",
       "public": true,
-      "updatedAt": "2026-09-21T22:13:36.807Z"
+      "updatedAt": "2026-09-21T22:13:36.807Z",
+      "analytics": false
     },
     "cove-legacy-assessment-converter-styled.html": {
       "description": "ABB Legacy Converter",
@@ -153,7 +162,8 @@
       "owner": "BAU",
       "notes": "Assessment toolkit (legacy)",
       "public": true,
-      "updatedAt": "2026-09-04T04:03:41.378Z"
+      "updatedAt": "2026-09-04T04:03:41.378Z",
+      "analytics": false
     },
     "cove-legacy-quiz-qti.html": {
       "description": "ABB Legacy QTI Quiz generator",
@@ -163,7 +173,8 @@
       "owner": "BAU",
       "notes": "Assessment toolkit (legacy)",
       "public": true,
-      "updatedAt": "2026-09-04T04:06:21.988Z"
+      "updatedAt": "2026-09-04T04:06:21.988Z",
+      "analytics": false
     },
     "cove-legacy-rubric-csv.html": {
       "description": "ABB Legacy Rubric",
@@ -173,7 +184,8 @@
       "owner": "BAU",
       "notes": "Assessment toolkit (legacy)",
       "public": true,
-      "updatedAt": "2026-09-04T04:11:32.033Z"
+      "updatedAt": "2026-09-04T04:11:32.033Z",
+      "analytics": false
     },
     "canvas_convertor/copilot-to-canvas-converter.html": {
       "description": "Converts source content into Copilot To Canvas.",
@@ -194,7 +206,8 @@
       "owner": "KT",
       "notes": "Project, Cert II Electro",
       "public": true,
-      "updatedAt": "2026-10-12T01:54:31.700Z"
+      "updatedAt": "2026-10-12T01:54:31.700Z",
+      "analytics": false
     },
     "lesson-plan-builder.html": {
       "description": "Lesson Planner",
@@ -205,7 +218,8 @@
       "owner": "BAU",
       "notes": "Induction",
       "public": true,
-      "updatedAt": "2026-10-12T21:45:37.355Z"
+      "updatedAt": "2026-10-12T21:45:37.355Z",
+      "analytics": false
     },
     "cove-competency-map-builder.html": {
       "description": "ABB Builds a competency map",
@@ -215,7 +229,8 @@
       "owner": "BAU",
       "notes": "Assessment, Goldilocks",
       "public": true,
-      "updatedAt": "2026-10-16T07:40:02.312Z"
+      "updatedAt": "2026-10-16T07:40:02.312Z",
+      "analytics": false
     },
     "canvas_convertor/index.html": {
       "description": "Converts AI output into Canvas-ready content.",
@@ -226,7 +241,8 @@
       "owner": "BAU",
       "notes": "",
       "public": true,
-      "updatedAt": "2026-10-16T07:41:48.725Z"
+      "updatedAt": "2026-10-16T07:41:48.725Z",
+      "analytics": false
     },
     "cove-student-version-generator.html": {
       "description": "Generate a student version of an Assessment Task",
@@ -237,7 +253,8 @@
       "owner": "BAU",
       "notes": "Assessment, Goldilocks, ABB",
       "public": true,
-      "updatedAt": "2026-10-16T07:45:17.708Z"
+      "updatedAt": "2026-10-16T07:45:17.708Z",
+      "analytics": false
     },
     "cove-assessment-builder.html": {
       "description": "Translate student and assessor guides into Canvas assessment assets",
@@ -248,7 +265,8 @@
       "owner": "BAU",
       "notes": "Assessment, Goldilocks, ABB",
       "public": true,
-      "updatedAt": "2026-10-16T23:56:29.920Z"
+      "updatedAt": "2026-10-16T23:56:29.920Z",
+      "analytics": false
     }
   }
 }

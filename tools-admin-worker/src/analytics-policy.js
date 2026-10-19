@@ -49,8 +49,7 @@ export function renderAnalyticsSnippet(measurementId, toolPath) {
 ${ANALYTICS_END}`;
 }
 
-export function injectGoogleAnalytics(source, measurementId, toolPath) {
-  if (!measurementId) return source;
+export function stripGoogleAnalytics(source) {
   // Replace our managed block and legacy standard snippets instead of preserving unsafe settings.
   let cleaned = source.replace(/<!-- RMIT analytics privacy v1 -->[\s\S]*?<!-- \/RMIT analytics privacy v1 -->\s*/g, '');
   cleaned = cleaned.replace(/<script\b[^>]*src=["']https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=G-[A-Z0-9]+["'][^>]*><\/script>\s*<script\b[^>]*>\s*window\.dataLayer[\s\S]*?<\/script>/g, '');
@@ -58,9 +57,29 @@ export function injectGoogleAnalytics(source, measurementId, toolPath) {
   if (/googletagmanager\.com\/(?:gtag\/js|gtm\.js)|\bgtag\s*\(/.test(cleaned)) {
     throw new Error('Custom Google tracking found. Replace it with the approved privacy snippet before uploading.');
   }
+  return cleaned;
+}
+
+export function injectGoogleAnalytics(source, measurementId, toolPath) {
+  if (!measurementId) return source;
+  const cleaned = stripGoogleAnalytics(source);
   if (source.includes('<!-- rmit-analytics: disabled -->')) return cleaned;
   const snippet = renderAnalyticsSnippet(measurementId, toolPath);
   if (/<\/head>/i.test(cleaned)) return cleaned.replace(/<\/head>/i, `${snippet}\n</head>`);
   if (/<html[^>]*>/i.test(cleaned)) return cleaned.replace(/<html[^>]*>/i, match => `${match}\n<head>${snippet}</head>`);
   return `${snippet}\n${cleaned}`;
+}
+
+// Ownership is resolved server-side; persisted opt-outs survive replacement and restore.
+export function applyPublisherAnalytics(source, measurementId, toolPath, context = {}) {
+  const excludedOwners = ['BAU', 'KT'];
+  const excluded = context.existing?.analytics === false ||
+    [context.owner, context.existing?.owner].some(owner => excludedOwners.includes(String(owner || '').trim().toUpperCase())) ||
+    String(context.excludedUploaders || '').split(',').map(email => email.trim().toLowerCase()).filter(Boolean)
+      .includes(String(context.actorEmail || '').trim().toLowerCase()) ||
+    source.includes('<!-- rmit-analytics: disabled -->');
+  if (!excluded) return {content: injectGoogleAnalytics(source, measurementId, toolPath), disabled: false};
+  let content = stripGoogleAnalytics(source);
+  if (!content.includes('<!-- rmit-analytics: disabled -->')) content = '<!-- rmit-analytics: disabled -->\n' + content;
+  return {content, disabled: true};
 }

@@ -81,3 +81,46 @@ test('opt-out also removes a recognized legacy tag',()=>{
   assert.ok(!out.includes('googletagmanager.com'));
   assert.ok(!out.includes('privacy-v1'));
 });
+
+test('BAU and KT tools have no Google tracking and carry persistent opt-outs',()=>{
+  const metadata=JSON.parse(readFileSync('tools-metadata.json','utf8'));
+  const excluded=Object.entries(metadata.tools).filter(([,d])=>['BAU','KT'].includes(d.owner));
+  assert.equal(excluded.length,18);
+  for(const [path,details] of excluded){
+    const source=readFileSync(path,'utf8');
+    assert.equal(details.analytics,false,path);
+    assert.match(source,/<!-- rmit-analytics: disabled -->/,path);
+    assert.doesNotMatch(source,/googletagmanager\.com|google-analytics\.com|\bgtag\s*\(|G-1MDBG3TN2X/,path);
+  }
+});
+test('Kirsty uploads strip existing tags even with a blank or different owner',async()=>{
+  const {applyPublisherAnalytics}=await import('../tools-admin-worker/src/analytics-policy.js');
+  for(const owner of ['', 'Other']){
+    const input=renderAnalyticsSnippet(ID,'tool.html')+'<h1>Keep content</h1>';
+    const out=applyPublisherAnalytics(input,ID,'tool.html',{owner,actorEmail:'KIRSTY.TOD@RMIT.EDU.AU',excludedUploaders:'kirsty.tod@rmit.edu.au'});
+    assert.equal(out.disabled,true);assert.ok(out.content.includes('<h1>Keep content</h1>'));assert.ok(!out.content.includes(ID));
+  }
+});
+test('BAU replacements and old-version restores remain opted out for any uploader',async()=>{
+  const {applyPublisherAnalytics}=await import('../tools-admin-worker/src/analytics-policy.js');
+  const input=renderAnalyticsSnippet(ID,'tool.html')+'<main>Old version</main>';
+  for(const existing of [{owner:'BAU'},{owner:'KT'},{owner:'Changed',analytics:false}]){
+    const out=applyPublisherAnalytics(input,ID,'tool.html',{existing,owner:'Changed',actorEmail:'other@rmit.edu.au'});
+    assert.equal(out.disabled,true);assert.ok(!out.content.includes(ID));assert.ok(out.content.includes('Old version'));
+  }
+});
+test('excluded uploads strip legacy tags without a measurement setting',async()=>{
+  const {applyPublisherAnalytics}=await import('../tools-admin-worker/src/analytics-policy.js');
+  const input='<script async src="https://www.googletagmanager.com/gtag/js?id='+ID+'"></script><script>window.dataLayer=[];gtag("config","'+ID+'");</script><p>Tool</p>';
+  const out=applyPublisherAnalytics(input,'','tool.html',{owner:'BAU'});
+  assert.equal(out.disabled,true);assert.ok(!out.content.includes(ID));assert.ok(out.content.includes('<p>Tool</p>'));
+});
+test('other owners retain the approved analytics policy',async()=>{
+  const {applyPublisherAnalytics}=await import('../tools-admin-worker/src/analytics-policy.js');
+  const out=applyPublisherAnalytics('<html><head></head></html>',ID,'tool.html',{owner:'DMD',actorEmail:'other@rmit.edu.au',excludedUploaders:'kirsty.tod@rmit.edu.au'});
+  assert.equal(out.disabled,false);assert.equal(execute(out.content).dataLayer[5][0],'config');
+});
+test('unknown custom tracking is rejected rather than published on excluded tools',async()=>{
+  const {applyPublisherAnalytics}=await import('../tools-admin-worker/src/analytics-policy.js');
+  assert.throws(()=>applyPublisherAnalytics('<script>gtag("event","secret")</script>',ID,'tool.html',{owner:'BAU'}),/Custom Google tracking/);
+});
