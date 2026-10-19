@@ -85,7 +85,7 @@ test('opt-out also removes a recognized legacy tag',()=>{
 test('BAU and KT tools have no Google tracking and carry persistent opt-outs',()=>{
   const metadata=JSON.parse(readFileSync('tools-metadata.json','utf8'));
   const excluded=Object.entries(metadata.tools).filter(([,d])=>['BAU','KT'].includes(d.owner));
-  assert.equal(excluded.length,18);
+  assert.equal(excluded.length,35);
   for(const [path,details] of excluded){
     const source=readFileSync(path,'utf8');
     assert.equal(details.analytics,false,path);

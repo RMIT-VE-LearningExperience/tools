@@ -193,10 +193,11 @@
         "Canvas",
         "Converter"
       ],
-      "owner": "",
+      "owner": "BAU",
       "notes": "",
       "public": true,
-      "updatedAt": "2026-10-07T09:51:53.790Z"
+      "updatedAt": "2026-10-07T09:51:53.790Z",
+      "analytics": false
     },
     "assessor-guide-converter.html": {
       "description": "TVSC to RMIT Converter",
@@ -266,6 +267,70 @@
       "notes": "Assessment, Goldilocks, ABB",
       "public": true,
       "updatedAt": "2026-10-16T23:56:29.920Z",
+      "analytics": false
+    },
+    "canvas_convertor/accordion-file-generator.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/associate-degree-converter.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/before-after-converter.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/canvas-video_converter.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/canvas-zip-tool.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/checklist-converter.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/dip-it-summary-converter.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/homepage-updater.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/image-extractor.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/intro-page-converter.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/old_index.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/presentation-converter.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/qti-generator.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/tools-index.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "canvas_convertor/transcript-generator.html": {
+      "owner": "BAU",
+      "analytics": false
+    },
+    "intro-page-converter.html": {
+      "owner": "BAU",
       "analytics": false
     }
   }
