@@ -1,4 +1,4 @@
-import { injectGoogleAnalytics } from "./analytics-policy.js";
+import { applyPublisherAnalytics } from "./analytics-policy.js";
 
 const TEXT_ENCODER = new TextEncoder();
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
@@ -224,7 +224,12 @@ async function handleUpload(request, env) {
   }
 
   const targetPath = normaliseTargetPath(requestedPath || filename);
-  const finalHtml = injectGoogleAnalytics(rawHtml, env.GA_MEASUREMENT_ID, targetPath);
+  const metadata = await getMetadata(env);
+  const analytics = applyPublisherAnalytics(rawHtml, env.GA_MEASUREMENT_ID, targetPath, {
+    owner, existing: metadata.tools?.[targetPath], actorEmail: getAccessEmail(request),
+    excludedUploaders: env.ANALYTICS_EXCLUDED_UPLOADERS
+  });
+  const finalHtml = analytics.content;
   const existing = await getExistingFile(env, targetPath);
 
   const result = await putFile(env, {
@@ -235,7 +240,7 @@ async function handleUpload(request, env) {
       ? `Update ${targetPath} from tools admin`
       : `Add ${targetPath} from tools admin`
   });
-  await updateMetadata(env, targetPath, { description, tags, owner, notes, public: isPublic });
+  await updateMetadata(env, targetPath, { description, tags, owner, notes, public: isPublic, ...(analytics.disabled ? { analytics: false } : {}) });
   await regeneratePublicIndex(env);
 
   return html(renderUploadResult("Upload complete.", true, {
@@ -268,12 +273,18 @@ async function handleRestore(request, env) {
     return html(renderUploadResult(`"${path}" does not exist on ${env.GITHUB_BRANCH}.`, false), { status: 404 });
   }
 
+  const metadata = await getMetadata(env);
+  const analytics = applyPublisherAnalytics(version, env.GA_MEASUREMENT_ID, path, {
+    existing: metadata.tools?.[path], actorEmail: getAccessEmail(request),
+    excludedUploaders: env.ANALYTICS_EXCLUDED_UPLOADERS
+  });
   const result = await putFile(env, {
     path,
-    content: injectGoogleAnalytics(version, env.GA_MEASUREMENT_ID, path),
+    content: analytics.content,
     sha: existing.sha,
     message: `Restore ${path} to ${commitSha.slice(0, 7)} from tools admin`
   });
+  if (analytics.disabled) await updateMetadata(env, path, { analytics: false });
   await regeneratePublicIndex(env);
 
   return html(renderUploadResult("Version restored.", true, {
@@ -471,6 +482,7 @@ async function updateMetadata(env, path, updates) {
   const current = metadata.tools[path] || {};
   const next = {
     ...current,
+    ...(updates.analytics === false ? { analytics: false } : {}),
     description: updates.description || current.description || descriptionFromPath(path),
     tags: updates.tags?.length ? updates.tags : current.tags || inferTags(path),
     owner: updates.owner || current.owner || "",
