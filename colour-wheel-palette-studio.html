@@ -1,3 +1,4 @@
+<!-- rmit-analytics: disabled -->
 <!DOCTYPE html>
 <html lang="en-AU">
 <head>
@@ -151,32 +152,6 @@
 
 <!-- Google Analytics -->
 
-<!-- RMIT analytics privacy v1 -->
-<script data-rmit-analytics="privacy-v1">
-(function () {
-  'use strict';
-  var measurementId = "G-1MDBG3TN2X";
-  var identity = {"page_location":"https://rmit-ve-learningexperience.github.io/tools/colour-wheel-palette-studio.html","page_referrer":"","page_title":"RMIT tool: colour-wheel-palette-studio.html","ignore_referrer":true,"allow_google_signals":false,"allow_ad_personalization_signals":false};
-  var approvedEvents = ["app_initialized","diagnosis_started","diagnostic_completed","diagnosis_restarted"];
-  window.dataLayer = window.dataLayer || [];
-  function send() { window.dataLayer.push(arguments); }
-  // Advertising stays denied. Analytics notice/consent must follow RMIT's approved policy.
-  send('consent', 'default', {ad_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
-  send('set', 'ads_data_redaction', true);
-  send('set', 'url_passthrough', false);
-  send('set', identity);
-  send('js', new Date());
-  send('config', measurementId, Object.assign({send_page_view: true}, identity));
-  // This interface accepts only fixed event names; caller-supplied payloads are discarded.
-  window.rmitTrackEvent = function (name) {
-    if (approvedEvents.indexOf(name) !== -1) {
-      send('event', name, Object.assign({send_to: measurementId}, identity));
-    }
-  };
-}());
-</script>
-<script async referrerpolicy="no-referrer" src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
-<!-- /RMIT analytics privacy v1 -->
 </head>
 <body>
 

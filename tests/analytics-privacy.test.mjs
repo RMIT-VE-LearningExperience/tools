@@ -84,8 +84,8 @@ test('opt-out also removes a recognized legacy tag',()=>{
 
 test('BAU and KT tools have no Google tracking and carry persistent opt-outs',()=>{
   const metadata=JSON.parse(readFileSync('tools-metadata.json','utf8'));
-  const excluded=Object.entries(metadata.tools).filter(([,d])=>['BAU','KT'].includes(d.owner));
-  assert.equal(excluded.length,18);
+  const excluded=Object.entries(metadata.tools).filter(([,d])=>d.analytics===false);
+  assert.equal(excluded.length,45);
   for(const [path,details] of excluded){
     const source=readFileSync(path,'utf8');
     assert.equal(details.analytics,false,path);
@@ -104,7 +104,7 @@ test('Kirsty uploads strip existing tags even with a blank or different owner',a
 test('BAU replacements and old-version restores remain opted out for any uploader',async()=>{
   const {applyPublisherAnalytics}=await import('../tools-admin-worker/src/analytics-policy.js');
   const input=renderAnalyticsSnippet(ID,'tool.html')+'<main>Old version</main>';
-  for(const existing of [{owner:'BAU'},{owner:'KT'},{owner:'Changed',analytics:false}]){
+  for(const existing of [{owner:'BAU'},{owner:'KT'},{owner:'IP Team/KT'},{owner:'BAU/ KT for internal'},{owner:'Changed',analytics:false}]){
     const out=applyPublisherAnalytics(input,ID,'tool.html',{existing,owner:'Changed',actorEmail:'other@rmit.edu.au'});
     assert.equal(out.disabled,true);assert.ok(!out.content.includes(ID));assert.ok(out.content.includes('Old version'));
   }

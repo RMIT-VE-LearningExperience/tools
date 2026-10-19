@@ -72,9 +72,8 @@ export function injectGoogleAnalytics(source, measurementId, toolPath) {
 
 // Ownership is resolved server-side; persisted opt-outs survive replacement and restore.
 export function applyPublisherAnalytics(source, measurementId, toolPath, context = {}) {
-  const excludedOwners = ['BAU', 'KT'];
   const excluded = context.existing?.analytics === false ||
-    [context.owner, context.existing?.owner].some(owner => excludedOwners.includes(String(owner || '').trim().toUpperCase())) ||
+    [context.owner, context.existing?.owner].some(owner => /(^|[^A-Z0-9])(BAU|KT)(?=$|[^A-Z0-9])/.test(String(owner || '').trim().toUpperCase())) ||
     String(context.excludedUploaders || '').split(',').map(email => email.trim().toLowerCase()).filter(Boolean)
       .includes(String(context.actorEmail || '').trim().toLowerCase()) ||
     source.includes('<!-- rmit-analytics: disabled -->');
