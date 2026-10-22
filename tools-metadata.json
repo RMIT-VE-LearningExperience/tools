@@ -384,6 +384,18 @@
       "notes": "Student",
       "public": true,
       "updatedAt": "2026-10-22T04:40:07.577Z"
+    },
+    "legacy-guide-converter.html": {
+      "analytics": false,
+      "description": "RMIT legacy assessor guide to accessible template",
+      "tags": [
+        "Assessment ABB",
+        "Q&C"
+      ],
+      "owner": "BAY",
+      "notes": "Assessment, Goldilocks, ABB",
+      "public": true,
+      "updatedAt": "2026-10-22T07:31:45.379Z"
     }
   }
 }
