@@ -360,6 +360,18 @@
     "projects/cove-presentation-converter.html": {
       "owner": "KT",
       "analytics": false
+    },
+    "canvas-download-all-team.html": {
+      "analytics": false,
+      "description": "Download files from Canvas",
+      "tags": [
+        "Canvas",
+        "LD"
+      ],
+      "owner": "BAU",
+      "notes": "Course Development",
+      "public": true,
+      "updatedAt": "2026-10-22T02:54:40.346Z"
     }
   }
 }
