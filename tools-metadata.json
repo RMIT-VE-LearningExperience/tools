@@ -372,6 +372,18 @@
       "notes": "Course Development",
       "public": true,
       "updatedAt": "2026-10-22T02:54:40.346Z"
+    },
+    "canvas-download-all.html": {
+      "analytics": false,
+      "description": "Download files from Canvas",
+      "tags": [
+        "Canvas",
+        "student"
+      ],
+      "owner": "BAU",
+      "notes": "Student",
+      "public": true,
+      "updatedAt": "2026-10-22T02:56:15.258Z"
     }
   }
 }
