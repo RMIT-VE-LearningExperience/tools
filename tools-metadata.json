@@ -396,6 +396,18 @@
       "notes": "Assessment, Goldilocks, ABB",
       "public": true,
       "updatedAt": "2026-10-22T07:31:45.379Z"
+    },
+    "canvas-qc-dashboard-cluster.html": {
+      "analytics": false,
+      "description": "Canvas QC for Directors",
+      "tags": [
+        "Canvas",
+        "Teaching & Learning"
+      ],
+      "owner": "BAU, QC",
+      "notes": "Course Evaluation",
+      "public": true,
+      "updatedAt": "2026-10-28T02:09:16.920Z"
     }
   }
 }
