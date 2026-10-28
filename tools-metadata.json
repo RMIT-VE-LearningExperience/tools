@@ -408,6 +408,18 @@
       "notes": "Course Evaluation",
       "public": true,
       "updatedAt": "2026-10-28T02:09:16.920Z"
+    },
+    "canvas-qc-dashboard-exec.html": {
+      "analytics": false,
+      "description": "Canvas QC for Exec",
+      "tags": [
+        "Canvas",
+        "Teaching & Learning"
+      ],
+      "owner": "BAU, QC",
+      "notes": "Course Evaluation",
+      "public": true,
+      "updatedAt": "2026-10-28T02:10:41.738Z"
     }
   }
 }
