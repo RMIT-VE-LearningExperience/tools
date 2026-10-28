@@ -1,10 +1,12 @@
 <!-- rmit-analytics: disabled -->
 <meta charset="utf-8">
+<html lang="en-AU">
 <title>Canvas QC Dashboard Exec</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* Layout: navy masthead, one filter row, summary tiles, then detail panels in a two-column grid */
 :root{
+  --focus:#000054;
   --navy:#000054; --red:#e61e2a; --yellow:#fac800; --gold:#a88600; --grey:#e3e5e0;
   --bg:#f6f6f3; --panel:#ffffff; --ink:#14142b; --muted:#5d5f6e; --line:#dcddd6;
   --bar:#000054; --track:#ecede8; --dnm:#e61e2a; --meets:#000054; --exceeds:#fac800; --segInkD:#ffffff; --segInkM:#ffffff; --segInkE:#000000; --heat:0,0,84; --heatInk:#ffffff;
@@ -16,12 +18,12 @@
   --bg:#0d0d1f; --panel:#16163a; --ink:#ececf4; --muted:#a6a8bd; --line:#2d2d5a;
   --bar:#fac800; --track:#25254f; --dnm:#f0555d; --meets:#8080e8; --exceeds:#fac800; --segInkD:#000000; --segInkM:#000000; --segInkE:#000000; --heat:250,200,0; --heatInk:#000000;
   --hi:#173d26; --hiInk:#8fe0ac; --mid:#3d3210; --midInk:#ffd666; --lo:#4a1519; --loInk:#ff9ea4;
-  --warnbg:#3a2f0b; --infobg:#1d1f45; --field:#101030; color-scheme:dark } }
+  --warnbg:#3a2f0b; --infobg:#1d1f45; --field:#101030; --focus:#fac800; color-scheme:dark } }
 :root[data-theme="dark"]{
   --bg:#0d0d1f; --panel:#16163a; --ink:#ececf4; --muted:#a6a8bd; --line:#2d2d5a;
   --bar:#fac800; --track:#25254f; --dnm:#f0555d; --meets:#8080e8; --exceeds:#fac800; --segInkD:#000000; --segInkM:#000000; --segInkE:#000000; --heat:250,200,0; --heatInk:#000000;
   --hi:#173d26; --hiInk:#8fe0ac; --mid:#3d3210; --midInk:#ffd666; --lo:#4a1519; --loInk:#ff9ea4;
-  --warnbg:#3a2f0b; --infobg:#1d1f45; --field:#101030; color-scheme:dark }
+  --warnbg:#3a2f0b; --infobg:#1d1f45; --field:#101030; --focus:#fac800; color-scheme:dark }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
@@ -36,7 +38,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15p
 .f{display:flex;flex-direction:column;gap:3px;min-width:0}
 .f label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 select,input[type=search]{font:inherit;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:4px;padding:7px 10px;max-width:100%}
-select:focus,input:focus,button:focus-visible,.drop:focus{outline:2px solid var(--yellow);outline-offset:1px}
+select:focus,input:focus,button:focus-visible,.drop:focus,summary:focus-visible,a:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+html{scroll-padding-top:120px}
+.heat tbody th.rowh{font-size:13.5px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink);white-space:normal;text-align:left}
+.heat tr.meta th.rowh{font-weight:600}
+.heat tr.sect th.rowh{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .drop{border:1px dashed var(--muted);border-radius:4px;padding:7px 12px;cursor:pointer;font-weight:600;background:transparent;color:var(--ink);font:inherit}
 .drop.over{background:var(--infobg)}
 .srcline{font-size:13px;color:var(--muted);flex:1 1 220px}
@@ -94,7 +100,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .btnpdf:disabled{opacity:.45;cursor:not-allowed}
 .pdfhead{display:none}
 .exporting .pdfhead{display:block;padding:4px 2px 2px}
-.pdfhead h1{margin:0;font-size:24px;color:#000054}
+.pdfhead .pdft{margin:0;font-size:24px;font-weight:700;color:#000054}
 .pdfhead p{margin:2px 0 0;color:#5d5f6e;font-size:14px}
 .exporting .scroll{overflow:visible}
 .exporting .heat .rowh{position:static}
@@ -114,12 +120,12 @@ details summary{cursor:pointer;font-weight:600}
   <div class="f"><label>Data</label><button class="drop" id="drop" type="button">Load QC workbook (.xlsx)</button><input type="file" id="file" accept=".xlsx" hidden></div>
   <div class="f"><label for="selCluster">Cluster</label><select id="selCluster"></select></div>
   <div class="f"><label for="selProgram">Program</label><select id="selProgram"></select></div>
-  <div class="srcline" id="src"></div>
+  <div class="srcline" id="src" aria-live="polite"></div>
   <div class="f"><label>&nbsp;</label><button class="btnpdf" id="btnPdf" type="button" disabled>Download PDF</button></div>
 </div></div>
 
 <main class="gut"><div class="in">
-  <div class="pdfhead" id="pdfHead"><h1 id="pdfTitle"></h1><p id="pdfMeta"></p></div>
+  <div class="pdfhead" id="pdfHead"><div class="pdft" id="pdfTitle"></div><p id="pdfMeta"></p></div>
   <section class="panel empty" id="empty"><h2>Load your QC workbook</h2><p class="sub" style="margin:0">Choose <b>Load QC workbook (.xlsx)</b> above, or drop the file anywhere on this page. The file is read in your browser and is not uploaded anywhere.</p></section>
   <div id="content" hidden style="display:flex;flex-direction:column;gap:18px">
   <div class="tiles" id="tiles"></div>
@@ -155,7 +161,7 @@ details summary{cursor:pointer;font-weight:600}
     <h2 id="cmpTitle">Comparison</h2>
     <p class="sub" id="cmpSub"></p>
     <div class="scroll"><table class="heat" id="cmp"></table></div>
-    <p class="legendline">Each cell is the percentage of reviewed courses meeting the check. Darker means higher. Hover a cell for the course count.</p>
+    <p class="legendline">Each cell is the percentage of reviewed courses meeting the check. Light cells are below 50% and dark cells are 50% or more, deepening as the percentage rises. Hover a cell for the course count.</p>
   </section>
 
   <details class="panel acc" id="coursesBox">
@@ -605,17 +611,18 @@ var CMP_SECTIONS = [
 ];
 function showCmp(cols){
   cols.forEach(function(x){ x.m = qcMetrics(x.courses); });
-  var head = '<thead><tr><th class="rowh">Check</th>' + cols.map(function(x){ return '<th class="c ' + x.cls + '">' + qcEsc(x.label) + (x.sub ? '<small>' + qcEsc(x.sub) + '</small>' : '') + '</th>'; }).join('') + '</tr></thead>';
-  var body = '<tbody><tr class="meta"><td class="rowh">Courses reviewed</td>' + cols.map(function(x){ return '<td class="c ' + x.cls + '">' + x.m.n + '</td>'; }).join('') + '</tr>' +
-    '<tr class="meta"><td class="rowh">Average across all checks</td>' + cols.map(function(x){ return '<td class="c ' + x.cls + '">' + pill(x.m.overall) + '</td>'; }).join('') + '</tr>';
+  var head = '<thead><tr><th class="rowh" scope="col">Check</th>' + cols.map(function(x){ return '<th scope="col" class="c ' + x.cls + '">' + qcEsc(x.label) + (x.sub ? '<small>' + qcEsc(x.sub) + '</small>' : '') + '</th>'; }).join('') + '</tr></thead>';
+  var body = '<tbody><tr class="meta"><th scope="row" class="rowh">Courses reviewed</th>' + cols.map(function(x){ return '<td class="c ' + x.cls + '">' + x.m.n + '</td>'; }).join('') + '</tr>' +
+    '<tr class="meta"><th scope="row" class="rowh">Average across all checks</th>' + cols.map(function(x){ return '<td class="c ' + x.cls + '">' + pill(x.m.overall) + '</td>'; }).join('') + '</tr>';
   CMP_SECTIONS.forEach(function(sec){
-    body += '<tr class="sect"><td class="rowh">' + qcEsc(sec[0]) + '</td>' + cols.map(function(x){ return '<td class="c ' + x.cls + '"></td>'; }).join('') + '</tr>';
+    body += '<tr class="sect"><th scope="rowgroup" class="rowh">' + qcEsc(sec[0]) + '</th>' + cols.map(function(x){ return '<td class="c ' + x.cls + '"></td>'; }).join('') + '</tr>';
     sec[1].forEach(function(it){
-      body += '<tr><td class="rowh">' + qcEsc(it[1]) + '</td>' + cols.map(function(x){
+      body += '<tr><th scope="row" class="rowh">' + qcEsc(it[1]) + '</th>' + cols.map(function(x){
         var t = x.m.q[it[0]], p = t.pct;
         if (p == null) return '<td class="c ' + x.cls + '" style="color:var(--muted)">n/a</td>';
-        var a = .08 + .92 * p / 100;
-        return '<td class="c ' + x.cls + '" style="background:rgba(var(--heat),' + a.toFixed(2) + ');color:' + (p >= 55 ? 'var(--heatInk)' : 'var(--ink)') + '" title="' + qcEsc(x.label + ': ' + it[1] + ', ' + t.good + ' of ' + t.total + ' courses') + '">' + p + '%</td>';
+        // two bands keep text contrast at 4.5:1 or better: light cells below 50%, dark cells from 50%
+        var a = p < 50 ? .05 + .25 * p / 50 : .62 + .38 * (p - 50) / 50;
+        return '<td class="c ' + x.cls + '" style="background:rgba(var(--heat),' + a.toFixed(2) + ');color:' + (p >= 50 ? 'var(--heatInk)' : 'var(--ink)') + '" title="' + qcEsc(x.label + ': ' + it[1] + ', ' + t.good + ' of ' + t.total + ' courses') + '">' + p + '%</td>';
       }).join('') + '</tr>';
     });
   });
