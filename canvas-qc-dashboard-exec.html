@@ -549,7 +549,6 @@ function render(){
   var scores = cs.map(qcCourseScore);
   var allMet = scores.filter(function(s){ return s.of && s.met === s.of; }).length;
   $('tiles').innerHTML = [
-    [m.n, 'Courses reviewed'],
     [m.shells == null ? 'n/a' : m.shells, 'Course shells'],
     [m.overall == null ? 'n/a' : m.overall + '%', 'Average across all 18 checks'],
     [m.n ? Math.round(allMet / m.n * 100) + '%' : 'n/a', 'Courses meeting every check (' + allMet + ')']
