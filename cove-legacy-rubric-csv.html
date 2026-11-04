@@ -1,10 +1,11 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!-- rmit-analytics: disabled -->
 <!DOCTYPE html>
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Legacy Rubric CSV — CoVE Assessment Toolkit</title>
+<title>Legacy Rubric CSV</title>
 <style>
 :root{--red:#E61E2A;--navy:#000054;--grey:#E3E5E0;--embre:#F2F2F2;--yellow:#FAC800;
   --mono:'Monaco','Menlo','Consolas',monospace}
@@ -49,12 +50,12 @@ footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--grey);font-si
 <div class="wrap">
   <div class="eyebrow">CoVE Assessment Toolkit</div>
   <h1>Legacy rubric CSV</h1>
-  <p class="lede">Reads the assessment criteria out of a legacy assessor guide and writes a Canvas rubric import CSV. It only reads — your document is not modified, and nothing leaves your computer.</p>
+  <p class="lede">For legacy templates. Reads the criteria table in Section B of the student version of a legacy task and writes a Canvas rubric import CSV. Use the student version, not the assessor guide, so no assessor information ends up in a rubric students can see. It only reads. Your document is not changed and nothing leaves your computer.</p>
   <div class="rule"></div>
 
   <div class="card">
-    <h2>1. Add the assessor guide</h2>
-    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose an assessor guide">
+    <h2>1. Add the student version of the task</h2>
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose the student version of the task">
       <strong>Drop the .docx here</strong>
       <span>or click to choose. It must be the original Word file, not a PDF or a converted copy.</span>
     </div>
@@ -70,7 +71,10 @@ footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--grey);font-si
       <input type="checkbox" id="actnum" checked> Number criteria by activity (1A.1, 1A.2, 4a.1 &hellip;)
     </label>
     <label style="font-weight:400;margin-top:2px">
-      <input type="checkbox" id="ascii"> Plain ASCII punctuation &mdash; replaces en dashes and curly quotes. Use if you need to open the file in Excel before uploading.
+      <input type="checkbox" id="breaks" checked> Keep line breaks in the description (lead-in line, then each dot point on its own line)
+    </label>
+    <label style="font-weight:400;margin-top:2px">
+      <input type="checkbox" id="ascii"> Plain ASCII punctuation. Replaces dashes, curly quotes and dot point symbols. Use if you need to open the file in Excel before uploading.
     </label>
     <div id="summary"></div>
     <div class="actions">
@@ -82,8 +86,8 @@ footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--grey);font-si
   </div>
 
   <footer>
-    <p>Every criterion gets two ratings: <strong>Satisfactory</strong> (1 point) and <strong>Not Yet Satisfactory</strong> (0), with no rating descriptions and no scoring range. The marking guide is deliberately left out — a Canvas rubric is visible to students, and the minimum requirements are assessor information.</p>
-    <p>In Canvas: <em>Course &rarr; Rubrics &rarr; Import Rubric</em>, then attach the rubric to the assignment. Upload the downloaded file directly. It is UTF-8, which is what Canvas expects, and no byte order mark is added because a stray character in the header row stops Canvas finding the columns. If you open it in Excel first and see <code>&lsquo;Scenario 1 &sbquo;&Auml;&igrave; CPR&rsquo;</code>, that is Excel reading UTF-8 as Windows-1252 &mdash; use the ASCII option above, or import to Excel with the encoding set to UTF-8.</p>
+    <p>Each criteria row becomes one criterion. The name is the row number and the item, for example "1. Introduction". The long description holds everything under it, with each dot point on its own line. Every criterion gets two ratings: <strong>Satisfactory</strong> (1 point) and <strong>Not Yet Satisfactory</strong> (0), with no rating descriptions and no scoring range. The Y, N and Comment columns are ignored.</p>
+    <p>In Canvas: <em>Course &rarr; Rubrics &rarr; Import Rubric</em>, then attach the rubric to the assignment. Upload the downloaded file directly. It is UTF-8, which is what Canvas expects, and no byte order mark is added because a stray character in the header row stops Canvas finding the columns. If you open it in Excel first and see <code>&lsquo;Scenario 1 &sbquo;&Auml;&igrave; CPR&rsquo;</code>, that is Excel reading UTF-8 as Windows-1252. Use the ASCII option above, or import to Excel with the encoding set to UTF-8.</p>
     <p class="meta" id="ver" style="font-family:var(--mono);font-size:.78rem"></p>
   </footer>
 </div>
@@ -99,7 +103,7 @@ const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 /* ---------- depth-aware body splitter (byte-exact round trip) ---------- */
 function splitBody(xml){
   const s=xml.indexOf('<w:body>'), e=xml.lastIndexOf('</w:body>');
-  if(s<0||e<0) throw new Error('This file has no document body — it may not be a Word document.');
+  if(s<0||e<0) throw new Error('This file has no document body. It may not be a Word document.');
   const pre=xml.slice(0,s+8), post=xml.slice(e), inner=xml.slice(s+8,e);
   const els=[]; let i=0;
   while(i<inner.length){
@@ -625,57 +629,105 @@ const HEADER='Rubric Name,Criteria Name,Criteria Description,Criteria Enable Ran
 const ASCII={'\u2013':'-','\u2014':'-','\u2018':"'",'\u2019':"'",'\u201c':'"','\u201d':'"','\u2026':'...','\u00a0':' ','\u00b7':'-','\u2022':'-'};
 const toAscii=s=>String(s).replace(/[\u2013\u2014\u2018\u2019\u201c\u201d\u2026\u00a0\u00b7\u2022]/g,c=>ASCII[c])
                           .replace(/[^\x09\x0a\x0d\x20-\x7e]/g,'');
+/* ============================================================
+   Student version criteria table -> Canvas rubric CSV (v2.0)
+   A criteria row is: number | criterion | Y | N | Comment.
+   The criterion cell holds the item on its first line, then a
+   lead-in and dot points. Name = number + item, description =
+   the rest. Tick and comment columns are ignored.
+   ============================================================ */
+const RUBRIC={
+  NAME_MAX:250,          // longer items are shortened in the name, in full in the description
+  BULLET:'• ',      // prefix for dot points in the description
+  END:/^(section c\b|appendix|references|terms\s*&\s*conditions|feedback to student)/i,
+  NUM:/^(\d+[A-Za-z]?|[A-Za-z]\d*)[.)]?$/
+};
+// Reasons a file is not a student version. Checked before anything is read.
+function assessorSigns(els){
+  const out=[];
+  for(const e of els.slice(0,6)){
+    if(e.name!=='w:p') continue;
+    if(/assessor guide/i.test(textOf(e.raw))) out.push('the title reads "'+textOf(e.raw).slice(0,60)+'"');
+  }
+  for(const e of els){
+    if(e.name!=='w:tbl') continue;
+    // only the criteria table's own header cells count, not instruction text
+    const rows=sub(e.raw,'w:tbl').filter(x=>x.name==='w:tr').map(x=>x.raw);
+    const hdr=readHeader(rows);
+    if(!hdr) continue;
+    const col=gridRow(rows[hdr.row]).cells.map(c=>c.text.trim()).find(t=>t.length<=40&&/minimum requirement|marking guide|benchmark|assessor/i.test(t));
+    if(col) out.push('the criteria table has a "'+col+'" column');
+  }
+  return [...new Set(out)];
+}
+function readCriteria(els){
+  const out={rows:[],skipped:[],notes:[]};
+  let b=els.findIndex(e=>e.name==='w:p'&&/^section b\b/i.test(textOf(e.raw)));
+  if(b<0){ b=-1; out.notes.push('No Section B heading was found, so the whole document was searched for a criteria table.'); }
+  for(let i=b+1;i<els.length;i++){
+    const e=els[i];
+    if(e.name==='w:p'){ if(RUBRIC.END.test(textOf(e.raw))) break; continue; }
+    if(e.name!=='w:tbl') continue;
+    const rows=sub(e.raw,'w:tbl').filter(x=>x.name==='w:tr').map(x=>x.raw);
+    const hdr=readHeader(rows);
+    if(!hdr) continue;
+    // anything above the header is a table title; keep it only for activity codes
+    for(let r=0;r<hdr.row;r++){ const t=textOf(rows[r]).trim(); if(t) out.rows.push({banner:t.slice(0,80)}); }
+    for(let r=hdr.row+1;r<rows.length;r++){
+      const g=gridRow(rows[r]);
+      const joined=g.cells.map(c=>c.text).join(' ').replace(/\s+/g,' ').trim();
+      if(!joined) continue;
+      if(/^(y\s*n|yes\s*no|s\s*nys)$/i.test(joined)) continue;
+      if(/criteria/i.test(joined)&&/satisfactory|\by\b.*\bn\b/i.test(joined)&&joined.length<80) continue;   // repeated header
+      const content=g.cells.filter(c=>c.blocks.length);
+      if(!content.length) continue;
+      let num='', crit;
+      if(content.length>=2&&RUBRIC.NUM.test(content[0].text.trim())){ num=content[0].text.trim().replace(/[.)]$/,''); crit=content[1].blocks; }
+      else if(content.length===1&&g.cells.length===1){ out.rows.push({banner:content[0].text.slice(0,80)}); continue; }
+      else crit=content[0].blocks;
+      // a number typed at the start of the criterion itself
+      if(!num&&crit.length){
+        const m=/^(\d+[A-Za-z]?)[.)]\s+(.+)$/.exec(crit[0].text);
+        if(m){ num=m[1]; crit=[{...crit[0],text:m[2]}].concat(crit.slice(1)); }
+      }
+      out.rows.push({num,crit});
+    }
+  }
+  return out;
+}
 function buildRubricCsv(docXml, opts){
   opts=opts||{};
   const rep=extract(docXml);
-  const sb=rep.sectionB||{rows:[],skipped:[]};
+  const {els}=splitBody(docXml);
+  const data=readCriteria(els);
   const name=opts.name||rep.cover['Task Name']||rep.cover['Task name']||'Rubric';
-  const rows=[HEADER];
-  const notes=[];
-  // "Activity: 1A", "Scenario 4a", "ACTIVITY 4" -> 1A, 4A, 4.
-  // Case is normalised to upper so a rubric reads consistently even when the
-  // legacy guide mixes "1A" with "4a".
-  const codeOf=s=>{
-    const m=/(?:activity|scenario|part)\s*:?\s*(\d+\s*[A-Za-z]?)\b/i.exec(s||'');
-    return m?m[1].replace(/\s+/g,'').toUpperCase():'';
-  };
-  // the first activity heading is consumed upstream as the task banner; for a
-  // rubric it is just the first group
-  let group=sb.taskLabel||((sb.task||[])[0]||{}).text||'';
-  if(group.length>60) group='';
-  let code=codeOf(group);
-  let n=0, seq=0;
-  for(const r of sb.rows){
-    if(r.banner){
-      // a group title is a short heading; long prose is scenario detail, not a label
-      const b=r.banner.replace(/\s+/g,' ').trim();
-      group = b.length<=60 ? b : b.slice(0,57).replace(/\s\S*$/,'')+'\u2026';
-      code = codeOf(b) || code;
-      seq=0; continue;
+  const rows=[HEADER], list=[], notes=data.notes.slice();
+  const codeOf=s=>{ const m=/(?:activity|scenario|part)\s*:?\s*(\d+\s*[A-Za-z]?)\b/i.exec(s||''); return m?m[1].replace(/\s+/g,'').toUpperCase():''; };
+  let code='', seq=0, cut=0;
+  for(const r of data.rows){
+    if(r.banner){ const c=codeOf(r.banner); if(c){ code=c; seq=0; } continue; }
+    const blocks=(r.crit||[]).filter(b=>b.text);
+    if(!blocks.length) continue;
+    seq++;
+    const num=(r.num||String(seq)).toUpperCase();
+    const stem=(code&&opts.activityNumbering!==false)?code+'.'+num:num+'.';
+    let label=stem+' '+blocks[0].text.trim();
+    const rest=blocks.slice(1).map(b=>(b.list?RUBRIC.BULLET:'')+b.text.trim());
+    let desc=rest.join(opts.breaks===false?' ':'\n');
+    if(label.length>RUBRIC.NAME_MAX){
+      desc=blocks[0].text.trim()+(desc?(opts.breaks===false?' ':'\n')+desc:'');
+      label=label.slice(0,RUBRIC.NAME_MAX-1).replace(/\s\S*$/,'')+'…'; cut++;
     }
-    const crit=(r.crit||[]).map(b=>b.text).filter(Boolean).join(' ');
-    if(!crit) continue;
-    n++; seq++;
-    // Canvas shows Criteria Name as the heading and the description underneath in
-    // small text, so the criterion itself belongs in the name. The source number
-    // is prefixed only when the criterion text does not already start with it.
-    const num=(r.num||'').trim()||String(seq);
-    // Number within the activity: 1A.1 ... 1A.20, keeping the source's own
-    // numbering so 8a and 8b survive. Without an activity code, just the number.
-    const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-    const body=crit.replace(new RegExp('^'+esc(num)+'[.)]?\\s+'),'');
-    const useCode = code && opts.activityNumbering!==false;
-    const stem = useCode ? code+'.'+num.toUpperCase() : num.toUpperCase()+'.';
-    const label=stem+' '+body;
-    // The marking guide is assessor-only. A Canvas rubric is student-visible,
-    // so the rating descriptions stay empty.
-    rows.push([csvCell(name),csvCell(label),csvCell(group||''),'false',
+    list.push({label,desc});
+    rows.push([csvCell(name),csvCell(label),csvCell(desc),'false',
                'Satisfactory','','1','Not Yet Satisfactory','','0'].join(','));
   }
+  if(cut) notes.push(cut+' long item'+(cut>1?'s were':' was')+' shortened in the name. The full text starts the description.');
+  const nodesc=list.filter(x=>!x.desc).length;
+  if(nodesc) notes.push(nodesc+' criteri'+(nodesc>1?'a have':'on has')+' no dot points or detail, so the description is empty. Check '+list.filter(x=>!x.desc).map(x=>x.label.split(' ')[0]).join(', ')+'.');
   let csv=rows.join('\n')+'\n';
   if(opts.ascii) csv=toAscii(csv);
-  return {csv:csv, count:n, name:name,
-          notes:notes, skipped:(sb.skipped||[]).map(s=>s.rows+'-row table: '+s.text)};
+  return {csv,count:list.length,name,list,notes,skipped:[]};
 }
 
 
@@ -705,7 +757,7 @@ async function readPart(buf,name){
 
 const $=id=>document.getElementById(id);
 let state={};
-$('ver').textContent='Legacy rubric CSV v1.0';
+$('ver').textContent='Legacy rubric CSV v2.0';
 $('drop').onclick=()=>$('file').click();
 $('drop').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('file').click();}};
 $('drop').ondragover=e=>{e.preventDefault();$('drop').classList.add('over')};
@@ -717,6 +769,7 @@ $('toggle').onclick=()=>{const p=$('prev');p.classList.toggle('hidden');$('toggl
 $('rname').oninput=()=>regen();
 $('actnum').onchange=()=>regen();
 $('ascii').onchange=()=>regen();
+$('breaks').onchange=()=>regen();
 
 async function load(f){
   $('err').classList.add('hidden'); $('step2').classList.add('hidden');
@@ -725,8 +778,10 @@ async function load(f){
     const buf=new Uint8Array(await f.arrayBuffer());
     state.xml=await readPart(buf,'word/document.xml');
     state.file=f.name;
+    const signs=assessorSigns(splitBody(state.xml).els);
+    if(signs.length) throw new Error('This looks like an assessor guide, not the student version: '+signs.join(', and ')+'. Use the student version of the task so no assessor information goes into the rubric.');
     const first=buildRubricCsv(state.xml,{});
-    if(!first.count) throw new Error('No marking guide criteria were found. This tool looks for a table under Section B with a Satisfactory column — check the guide has one.');
+    if(!first.count) throw new Error('No criteria were found. The tool looks under Section B for a table with a criteria column and a Satisfactory column. Check the student version has one.');
     $('rname').value=first.name;
     regen();
     $('step2').classList.remove('hidden');
@@ -737,22 +792,14 @@ async function load(f){
 function regen(){
   if(!state.xml) return;
   const r=buildRubricCsv(state.xml,{name:$('rname').value.trim()||undefined,
-    activityNumbering:$('actnum').checked, ascii:$('ascii').checked});
+    activityNumbering:$('actnum').checked, ascii:$('ascii').checked, breaks:$('breaks').checked});
   state.csv=r.csv;
   $('csvtext').textContent=r.csv;
-  const grpOf=line=>{
-    const m=/^(?:"(?:[^"]|"")*"|[^,]*),(?:"(?:[^"]|"")*"|[^,]*),("(?:[^"]|"")*"|[^,]*),/.exec(line);
-    return ((m?m[1]:'')||'').replace(/^"|"$/g,'').replace(/""/g,'"')||'(no group heading)';
-  };
-  const groups={};
-  r.csv.split('\n').slice(1).filter(Boolean).forEach(line=>{
-    const g=grpOf(line);
-    groups[g]=(groups[g]||0)+1;
-  });
-  let html='<table><tr><th>Group in the source</th><th style="text-align:right">Criteria</th></tr>';
-  for(const g in groups) html+='<tr><td>'+g.replace(/</g,'&lt;')+'</td><td class="num">'+groups[g]+'</td></tr>';
-  html+='<tr><td><strong>Total</strong></td><td class="num"><strong>'+r.count+'</strong></td></tr></table>';
-  if(r.skipped.length) html+='<div class="flag"><strong>Not read as criteria:</strong><br>'+r.skipped.map(s=>'&bull; '+s.replace(/</g,'&lt;')).join('<br>')+'</div>';
+  const e=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  let html='<p style="margin:16px 0 8px"><strong>'+r.count+' criteri'+(r.count===1?'on':'a')+' found.</strong> Check each name is the number and item, and the description holds the detail.</p>';
+  if(r.notes.length) html+='<div class="flag"><strong>Check:</strong><br>'+r.notes.map(n=>'&bull; '+e(n)).join('<br>')+'</div>';
+  html+='<div style="max-height:420px;overflow:auto;border:1px solid var(--grey)"><table><tr><th>Criterion name</th><th>Description</th></tr>'+
+    r.list.map(x=>'<tr><td style="font-weight:600;width:34%">'+e(x.label)+'</td><td style="white-space:pre-wrap">'+e(x.desc)+'</td></tr>').join('')+'</table></div>';
   $('summary').innerHTML=html;
 }
 
@@ -765,3 +812,5 @@ $('dl').onclick=()=>{
 </script>
 </body>
 </html>
+
+</body></html>
