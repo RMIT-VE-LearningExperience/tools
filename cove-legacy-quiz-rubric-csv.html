@@ -1,0 +1,383 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!-- rmit-analytics: disabled -->
+<title>Quiz Rubric CSV</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one narrow working column, numbered steps, CoVE palette on Emble grey */
+:root{--red:#e61e2a;--navy:#000054;--black:#000000;--white:#ffffff;--grey:#e3e5e0;--yellow:#fac800;--emble:#f2f2f2;
+  --bg:var(--emble);--card:var(--white);--fg:var(--black);--muted:#4a4a55;--line:var(--grey);--head:var(--navy);
+  --flagbg:#fef6d8;--errbg:#fce9ea;--hover:#f4f4f9;
+  --mono:'Monaco','Menlo','Consolas',monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0e0e1c;--card:#17172a;--fg:#f2f2f2;--muted:#b9b9c6;--line:#2c2c44;--head:#c9c9ff;--flagbg:#3a3112;--errbg:#3d1518;--hover:#20203a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e0e1c;--card:#17172a;--fg:#f2f2f2;--muted:#b9b9c6;--line:#2c2c44;--head:#c9c9ff;--flagbg:#3a3112;--errbg:#3d1518;--hover:#20203a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--sans)}
+.wrap{max-width:920px;margin:0 auto;padding-block:32px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.eyebrow{display:flex;align-items:center;gap:10px;font:600 .74rem/1 var(--mono);letter-spacing:.09em;color:var(--head);margin-bottom:14px;text-transform:uppercase}
+.eyebrow::before{content:"";width:12px;height:12px;background:var(--red);flex:none}
+h1{font-size:1.85rem;line-height:1.15;margin:0 0 8px;color:var(--head);text-wrap:balance}
+.lede{max-width:66ch;margin:0;color:var(--muted)}
+.rule{height:3px;background:var(--red);margin:22px 0 26px}
+.card{background:var(--card);border:1px solid var(--line);padding:22px;margin-bottom:18px}
+h2{font-size:1.05rem;margin:0 0 12px;color:var(--head)}
+.drop{border:2px dashed var(--head);padding:40px 20px;text-align:center;cursor:pointer}
+.drop:hover,.drop.over{background:var(--hover);border-color:var(--red)}
+.drop strong{display:block;color:var(--head);font-size:1.05rem;margin-bottom:6px}
+.drop span{color:var(--muted);font-size:.88rem}
+label{display:block;font-weight:600;color:var(--head);margin:14px 0 6px;font-size:.9rem}
+label.opt{font-weight:400;color:var(--fg);margin:6px 0}
+input[type=text]{width:100%;padding:9px 10px;border:1px solid var(--head);font:inherit;background:var(--card);color:var(--fg)}
+button{background:var(--navy);color:var(--white);border:0;padding:11px 20px;cursor:pointer;font:inherit;font-weight:600}
+button:hover{background:var(--red)}
+button.ghost{background:var(--card);color:var(--head);border:1px solid var(--head)}
+button.ghost:hover{background:var(--hover)}
+.tbl{max-height:420px;overflow:auto;border:1px solid var(--line);margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;background:var(--navy);color:var(--white);padding:7px 9px;position:sticky;top:0}
+td{padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+td.q{white-space:pre-wrap;min-width:0}
+.num{font:600 .85rem var(--mono);white-space:nowrap;font-variant-numeric:tabular-nums}
+.flag{background:var(--flagbg);border-left:4px solid var(--yellow);padding:10px 12px;margin:12px 0;font-size:.87rem}
+.err{background:var(--errbg);border-left:4px solid var(--red);padding:12px 14px;font-size:.9rem;margin-top:12px}
+pre{border:1px solid var(--line);padding:12px;overflow:auto;font:.76rem/1.5 var(--mono);max-height:280px;margin:0}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted)}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+@media(max-width:620px){h1{font-size:1.45rem}}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">CoVE Assessment Toolkit</div>
+  <h1>Quiz rubric CSV</h1>
+  <p class="lede">For knowledge tasks that students complete in a template and submit. Reads the questions out of the student version of the task and writes a Canvas rubric import CSV with one criterion per question. It only reads. Your document is not changed and nothing leaves your computer.</p>
+  <div class="rule"></div>
+
+  <div class="card">
+    <h2>1. Add the student version of the task</h2>
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose the student version of the task">
+      <strong>Drop the .docx here</strong>
+      <span>or click to choose. Use the student version, not the assessor guide, so no answers can end up in the rubric.</span>
+    </div>
+    <input type="file" id="file" accept=".docx" hidden>
+    <div id="err" class="err" role="alert" hidden></div>
+  </div>
+
+  <div class="card" id="step2" hidden>
+    <h2>2. Check the questions</h2>
+    <label for="rname">Rubric name (as it will appear in Canvas)</label>
+    <input type="text" id="rname">
+    <label class="opt"><input type="checkbox" id="breaks" checked> Keep line breaks in the description (question, then each option or part on its own line)</label>
+    <label class="opt"><input type="checkbox" id="ascii"> Plain ASCII punctuation. Replaces dashes and curly quotes. Use if you need to open the file in Excel before uploading.</label>
+    <div id="summary"></div>
+    <div class="actions">
+      <button id="dl" type="button">Download CSV</button>
+      <button class="ghost" id="toggle" type="button">Show the CSV</button>
+      <button class="ghost" id="again" type="button">Start again</button>
+    </div>
+    <div id="prev" hidden style="margin-top:14px"><pre id="csvtext"></pre></div>
+  </div>
+
+  <footer>
+    <p>Each question becomes one criterion. The criterion name is the question number (Q1, Q2 and so on) and the long description holds the full question as the student sees it, including answer options, parts and table content. Pictures are shown as [image]. Every criterion gets two ratings: <strong>Satisfactory</strong> (1 point) and <strong>Not Yet Satisfactory</strong> (0).</p>
+    <p>Questions are found by their numbering: typed labels such as "1. Multiple choice", "Question 1" or "Q1", or Word's automatic numbered list. Numbers must run in order, so a numbered list inside a question is read as part of that question. Text in red or in the template's blue guidance colour is left out.</p>
+    <p>In Canvas: <em>Course, Rubrics, Import Rubric</em>, then attach the rubric to the assignment. Upload the downloaded file directly. It is UTF-8 with no byte order mark, which is what Canvas expects.</p>
+    <p id="ver" style="font-family:var(--mono);font-size:.78rem"></p>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG: edit here, not in the logic below
+   ============================================================ */
+const CONFIG={
+  VERSION:'Quiz rubric CSV v1.0',
+  NAME_PREFIX:'Q',                  // criterion name is NAME_PREFIX + number, e.g. Q1
+  RATINGS:[['Satisfactory','1'],['Not Yet Satisfactory','0']],
+  // where the questions stop
+  STOP:/^(appendix|appendices|references|terms\s*&\s*conditions|assessment outcome|assessor declaration|student declaration|feedback to student|end of (assessment|quiz|task))\b/i,
+  // empty answer prompts in a student template, dropped from the description
+  ANSWER_PROMPT:/^((your|student)\s+)?(answer|response)s?\s*(here)?\s*[:.]?\s*$/i,
+  // blue template guidance colours
+  GUIDE_COLOURS:/^(0070C0|2E5B8C|006600)$/i
+};
+
+/* ---------- reading the .docx ---------- */
+const drain=async st=>new Uint8Array(await new Response(st).arrayBuffer());
+const inflate=b=>drain(new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate-raw')));
+async function readPart(buf,name,optional){
+  const dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength);
+  let eo=buf.length-22;
+  while(eo>=0&&dv.getUint32(eo,true)!==0x06054b50) eo--;
+  if(eo<0) throw new Error('That file is not a Word document (.docx).');
+  const n=dv.getUint16(eo+10,true); let p=dv.getUint32(eo+16,true);
+  const dec=new TextDecoder();
+  for(let i=0;i<n;i++){
+    if(dv.getUint32(p,true)!==0x02014b50) throw new Error('The .docx package is damaged.');
+    const nl=dv.getUint16(p+28,true),el=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true);
+    if(dec.decode(buf.subarray(p+46,p+46+nl))===name){
+      const lho=dv.getUint32(p+42,true),csize=dv.getUint32(p+20,true),method=dv.getUint16(p+10,true);
+      const off=lho+30+dv.getUint16(lho+26,true)+dv.getUint16(lho+28,true);
+      const raw=buf.subarray(off,off+csize);
+      return dec.decode(method===0?raw:await inflate(raw));
+    }
+    p+=46+nl+el+cl;
+  }
+  if(optional) return '';
+  throw new Error('This document is missing '+name+' and cannot be read.');
+}
+
+/* ---------- XML helpers ---------- */
+// split a container into its direct children, depth aware
+function children(inner){
+  const els=[]; let i=0;
+  while(i<inner.length){
+    const lt=inner.indexOf('<',i); if(lt<0) break;
+    const m=/^<([\w:]+)([^>]*?)(\/?)>/.exec(inner.slice(lt));
+    if(!m||m[1].startsWith('/')){ i=lt+1; continue; }
+    const name=m[1];
+    if(m[3]==='/'){ els.push({name,raw:m[0]}); i=lt+m[0].length; continue; }
+    const re=new RegExp('<'+name+'(?=[\\s/>])|</'+name+'>','g'); re.lastIndex=lt+m[0].length;
+    let depth=1,x,end=inner.length;
+    while(depth&&(x=re.exec(inner))){
+      if(x[0][1]==='/') depth--;
+      else{ const t=/^<[^>]*?(\/?)>/.exec(inner.slice(x.index)); if(!t||t[1]!=='/') depth++; }
+      if(!depth) end=x.index+x[0].length;
+    }
+    els.push({name,raw:inner.slice(lt,end)}); i=end;
+  }
+  return els;
+}
+const innerOf=(raw,tag)=>raw.replace(new RegExp('^<'+tag+'(?:\\s[^>]*)?>'),'').replace(new RegExp('</'+tag+'>$'),'');
+const decodeEnt=s=>s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'")
+  .replace(/&#(\d+);/g,(m,n)=>String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi,(m,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&amp;/g,'&');
+
+let STYLES={};   // styleId -> {heading level, numbered list}
+function readStyles(xml){
+  STYLES={};
+  for(const s of xml.match(/<w:style\b[\s\S]*?<\/w:style>/g)||[]){
+    const id=(/w:styleId="([^"]+)"/.exec(s)||[])[1]; if(!id) continue;
+    const nm=((/<w:name w:val="([^"]+)"/.exec(s)||[])[1]||'').toLowerCase();
+    const ol=/<w:outlineLvl w:val="(\d)"/.exec(s);
+    let level=null;
+    const hm=/^heading (\d)$/.exec(nm)||/^Heading(\d)$/.exec(id);
+    if(hm) level=+hm[1]; else if(nm==='title') level=0; else if(ol) level=+ol[1]+1;
+    const nid=(/<w:numId w:val="(\d+)"/.exec(s)||[])[1];
+    STYLES[id]={level,numId:nid&&nid!=='0'?'s'+nid:null};
+  }
+}
+function runColour(r){
+  const m=/<w:rPr>[\s\S]*?<w:color w:val="([0-9A-Fa-f]{6})"/.exec(r); if(!m) return '';
+  if(CONFIG.GUIDE_COLOURS.test(m[1])) return 'guide';
+  const v=parseInt(m[1],16),R=v>>16,G=(v>>8)&255,B=v&255;
+  return R>=0xB0&&G<=0x50&&B<=0x50?'red':'';
+}
+// one paragraph: visible text plus its list numbering and heading level
+function para(raw){
+  let text='', img=false;
+  const body=raw.replace(/<w:pPr>[\s\S]*?<\/w:pPr>/,'');
+  for(const r of body.match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g)||[]){
+    if(/<w:drawing\b|<w:pict\b/.test(r)) img=true;
+    if(runColour(r)) continue;
+    text+=(r.match(/<w:tab\s*\/>|<w:br\s*\/>|<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/g)||[])
+      .map(x=>/^<w:(tab|br)\b/.test(x)?' ':decodeEnt(x.replace(/<[^>]+>/g,''))).join('');
+  }
+  const pPr=(/<w:pPr>[\s\S]*?<\/w:pPr>/.exec(raw)||[''])[0];
+  const sid=(/<w:pStyle w:val="([^"]+)"/.exec(pPr)||[])[1]||'';
+  const st=STYLES[sid]||{};
+  let numId=(/<w:numId w:val="(\d+)"/.exec(pPr)||[])[1]||null;
+  if(numId==='0') numId='off'; else if(numId) numId='n'+numId;
+  if(!numId&&st.numId) numId=st.numId;
+  if(numId==='off') numId=null;
+  const ilvl=+((/<w:ilvl w:val="(\d+)"/.exec(pPr)||[])[1]||0);
+  let level=st.level!=null?st.level:null;
+  if(level==null&&/^Heading(\d)$/.test(sid)) level=+sid.slice(7);
+  return {text:text.replace(/\s+/g,' ').trim()+(img?(text.trim()?' [image]':'[image]'):''),numId,ilvl,level};
+}
+// flatten the body into lines; tables keep a row per line
+function flatten(bodyInner){
+  const seq=[];
+  for(const e of children(bodyInner)){
+    if(e.name==='w:p'){ seq.push(para(e.raw)); continue; }
+    if(e.name==='w:sdt'){ const c=/<w:sdtContent>([\s\S]*)<\/w:sdtContent>/.exec(e.raw); if(c) seq.push(...flatten(c[1])); continue; }
+    if(e.name!=='w:tbl') continue;
+    seq.push({tbl:'start'});
+    for(const tr of children(innerOf(e.raw,'w:tbl')).filter(x=>x.name==='w:tr')){
+      const cells=children(innerOf(tr.raw,'w:tr')).filter(x=>x.name==='w:tc').map(tc=>{
+        const ps=[]; for(const c of children(innerOf(tc.raw,'w:tc'))){
+          if(c.name==='w:p') ps.push(para(c.raw));
+          else if(c.name==='w:tbl') ps.push({text:(c.raw.match(/<w:p\b[\s\S]*?<\/w:p>/g)||[]).map(p=>para(p).text).filter(Boolean).join(' | ')});
+        }
+        return ps.filter(p=>p.text);
+      });
+      const filled=cells.filter(c=>c.length);
+      if(!filled.length) continue;
+      if(filled.length===1){ filled[0].forEach(p=>seq.push({...p,inTable:true})); continue; }
+      // a row whose first cell is a question label: label, then the rest as lines
+      const first=filled[0];
+      if(labelOf(first.map(p=>p.text).join(' '),null)){
+        seq.push({...first[0],text:first.map(p=>p.text).join(' '),inTable:true});
+        filled.slice(1).forEach(c=>c.forEach(p=>seq.push({...p,inTable:true})));
+        continue;
+      }
+      seq.push({text:filled.map(c=>c.map(p=>p.text).join(' / ')).join(' | '),inTable:true,row:true});
+    }
+    seq.push({tbl:'end'});
+  }
+  return seq;
+}
+
+/* ---------- finding the questions ---------- */
+// "1. Multiple choice — 1 point." / "1. What is ...?" / "Question 1" / "Q1:"
+const TYPE_LABEL=/^(multiple choice|true\s*\/?\s*false|fill in (the|multiple) blanks?|multiple answers|multiple dropdowns|matching|numerical answer|formula question|essay( question)?|file upload( question)?|short answer|text \(no question\))\b[^.]*?(?:[—–\-:,]\s*\d+(?:\.\d+)?\s*(?:points?|marks?))?\.?$/i;
+function labelOf(t,expect){
+  let m=/^(?:question|q)\s*(\d+)\s*([a-z])?\b\s*(?:\(\s*\d+(?:\.\d+)?\s*(?:points?|marks?)\s*\))?\s*[:.)\-–—]?\s*([\s\S]*)$/i.exec(t);
+  if(m&&(m[2]==null||m[2].length===1)) return {num:+m[1],sub:m[2]||'',rest:m[3].trim(),strong:true};
+  m=/^(\d+)\s*[.)]\s+(\S[\s\S]*)$/.exec(t)||/^(\d+)\s*[.)]$/.exec(t);
+  if(m){
+    const rest=(m[2]||'').trim();
+    if(TYPE_LABEL.test(rest)) return {num:+m[1],sub:'',rest:'',type:rest.replace(/\s*[—–\-:,]\s*\d.*$/,'').replace(/\.$/,''),strong:true};
+    return {num:+m[1],sub:'',rest,strong:false};
+  }
+  return null;
+}
+function findQuestions(seq){
+  const flags=[];
+  // start after the Section B heading where there is one
+  let s=seq.findIndex(p=>p.text&&/^section b\b/i.test(p.text));
+  if(s<0) flags.push('No Section B heading was found, so the whole document was read. Check nothing from the front of the task was picked up.');
+  const body=seq.slice(s+1);
+  let end=body.findIndex(p=>p.text&&CONFIG.STOP.test(p.text)&&(p.level!=null||p.text.length<70));
+  if(end<0) end=body.length;
+  const lines=body.slice(0,end);
+
+  // A: typed labels, accepted only when they run in order
+  // strong labels ("Question 1", "1. Multiple choice") win over plain "1." lines,
+  // so a numbered list inside a question is not read as the next question
+  const pass=strongOnly=>{
+    const out=[], fl=[]; let expect=1;
+    lines.forEach((p,i)=>{
+      if(!p.text||p.row) return;
+      const l=labelOf(p.text);
+      if(!l||(strongOnly&&!l.strong)) return;
+      if(l.num===expect||(strongOnly&&l.num===1&&out.length)){
+        if(l.num===1&&out.length) fl.push('Numbering starts again at 1 near "'+p.text.slice(0,50)+'". The criteria are numbered straight through.');
+        out.push({at:i,...l}); expect=l.num+1;
+      }
+    });
+    return {out,fl};
+  };
+  let A=pass(true); if(A.out.length<2) A=pass(false);
+  const typed=A.out; flags.push(...A.fl);
+  // B: Word's own numbered list, the most used top-level list
+  const counts={};
+  lines.forEach(p=>{ if(p.numId&&p.ilvl===0&&p.text&&p.level==null) counts[p.numId]=(counts[p.numId]||0)+1; });
+  const best=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+  let starts, how;
+  if(typed.length>=2||(typed.length&&(!best||best[1]<2))){
+    starts=typed.map(t=>({at:t.at,rest:t.rest,type:t.type||''})); how='typed';
+  } else if(best&&best[1]>=2){
+    starts=[]; lines.forEach((p,i)=>{ if(p.numId===best[0]&&p.ilvl===0&&p.text&&p.level==null) starts.push({at:i,rest:p.text,type:''}); });
+    how='list';
+  } else return {questions:[],flags,how:'none'};
+
+  const qs=[];
+  starts.forEach((st,k)=>{
+    const stop=k+1<starts.length?starts[k+1].at:lines.length;
+    const out=[]; if(st.rest) out.push(st.rest);
+    for(let i=st.at+1;i<stop;i++){
+      const p=lines[i];
+      if(p.tbl||!p.text) continue;
+      // a heading between questions is a part heading, not question text
+      if(p.level!=null&&!p.inTable&&k+1<starts.length&&!lines.slice(i+1,stop).some(x=>x.text&&x.level==null)) break;
+      if(p.level!=null&&!p.inTable&&/^(part|section|topic|activity)\b/i.test(p.text)) break;
+      if(CONFIG.ANSWER_PROMPT.test(p.text)||/^[_.\s\-]+$/.test(p.text)) continue;
+      out.push(p.text);
+    }
+    if(QUIZ_NOQ.test(st.type)) return;
+    const text=out.join('\n').trim();
+    if(!text){ flags.push(CONFIG.NAME_PREFIX+(qs.length+1)+' has no text. It may be a picture or an empty table only. It was still included so the numbering matches.'); }
+    qs.push({type:st.type,text:text||'[no text found]'});
+  });
+  if(how==='list') flags.push('Questions were found from Word\'s automatic numbering. Check the count matches the task.');
+  return {questions:qs,flags,how};
+}
+const QUIZ_NOQ=/^text \(no question\)/i;
+
+/* ---------- CSV ---------- */
+function csvCell(s){ s=String(s==null?'':s); return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+const HEADER='Rubric Name,Criteria Name,Criteria Description,Criteria Enable Range,'+CONFIG.RATINGS.map(()=>'Rating Name,Rating Description,Rating Points').join(',');
+const ASCII={'–':'-','—':'-','‘':"'",'’':"'",'“':'"','”':'"','…':'...',' ':' ','·':'-','•':'-'};
+const toAscii=s=>String(s).replace(/[–—‘’“”… ·•]/g,c=>ASCII[c]).replace(/[^\x09\x0a\x0d\x20-\x7e]/g,'');
+function buildCsv(qs,name,opts){
+  const rows=[HEADER];
+  qs.forEach((q,i)=>{
+    const desc=opts.breaks?q.text:q.text.replace(/\n+/g,' ');
+    rows.push([csvCell(name),csvCell(CONFIG.NAME_PREFIX+(i+1)),csvCell(desc),'false',
+      ...CONFIG.RATINGS.map(([n,p])=>[csvCell(n),'',p].join(','))].join(','));
+  });
+  let csv=rows.join('\n')+'\n';
+  return opts.ascii?toAscii(csv):csv;
+}
+function taskName(seq){
+  for(const p of seq.slice(0,80)){
+    const m=/^task\s*name\s*[:|]\s*(.+)$/i.exec(p.text||''); if(m) return m[1].replace(/\s*\|.*$/,'').trim();
+  }
+  return '';
+}
+
+/* ---------- page ---------- */
+const $=id=>document.getElementById(id);
+const escH=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+let state={};
+$('ver').textContent=CONFIG.VERSION;
+$('drop').onclick=()=>$('file').click();
+$('drop').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('file').click();}};
+$('drop').ondragover=e=>{e.preventDefault();$('drop').classList.add('over')};
+$('drop').ondragleave=()=>$('drop').classList.remove('over');
+$('drop').ondrop=e=>{e.preventDefault();$('drop').classList.remove('over');if(e.dataTransfer.files[0])load(e.dataTransfer.files[0])};
+$('file').onchange=e=>{if(e.target.files[0])load(e.target.files[0])};
+$('again').onclick=()=>location.reload();
+$('toggle').onclick=()=>{const p=$('prev');p.hidden=!p.hidden;$('toggle').textContent=p.hidden?'Show the CSV':'Hide the CSV'};
+['rname','breaks','ascii'].forEach(id=>$(id).addEventListener(id==='rname'?'input':'change',regen));
+
+async function load(f){
+  $('err').hidden=true; $('step2').hidden=true;
+  try{
+    if(!/\.docx$/i.test(f.name)) throw new Error('This needs the original .docx. A PDF or converted copy has lost the structure the tool reads.');
+    const buf=new Uint8Array(await f.arrayBuffer());
+    const doc=await readPart(buf,'word/document.xml');
+    readStyles(await readPart(buf,'word/styles.xml',true));
+    const s=doc.indexOf('<w:body>'),e=doc.lastIndexOf('</w:body>');
+    if(s<0||e<0) throw new Error('This file has no document body. It may not be a Word document.');
+    const seq=flatten(doc.slice(s+8,e));
+    const r=findQuestions(seq);
+    if(!r.questions.length) throw new Error('No numbered questions were found. The tool looks under Section B for questions numbered in order from 1, either typed ("1.", "Question 1", "Q1") or as a Word numbered list. Send the file to have the tool adjusted if your template numbers them another way.');
+    state={file:f.name,...r};
+    const tn=taskName(seq)||f.name.replace(/\.docx$/i,'');
+    $('rname').value=tn+' rubric';
+    regen();
+    $('step2').hidden=false;
+    $('step2').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(err){ $('err').textContent=err.message; $('err').hidden=false; }
+}
+function regen(){
+  if(!state.questions) return;
+  state.csv=buildCsv(state.questions,$('rname').value.trim()||'Rubric',{breaks:$('breaks').checked,ascii:$('ascii').checked});
+  $('csvtext').textContent=state.csv;
+  const n=state.questions.length;
+  let h='<p style="margin:16px 0 0"><strong>'+n+' question'+(n===1?'':'s')+' found</strong>, '+CONFIG.NAME_PREFIX+'1 to '+CONFIG.NAME_PREFIX+n+'. Check each description is the whole question and nothing more.</p>';
+  if(state.flags.length) h+='<div class="flag"><strong>Check:</strong><br>'+state.flags.map(f=>'&bull; '+escH(f)).join('<br>')+'</div>';
+  h+='<div class="tbl"><table><tr><th>Name</th><th>Description (full question)</th></tr>'+
+    state.questions.map((q,i)=>'<tr><td class="num">'+CONFIG.NAME_PREFIX+(i+1)+'</td><td class="q">'+escH(q.text)+'</td></tr>').join('')+'</table></div>';
+  $('summary').innerHTML=h;
+}
+$('dl').onclick=()=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([state.csv],{type:'text/csv'}));
+  a.download=state.file.replace(/\.docx$/i,'')+'-rubric.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+</script>
+
+</body></html>
