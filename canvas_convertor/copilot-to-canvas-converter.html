@@ -99,7 +99,7 @@
         @media(max-width:1200px){.main-layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid #e3e5e0}.insight-cards{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}}
     </style>
     <!-- Google tag (gtag.js) -->
-
+    
 </head>
 <body>
 <div class="main-wrapper">
@@ -145,6 +145,7 @@
                 <h2 style="color:#000054;margin-bottom:20px;">Review &amp; Edit Parsed Content</h2>
                 <div class="alert alert-info" style="margin-bottom:20px;"><div class="alert-icon">ℹ️</div><div><strong>Note:</strong> Content has been parsed from your Copilot output. Review all fields and toggle sections on/off before generating.</div></div>
                 <div class="form-section"><h3>📄 Page Header</h3>
+                    <div class="section-toggle"><label><input type="checkbox" id="togDropIn"> Drop-in block (no page title, photo or opening paragraph)</label><p class="help-text">Ticked automatically when the paste has no Page Title, Photographic Element, Opening Paragraph or Content Block sections.</p></div>
                     <div class="form-group"><label>Page Title</label><input type="text" id="fPageTitle" placeholder="e.g. Regulatory Foundations (Victoria)"></div>
                     <div class="form-group"><label>Photographic Element Description</label><input type="text" id="fPhotoDesc" placeholder="Description for image alt text"><p class="help-text">Used as a placeholder prompt — you'll add the actual image in Canvas</p></div>
                     <div class="form-group"><label>Opening Paragraph</label><div class="editor-toolbar"><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','bold')">B</button><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','italic')">I</button><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','insertUnorderedList')">•</button><button type="button" class="editor-btn" onclick="fmtEd('fOpeningPara','insertOrderedList')">1.</button></div><div id="fOpeningPara" class="rich-editor" contenteditable="true"></div></div>
@@ -205,7 +206,7 @@ function removeReflection(){if(reflectionCount>0){const e=document.getElementByI
 function escH(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
 
 // ═══════════════════════════════════════════════════════
-// ROBUST PARSER v7 — Collapsed-paste normaliser plus tolerant delimiter tokeniser, supports delimited (────) and label-based formats
+// ROBUST PARSER v8 — Drop-in mode and citation stripping. Collapsed-paste normaliser plus tolerant delimiter tokeniser, supports delimited (────) and label-based formats
 // ═══════════════════════════════════════════════════════
 function parseCopilotOutput(){
     debugLog=[];
@@ -218,6 +219,11 @@ function parseCopilotOutput(){
     const before=raw;
     raw=raw.replace(/^[ \t]*(?:\*\*|__)?Enhancement\s+applied\s*(?:\*\*|__)?\s*:[^\n]*(?:\n|$)/gim,'');
     if(raw!==before)dbg('STRIPPED','Enhancement applied notes removed');
+    // v8: Copilot grounding citations, eg. "[Design thi...ork (2645) | PDF]" or "[1]"
+    const beforeCite=raw;
+    raw=raw.replace(/[ \t]*\[[^\[\]\n]{1,200}?\|[ \t]*(?:PDF|DOCX?|PPTX?|XLSX?|Word|PowerPoint|Excel|Web(?:site)?)[ \t]*\]/gi,'');
+    raw=raw.replace(/\[\d{1,2}\](?:\([^)\s]*\))?/g,'');
+    if(raw!==beforeCite)dbg('STRIPPED','Copilot citations removed');
 
     // ── Detect format: delimited (────) vs label-based ──
     const isDelimited=DELIM_RE.test(raw);DELIM_RE.lastIndex=0;
@@ -332,11 +338,15 @@ function parseDelimitedFormat(raw){
         dbg('SECTION_MAP',`"${s.name}" → ${key||'UNKNOWN'}`);
     }
 
+    // v8: drop-in block = no page header or content sections at all
+    parsedData.dropIn=!sectionMap.pageTitle&&!sectionMap.photo&&!sectionMap.opening&&!sectionMap.contentBlock;
+    dbg('DROP_IN',parsedData.dropIn?'yes: page header skipped':'no');
+
     // Page Title — from explicit section, or fallback to preamble first line
     if(sectionMap.pageTitle){
         const tLines=sectionMap.pageTitle[0].lines.filter(l=>l.trim());
         parsedData.pageTitle=cleanTitle(tLines[0]||'');
-    } else if(preambleLines.length){
+    } else if(preambleLines.length&&!parsedData.dropIn){
         parsedData.pageTitle=cleanTitle(preambleLines.find(l=>l.trim()&&!/^Module\s+\d/i.test(l.trim()))||preambleLines[0]);
     } else parsedData.pageTitle='';
 
@@ -441,7 +451,7 @@ function parseDelimitedFormat(raw){
         const vLines=splitLabels(sectionMap.video[0].lines.join('\n'),VID_LABELS).split('\n').filter(l=>l.trim());
         const vt=vLines.join('\n');
         dbg('VIDEO_RAW',vt);
-        for(const p of[/Suggested\s+search:\s*"?([^"\n]+)"?/i,/Suggested\s+YouTube\s+topic:\s*"?([^"\n]+)"?/i,/YouTube\s+Topic:\s*"?([^"\n]+)"?/i,/Search:\s*"?([^"\n]+)"?/i]){const m=vt.match(p);if(m){parsedData.videoSearch=m[1].replace(/^["]+|["]+$/g,'').trim();break;}}
+        for(const p of[/Search\s+terms?:\s*([^\n]+)/i,/Suggested\s+search:\s*"?([^"\n]+)"?/i,/Suggested\s+YouTube\s+topic:\s*"?([^"\n]+)"?/i,/YouTube\s+Topic:\s*"?([^"\n]+)"?/i,/Search:\s*"?([^"\n]+)"?/i]){const m=vt.match(p);if(m){parsedData.videoSearch=m[1].replace(/["“”]/g,'').trim();break;}}
         // Description — look for Description:, Ideal content:, Purpose:, or fallback
         for(const p of[/Description:\s*(.+)/i,/Suggested\s+addition:\s*(.+)/i,/Ideal\s+content:\s*(.+)/i,/What\s+to\s+look\s+for:\s*(.+)/i,/Look\s+for:\s*(.+)/i]){const m=vt.match(p);if(m){parsedData.videoDesc=(parsedData.videoDesc?parsedData.videoDesc+' ':'')+m[1].trim();}}
         // Also grab Purpose line if present
@@ -562,7 +572,7 @@ function splitLabels(text,labels){
     return String(text||'').replace(re,'$1\n');
 }
 const ACT_LABELS=['Title','Duration','Format','Purpose','Resources?(?:\\s*needed)?','Instructions','Alternative'];
-const VID_LABELS=['Description','Suggested\\s+search','Suggested\\s+YouTube\\s+topic','YouTube\\s+Topic','Search','Purpose','Ideal\\s+content','What\\s+to\\s+look\\s+for','Look\\s+for','Existing','Suggested\\s+addition'];
+const VID_LABELS=['Description','Suggested\\s+search','Suggested\\s+YouTube\\s+topic','YouTube\\s+Topic','Search','Purpose','Ideal\\s+content','What\\s+to\\s+look\\s+for','Look\\s+for','Existing','Suggested\\s+addition','Search\\s+terms?'];
 const TOOL_LABELS=['Current\\s+tools','Recommended\\s+RMIT\\s+tools','Where\\s+helpful','Discipline-specific\\s+tools'];
 // Key Insights run together: "Title: sentence. Next Title: sentence." Split
 // after terminal punctuation where a short Title Case label with a colon follows.
@@ -865,7 +875,7 @@ function parseLabelFormat(raw){
     if(sectionTexts.video&&sectionTexts.video.length){
         const vt=splitLabels(sectionTexts.video.join('\n'),VID_LABELS);
         dbg('VIDEO_RAW',vt);
-        for(const p of[/Suggested\s+search:\s*"?([^"\n]+)"?/i,/Suggested\s+YouTube\s+topic:\s*"?([^"\n]+)"?/i,/YouTube\s+Topic:\s*"?([^"\n]+)"?/i,/Search:\s*"?([^"\n]+)"?/i]){const m=vt.match(p);if(m){parsedData.videoSearch=m[1].replace(/^["]+|["]+$/g,'').trim();break;}}
+        for(const p of[/Search\s+terms?:\s*([^\n]+)/i,/Suggested\s+search:\s*"?([^"\n]+)"?/i,/Suggested\s+YouTube\s+topic:\s*"?([^"\n]+)"?/i,/YouTube\s+Topic:\s*"?([^"\n]+)"?/i,/Search:\s*"?([^"\n]+)"?/i]){const m=vt.match(p);if(m){parsedData.videoSearch=m[1].replace(/["“”]/g,'').trim();break;}}
         for(const p of[/What\s+to\s+look\s+for:\s*(.+)/i,/Look\s+for:\s*(.+)/i,/Ideal\s+content:\s*(.+)/i,/Description:\s*(.+)/i]){const m=vt.match(p);if(m){parsedData.videoDesc=m[1].trim();break;}}
         if(!parsedData.videoDesc){const fl=sectionTexts.video.find(l=>!l.match(/^(?:Suggested|YouTube|Search|Purpose|Description|Ideal)/i));if(fl)parsedData.videoDesc=fl;}
     }
@@ -993,6 +1003,7 @@ function parseQuizLines(ql){
 
 function populateForm(){
     const d=parsedData;
+    document.getElementById('togDropIn').checked=!!d.dropIn;
     document.getElementById('fPageTitle').value=d.pageTitle||'';
     document.getElementById('fPhotoDesc').value=d.photoDesc||'';
     // Opening paragraph — multi-paragraph and bulleted/numbered lists
@@ -1043,6 +1054,7 @@ function showExtractionStatus(){
         {f:d.reflections&&d.reflections.length>0,t:'Reflection Questions ('+(d.reflections?d.reflections.length:0)+')'},
         {f:!!d.actTitle,t:'Activity'+(d.actTitle?': '+d.actTitle:'')},
     ];
+    if(d.dropIn){items.splice(0,4,{f:true,t:'Drop-in block: page header and content skipped'});}
     document.getElementById('statusList').innerHTML=items.map(i=>`<div class="status-item"><div class="status-icon ${i.f?'found':'missing'}">${i.f?'✔':'✗'}</div><span>${i.t}</span></div>`).join('');
     document.getElementById('extractionStatus').style.display='block';
 }
@@ -1056,11 +1068,14 @@ function generateHTML(){
     const photoDesc=document.getElementById('fPhotoDesc').value;
     const openingHtml=document.getElementById('fOpeningPara').innerHTML.trim();
     let h='';
+    const dropIn=document.getElementById('togDropIn').checked;
+    if(!dropIn){
     h+=`<h2>${esc(title)}</h2>\n\n`;
     h+=`<hr class="emble heading-rule rmit-blue border-medium width-full" data-context-menu="customise delete" data-customise="hr-border-style hr-line-width hr-line-color" data-emble-name="Horizontal Line" data-emble-version="2.0" />\n\n<p class="narrow-p">&nbsp;</p>\n\n`;
     h+=photoDesc?`<p><span style="background-color: #fac800;">Add photograph here: ${esc(photoDesc)}</span></p>\n\n`:`<p><span style="background-color: #fac800;">Add your photograph here</span></p>\n\n`;
     h+=openingHtml?`${openingHtml}\n\n`:`<p><span style="background-color: #fac800;">Add your opening paragraph here</span></p>\n`;
     h+=`<p class="narrow-p">&nbsp;</p>\n\n`;
+    }
     // Content blocks
     document.getElementById('mainContentBlocks').querySelectorAll('[id^="contentBlock"]').forEach(block=>{
         const n=block.id.replace('contentBlock','');
