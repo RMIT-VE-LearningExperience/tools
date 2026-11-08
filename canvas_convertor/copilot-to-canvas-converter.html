@@ -222,7 +222,7 @@ function parseCopilotOutput(){
     // v8: Copilot grounding citations, eg. "[Design thi...ork (2645) | PDF]" or "[1]"
     const beforeCite=raw;
     raw=raw.replace(/[ \t]*\[[^\[\]\n]{1,200}?\|[ \t]*(?:PDF|DOCX?|PPTX?|XLSX?|Word|PowerPoint|Excel|Web(?:site)?)[ \t]*\]/gi,'');
-    raw=raw.replace(/\[\d{1,2}\](?:\([^)\s]*\))?/g,'');
+    raw=raw.replace(/(?<=[^\w\[\]\s(]|[.!?:,)] ?|\s)\[\d{1,2}\](?:\([^)\s]*\))?(?=[\s.,;:!?)]|$)/gm,(m,o,str)=>/[\w\]]$/.test(str.slice(0,o))?m:'');
     if(raw!==beforeCite)dbg('STRIPPED','Copilot citations removed');
 
     // ── Detect format: delimited (────) vs label-based ──
@@ -331,6 +331,9 @@ function parseDelimitedFormat(raw){
     const sectionMap={};
     for(const s of sections){
         const key=classifyDelimitedSection(s.name);
+        // v8: a section holding only "None required for this content." is treated as absent
+        const body=s.lines.map(l=>l.trim()).filter(Boolean);
+        if(key&&key!=='photo'&&body.length&&body.every(l=>/^[*_\s]*none required\b/i.test(l))){dbg('SKIPPED',`"${s.name}" none required`);continue;}
         if(key){
             if(!sectionMap[key]) sectionMap[key]=[];
             sectionMap[key].push(s);
