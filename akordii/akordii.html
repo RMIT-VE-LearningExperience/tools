@@ -1,299 +1,254 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-AU">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AKORDII HTML Generator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Lato', sans-serif;
-            line-height: 1.6;
-            padding: 20px;
-            background-color: #f9f9f9;
-            font-size: 14px; /* Default font size for the app */
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
-        }
-        textarea, input[type="text"] { /* input[type="text"] is only for the optional heading now */
-            width: 98%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 1em;
-            display: block;
-            box-sizing: border-box;
-            font-family: 'Lato', sans-serif;
-        }
-        textarea {
-            min-height: 150px;
-            resize: vertical;
-        }
-        #outputHtml {
-            min-height: 200px;
-            background-color: #e9e9e9;
-            font-family: monospace;
-            font-size: 0.9em;
-            white-space: pre;
-            overflow-x: auto;
-        }
-        .button-group {
-            margin-bottom: 20px; /* Space after the button group */
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-            margin-right: 10px;
-            margin-bottom: 10px; /* For wrapping on small screens */
-            transition: background-color 0.3s ease;
-            font-family: 'Lato', sans-serif;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        button:active {
-             background-color: #004085;
-        }
-        #copyBtn {
-            background-color: #28a745;
-        }
-        #copyBtn:hover {
-            background-color: #218838;
-        }
-         #copyBtn:active {
-             background-color: #1e7e34;
-         }
-        #toggleInstructionsBtn {
-            background-color: #6c757d;
-            margin-bottom: 15px;
-            display: block;
-        }
-        #toggleInstructionsBtn:hover {
-            background-color: #5a6268;
-        }
-        .instructions {
-            background-color: #eef7ff;
-            border-left: 4px solid #007bff;
-            padding: 10px 15px;
-            margin-bottom: 20px;
-            font-size: 0.95em;
-        }
-         .instructions code {
-            background-color: #dcecfc;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-family: monospace;
-         }
-         .instructions pre {
-            white-space: pre-wrap;
-            word-break: break-all;
-         }
-    </style>
-<!-- RMIT analytics privacy v1 -->
-<script data-rmit-analytics="privacy-v1">
-(function () {
-  'use strict';
-  var measurementId = "G-1MDBG3TN2X";
-  var identity = {"page_location":"https://rmit-ve-learningexperience.github.io/tools/akordii/akordii.html","page_referrer":"","page_title":"RMIT tool: akordii/akordii.html","ignore_referrer":true,"allow_google_signals":false,"allow_ad_personalization_signals":false};
-  var approvedEvents = ["app_initialized","diagnosis_started","diagnostic_completed","diagnosis_restarted"];
-  window.dataLayer = window.dataLayer || [];
-  function send() { window.dataLayer.push(arguments); }
-  // Advertising stays denied. Analytics notice/consent must follow RMIT's approved policy.
-  send('consent', 'default', {ad_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
-  send('set', 'ads_data_redaction', true);
-  send('set', 'url_passthrough', false);
-  send('set', identity);
-  send('js', new Date());
-  send('config', measurementId, Object.assign({send_page_view: true}, identity));
-  // This interface accepts only fixed event names; caller-supplied payloads are discarded.
-  window.rmitTrackEvent = function (name) {
-    if (approvedEvents.indexOf(name) !== -1) {
-      send('event', name, Object.assign({send_to: measurementId}, identity));
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AKORDII Accordion Generator</title>
+<!-- rmit-analytics: disabled -->
+<style>
+/* Layout: one narrow working column, numbered steps, CoVE palette on Emble grey */
+:root{--red:#e61e2a;--navy:#000054;--black:#000000;--white:#ffffff;--grey:#e3e5e0;--yellow:#fac800;--emble:#f2f2f2;
+  --bg:var(--emble);--card:var(--white);--fg:var(--black);--muted:#4a4a55;--line:var(--grey);--head:var(--navy);
+  --flagbg:#fef6d8;--errbg:#fce9ea;--okbg:#e8f3ea;--hover:#f4f4f9;
+  --mono:'Monaco','Menlo','Consolas',monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+  color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0e0e1c;--card:#17172a;--fg:#f2f2f2;--muted:#b9b9c6;--line:#2c2c44;--head:#c9c9ff;--flagbg:#3a3112;--errbg:#3d1518;--okbg:#14301c;--hover:#20203a;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--sans);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:920px;margin:0 auto;padding-block:32px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.eyebrow{display:flex;align-items:center;gap:10px;font:600 .74rem/1 var(--mono);letter-spacing:.09em;color:var(--head);margin-bottom:14px;text-transform:uppercase}
+.eyebrow::before{content:"";width:12px;height:12px;background:var(--red);flex:none}
+h1{font-size:1.85rem;line-height:1.15;margin:0 0 8px;color:var(--head);text-wrap:balance}
+.lede{max-width:66ch;margin:0;color:var(--muted)}
+.rule{height:3px;background:var(--red);margin:22px 0 26px}
+.card{background:var(--card);border:1px solid var(--line);padding:22px;margin-bottom:18px}
+h2{font-size:1.05rem;margin:0 0 12px;color:var(--head)}
+label{display:block;font-weight:600;color:var(--head);margin:14px 0 6px;font-size:.9rem}
+label.opt{font-weight:400;color:var(--fg);margin:8px 0}
+.hint{font-size:.85rem;color:var(--muted);margin:-2px 0 8px}
+input[type=text],select,textarea{width:100%;padding:9px 10px;border:1px solid var(--head);font:inherit;background:var(--card);color:var(--fg)}
+textarea{min-height:240px;resize:vertical;font:.9rem/1.5 var(--mono)}
+#out{min-height:200px;font-size:.78rem;white-space:pre;overflow:auto}
+.row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.row label{margin-top:0}
+button{background:var(--navy);color:var(--white);border:0;padding:11px 20px;cursor:pointer;font:inherit;font-weight:600}
+button:hover{background:var(--red)}
+button.ghost{background:var(--card);color:var(--head);border:1px solid var(--head)}
+button.ghost:hover{background:var(--hover)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
+.status{font-size:.87rem;color:var(--muted)}
+.flag{background:var(--flagbg);border-left:4px solid var(--yellow);padding:10px 12px;margin:12px 0 0;font-size:.87rem}
+.flag ul{margin:4px 0 0;padding-left:20px}
+.ok{background:var(--okbg);border-left:4px solid var(--navy);padding:10px 12px;margin:12px 0 0;font-size:.87rem}
+.preview{background:#fff;color:#333;border:1px solid var(--line);padding:16px;color-scheme:light;font:16px/1.5 'Lato','Helvetica Neue',Helvetica,Arial,sans-serif}
+.preview p{margin:0 0 12px}
+details.ex{border:1px solid var(--line);padding:10px 14px;margin-top:4px}
+details.ex summary{cursor:pointer;font-weight:600;color:var(--head)}
+pre.ex{border:1px solid var(--line);padding:12px;font:.8rem/1.5 var(--mono);white-space:pre-wrap;margin:10px 0 0}
+footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted)}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media(max-width:620px){h1{font-size:1.45rem}.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="eyebrow">CoVE Canvas Toolkit</div>
+  <h1>AKORDII accordion generator</h1>
+  <p class="lede">Paste your content and get accessible accordion HTML for a Canvas page. Everything runs in your browser and nothing is sent anywhere.</p>
+  <div class="rule"></div>
+
+  <section class="card" aria-labelledby="s1">
+    <h2 id="s1">1. Add your content</h2>
+    <label for="heading">Section heading (optional)</label>
+    <input type="text" id="heading" placeholder="For example: Frequently asked questions">
+
+    <label for="input">Accordion items</label>
+    <p class="hint" id="inputHint">Title on the first line, content on the lines below. Leave a blank line between items. Start a line with - or * for a bullet point, or 1. for a numbered list.</p>
+    <textarea id="input" aria-describedby="inputHint" spellcheck="true" placeholder="Heading 1&#10;Insert text here.&#10;&#10;Heading 2&#10;- First point&#10;- Second point"></textarea>
+
+    <details class="ex">
+      <summary>Show an example</summary>
+<pre class="ex">What is PPE?
+Personal protective equipment protects you from hazards on site.
+Always check it before use.
+
+What should I wear?
+- Safety glasses
+- Steel cap boots
+- Hi-vis vest
+
+How do I report damaged PPE?
+1. Stop using it.
+2. Tell your supervisor.
+3. Complete the hazard form.</pre>
+    </details>
+  </section>
+
+  <section class="card" aria-labelledby="s2">
+    <h2 id="s2">2. Choose settings</h2>
+    <div class="row">
+      <div>
+        <label for="size">Accordion title size</label>
+        <select id="size">
+          <option value="1rem">Small (1rem)</option>
+          <option value="1.125rem">1.125rem</option>
+          <option value="1.25rem">Medium (1.25rem)</option>
+          <option value="1.4rem" selected>Standard (1.4rem)</option>
+          <option value="1.6rem">Large (1.6rem)</option>
+          <option value="1.8rem">Extra large (1.8rem)</option>
+        </select>
+      </div>
+      <div>
+        <label for="level">Section heading level</label>
+        <select id="level">
+          <option value="2">Heading 2</option>
+          <option value="3" selected>Heading 3</option>
+          <option value="4">Heading 4</option>
+        </select>
+      </div>
+      <div>
+        <label for="spacer">Space after content</label>
+        <select id="spacer">
+          <option value="1" selected>Blank paragraph</option>
+          <option value="0">None</option>
+        </select>
+      </div>
+    </div>
+    <label class="opt"><input type="checkbox" id="legacy"> Add legacy aria-expanded and aria-label attributes (not recommended, see notes below)</label>
+  </section>
+
+  <section class="card" aria-labelledby="s3">
+    <h2 id="s3">3. Generate and copy</h2>
+    <div class="actions">
+      <button type="button" id="gen">Generate HTML</button>
+      <button type="button" class="ghost" id="copy">Copy HTML</button>
+      <button type="button" class="ghost" id="clear">Start again</button>
+      <span class="status" id="status" role="status" aria-live="polite"></span>
+    </div>
+    <div id="report"></div>
+
+    <label for="out">Generated HTML</label>
+    <textarea id="out" readonly placeholder="Your HTML will appear here."></textarea>
+
+    <h2 style="margin-top:20px" id="pvh">Preview</h2>
+    <div class="preview" id="preview" aria-labelledby="pvh"><p style="color:#767676">The preview will appear here.</p></div>
+  </section>
+
+</main>
+
+<script>
+/* ============================================================
+   CONFIG: edit here, not in the logic below
+   ============================================================ */
+const CONFIG={
+  VERSION:'AKORDII accordion generator v2.0',
+  SUMMARY:{color:'#222160',font:'Helvetica, sans-serif',bg:'#f5f5f5',padding:'10px',marginBottom:'5px'},
+  HEADING_COLOUR:'#000054',
+  HEADING_SIZE:'1.5em',
+  LONG_TITLE:120   // titles longer than this are flagged; usually a missing blank line
+};
+
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const BULLET=/^\s*(?:[-*•·▪◦o–—])\s+(.*)$/;
+const NUMBER=/^\s*(\d+)[.)]\s+(.*)$/;
+
+/* content lines to paragraphs and lists */
+function bodyHtml(lines){
+  const out=[]; let list=null;
+  const close=()=>{ if(list){ out.push(`<${list.tag}>\n${list.items.map(i=>`  <li>${esc(i)}</li>`).join('\n')}\n</${list.tag}>`); list=null; } };
+  for(const raw of lines){
+    const line=raw.trim(); if(!line) continue;
+    let m, tag=null, text;
+    if((m=BULLET.exec(line))){ tag='ul'; text=m[1]; }
+    else if((m=NUMBER.exec(line))){ tag='ol'; text=m[2]; }
+    if(tag){
+      if(!list||list.tag!==tag){ close(); list={tag,items:[]}; }
+      list.items.push(text.trim());
+    } else { close(); out.push(`<p>${esc(line)}</p>`); }
+  }
+  close();
+  return out;
+}
+
+function generate(){
+  const raw=$('input').value.replace(/\r\n?/g,'\n').trim();
+  const heading=$('heading').value.trim();
+  const size=$('size').value, level=$('level').value;
+  const spacer=$('spacer').value==='1', legacy=$('legacy').checked;
+  const S=CONFIG.SUMMARY;
+  const style=`cursor: pointer; font-size: ${size}; color: ${S.color}; font-family: ${S.font}; background-color: ${S.bg}; padding: ${S.padding}; margin-bottom: ${S.marginBottom};`;
+  const flags=[]; const parts=[];
+
+  if(!raw){ report([], 0, 'Paste at least one item first.'); $('out').value=''; $('preview').innerHTML=''; return; }
+
+  if(heading) parts.push(`<h${level} style="color: ${CONFIG.HEADING_COLOUR}; font-size: ${CONFIG.HEADING_SIZE}; margin-bottom: 15px;">${esc(heading)}</h${level}>`);
+
+  const blocks=raw.split(/\n\s*\n/).map(b=>b.split('\n').filter(l=>l.trim())).filter(b=>b.length);
+  blocks.forEach((lines,i)=>{
+    const title=lines[0].trim().replace(BULLET,'$1');
+    const body=bodyHtml(lines.slice(1));
+    const n=i+1;
+    if(!body.length) flags.push(`Item ${n} ("${title.slice(0,50)}") has a title but no content.`);
+    if(title.length>CONFIG.LONG_TITLE) flags.push(`Item ${n} has a very long title. Check there is a blank line between items and that the title is on its own line.`);
+    if(BULLET.test(lines[0])||NUMBER.test(lines[0])) flags.push(`Item ${n} starts with a list marker. The first line of each item becomes the title, so check a blank line has not split a list.`);
+    const aria=legacy?` aria-expanded="false" aria-label="Toggle details for ${esc(title)}"`:'';
+    parts.push(['<details>',`<summary style="${style}"${aria}>${esc(title)}</summary>`,...body,...(spacer?['<p>&nbsp;</p>']:[]),'</details>'].join('\n'));
+  });
+
+  const html=parts.join('\n');
+  $('out').value=html;
+  $('preview').innerHTML=html;
+  report(flags, blocks.length);
+}
+
+function report(flags,count,error){
+  const r=$('report');
+  if(error){ r.innerHTML=`<div class="flag" role="alert">${esc(error)}</div>`; return; }
+  const ok=`<div class="ok">${count} accordion item${count===1?'':'s'} generated.</div>`;
+  r.innerHTML=ok+(flags.length?`<div class="flag"><strong>Check these before copying:</strong><ul>${flags.map(f=>`<li>${esc(f)}</li>`).join('')}</ul></div>`:'');
+  $('status').textContent='';
+}
+
+async function copy(){
+  const v=$('out').value;
+  if(!v){ $('status').textContent='Generate the HTML first.'; return; }
+  try{ await navigator.clipboard.writeText(v); $('status').textContent='Copied.'; }
+  catch(e){
+    $('out').focus(); $('out').select();
+    let done=false; try{ done=document.execCommand('copy'); }catch(_){}
+    $('status').textContent=done?'Copied.':'Copy was blocked. The HTML is selected, press Ctrl+C (or Cmd+C) to copy it.';
+  }
+}
+
+/* Pasting from Google Docs or a web page: keep list items as list lines */
+$('input').addEventListener('paste',e=>{
+  const html=e.clipboardData&&e.clipboardData.getData('text/html');
+  if(!html||!/<li[\s>]/i.test(html)) return;
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const lines=[];
+  const walk=node=>{
+    for(const el of node.children){
+      const t=el.tagName;
+      if(t==='UL'||t==='OL'){ [...el.children].filter(c=>c.tagName==='LI').forEach((li,i)=>lines.push((t==='OL'?`${i+1}. `:'- ')+li.textContent.replace(/\s+/g,' ').trim())); }
+      else if(/^(P|H[1-6]|DIV)$/.test(t)&&!el.querySelector('ul,ol,p,div,h1,h2,h3,h4,h5,h6')){ lines.push(el.textContent.replace(/ /g,' ').replace(/\s+/g,' ').trim()); }
+      else walk(el);
     }
   };
-}());
+  walk(doc.body);
+  if(!lines.length) return;
+  e.preventDefault();
+  const ta=$('input'), s=ta.selectionStart, en=ta.selectionEnd;
+  const text=lines.join('\n');
+  ta.value=ta.value.slice(0,s)+text+ta.value.slice(en);
+  ta.selectionStart=ta.selectionEnd=s+text.length;
+});
+
+$('gen').addEventListener('click',generate);
+$('copy').addEventListener('click',copy);
+$('clear').addEventListener('click',()=>{ ['input','heading','out'].forEach(id=>$(id).value=''); $('report').innerHTML=''; $('status').textContent=''; $('preview').innerHTML='<p style="color:#767676">The preview will appear here.</p>'; $('input').focus(); });
+['size','level','spacer','legacy'].forEach(id=>$(id).addEventListener('change',()=>{ if($('out').value) generate(); }));
 </script>
-<script async referrerpolicy="no-referrer" src="https://www.googletagmanager.com/gtag/js?id=G-1MDBG3TN2X"></script>
-<!-- /RMIT analytics privacy v1 -->
-</head>
-<!-- Google tag (gtag.js) -->
-
-<body>
-    <div class="container">
-        <h1>AKORDII HTML Generator</h1>
-
-        <button id="toggleInstructionsBtn">Show Instructions</button>
-
-        <div class="instructions" id="instructionsDiv" style="display: none;">
-            <p><strong>How to use:</strong></p>
-            <ol>
-                <li>(Optional) Enter an overall heading for the accordion section.</li>
-                <li>The font will be Lato, and the content text will be 14px (summary text slightly larger). Colors are predefined.</li>
-                <li>Paste your content into the 'Input Data' area. Format each item with the <strong>Title on the first line</strong>, and the <strong>Content on the following lines</strong>.</li>
-                <li><strong>Separate each item (title + content block) with a blank line.</strong></li>
-                <li>Click "Generate HTML".</li>
-                <li>Click "Copy to Clipboard" and paste the code into your HTML editor.</li>
-            </ol>
-             <p>Example Input Item:</p>
-             <pre><code>This is the Title for Item 1
-This is the content for item 1.
-It can have multiple lines.
-
-This is the Title for Item 2
-Just one line of content here.</code></pre>
-        </div>
-
-        <label for="headingInput">Optional Accordion Section Heading:</label>
-        <input type="text" id="headingInput" placeholder="e.g., Frequently Asked Questions">
-
-        <label for="inputData">Input Data (Title on first line, Content below, blank line between items):</label>
-        <textarea id="inputData" placeholder="Paste your accordion items here..."></textarea>
-
-        <div class="button-group">
-            <button id="generateBtn">Generate HTML</button>
-            <button id="copyBtn">Copy to Clipboard</button>
-        </div>
-
-        <label for="outputHtml">Generated HTML Code:</label>
-        <textarea id="outputHtml" readonly placeholder="Generated HTML will appear here..."></textarea>
-
-    </div>
-
-    <script>
-        const generateBtn = document.getElementById('generateBtn');
-        const copyBtn = document.getElementById('copyBtn');
-        const inputDataEl = document.getElementById('inputData');
-        const outputHtmlEl = document.getElementById('outputHtml');
-        const headingInputEl = document.getElementById('headingInput');
-        const toggleInstructionsBtn = document.getElementById('toggleInstructionsBtn');
-        const instructionsDiv = document.getElementById('instructionsDiv');
-
-        // --- Fixed Styles ---
-        const STYLES = {
-            headerFontColor: "#222160",
-            contentFontColor: "#333333",
-            headerBgColor: "#f5f5f5",
-            contentBgColor: "#FFFFFF",
-            sectionHeadingFontColor: "#000054" // For the optional H3
-        };
-
-        // --- Accordion HTML Templates ---
-        const accordionItemTemplate = (title, content) => `
-<details>
-  <summary style="cursor: pointer; font-size: 1.4rem; color: ${STYLES.headerFontColor}; font-family: Helvetica, sans-serif; background-color: ${STYLES.headerBgColor}; padding: 10px; margin-bottom: 5px;" aria-expanded="false" aria-label="Toggle details for ${title}">
-    ${title}
-  </summary>
-  <div style="font-size: 1em; color: ${STYLES.contentFontColor}; background-color: ${STYLES.contentBgColor}; padding: 10px; margin-bottom: 10px;">
-    ${content || ' '}
-  </div>
-</details>`;
-
-        const headingTemplate = (headingText) => `
-<h3 style="color: ${STYLES.sectionHeadingFontColor}; font-size: 1.5em; margin-bottom: 15px;">${headingText}</h3>
-`;
-
-        // --- Generate Function ---
-        function generateAccordion() {
-            const rawInput = inputDataEl.value.trim();
-            const headingText = headingInputEl.value.trim();
-            let generatedHtml = '';
-
-            if (headingText) {
-                generatedHtml += headingTemplate(headingText);
-            }
-
-            const itemBlocks = rawInput.split(/\n\s*\n/);
-
-            itemBlocks.forEach((block) => {
-                const lines = block.trim().split('\n');
-                if (lines.length > 0 && lines[0].trim() !== '') {
-                    const title = lines[0].trim();
-                    let content = '';
-                    if (lines.length > 1) {
-                        content = '    ' + lines.slice(1).join('\n').trim().replace(/\n/g, '<br>\n    ');
-                    } else {
-                        content = '     ';
-                    }
-                    generatedHtml += accordionItemTemplate(title, content.trim() === '' ? '     ' : content);
-                }
-            });
-
-            outputHtmlEl.value = generatedHtml.trim() ? generatedHtml.trim() : "<!-- No content generated. Please check input. -->";
-        }
-
-        // --- Copy Function ---
-        function copyToClipboard() {
-            if (!outputHtmlEl.value || outputHtmlEl.value.startsWith("<!--")) {
-                alert('Nothing to copy!');
-                return;
-            }
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(outputHtmlEl.value)
-                    .then(() => {
-                        const originalText = copyBtn.textContent;
-                        copyBtn.textContent = 'Copied!';
-                        setTimeout(() => { copyBtn.textContent = originalText; }, 1500);
-                    })
-                    .catch(err => {
-                        console.error('Failed to copy text: ', err);
-                        fallbackCopy();
-                    });
-            } else {
-                fallbackCopy();
-            }
-        }
-
-        function fallbackCopy() {
-            try {
-                outputHtmlEl.select();
-                document.execCommand('copy');
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = 'Copied! (Fallback)';
-                setTimeout(() => { copyBtn.textContent = originalText; }, 1500);
-            } catch (fallbackErr) {
-                console.error('Fallback copy failed: ', fallbackErr);
-                alert('Copying failed. Please copy manually.');
-            }
-        }
-
-        // --- Toggle Instructions ---
-        function toggleInstructions() {
-            if (instructionsDiv.style.display === 'none') {
-                instructionsDiv.style.display = 'block';
-                toggleInstructionsBtn.textContent = 'Hide Instructions';
-            } else {
-                instructionsDiv.style.display = 'none';
-                toggleInstructionsBtn.textContent = 'Show Instructions';
-            }
-        }
-
-        // --- Event Listeners ---
-        generateBtn.addEventListener('click', generateAccordion);
-        copyBtn.addEventListener('click', copyToClipboard);
-        toggleInstructionsBtn.addEventListener('click', toggleInstructions);
-    </script>
 </body>
 </html>
