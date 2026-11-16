@@ -433,6 +433,18 @@
       "notes": "Assessment toolkit (legacy)",
       "public": true,
       "updatedAt": "2026-11-04T22:37:06.893Z"
+    },
+    "canvas-course-checker-program.html": {
+      "analytics": false,
+      "description": "Checks export package against Canvas QC standards",
+      "tags": [
+        "Canvas",
+        "Teaching & Learning"
+      ],
+      "owner": "BAU",
+      "notes": "Course Development/Maintenance",
+      "public": true,
+      "updatedAt": "2026-11-16T20:05:56.745Z"
     }
   }
 }
