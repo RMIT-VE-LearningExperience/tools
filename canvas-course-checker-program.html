@@ -343,7 +343,7 @@ what you will learn</textarea>
           <span class="sub">One per line, any of which passes question 22. Write the name, and if the scheme is held at account level rather than in the course, add its number after a bar: <code>Name | 94041</code>. A course level scheme exports its name and can be matched on words alone. An account level scheme exports only its number, so the number is the only thing to match on.</span>
         </label>
         <textarea id="cfgCourseScheme" spellcheck="false">RMIT VE Final course result (up to and including Advanced Diploma) | 88436
-RMIT VE Final course result + FRA (up to and including Advanced Diploma) |</textarea>
+RMIT VE Final course result + FRA (up to and including Advanced Diploma) | 174901</textarea>
       </div>
 
       <div class="cfgrow">
@@ -351,7 +351,7 @@ RMIT VE Final course result + FRA (up to and including Advanced Diploma) |</text
           <span class="sub">Point five of the five point check, and the scheme set on each task under Display grade as rather than the course level one. Same format, and a line can carry several numbers separated by commas, because the same scheme is held under different numbers in different accounts. Where a line has no number and the scheme turns out to be account level, run a course that uses it and the evidence under question 28 will name the number to paste in here.</span>
         </label>
         <textarea id="cfgTaskScheme" spellcheck="false">RMIT VE Assessment task grades (up to and including Advanced Diploma) | 94041
-RMIT VE Assessment task grades + FRA (up to and including Advanced Diploma) |</textarea>
+RMIT VE Assessment task grades + FRA (up to and including Advanced Diploma) | 177130</textarea>
       </div>
 
       <div class="cfgrow">
@@ -1406,7 +1406,13 @@ var RE_TEAM     = /teaching team|teaching staff|your teacher|your assessor|meet 
 var RE_GUIDE    = /course guide|course information|course outline|course details|program guide|part a/i;
 var RE_ADMIN_MOD = /assessment|resources?\b|information|\binfo\b|teacher|do not publish|template/i;
 var RE_WEEK_MOD = /\b(week|wk|topic|session|unit)\s*[:.\-]?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten)\b/i;
-var RE_ASSESS_WEEK = /assessment|demonstration|consultation|resubmission|revision|\bexam\b|quiz preparation|pitstop/i;
+var RE_ASSESS_WEEK = /\b(re)?assessments?\b|\bassignments?\b|\bdemonstrations?\b|\bconsultations?\b|\bpresentations?\b|\bfeedback\b|\b(re)?submissions?\b|\bobservations?\b|\brevision\b|\bexams?\b|\bexamination\b|\b(final|knowledge|written|practical|theory|class) test\b|\bquiz preparation\b|\bpitstop\b|\bcatch[- ]?up\b|\bpublic holiday\b|\bmid[- ]?(semester|term) break\b|\bno class\b|\bcompetency completion\b/i;
+var WEEK_WORDS = { one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12, thirteen:13, fourteen:14, fifteen:15, sixteen:16, seventeen:17, eighteen:18, nineteen:19, twenty:20 };
+function weekNumOf(t){
+  var m = String(t || '').match(/\b(?:week|wk)\s*[:.\-]?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/i);
+  if(!m) return 0;
+  return /^\d+$/.test(m[1]) ? +m[1] : WEEK_WORDS[m[1].toLowerCase()];
+}
 var RE_VAGUE    = /\b(understand|understanding|know|knowing|learn about|be aware|become familiar|familiarise|appreciate|comprehend|grasp|gain insight)\b/i;
 var RE_MEASURE  = /\b(identify|describe|explain|apply|analyse|analyze|evaluate|create|demonstrate|calculate|compare|contrast|design|develop|perform|select|prepare|interpret|justify|plan|produce|operate|complete|outline|list|define|classify|assess|implement|construct|review|report|record|maintain|install|inspect|measure|solve|write|present|discuss|examine|conduct|follow|use|differentiate|distinguish|allocate|configure|troubleshoot|test|build|organise|organize|determine|specify|recognise|recognize|state|summarise|summarize|recommend|prioritise|prioritize|estimate|verify|monitor|document|communicate|negotiate|set up|establish|modify|update|back up|restore|integrate|deploy|migrate|diagnose|illustrate|sketch|draw|label|match|rank|critique|formulate|propose|research|investigate|edit|draft|apply|navigate|access|submit|reflect|respond|collaborate|deliver|manage|coordinate|calibrate|assemble|fabricate|cut|measure|mark out|fit|weld|repair|service|clean|store|handle|utilise|utilize|finalise|finalize|facilitate|lead|schedule|model|render|adjust|locate|obtain|gather|collect|archive|provide|contribute|participate|practise|practice|administer|support|interpret|calculate|resolve|adapt|arrange|label|compose|style|photograph|capture|print|export|save|set|check|confirm|ensure)\b/i;
 var RE_OBJ_LEAD = /learning (objectives?|outcomes?)|by the end of (this|the) (module|topic|week|session|unit|class|lesson)|you (will|should) be able to|you('|\u2019)ll be able to|on completion of this|(in )?this (module|topic|week|session|unit|class|lesson),? (you|we) will|what you will learn|this week we will/i;
@@ -2111,8 +2117,54 @@ function runChecks(c){
   function hasPage(m){ return m.items.some(function(it){ return it.type === 'WikiPage'; }); }
   var contentModsAll = c.modules.filter(function(m){ return !isAdminMod(m) && hasPage(m); });
   var contentMods = contentModsAll.filter(function(m){ return m.published; });
-  var objectiveMods = contentMods.filter(function(m){ return !RE_ASSESS_WEEK.test(m.title); });
-  var unpubModules = c.modules.filter(function(m){ return !m.published && !isAdminMod(m); });
+  /* weeks the syllabus schedule shows with no learning content: an empty topic, or a
+     topic that is only assessment, observation, feedback, revision, resubmission and so on */
+  var sylPlaceholderWeeks = {};
+  (function(){
+    if(!c.syllabusHtml) return;
+    var doc;
+    try { doc = new DOMParser().parseFromString(c.syllabusHtml, 'text/html'); } catch(e){ return; }
+    function mark(first, topic){
+      var m = String(first).trim().match(/^week\s*(\d{1,2})(?:\s*(?:-|\u2013|to|&|and)\s*(\d{1,2}))?\b/i);
+      if(!m) return;
+      var a = +m[1], b = m[2] ? +m[2] : a, t = String(topic || '').replace(/\s+/g, ' ').trim();
+      /* a long topic that only mentions an assessment along the way is still a teaching week */
+      if(t && (!RE_ASSESS_WEEK.test(t) || t.split(' ').length > 8)) return;
+      for(var n = a; n <= b && n - a < 6; n++) sylPlaceholderWeeks[n] = t || 'no topic listed';
+    }
+    [].slice.call(doc.querySelectorAll('table')).forEach(function(tb){
+      var topicCol = 1;
+      [].slice.call(tb.querySelectorAll('tr')).forEach(function(tr){
+        var cells = [].slice.call(tr.children).map(function(td){ return td.textContent.replace(/\s+/g, ' ').trim(); });
+        if(cells.length < 2) return;
+        if(/^week\s*$/i.test(cells[0])){
+          /* header row: find the topic column, skipping date and assessment columns */
+          for(var i = 1; i < cells.length; i++){
+            if(/topic|content|deliver|theme|focus|subject|learning/i.test(cells[i]) && !/assess|due/i.test(cells[i])){ topicCol = i; break; }
+          }
+          return;
+        }
+        mark(cells[0], cells[topicCol] !== undefined ? cells[topicCol] : '');
+      });
+    });
+    if(!doc.querySelector('tr')){
+      (doc.body ? doc.body.innerText || doc.body.textContent : '').split(/\n/).forEach(function(line){
+        var m = line.match(/^\s*(week\s*\d{1,2}(?:\s*(?:-|\u2013|to)\s*\d{1,2})?)\s*[:.\-\u2013|]?\s*(.*)$/i);
+        if(m) mark(m[1], m[2]);
+      });
+    }
+  })();
+  /* placeholder modules hold an assessment or feedback week rather than learning content,
+     so they are not checked for objectives or rich course text */
+  function placeholderWhy(m){
+    if(RE_ASSESS_WEEK.test(m.title)) return 'title';
+    var wk = weekNumOf(m.title);
+    if(wk && sylPlaceholderWeeks[wk]) return 'syllabus: Week ' + wk + ' is ' + sylPlaceholderWeeks[wk];
+    return '';
+  }
+  var placeholderMods = c.modules.filter(function(m){ return !isAdminMod(m) && placeholderWhy(m); });
+  var objectiveMods = contentMods.filter(function(m){ return placeholderMods.indexOf(m) === -1; });
+  var unpubModules = c.modules.filter(function(m){ return !m.published && !isAdminMod(m) && placeholderMods.indexOf(m) === -1; });
   var unpubAdmin = c.modules.filter(function(m){ return !m.published && isAdminMod(m); });
   var KEY_NAV = cfg.keyNav;
   var keyNavHidden = c.tabs ? KEY_NAV.filter(function(n){
@@ -2944,7 +2996,8 @@ function runChecks(c){
     ck(unpubModules.length === 0 ? 'pass' : 'info',
        unpubModules.length === 0 ? 'Every content module is published' : pluralise(unpubModules.length,'content module') + ' unpublished, treated as staged for later delivery',
        'Unpublished modules are taken to be waiting for their point in the delivery schedule and do not count against the rating.' +
-         (unpubAdmin.length ? ' Unpublished admin modules: ' + unpubAdmin.map(function(m){ return m.title; }).join('; ') + '.' : ''),
+         (unpubAdmin.length ? ' Unpublished admin modules: ' + unpubAdmin.map(function(m){ return m.title; }).join('; ') + '.' : '') +
+         (placeholderMods.length ? ' Assessment placeholder modules, not checked for objectives or rich text: ' + placeholderMods.map(function(m){ return m.title + (placeholderWhy(m) !== 'title' ? ' (' + placeholderWhy(m) + ')' : ''); }).join('; ') + '.' : ''),
        unpubModules.map(function(m){ return m.title; })),
     ck(!c.tabs ? 'info' : (keyNavHidden.length === 0 ? 'pass' : 'fail'),
        !c.tabs ? 'Key navigation items could not be checked'
@@ -2970,7 +3023,7 @@ function runChecks(c){
        hiddenTabs.length ? hiddenTabs.map(function(t){ return t.label; }).join(', ') : 'Either every item is in use, or none has been hidden yet.'),
     ck(loRows.length === 0 ? 'warn' : (loWithin === loRows.length ? 'pass' : (loWithin ? 'warn' : 'fail')),
        loWithin + ' of ' + pluralise(loRows.length, 'content module') + ' show at least ' + cfg.objMin + ' measurable learning objectives',
-       'Only content modules need objectives. Welcome and Orientation, Assessment, Resources, admin modules and assessment, consultation and pitstop weeks are not counted' +
+       'Only content modules need objectives. Welcome and Orientation, Assessment, Resources, admin modules and assessment placeholder modules (assessment, presentation, feedback, submission, observation, revision and similar weeks, or weeks the syllabus shows with no learning content) are not counted' +
          (contentMods.length > objectiveMods.length ? ' (' + contentMods.filter(function(m){ return objectiveMods.indexOf(m) === -1; }).map(function(m){ return m.title; }).join('; ') + ')' : '') +
          '. An objective counts as measurable when it opens with a verb you can observe or assess (identify, explain, configure and so on). Each objective that does not is quoted below so you can judge it.',
        loNone.map(function(r){ return r.title + ': no objectives found on any page'; })
@@ -3059,7 +3112,7 @@ function runChecks(c){
        richModsMissing.length
          ? pluralise(richModsMissing.length, 'content module has', 'content modules have') + ' no page of rich course text'
          : 'Every content module has at least one published page of rich course text',
-       'Rich course text is the most important resource. Meets needs at least one published page of it in every content module. Assessment, consultation, revision and pitstop weeks are not counted. The pages found are listed in the table below.',
+       'Rich course text is the most important resource. Meets needs at least one published page of it in every content module. Assessment placeholder modules (assessment, presentation, feedback, submission, observation, revision and similar weeks, or weeks the syllabus shows with no learning content) are not counted' + (placeholderMods.length ? ': ' + placeholderMods.map(function(m){ return m.title; }).join('; ') : '') + '. The pages found are listed in the table below.',
        richModsMissing.map(function(r){ return r.module + (r.closest ? ': closest is ' + r.closest : ': no text page in it'); })),
     ck(richPages.length === 0 ? 'fail' : (richRatio >= 50 ? 'pass' : 'warn'),
        richPages.length === 0
@@ -3388,19 +3441,20 @@ function runChecks(c){
   var fiveRows = fiveTargets.map(function(a){
     var rub = a.rubricRef ? c.rubrics[a.rubricRef] : null;
     var satOk = false;
-    if(rub && rub.criteria.length){
-      satOk = rub.criteria.every(function(cr){
-        var hasSat = cr.ratings.some(function(r){ return String(r.description || '').trim().toLowerCase().indexOf(cfg.ratingSat) === 0 && r.points === 1; });
-        var hasNot = cr.ratings.some(function(r){ return isNotLabel(r.description, cfg.ratingNot) && r.points === 0; });
-        return hasSat && hasNot;
-      });
+    /* a task on the FRA task scheme is marked question by question, so its rubric
+       criteria pass when each is scored 1 and 0, whatever the ratings are called */
+    var ts0 = taskScheme(a), fra = ts0.ok && /\bFRA\b/.test(String(ts0.value || ''));
+    function critOk(cr){
+      if(fra) return cr.ratings.some(function(r){ return r.points === 1; }) && cr.ratings.some(function(r){ return r.points === 0; });
+      var hasSat = cr.ratings.some(function(r){ return String(r.description || '').trim().toLowerCase().indexOf(cfg.ratingSat) === 0 && r.points === 1; });
+      var hasNot = cr.ratings.some(function(r){ return isNotLabel(r.description, cfg.ratingNot) && r.points === 0; });
+      return hasSat && hasNot;
     }
+    if(rub && rub.criteria.length) satOk = rub.criteria.every(critOk);
     var badCriteria = [];
     if(rub) rub.criteria.forEach(function(cr){
       var labels = cr.ratings.map(function(r){ return '\u201c' + String(r.description || '').trim() + '\u201d ' + r.points; });
-      var hasSat = cr.ratings.some(function(r){ return String(r.description || '').trim().toLowerCase().indexOf(cfg.ratingSat) === 0 && r.points === 1; });
-      var hasNot = cr.ratings.some(function(r){ return isNotLabel(r.description, cfg.ratingNot) && r.points === 0; });
-      if(!(hasSat && hasNot)) badCriteria.push('criterion ' + String(cr.description || '').trim().slice(0, 40) + ' rated ' + labels.join(', '));
+      if(!critOk(cr)) badCriteria.push('criterion ' + String(cr.description || '').trim().slice(0, 40) + ' rated ' + labels.join(', '));
     });
     return {
       badCriteria: badCriteria,
@@ -3771,7 +3825,7 @@ function runChecks(c){
             'Answer those from Canvas. The tool will not guess, which is why nothing is suggested above.', unreadable5)
         : ck('info','All five points were readable from this export'),
       pt(canRead5.rubric, fiveRows.length > 0 && fiveRows.every(function(r){ return r.satisfactory; }),
-        'Rubrics scored ' + cfg.ratingSatLabel + ' 1 and ' + cfg.ratingNotLabel + ' 0',
+        'Rubrics scored ' + cfg.ratingSatLabel + ' 1 and ' + cfg.ratingNotLabel + ' 0 (FRA tasks: every criterion scored 1 and 0)',
         'No rubric is linked to any assignment in this cartridge.',
         fiveRows.filter(function(r){ return !r.satisfactory; }).map(function(r){ return r.title + (r.rubric ? ': ' + (r.badCriteria.length ? r.badCriteria.join('; ') : 'ratings do not match the pattern') : ': no rubric attached'); })),
       pt(canRead5.rubric, fiveRows.length > 0 && fiveRows.every(function(r){ return r.forGrading; }),
