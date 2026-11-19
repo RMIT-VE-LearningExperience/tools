@@ -5302,7 +5302,7 @@ updateTally = function(){};
     '#printSheet .nm{display:block;font-weight:400;color:#555;font-size:9pt;margin-top:2px}' +
     '#printSheet .tot{margin:6px 0 0;font-weight:700}' +
     '.pbox{border:1px solid #e3e5e0;border-left:4px solid #e61e2a;background:#fff;padding:8px 12px;margin:6px 0 8px;font-size:.88rem}' +
-    '.pbox b{display:block;color:#000054;margin-bottom:3px}.pbox ul{margin:2px 0;padding-left:18px}.pbox.man{border-left-color:#fac800;background:#fffbea}' +
+    '.pbox b{display:block;color:#000054;margin-bottom:3px}.pbox li b{display:inline;margin:0}.pbox ul{margin:2px 0;padding-left:18px}.pbox.man{border-left-color:#fac800;background:#fffbea}' +
     '.pnm{color:#5c5c73;font-size:.82rem;margin-top:4px}' +
     '#printSheet .fx{display:block;font-weight:400;color:#000;font-size:9pt;margin-top:3px}#printSheet .fx b{color:#e61e2a}#printSheet .fx.m b{color:#7a5c00}';
   document.head.appendChild(st);
@@ -5315,6 +5315,11 @@ updateTally = function(){};
     '<button class="btn ghost" id="printSum" type="button">Print summary / save as PDF</button></div>' +
     '<p class="hint" id="mailHint"><b>Email my program coordinator</b> lets them know the course has been checked and is ready for publishing. ' +
     '<b>Email for support</b> goes to the VE Learning Experience team. <b>Print</b> keeps a copy (choose <em>Save as PDF</em>).</p>' +
+    '<div class="pbox man" style="margin-top:14px"><b>Before you email your program coordinator, do these two checks in Canvas</b>' +
+    '<ol style="margin:4px 0 0;padding-left:20px">' +
+      '<li><b>Validate links</b> &ndash; go to <b>Settings</b> in your course, choose <b>Validate Links in Content</b>, run it and fix any broken links.</li>' +
+      '<li><b>Run the accessibility report</b> &ndash; open <b>Accessibility Report</b> in the left-hand course navigation menu, run the report and fix the issues it lists. You should aim for an accessibility score above 80%.</li>' +
+    '</ol><span style="display:block;margin-top:6px;font-size:.82rem;color:#5c5c73">The checker works from an export, so it cannot test live links or run Canvas&rsquo;s accessibility checks for you.</span></div>' +
     '<p class="privacy"><b>Privacy:</b> a course export holds course content only, with no student names, submissions or grades in it. ' +
     'This tool runs entirely in your browser. The file is never sent anywhere.</p>';
   var ps = document.createElement('div'); ps.id = 'printSheet'; document.body.appendChild(ps);
@@ -5416,7 +5421,7 @@ updateTally = function(){};
   document.getElementById('mailCoord').addEventListener('click', function(){
     var name = course.title || 'Course name';
     mailWithSummary(this, '', 'Ready for publishing: ' + name,
-      'Hi,\n\n' + name + ' has been through the Canvas Course Checker for VE Programs, and the assessment tasks have been checked against the quality approved tasks on TeachVE. It is ready for publishing.\n\n' + PASTE + '\n\n');
+      'Hi,\n\n' + name + ' is ready for publishing. I have:\n- run it through the Canvas Course Checker for VE Programs\n- checked the assessment tasks against the quality approved tasks on TeachVE\n- run Validate Links in Content (Settings) and fixed any broken links\n- run the Accessibility Report and fixed the issues it listed\n\n' + PASTE + '\n\n');
   });
 
   document.getElementById('printSum').addEventListener('click', function(){
