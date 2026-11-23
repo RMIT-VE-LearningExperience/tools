@@ -3384,12 +3384,14 @@ function runChecks(c){
       if(t && pubLinkedObjs.indexOf(t) === -1) pubLinkedObjs.push(t);
     }
   });
-  /* A task's settings matter wherever it sits, so questions 24, 25, 28 and 30
-     check every published assessment task. Ones students cannot reach from a
-     published module are named, since they may be hard to find. */
-  var assessTasksMod = assessTasks.filter(function(a){ return a.published !== false; });
-  var assessUnreached = assessTasksMod.filter(function(a){ return !inPubMod(a) && pubLinkedObjs.indexOf(a) === -1; });
-  var assessSkipped = assessTasks.filter(function(a){ return assessTasksMod.indexOf(a) === -1; });   /* unpublished */
+  /* A task's settings matter wherever it sits and whether or not it is published yet
+     (assessments are often held back until delivery, and always in a DEV shell), so
+     questions 24, 25, 28 and 30 check every assessment task. Unpublished ones are
+     labelled. Published ones students cannot reach from a published module are named. */
+  var assessTasksMod = assessTasks.slice();
+  function atLabel(a){ return a.title + (a.published === false ? ' (unpublished)' : ''); }
+  var assessUnreached = assessTasksMod.filter(function(a){ return a.published !== false && !inPubMod(a) && pubLinkedObjs.indexOf(a) === -1; });
+  var assessSkipped = [];
   var eopItems = allGraded.filter(function(a){ return assessTasks.indexOf(a) === -1 && a.published !== false; });
   var eopUnpub = allGraded.filter(function(a){ return assessTasks.indexOf(a) === -1 && a.published === false; });
   /* the five point check belongs to assignments. A knowledge quiz is its own rubric. */
@@ -3405,7 +3407,7 @@ function runChecks(c){
     var t = plainText(a.html);
     var sc = scanBody(a.html, a.title);
     var onlyLink = words(t) < 40 && sc.links.filter(function(l){ return isFileLink(l.href); }).length > 0;
-    return { title: a.title, w: words(t), onlyLink: onlyLink, ok: words(t) >= 40 && !onlyLink };
+    return { title: atLabel(a), w: words(t), onlyLink: onlyLink, ok: words(t) >= 40 && !onlyLink };
   });
   var instrBad = instrRows.filter(function(r){ return !r.ok; });
 
@@ -3436,8 +3438,21 @@ function runChecks(c){
   });
   /* the five point check covers every assessment task except quizzes (classic
      and New Quizzes): assignments and graded discussions */
-  var fiveTargets = assessTasksMod.filter(function(a){ return a.kind !== 'quiz' && !a.newQuiz; })
+  var fiveTargetsAll = assessTasksMod.filter(function(a){ return a.kind !== 'quiz' && !a.newQuiz; })
     .concat(assessDetected.map(function(d){ return d.a; }));
+  /* When weighted groups of real assessment tasks already add up to 100%, anything
+     sitting in a 0% group is a learning activity, however it is worded, so it is
+     left out of the five point check. Question 26 still flags an assessment-titled
+     task found in a 0% group. */
+  function groupWeightOf(a){
+    var g = c.groups.filter(function(x){ return x.id === a.groupId; })[0];
+    return g ? g.weight : null;
+  }
+  var assessCovered100 = Math.abs(weightTotal - 100) < 0.5 &&
+    assessTasks.some(function(a){ return (groupWeightOf(a) || 0) > 0; });
+  var fiveZeroLA = assessCovered100 ? fiveTargetsAll.filter(function(a){ return groupWeightOf(a) === 0; }) : [];
+  var fiveTargets = fiveTargetsAll.filter(function(a){ return fiveZeroLA.indexOf(a) === -1; });
+  var assessDetectedKept = assessDetected.filter(function(d){ return fiveZeroLA.indexOf(d.a) === -1; });
   var fiveRows = fiveTargets.map(function(a){
     var rub = a.rubricRef ? c.rubrics[a.rubricRef] : null;
     var satOk = false;
@@ -3459,7 +3474,7 @@ function runChecks(c){
     return {
       badCriteria: badCriteria,
       kind: a.newQuiz ? 'New Quiz' : a.kind,
-      title: a.title,
+      title: atLabel(a),
       rubric: !!rub,
       satisfactory: satOk,
       forGrading: !!a.rubricForGrading,
@@ -3697,7 +3712,7 @@ function runChecks(c){
         (assessUnreached.length ? 'Not in any published module and not linked from one, so students may not find them: ' + assessUnreached.map(function(a){ return a.title; }).join('; ') + '.' : ''),
         assessTasksMod.map(function(a){
           var g = groupById[a.groupId];
-          return a.title + '  (' + (g ? g.title : 'no group') + ', ' + a.points + ' points)';
+          return atLabel(a) + '  (' + (g ? g.title : 'no group') + ', ' + a.points + ' points)';
         })),
       ck(instrBad.length === 0 && assessTasksMod.length ? 'pass' : 'fail',
         instrBad.length === 0 ? 'Every task carries its instructions on the page' : pluralise(instrBad.length,'task') + ' has thin or link only instructions','',
@@ -3797,6 +3812,7 @@ function runChecks(c){
     : '';
 
   function pt(canRead, ok, label, unreadNote, list){
+    if(!fiveRows.length) return null;
     if(!canRead) return ck('warn', label + ': not recorded in this export', unreadNote);
     return ck(ok ? 'pass' : 'fail', label, '', list || []);
   }
@@ -3804,14 +3820,18 @@ function runChecks(c){
   Q.push({
     n:28, title:'Assessment Review (5 point check)',
     note:'Applies to every assessment task except quizzes. Graded discussions are included. Satisfactory 1 and Not Satisfactory 0, rubric used for grading, rubric total matches task points, letter grade display, ' + taskSchemeStd + ' scheme.',
-    mode: unreadable5.length ? 'check' : 'auto', type:'single', options:['Yes','No'],
-    suggested: unreadable5.length ? null : (fiveAllOk ? 'Yes' : 'No'),
+    mode: (unreadable5.length || !fiveRows.length) ? 'check' : 'auto', type:'single', options:['Yes','No'],
+    suggested: (unreadable5.length || !fiveRows.length) ? null : (fiveAllOk ? 'Yes' : 'No'),
     evidence: [
-      ck(assessDetected.length ? 'warn' : 'info',
-        pluralise(reviewedAssign.length,'assignment') + ' reviewed: ' + assessDetected.length + ' not named or grouped as assessment but set up or written as one',
-        assessDetected.length ? 'These are not named or grouped as assessment but are set up or written as one, so they are in the five point check. Confirm each.' : '',
-        assessDetected.map(function(d){ return d.a.title + ': ' + d.why.join(', '); })
+      ck(assessDetectedKept.length ? 'warn' : 'info',
+        pluralise(reviewedAssign.length,'assignment') + ' reviewed: ' + assessDetectedKept.length + ' not named or grouped as assessment but set up or written as one',
+        assessDetectedKept.length ? 'These are not named or grouped as assessment but are set up or written as one, so they are in the five point check. Confirm each.' : '',
+        assessDetectedKept.map(function(d){ return d.a.title + ': ' + d.why.join(', '); })
           .concat(assessNotDetected.map(function(d){ return d.a.title + ': treated as a learning activity' + (d.why.length ? ' (' + d.why.join(', ') + ')' : ''); }))),
+      fiveZeroLA.length ? ck('info',
+        pluralise(fiveZeroLA.length, 'learning activity', 'learning activities') + ' in 0% groups left out of the check',
+        'The weighted assessment groups already add up to 100%, so these are learning activities, even where they are worded like assessments.',
+        fiveZeroLA.map(function(a){ var g = c.groups.filter(function(x){ return x.id === a.groupId; })[0]; return a.title + (g ? ' (' + g.title + ', 0%)' : ''); })) : null,
       ck(fiveTargets.length ? 'info' : 'fail',
         pluralise(fiveTargets.length,'assessment task') + ' checked',
         fiveTargets.length
@@ -3819,7 +3839,7 @@ function runChecks(c){
             (assessClassic.length + assessNewQuiz.length ? ' Quizzes not checked: ' + assessClassic.concat(assessNewQuiz).map(function(q){ return q.title; }).join('; ') + '.' : '')
           : 'No assignment was recognised as an assessment task, so there is nothing to check and no table. A task is recognised by sitting in a group weighted above 0% or named assessment, or, where the course does not weight its groups, by sitting in the Assessment module or having a title such as AT1, Task 2 or Assessment Task 2. Groups in this course: ' +
             (c.groups.map(function(g){ return g.title + ' (' + g.weight + '%)'; }).join('; ') || 'none') + '.',
-        fiveTargets.map(function(a){ return a.title; })),
+        fiveTargets.map(function(a){ return atLabel(a); })),
       unreadable5.length
         ? ck('warn','Some points could not be read from this export',
             'Answer those from Canvas. The tool will not guess, which is why nothing is suggested above.', unreadable5)
@@ -4121,6 +4141,7 @@ function runChecks(c){
     modLinks: modLinks
   };
 
+  Q.forEach(function(q){ q.evidence = q.evidence.filter(Boolean); });
   markMinorFixes(Q);
   return { questions: Q, summary: summary };
 }
