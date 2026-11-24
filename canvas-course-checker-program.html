@@ -2317,8 +2317,13 @@ function runChecks(c){
   /* session structure pages are tasks around the learning, not the learning:
      before/after class, introductions, preparation, review and reflection, activities */
   var RE_NOT_RICH = /\b(before|after)\b|\bintro(duction)?\b|\bpreparation\b|\breflection\b|\bactivit(y|ies)\b/i;
-  var notRichPages = c.pages.filter(function(p){ return contentObjs.indexOf(p) > -1 && RE_NOT_RICH.test(p.title); });
-  var modulePages = c.pages.filter(function(p){ return contentObjs.indexOf(p) > -1 && !RE_NOT_RICH.test(p.title); });
+  /* the template's own content page ("Week 3: Content - Topic") is always judged on what
+     is on it, so a topic such as "Portfolio Preparation" or "Final Submission" does not
+     knock it out by title */
+  var RE_CONTENT_PAGE = /\bcontent\s*[-:\u2013\u2014]/i;
+  function sessionPage(p){ return !RE_CONTENT_PAGE.test(p.title) && RE_NOT_RICH.test(p.title); }
+  var notRichPages = c.pages.filter(function(p){ return contentObjs.indexOf(p) > -1 && sessionPage(p); });
+  var modulePages = c.pages.filter(function(p){ return contentObjs.indexOf(p) > -1 && !sessionPage(p); });
   /* Instructions and admin (PebblePad, Turnitin, submitting, logging in,
      competitions, policies) are not learning content, however long. Caught
      by title, or by how much of the page is platform and admin wording.
@@ -2327,7 +2332,7 @@ function runChecks(c){
   var RE_INSTR_TITLE = /pebble\s?pad|turnitin|\bsubmi(t|ssion)|how to (submit|upload|export|access|log|save|print)|polic(y|ies)|canvas in this course|competition|declaration/i;
   var RE_ADMIN_WORDS = /\b(pebble ?pad|turnitin|workbooks?|e-?portfolios?|submit\w*|submission\w*|upload\w*|log ?in|login|logging in|sign ?in|passwords?|accounts?|enrol\w*|register\w*|registration|competitions?|prizes?|entr(y|ies)|deadlines?|due dates?|extensions?|special consideration|assessors?|marking|resubmi\w*|canvas|microsoft teams|collaborate ultra|inbox|helpdesk|it services)\b/gi;
   function instructionPage(title, txt){
-    if(RE_INSTR_TITLE.test(title)) return true;
+    if(RE_INSTR_TITLE.test(title) && !RE_CONTENT_PAGE.test(title)) return true;
     var n = (String(txt).match(RE_ADMIN_WORDS) || []).length;
     return n >= 5 && n * 100 / Math.max(words(txt), 1) >= 2;
   }
