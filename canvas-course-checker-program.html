@@ -1408,10 +1408,10 @@ var RE_GUIDE    = /course guide|course information|course outline|course details
    weekly learning resources module is a store of files, not a teaching week */
 var RE_ADMIN_MOD = /assessment|\bres(?:our|ou|or|uor|sour)ces?\b|\bweekly (?:learning|slides|resources?)\b|information|\binfo\b|teacher|do not publish|template/i;
 var RE_WEEK_MOD = /\b(week|wk|topic|session|unit)\s*[:.\-]?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten)\b/i;
-var RE_ASSESS_WEEK = /\b(re)?assessments?\b|\bassignments?\b|\bdemonstrations?\b|\bconsultations?\b|\bpresentations?\b|\bfeedback\b|\b(re)?submissions?\b|\bobservations?\b|\brevision\b|\bexams?\b|\bexamination\b|\b(final|knowledge|written|practical|theory|class) test\b|\b(quiz|exam|test|assessment|report|project|portfolio|submission|presentation)s? prep(aration)?\b|\bprep(aration)? for (the )?(final|assessment|submission|exam)|\bfinal (report|project|portfolio|submission|printing)s?\b|\bpitstop\b|\bcatch[- ]?up\b|\bpublic holiday\b|\bmid[- ]?(semester|term) break\b|\bno class\b|\bcompetency completion\b/i;
+var RE_ASSESS_WEEK = /\b(re)?assessments?\b|\bassignments?\b|\bdemonstrations?\b|\bconsultations?\b|\bpresentations?\b|\bfeedback\b|\b(re)?submissions?\b|\bobservations?\b|\brevision\b|\bexams?\b|\bexamination\b|\b(final|knowledge|written|practical|theory|class) test\b|\b(quiz|exam|test|assessment|report|project|portfolio|submission|presentation)s? prep(aration)?\b|\bprep(aration)? for (the )?(final|assessment|submission|exam)|\bfinal (report|project|portfolio|submission|printing)s?\b|\bpitstop\b|\bAT\s?\d\b|\brecap\b|\bsupport sessions?\b|\bmoderation\b|\bauxiliary\b|\bdrop[- ]in\b|\bknowledge (quiz|check)\b|\bcatch[- ]?up\b|\bpublic holiday\b|\bmid[- ]?(semester|term) break\b|\bno class\b|\bcompetency completion\b/i;
 var WEEK_WORDS = { one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12, thirteen:13, fourteen:14, fifteen:15, sixteen:16, seventeen:17, eighteen:18, nineteen:19, twenty:20 };
 function weekNumOf(t){
-  var m = String(t || '').match(/\b(?:weeks?|wks?)\s*[:.\-]?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/i);
+  var m = String(t || '').match(/\b(?:weeks?|wks?|sessions?)\s*[:.\-]?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/i);
   if(!m) return 0;
   return /^\d+$/.test(m[1]) ? +m[1] : WEEK_WORDS[m[1].toLowerCase()];
 }
@@ -2281,7 +2281,18 @@ function runChecks(c){
    'about using weekly understanding mastering building turning choosing their there which these those other ' +
    'through between within without where while what when your yours into from with that this have more most ' +
    'basics essential essentials effective successful success matters matter right world beyond ' +
-   'preparation reflection reflections engagement during').split(' ')
+   'preparation reflection reflections engagement during ' +
+   /* numbers never describe the subject */
+   'zero three seven eight eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty ' +
+   'first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth hundred thousand ' +
+   /* words about studying and running the course rather than the subject */
+   'study studies studying paced virtual workshop workshops knowledge support supported moderation moderated ' +
+   'resubmission resubmissions resubmit auxiliary feedback review reviews reviewing lockdown browser respondus ' +
+   'revision revise practice practise exam exams examination test tests testing assignment assignments ' +
+   'consultation consultations catchup drop-in observation observations demonstration demonstrations ' +
+   'teams zoom collaborate collaborate-ultra blended campus face-to-face remote attendance participation ' +
+   'evidence progress portfolio pebblepad turnitin marking marked rubric rubrics grade graded deadline extension ' +
+   'trimester term terms induction orientation semester1 semester2 period periods block blocks').split(' ')
     .forEach(function(w){ if(w) VOCAB_STOP[w] = 1; });
   /* the form shown is the word itself; matching uses a stem so plurals still match */
   function vocabWord(w){ return w; }
