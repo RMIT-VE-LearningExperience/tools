@@ -1404,12 +1404,14 @@ var RE_WO       = /welcome|orientation|getting started|start here|induction|befo
 var RE_INTRO_MOD = /^[^a-z0-9]*(course\s+)?intro(duction)?\b/i;
 var RE_TEAM     = /teaching team|teaching staff|your teacher|your assessor|meet (the|your) (team|teacher)|about your teacher|who (is|are) (your|my)/i;
 var RE_GUIDE    = /course guide|course information|course outline|course details|program guide|part a/i;
-var RE_ADMIN_MOD = /assessment|resources?\b|information|\binfo\b|teacher|do not publish|template/i;
+/* resources is matched with common misspellings (Resouces, Resorces), and a weekly slides or
+   weekly learning resources module is a store of files, not a teaching week */
+var RE_ADMIN_MOD = /assessment|\bres(?:our|ou|or|uor|sour)ces?\b|\bweekly (?:learning|slides|resources?)\b|information|\binfo\b|teacher|do not publish|template/i;
 var RE_WEEK_MOD = /\b(week|wk|topic|session|unit)\s*[:.\-]?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten)\b/i;
-var RE_ASSESS_WEEK = /\b(re)?assessments?\b|\bassignments?\b|\bdemonstrations?\b|\bconsultations?\b|\bpresentations?\b|\bfeedback\b|\b(re)?submissions?\b|\bobservations?\b|\brevision\b|\bexams?\b|\bexamination\b|\b(final|knowledge|written|practical|theory|class) test\b|\bquiz preparation\b|\bpitstop\b|\bcatch[- ]?up\b|\bpublic holiday\b|\bmid[- ]?(semester|term) break\b|\bno class\b|\bcompetency completion\b/i;
+var RE_ASSESS_WEEK = /\b(re)?assessments?\b|\bassignments?\b|\bdemonstrations?\b|\bconsultations?\b|\bpresentations?\b|\bfeedback\b|\b(re)?submissions?\b|\bobservations?\b|\brevision\b|\bexams?\b|\bexamination\b|\b(final|knowledge|written|practical|theory|class) test\b|\b(quiz|exam|test|assessment|report|project|portfolio|submission|presentation)s? prep(aration)?\b|\bprep(aration)? for (the )?(final|assessment|submission|exam)|\bfinal (report|project|portfolio|submission|printing)s?\b|\bpitstop\b|\bcatch[- ]?up\b|\bpublic holiday\b|\bmid[- ]?(semester|term) break\b|\bno class\b|\bcompetency completion\b/i;
 var WEEK_WORDS = { one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12, thirteen:13, fourteen:14, fifteen:15, sixteen:16, seventeen:17, eighteen:18, nineteen:19, twenty:20 };
 function weekNumOf(t){
-  var m = String(t || '').match(/\b(?:week|wk)\s*[:.\-]?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/i);
+  var m = String(t || '').match(/\b(?:weeks?|wks?)\s*[:.\-]?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/i);
   if(!m) return 0;
   return /^\d+$/.test(m[1]) ? +m[1] : WEEK_WORDS[m[1].toLowerCase()];
 }
@@ -3241,11 +3243,13 @@ function runChecks(c){
     (function(){
       var wh = instructionRows.filter(function(r){ return r.what && r.how; }).length;
       var n = activities.length;
-      return ck(n === 0 ? 'fail' : (fullInstructions === n ? 'pass' : (wh === n ? 'warn' : 'fail')),
-       fullInstructions + ' of ' + n + ' activities say what to do, how to submit and when it is due',
+      var pFull = n ? Math.round(fullInstructions * 100 / n) : 0, pWh = n ? Math.round(wh * 100 / n) : 0;
+      return ck(n === 0 ? 'fail' : (pFull >= 90 ? 'pass' : (pWh >= 80 ? 'warn' : 'fail')),
+       fullInstructions + ' of ' + n + ' activities (' + pFull + '%) say what to do, how to submit and when it is due',
        n === 0 || fullInstructions === n ? ''
-         : wh === n ? 'Every activity says what to do and how to submit, which meets. The step up to Exceeds is a due date or a place in a module for each one, since a module already says when it happens.'
-         : (n - wh) + ' of ' + n + ' do not say what to do or how to submit. Meets needs every activity to cover both, so this holds the rating at Does not meet. "What to do" means at least ' + cfg.whatWords + ' words of instructions in the activity itself; instructions on a separate page are not counted. The word count is in the settings panel.',
+         : pFull >= 90 ? 'Exceeds needs 90% of activities to say what to do, how to submit and when. Fixing the ones listed makes it complete.'
+         : pWh >= 80 ? pWh + '% say what to do and how to submit, which meets (80% is what Meets asks for). Exceeds needs 90% to also say when: a due date, or a place in a module, since a module already says when it happens.'
+         : (n - wh) + ' of ' + n + ' do not say what to do or how to submit, so only ' + pWh + '% cover both. Meets needs 80%, so this holds the rating at Does not meet. "What to do" means at least ' + cfg.whatWords + ' words of instructions in the activity itself; instructions on a separate page are not counted. The word count is in the settings panel.',
        instructionRows.filter(function(r){ return !(r.what && r.how && r.when); }).slice(0,8).map(function(r){
          var missing = [];
          if(!r.what) missing.push('what to do');
@@ -3268,13 +3272,16 @@ function runChecks(c){
 
   var mmCount = inv.h5p.length + inv.video.length;
   var partInstructions = instructionRows.filter(function(r){ return r.what && r.how; }).length;
+  /* instructions are judged across the activities as a whole: 80% saying what to do and
+     how to submit meets, 90% also saying when exceeds. One or two thin activities are a
+     minor fix, not a fail. */
   var leExceeds = inGradebook.length >= cfg.actExceeds && mmTypes.length >= 2 &&
-                  mmCount >= cfg.mmExceeds && activities.length > 0 && fullInstructions === activities.length;
+                  mmCount >= cfg.mmExceeds && activities.length > 0 && fullInstructions * 100 / activities.length >= 90;
   var leMeets = inGradebook.length >= cfg.actMeets && !!earlyActivity && mmCount >= cfg.mmMeets &&
-                activities.length > 0 && partInstructions === activities.length;
+                activities.length > 0 && partInstructions * 100 / activities.length >= 80;
   Q.push({
     n:20, title:'Module Review: Learning and Engagement',
-    note:'Meets: at least one learning activity inside the first three weeks linked to the gradebook, at least one multimedia element, instructions covering what to do and how to submit. Exceeds: two or more activities in the gradebook (ungraded activities are fine alongside them), two or more multimedia elements of two different kinds, and instructions that also say when it is due. A place in a module counts as saying when.',
+    note:'Meets: at least one learning activity inside the first three weeks linked to the gradebook, at least one multimedia element, instructions covering what to do and how to submit in at least 80% of activities. Exceeds: two or more activities in the gradebook (ungraded activities are fine alongside them), two or more multimedia elements of two different kinds, and at least 90% of activities also saying when it is due. A place in a module counts as saying when.',
     mode:'check', type:'single', options:['Exceeds the standard','Meets the standard','Does not meet the standard'],
     suggested: leExceeds ? 'Exceeds the standard' : (leMeets ? 'Meets the standard' : 'Does not meet the standard'),
     evidence: leChecks
