@@ -1410,6 +1410,26 @@ var RE_ADMIN_MOD = /assessment|\bres(?:our|ou|or|uor|sour)ces?\b|\bweekly (?:lea
 var RE_WEEK_MOD = /\b(week|wk|topic|session|unit)\s*[:.\-]?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten)\b/i;
 var RE_ASSESS_WEEK = /\b(re)?assessments?\b|\bassignments?\b|\bdemonstrations?\b|\bconsultations?\b|\bpresentations?\b|\bfeedback\b|\b(re)?submissions?\b|\bobservations?\b|\brevision\b|\bexams?\b|\bexamination\b|\b(final|knowledge|written|practical|theory|class) test\b|\b(quiz|exam|test|assessment|report|project|portfolio|submission|presentation)s? prep(aration)?\b|\bprep(aration)? for (the )?(final|assessment|submission|exam)|\bfinal (report|project|portfolio|submission|printing)s?\b|\bpitstop\b|\bAT\s?\d\b|\brecap\b|\bsupport sessions?\b|\bmoderation\b|\bauxiliary\b|\bdrop[- ]in\b|\bknowledge (quiz|check)\b|\bcatch[- ]?up\b|\bpublic holiday\b|\bmid[- ]?(semester|term) break\b|\bno class\b|\bcompetency completion\b/i;
 var WEEK_WORDS = { one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12, thirteen:13, fourteen:14, fifteen:15, sixteen:16, seventeen:17, eighteen:18, nineteen:19, twenty:20 };
+/* A placeholder is a week that is only about assessment: once the week label, anything in
+   brackets, the assessment wording and the study words are taken out, at most one word of
+   topic is left. A week that names a real topic and also mentions an assessment is teaching. */
+var PH_FILLER = {};
+('week weeks wk session sessions part parts and or of the to for on in at with a an by from ' +
+ 'one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty ' +
+ 'introduction intro course overview semester term workshop workshops progress final prep preparation due task tasks ' +
+ 'unit units class classes lab labs tutorial tutorials lecture lectures study studies paced virtual online support time ' +
+ 'testing test tests quiz quizzes knowledge check checks week-long day days hour hours open book group groups individual ' +
+ 'discussion discussions review reviews reviewing work working session-based this your our all any other more ' +
+ 'learning self self-directed directed independent no')
+  .split(' ').forEach(function(w){ if(w) PH_FILLER[w] = 1; });
+var RE_ASSESS_WEEK_G = new RegExp(RE_ASSESS_WEEK.source, 'gi');
+function placeholderText(t){
+  var bare = String(t || '').replace(/\([^)]*\)|\[[^\]]*\]/g, ' ');
+  if(!RE_ASSESS_WEEK.test(bare)) return false;
+  var rest = bare.replace(RE_ASSESS_WEEK_G, ' ').toLowerCase().match(/[a-z][a-z'\-]{2,}/g) || [];
+  rest = rest.filter(function(w){ return !PH_FILLER[w]; });
+  return rest.length <= 1;
+}
 function weekNumOf(t){
   var m = String(t || '').match(/\b(?:weeks?|wks?|sessions?)\s*[:.\-]?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/i);
   if(!m) return 0;
@@ -2131,7 +2151,7 @@ function runChecks(c){
       if(!m) return;
       var a = +m[1], b = m[2] ? +m[2] : a, t = String(topic || '').replace(/\s+/g, ' ').trim();
       /* a long topic that only mentions an assessment along the way is still a teaching week */
-      if(t && (!RE_ASSESS_WEEK.test(t) || t.split(' ').length > 8)) return;
+      if(t && !placeholderText(t)) return;
       for(var n = a; n <= b && n - a < 6; n++) sylPlaceholderWeeks[n] = t || 'no topic listed';
     }
     [].slice.call(doc.querySelectorAll('table')).forEach(function(tb){
@@ -2159,12 +2179,21 @@ function runChecks(c){
   /* placeholder modules hold an assessment or feedback week rather than learning content,
      so they are not checked for objectives or rich course text */
   function placeholderWhy(m){
-    if(RE_ASSESS_WEEK.test(m.title)) return 'title';
+    /* a bracketed tag such as "(Assessment 1)" says which assessment the week feeds,
+       not that the week has no teaching, so it is ignored */
+    if(!titleRuleOff && placeholderText(m.title)) return 'title';
     var wk = weekNumOf(m.title);
     if(wk && sylPlaceholderWeeks[wk]) return 'syllabus: Week ' + wk + ' is ' + sylPlaceholderWeeks[wk];
     return '';
   }
+  var titleRuleOff = false;
   var placeholderMods = c.modules.filter(function(m){ return !isAdminMod(m) && placeholderWhy(m); });
+  /* if the wording rule would set aside every content module, the course names its
+     weeks in a way the rule misreads, so only the syllabus is trusted */
+  if(contentMods.length && contentMods.every(function(m){ return placeholderMods.indexOf(m) > -1; })){
+    titleRuleOff = true;
+    placeholderMods = c.modules.filter(function(m){ return !isAdminMod(m) && placeholderWhy(m); });
+  }
   var objectiveMods = contentMods.filter(function(m){ return placeholderMods.indexOf(m) === -1; });
   var unpubModules = c.modules.filter(function(m){ return !m.published && !isAdminMod(m) && placeholderMods.indexOf(m) === -1; });
   var unpubAdmin = c.modules.filter(function(m){ return !m.published && isAdminMod(m); });
@@ -2342,12 +2371,21 @@ function runChecks(c){
      by title, or by how much of the page is platform and admin wording.
      Software how-to words (click, select, menu) are left alone, since in a
      software course they are the learning content. */
-  var RE_INSTR_TITLE = /pebble\s?pad|turnitin|\bsubmi(t|ssion)|how to (submit|upload|export|access|log|save|print)|polic(y|ies)|canvas in this course|competition|declaration/i;
+  var RE_INSTR_TITLE = /pebble\s?pad|turnitin|\bsubmi(t|ssion)s? (information|instructions?|guide|guidelines|details|requirements|checklist|point|link|portal)\b|\bsubmitting\b|how to (submit|upload|export|access|log|save|print)|polic(y|ies)|canvas in this course|competition|declaration/i;
+  var RE_INSTR_HARD = /pebble\s?pad|turnitin|canvas in this course|declaration/i;
   var RE_ADMIN_WORDS = /\b(pebble ?pad|turnitin|workbooks?|e-?portfolios?|submit\w*|submission\w*|upload\w*|log ?in|login|logging in|sign ?in|passwords?|accounts?|enrol\w*|register\w*|registration|competitions?|prizes?|entr(y|ies)|deadlines?|due dates?|extensions?|special consideration|assessors?|marking|resubmi\w*|canvas|microsoft teams|collaborate ultra|inbox|helpdesk|it services)\b/gi;
-  function instructionPage(title, txt){
+  function instructionPage(title, txt, prose, hits){
+    /* substantial prose on this course's own subject is teaching, whatever it mentions
+       (a tendering course talks about tender submissions all the way through) */
+    /* platform and admin pages by name are always set aside */
+    if(RE_INSTR_HARD.test(title)) return true;
+    /* substantial prose on this course's own subject is teaching, whatever its title or
+       wording (a tendering course talks about tender submissions all the way through) */
+    if(prose >= 300 && hits >= 4) return false;
     if(RE_INSTR_TITLE.test(title) && !RE_CONTENT_PAGE.test(title)) return true;
-    var n = (String(txt).match(RE_ADMIN_WORDS) || []).length;
-    return n >= 5 && n * 100 / Math.max(words(txt), 1) >= 2;
+    var found = String(txt).match(RE_ADMIN_WORDS) || [];
+    var kinds = uniq(found.map(function(w){ return w.toLowerCase().replace(/(ted|ting|ted|s|ions?|ed|ing)$/, '').slice(0, 6); }));
+    return found.length >= 5 && kinds.length >= 3 && found.length * 100 / Math.max(words(txt), 1) >= 2;
   }
   var pageRows = modulePages.map(function(pg){
     var txt = plainText(pg.html);
@@ -2360,7 +2398,7 @@ function runChecks(c){
       page: pg, title: pg.title, module: pg.inModule, words: pr.total, prose: pr.prose, hits: hits,
       media: media, why: []
     };
-    row.instruction = instructionPage(pg.title, txt);
+    row.instruction = instructionPage(pg.title, txt, pr.prose, vocabUsable ? hits : 99);
     if(row.instruction) row.why.push('instructions or admin rather than learning content');
     else if(pr.total < 150) row.why.push('only ' + pr.total + ' words');
     else if(pr.prose < 100) row.why.push('mostly link text and headings, ' + pr.prose + ' words of prose');
@@ -2686,10 +2724,17 @@ function runChecks(c){
         ['Only ' + coreExpected.map(function(e){ return e.label; }).join(', ') + ' are order checked. External tools are not counted.'].concat(navFloatNotes).filter(Boolean).join(' '))
     : ck('warn','No navigation configuration in this export','Canvas only writes tab_configuration once the menu has been reordered or something hidden. A course left at the default writes nothing.'));
 
+  /* a leftover copy of something that is already in a module is tidying, not a gap */
+  var orphanAllTwins = orphanTotal > 0 &&
+    orphanPages.every(function(p){ return !!orphanTwin(p, c.pages); }) &&
+    orphanAssign.every(function(a){ return !!orphanTwin(a, c.assignments); }) &&
+    orphanQuiz.every(function(q){ return !!orphanTwin(q, c.quizzes); }) &&
+    orphanDisc.every(function(x){ return !!orphanTwin(x, c.discussions); });
   bltChecks.push(orphanTotal === 0
     ? ck('pass','Everything a student needs sits in a module')
-    : ck('fail', pluralise(orphanTotal,'item') + ' outside every module',
-        'Students only reliably find what is in the module list.',
+    : ck(orphanAllTwins ? 'warn' : 'fail', pluralise(orphanTotal,'item') + ' outside every module',
+        orphanAllTwins ? 'Minor fix: each is a leftover copy of something already in a module, so students are not missing anything. Delete the copy.'
+                       : 'Students only reliably find what is in the module list.',
         orphanPages.slice(0,8).map(function(p){ return 'Page: ' + p.title + orphanTwin(p, c.pages); })
         .concat(orphanAssign.slice(0,8).map(function(a){ return 'Assignment: ' + a.title + orphanTwin(a, c.assignments); }))
         .concat(orphanQuiz.slice(0,6).map(function(q){ return 'Quiz: ' + q.title + orphanTwin(q, c.quizzes); }))
@@ -2710,7 +2755,8 @@ function runChecks(c){
   bltChecks.push((dupModules.length + emptyGroups.length) === 0
     ? ck('pass','No duplicate modules or empty assignment groups',
         dupStaged.length ? 'Unpublished copies of published modules are treated as staged for later delivery and not counted: ' + uniq(dupStaged).join('; ') : '')
-    : ck('fail','Duplicates or unused groups found','',
+    : ck(dupModules.length ? 'fail' : 'warn', dupModules.length ? 'Duplicates or unused groups found' : 'Empty assignment group found',
+        dupModules.length ? '' : 'Minor fix: an empty group does no harm to students. Delete it to keep the gradebook tidy.',
         dupModules.map(function(t){ return 'Repeated published module title: ' + t; })
         .concat(emptyGroups.map(function(g){ return 'Empty assignment group: ' + g.title; }))));
 
@@ -2733,7 +2779,8 @@ function runChecks(c){
   Q.push({
     n:6, title:'Current Blended Learning Template', note:'Nav, everything in modules, aligned to delivery, organised and labelled, assignments grouped, nothing duplicated.',
     mode:'check', type:'single', options:['Complete','Incomplete'],
-    suggested: (bltFails === 0 && bltWarns === 0) ? 'Complete' : 'Incomplete',
+    /* warnings are minor fixes: they go in the feedback but do not stop it being complete */
+    suggested: bltFails === 0 ? 'Complete' : 'Incomplete',
     evidence: bltChecks, html: navTable
   });
 
@@ -3169,7 +3216,9 @@ function runChecks(c){
        [pluralise(uniq(modLinks.filter(function(l){ return isExternalLink(l.href); }).map(function(l){ return l.href; })).length,'unique external address','unique external addresses') + ' to check'])
   ];
   typeTally.forEach(function(t){
-    rrChecks.push(ck(t.n > 0 ? 'pass' : 'fail', t.name + ': ' + t.n));
+    rrChecks.push(t.n > 0 ? ck('pass', t.name + ': ' + t.n)
+      : ck(typeCount >= 4 ? 'info' : 'fail', t.name + ': ' + t.n,
+           typeCount >= 4 ? 'Not used, which is fine: four of the five types is what Meets asks for.' : ''));
   });
 
   /* close to Exceeds: list every resource that has no explanatory text, so it can be fixed */
@@ -3625,7 +3674,8 @@ function runChecks(c){
     var t = (l.label || '').toLowerCase();
     return t.indexOf(ext) === -1 && !/\b(pdf|word|excel|powerpoint|document|slides|spreadsheet|download)\b/.test(t);
   });
-  var accessOk = noAltList.length === 0 && noHeading.length === 0 && badLinks.length === 0;
+  /* unhelpful link text is a minor fix, not a fail */
+  var accessOk = noAltList.length === 0 && noHeading.length === 0;
   /* How the learning is delivered, page by page. Each content page (session
      structure pages aside) either carries its learning on the page (rich
      text, as in question 18) or mainly hands students a document: under 150
@@ -4073,6 +4123,8 @@ function runChecks(c){
     mode:'auto', type:'single', options:['Yes','No'],
     suggested: accessOk ? 'Yes' : 'No',
     evidence:[
+      ck('info','This only checks heading styles, alt text and link text',
+        'Run the Accessibility Report from the left-hand course menu in Canvas for the full check, including colour contrast, tables and documents. Aim for a score above 80%.'),
       ck(noAltList.length === 0 ? 'pass' : 'fail',
         noAltList.length === 0 ? 'Every meaningful image has alt text' : pluralise(noAltList.length,'image') + ' with no alt text',
         'Only published content in published modules is checked, so the home page, announcements and anything outside the modules are left out.',
@@ -4080,8 +4132,9 @@ function runChecks(c){
       ck(noHeading.length === 0 ? 'pass' : 'fail',
         noHeading.length === 0 ? 'Long pages use heading styles' : pluralise(noHeading.length,'long page') + ' with no headings at all','',
         noHeading.slice(0,10)),
-      ck(badLinks.length === 0 ? 'pass' : 'fail',
-        badLinks.length === 0 ? 'Link text is meaningful' : pluralise(badLinks.length,'link') + ' with unhelpful text','',
+      ck(badLinks.length === 0 ? 'pass' : 'warn',
+        badLinks.length === 0 ? 'Link text is meaningful' : pluralise(badLinks.length,'link') + ' with unhelpful text',
+        badLinks.length ? 'Minor fix: replace each bare web address or "click here" with words that say where the link goes, for example "Special consideration (RMIT website)".' : '',
         uniq(badLinks.map(function(l){ return l.where + ': "' + l.label + '"'; })).slice(0,12)),
       ck(unlabelledFiles.length === 0 ? 'pass' : 'warn',
         unlabelledFiles.length === 0 ? 'File downloads name their format' : (unlabelledFiles.length === 1 ? '1 file link does not say what it opens' : unlabelledFiles.length + ' file links do not say what they open'),'',
@@ -4095,8 +4148,6 @@ function runChecks(c){
       ck(docLinkCount ? 'warn' : 'info',
         docLinkCount ? pluralise(docLinkCount, 'document') + ' linked from the content modules' : 'No documents linked from the content modules',
         docLine),
-      ck('info','Colour contrast and table headers are not checked here',
-        'Run the Canvas accessibility checker for those.')
     ]
   });
 
@@ -5284,7 +5335,12 @@ function progManual(q){
 function progExtra(q){
   var t = progTone(q);
   if(t === 'manual') return '<div class="pbox man"><b>Check manually</b>' + esc(progManual(q)) + '</div>';
-  if(t !== 'flagged') return '';
+  if(t !== 'flagged'){
+    var mw = q.evidence.filter(function(e){ return e.state === 'warn' && /^Minor fix/.test(e.detail || ''); });
+    if(!mw.length) return '';
+    return '<div class="pbox man"><b>Minor fix</b><ul>' + mw.map(function(e){
+      return '<li>' + esc(e.text) + ': ' + esc(String(e.detail).replace(/^Minor fix:\s*/, '')) + '</li>'; }).join('') + '</ul></div>';
+  }
   var fx = progFix(q), nm = progNotMet(q);
   return '<div class="pbox fix"><b>To fix</b>' +
     (fx.length ? '<ul>' + fx.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
@@ -5309,7 +5365,9 @@ qHtml = function(q){
   var tone = progTone(q), v = progValue(q);
   var evCount = q.evidence.length;
   var fails = q.evidence.filter(function(e){ return e.state === 'fail'; }).length;
-  var body = '<div class="presult ' + tone + '">' + esc(v) + '</div>' + progExtra(q) + auditHtml(q);
+  var body = '<div class="presult ' + tone + '">' + esc(v) + '</div>' + progExtra(q) +
+    (q.n === 36 ? '<div class="pbox man"><b>This only checks heading styles, alt text and link text</b>Run the <b style="display:inline">Accessibility Report</b> from the left-hand course menu in Canvas for the full check. Aim for a score above 80%.</div>' : '') +
+    auditHtml(q);
   if(q.showHtml && q.html) body += '<div style="margin:10px 0 4px">' + q.html + '</div>';
   body += '<details class="ev"><summary>What was checked (' + evCount + ' check' + (evCount === 1 ? '' : 's') +
           (fails ? ', ' + fails + ' not met' : '') + ')</summary><div class="evbody">' +
